@@ -1317,7 +1317,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Ticket Médio p/ Tipo */}
-            <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group">
+            <div 
+              className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
+              title="Mostra o valor financeiro médio de cada tipo de negociação (Quitação, Parcelamento) fechada no período selecionado."
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-emerald-500/10 rounded-xl group-hover:scale-110 transition-transform">
                   <BarChart3 size={20} className="text-emerald-400" />
@@ -1336,7 +1339,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             </div>
             {/* Tempo Médio p/ Pagar */}
-            <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group">
+            <div 
+              className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group"
+              title="Mede o tempo médio em horas que os clientes estão demorando para efetuar o pagamento após a data de registro do acordo."
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform">
                   <Clock3 size={20} className="text-amber-400" />
@@ -1357,7 +1363,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             </div>
             {/* Projeção 7 Dias */}
-            <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group">
+            <div 
+              className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group"
+              title="Soma de todos os acordos que ainda aguardam pagamento e têm vencimento agendado para os próximos 7 dias."
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-purple-500/10 rounded-xl group-hover:scale-110 transition-transform">
                   <CalendarDays size={20} className="text-purple-400" />
@@ -1378,7 +1387,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             </div>
             {/* Eficiência por Ciclo */}
-            <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group">
+            <div 
+              className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
+              title="Compara a taxa de sucesso (conversão) dos acordos feitos no período da Manhã (antes das 12h) contra o período da Tarde (após 12h)."
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-sky-500/10 rounded-xl group-hover:scale-110 transition-transform">
                   <Target size={20} className="text-sky-400" />
