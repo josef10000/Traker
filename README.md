@@ -14,6 +14,7 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 
 ## 🚀 Novidades na Versão Atual
 
+- **Painel de Insights Analíticos**: Nova seção com métricas avançadas, incluindo Ticket Médio por tipo, Tempo Médio de Pagamento, Projeção Financeira para os próximos 7 dias e Eficiência por Ciclo (Manhã vs Tarde).
 - **Sinalização de Transição de Dia**: Selos automáticos de **"Prioridade Ontem"** (para acordos do ciclo da tarde que precisam de conferência hoje) e **"Quebrado Ontem"** (para acordos que venceram e não foram pagos), garantindo que nada seja esquecido na virada do dia.
 - **Sistema de Conferência Diária**: Opção de marcar acordos como "Conferidos Hoje" (ícone 🔍), ajudando a identificar quais CPFs já foram consultados no banco e evitando retrabalho. A marcação reseta automaticamente no dia seguinte.
 - **Controle de Ciclos de Verificação**: Diferenciação visual (cores e ícones ☀️/🌙) para acordos feitos antes e depois do meio-dia, facilitando a identificação de prioridades de baixa bancária.

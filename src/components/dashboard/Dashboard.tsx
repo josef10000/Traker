@@ -27,7 +27,13 @@ import {
   Sun,
   Moon,
   AlertTriangle,
-  Zap
+  Zap,
+  TrendingUp,
+  Clock3,
+  BarChart3,
+  Target,
+  CalendarDays,
+  MousePointer2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -396,6 +402,60 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       },
       ticketAverage: monthAgreements.length > 0 ? totalProjected / monthAgreements.length : 0,
       remainingToGoal: Math.max(0, (monthlyGoal || 0) - totalPaidMonth),
+      
+      // Advanced Insights
+      insights: {
+        avgTimeToPay: (() => {
+          const paidWithTime = monthAgreements.filter(a => a.status === AgreementStatus.PAID && a.paidAt);
+          if (paidWithTime.length === 0) return 0;
+          const totalMs = paidWithTime.reduce((acc, a) => {
+            const created = new Date(a.createdAt).getTime();
+            const paid = new Date(a.paidAt!).getTime();
+            return acc + Math.max(0, paid - created);
+          }, 0);
+          return totalMs / paidWithTime.length / (1000 * 60 * 60); // In hours
+        })(),
+        projection7d: (() => {
+          const next7 = new Date(today);
+          next7.setDate(today.getDate() + 7);
+          return monthAgreements
+            .filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today && parseLocalDate(a.dueDate) <= next7)
+            .reduce((acc, curr) => acc + curr.value, 0);
+        })(),
+        performanceByOrigin: monthAgreements.reduce((acc, curr) => {
+          const origin = curr.origin;
+          if (!acc[origin]) acc[origin] = { total: 0, paid: 0 };
+          acc[origin].total += curr.value;
+          if (curr.status === AgreementStatus.PAID) acc[origin].paid += curr.value;
+          return acc;
+        }, {} as Record<string, { total: number; paid: number }>),
+        ticketByType: monthAgreements.reduce((acc, curr) => {
+          const type = curr.type;
+          if (!acc[type]) acc[type] = { total: 0, count: 0 };
+          acc[type].total += curr.value;
+          acc[type].count += 1;
+          return acc;
+        }, {} as Record<string, { total: number; count: number }>),
+        cycleEfficiency: {
+          morning: (() => {
+            const morning = monthAgreements.filter(a => new Date(a.createdAt).getHours() < 12);
+            if (morning.length === 0) return 0;
+            return (morning.filter(a => a.status === AgreementStatus.PAID).length / morning.length) * 100;
+          })(),
+          afternoon: (() => {
+            const afternoon = monthAgreements.filter(a => new Date(a.createdAt).getHours() >= 12);
+            if (afternoon.length === 0) return 0;
+            return (afternoon.filter(a => a.status === AgreementStatus.PAID).length / afternoon.length) * 100;
+          })()
+        },
+        earlyBreakRate: (() => {
+          const expiredWaiting = monthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today);
+          if (expiredWaiting.length === 0) return 0;
+          const checked = expiredWaiting.filter(a => a.lastCheckedAt && new Date(a.lastCheckedAt).toLocaleDateString() === today.toLocaleDateString());
+          return (checked.length / expiredWaiting.length) * 100;
+        })()
+      },
+
       projection: (() => {
         if (!isCurrentMonth) return totalPaidMonth;
         const now = new Date();
@@ -1313,15 +1373,121 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                       title="Gerenciar Membro"
                     >
                       <ArrowLeftRight size={10} strokeWidth={3} />
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
-          </section>
-        )}
+        </section>
 
-        <section className="flex flex-col md:flex-row gap-4 items-center">
+        {/* Advanced Insights Section */}
+        <section className="mt-8">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="p-2 bg-sky-500/10 rounded-lg">
+              <TrendingUp size={20} className="text-sky-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white leading-tight">Insights Analíticos</h2>
+              <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Performance e Projeções</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Ticket Médio p/ Tipo */}
+            <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group">
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-2 bg-emerald-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                  <BarChart3 size={20} className="text-emerald-400" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ticket Médio</span>
+              </div>
+              <div className="space-y-3">
+                {Object.entries(stats.insights?.ticketByType || {}).slice(0, 3).map(([type, data]) => (
+                  <div key={type} className="flex justify-between items-center">
+                    <span className="text-xs text-slate-400 capitalize">
+                      {type === 'quitacao' ? 'Quitação' : type === 'parcelamento' ? 'Parc.' : 'Outros'}
+                    </span>
+                    <span className="text-xs font-bold text-white">{formatCurrency(data.total / (data.count || 1))}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tempo Médio p/ Pagar */}
+            <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group">
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-2 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                  <Clock3 size={20} className="text-amber-400" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Conversão</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-black text-white tracking-tight">
+                  {stats.insights?.avgTimeToPay?.toFixed(1) || 0}h
+                </span>
+                <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Tempo médio p/ pagamento</span>
+                <div className="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
+                   <div 
+                    className="h-full bg-amber-500 transition-all duration-1000" 
+                    style={{ width: `${Math.min(100, (stats.insights?.avgTimeToPay || 0) * 4)}%` }} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Projeção 7 Dias */}
+            <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group">
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-2 bg-purple-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                  <CalendarDays size={20} className="text-purple-400" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Próximos 7 Dias</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-black text-purple-400 tracking-tight">
+                  {formatCurrency(stats.insights?.projection7d || 0)}
+                </span>
+                <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Estimativa de entrada</span>
+                <div className="flex items-center gap-2 mt-4">
+                  <div className="flex-1 h-1 bg-slate-800 rounded-full">
+                    <div className="h-full bg-purple-500 w-1/2 opacity-50" />
+                  </div>
+                  <span className="text-[10px] font-bold text-purple-400/50">Expectativa</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Eficiência por Ciclo */}
+            <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group">
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-2 bg-sky-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                  <Target size={20} className="text-sky-400" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Eficiência Ciclo</span>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
+                    <span className="text-sky-400">Manhã</span>
+                    <span className="text-white">{stats.insights?.cycleEfficiency?.morning.toFixed(0)}%</span>
+                  </div>
+                  <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-sky-500" style={{ width: `${stats.insights?.cycleEfficiency?.morning}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
+                    <span className="text-amber-500">Tarde</span>
+                    <span className="text-white">{stats.insights?.cycleEfficiency?.afternoon.toFixed(0)}%</span>
+                  </div>
+                  <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500" style={{ width: `${stats.insights?.cycleEfficiency?.afternoon}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
           <div className="relative group flex-1 w-full">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
               <Search size={20} />
