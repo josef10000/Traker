@@ -25,7 +25,9 @@ import {
   FileDown,
   ArrowUpDown,
   Sun,
-  Moon
+  Moon,
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -1385,6 +1387,12 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     const isCheckedToday = agreement.lastCheckedAt && 
                       new Date(agreement.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
 
+                    // Lógica de Prioridade (Criado antes de hoje no ciclo da tarde e ainda esperando)
+                    const isPriorityOntem = !isMorning && regDate < today && agreement.status === AgreementStatus.WAITING;
+                    
+                    // Lógica de Quebrado Ontem (Vencimento antes de hoje e ainda esperando)
+                    const isBrokenOntem = isOverdue;
+
                     return (
                       <motion.tr 
                           key={agreement.id}
@@ -1444,6 +1452,20 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-sky-500 text-white border border-sky-400">
                                     <Check size={8} strokeWidth={4} />
                                     Conferido
+                                  </div>
+                                )}
+
+                                {isPriorityOntem && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-amber-500 text-white border border-amber-400">
+                                    <Zap size={8} fill="currentColor" />
+                                    Prioridade Ontem
+                                  </div>
+                                )}
+
+                                {isBrokenOntem && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-rose-600 text-white border border-rose-500">
+                                    <AlertTriangle size={8} />
+                                    Quebrado Ontem
                                   </div>
                                 )}
                               </div>
