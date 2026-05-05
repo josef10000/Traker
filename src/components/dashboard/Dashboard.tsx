@@ -28,10 +28,8 @@ import {
   Moon,
   AlertTriangle,
   Zap,
-  TrendingUp,
   Clock3,
   BarChart3,
-  Target,
   CalendarDays,
   MousePointer2
 } from 'lucide-react';
@@ -59,7 +57,6 @@ import {
   ResponsiveContainer, 
   Cell 
 } from 'recharts';
-
 import { auth, db } from '../../lib/firebase';
 import { 
   Agreement, 
@@ -82,16 +79,13 @@ import { startTour } from '../../utils/tour';
 import { GoalModal } from '../modals/GoalModal';
 import { HistoryModal } from '../modals/HistoryModal';
 import { MONTHS, getMonthName, getYearRange } from '../../utils/date';
-
 import { ToastType } from '../ui/Toast';
-
 interface DashboardProps {
   user: User;
   profile: UserProfile;
   onSettingsClick: () => void;
   showToast: (message: string, type?: ToastType) => void;
 }
-
 export const Dashboard = ({ user, profile, onSettingsClick, showToast }: DashboardProps) => {
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [monthlyGoal, setMonthlyGoal] = useState<number>(50000);
@@ -111,28 +105,22 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{ uid: string; name: string } | null>(null);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
   const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
   
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>('all');
   const [currentTeamMembers, setCurrentTeamMembers] = useState<UserProfile[]>([]);
-
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
-
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
   const [selectedClientCpf, setSelectedClientCpf] = useState<string | null>(null);
   const [clientHistory, setClientHistory] = useState<Agreement[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-
   const parseLocalDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
-
   // Load Members when team changes
   useEffect(() => {
     if (selectedTeamId !== 'all') {
@@ -143,18 +131,15 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       setSelectedMemberId('all');
     }
   }, [selectedTeamId]);
-
   // Load Managed Teams Info
   useEffect(() => {
     if (!profile.managedTeams || profile.managedTeams.length === 0) return;
-
     const loadTeamsData = async () => {
       const teams = await Promise.all(
         profile.managedTeams.map(id => getTeamData(id))
       );
       const validTeams = teams.filter((t): t is Team => t !== null);
       setManagedTeamsData(validTeams);
-
       // Atualiza metas baseado na seleção
       if (selectedTeamId === 'all') {
         const totalMonthly = validTeams.reduce((acc, t) => acc + (t.monthlyGoal || 0), 0);
@@ -171,22 +156,18 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         }
       }
     };
-
     loadTeamsData();
   }, [profile.managedTeams, selectedTeamId]);
-
   // Load Data based on selected team(s)
   useEffect(() => {
     const loadData = async () => {
       const teamsToWatch = selectedTeamId === 'all' 
         ? (profile.managedTeams || []) 
         : [selectedTeamId];
-
       if (teamsToWatch.length === 0) {
         setIsLoading(false);
         return;
       }
-
       // Load Settings (if single team)
       let unsubscribeSettings = () => {};
       if (selectedTeamId !== 'all') {
@@ -199,7 +180,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           }
         });
       }
-
       // Firestore Subscription for Agreements
       const q = query(
         collection(db, 'agreements'), 
@@ -212,7 +192,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         setAgreements(data);
         setIsLoading(false);
       });
-
       return () => {
         unsubscribeSettings();
         unsubscribeAgreements();
@@ -221,7 +200,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     
     loadData();
   }, [selectedTeamId, profile.managedTeams]);
-
   // Handle Tour
   useEffect(() => {
     if (profile && !profile.hasSeenTour) {
@@ -238,7 +216,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       return () => clearTimeout(timer);
     }
   }, [profile?.hasSeenTour]);
-
   // Filtering Logic
   const monthFilteredAgreements = useMemo(() => {
     return agreements.filter(a => {
@@ -246,7 +223,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
   }, [agreements, selectedMonth, selectedYear]);
-
   const memberFilteredAgreements = useMemo(() => {
     let filtered = monthFilteredAgreements;
     
@@ -259,7 +235,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     
     return filtered;
   }, [monthFilteredAgreements, viewMode, profile.uid, selectedMemberId]);
-
   const timeFilteredAgreements = useMemo(() => {
     let filtered = memberFilteredAgreements;
     
@@ -289,7 +264,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     
     return filtered;
   }, [memberFilteredAgreements, dateFilter, customStartDate, customEndDate]);
-
   const displayAgreements = useMemo(() => {
     let filtered = timeFilteredAgreements;
     
@@ -310,7 +284,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     // Filter by Status
     if (filterStatus !== 'all') {
       if (filterStatus === AgreementStatus.BROKEN) {
@@ -333,21 +306,17 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       const dateB = new Date(b.createdAt).getTime();
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
-
     return filtered;
   }, [timeFilteredAgreements, searchTerm, filterStatus, sortOrder]);
-
   // Stats calculation
   const stats: DashboardStats = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     // Fonte Mensal (Sempre o mês selecionado)
     const monthAgreements = memberFilteredAgreements;
     
     // Fonte Filtrada (Tabela e Gráfico)
     const filteredAgreements = timeFilteredAgreements;
-
     // Cálculos Mensais
     const totalProjected = monthAgreements.reduce((acc, curr) => acc + curr.value, 0);
     const paidAgreementsMonth = monthAgreements.filter(a => a.status === AgreementStatus.PAID);
@@ -358,23 +327,19 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       parseLocalDate(a.dueDate) < today
     );
     const totalOverdueMonth = overdueAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-
     const pendingTodayAgreementsMonth = monthAgreements.filter(a => 
       a.status === AgreementStatus.WAITING && 
       parseLocalDate(a.dueDate).getTime() === today.getTime()
     );
     const totalPendingTodayMonth = pendingTodayAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-
     // Cálculos Filtrados (Produtividade Diária)
     const paidAgreementsFiltered = filteredAgreements.filter(a => a.status === AgreementStatus.PAID);
     const totalPaidFiltered = paidAgreementsFiltered.reduce((acc, curr) => acc + curr.value, 0);
-
     const isCurrentMonth = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear();
     
     const agreementsToday = isCurrentMonth 
       ? monthAgreements.filter(a => new Date(a.createdAt) >= today)
       : [];
-
     return {
       totalProjected,
       totalPaid: totalPaidMonth,
@@ -455,7 +420,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           return (checked.length / expiredWaiting.length) * 100;
         })()
       },
-
       projection: (() => {
         if (!isCurrentMonth) return totalPaidMonth;
         const now = new Date();
@@ -471,7 +435,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       }, {} as Record<number, number>)
     };
   }, [timeFilteredAgreements, memberFilteredAgreements, monthlyGoal, selectedMonth, selectedYear]);
-
   // Chart Data
   const chartData = useMemo(() => [
     { name: 'Meta', value: monthlyGoal, color: 'url(#colorMeta)' },
@@ -479,16 +442,12 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     { name: 'Vencido', value: stats.totalOverdue, color: 'url(#colorOverdue)' },
     { name: 'Pendente', value: Math.max(0, stats.totalProjected - stats.totalPaid - stats.totalOverdue), color: 'url(#colorPending)' }
   ], [monthlyGoal, stats]);
-
   const filteredAgreements = displayAgreements;
-
   const paginatedAgreements = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredAgreements.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredAgreements, currentPage]);
-
   const totalPages = Math.ceil(filteredAgreements.length / itemsPerPage);
-
   const handleEfetivar = async (id: string) => {
     try {
       const agreementRef = doc(db, 'agreements', id);
@@ -501,10 +460,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao efetivar acordo.', 'error');
     }
   };
-
   const handleRemoveOperator = async (operatorId: string, operatorName: string) => {
     if (!window.confirm(`Deseja remover ${operatorName} da equipe?`)) return;
-
     try {
       await updateDoc(doc(db, 'users', operatorId), {
         teamId: null
@@ -516,7 +473,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao remover operador.', 'error');
     }
   };
-
   const handleTransferOperator = async (operatorId: string, newTeamId: string, teamName: string) => {
     try {
       await updateDoc(doc(db, 'users', operatorId), {
@@ -529,7 +485,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao transferir operador.', 'error');
     }
   };
-
   const confirmRemoveOperator = async () => {
     if (!memberToRemove) return;
     try {
@@ -541,7 +496,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao remover membro.', 'error');
     }
   };
-
   const handleToggleChecked = async (id: string, currentStatus: string | undefined) => {
     try {
       const isCurrentlyChecked = currentStatus && new Date(currentStatus).toLocaleDateString() === new Date().toLocaleDateString();
@@ -554,7 +508,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao atualizar conferência.', 'error');
     }
   };
-
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja realmente excluir este acordo?')) return;
     try {
@@ -563,7 +516,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       console.error(error);
     }
   };
-
   const handleClientClick = (cpf: string) => {
     setSelectedClientCpf(cpf);
     setIsLoadingHistory(true);
@@ -573,16 +525,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       where('clientCpf', '==', cpf),
       orderBy('createdAt', 'desc')
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
       setClientHistory(history);
       setIsLoadingHistory(false);
     });
-
     return () => unsubscribe();
   };
-
   const handleUpdateGoal = async (newGoal: number, newEffGoal: number) => {
     if (!profile.teamId) return;
     try {
@@ -596,7 +545,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       console.error(error);
     }
   };
-
   const handleAddOrEditAgreement = async (data: any) => {
     if (!profile.teamId) return;
     
@@ -630,7 +578,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao salvar acordo.', 'error');
     }
   };
-
   const handleExport = () => {
     const headers = ['Nome', 'CPF', 'Valor', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
     
@@ -640,7 +587,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         a.clientName,
         a.clientCpf,
         a.value.toString().replace('.', ','),
-
         a.dueDate.split('-').reverse().join('/'),
         (() => {
           const today = new Date();
@@ -660,7 +606,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         new Date(a.createdAt).toLocaleDateString('pt-BR')
       ].join(';'))
     ].join('\n');
-
     const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -673,13 +618,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     
     showToast('Exportação concluída!', 'success');
   };
-
   const getEffectivenessColor = (rate: number, goal: number) => {
     if (rate >= goal) return 'text-emerald-400';
     if (rate >= goal * 0.75) return 'text-amber-400';
     return 'text-rose-400';
   };
-
   return (
     <div className="min-h-screen font-sans pb-20">
       <header className="glass-card sticky top-0 z-30 px-6 py-4">
@@ -709,7 +652,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               )}
             </div>
           </div>
-
           <div className="flex items-center gap-4 w-full md:w-auto justify-end">
             
             <div 
@@ -725,7 +667,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 <UserIcon size={16} />
               </div>
             </div>
-
             {profile.role === 'supervisor' && selectedTeamId !== 'all' && (
               <button 
                 onClick={() => {
@@ -741,7 +682,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 <UserPlus size={20} />
               </button>
             )}
-
             <button 
               onClick={() => signOut(auth)}
               className="p-2.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 rounded-xl transition-all"
@@ -749,7 +689,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             >
               <LogOut size={20} />
             </button>
-
             <button 
               id="new-agreement-btn"
               onClick={() => setIsModalOpen(true)}
@@ -762,7 +701,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
         </div>
       </header>
-
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Header com Toggle de Visão (Apenas para Supervisores) */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -776,7 +714,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 : 'Visão macro e detalhada da performance do time'}
             </p>
           </div>
-
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <div className="flex glass-card p-1 rounded-xl shadow-2xl">
               <select
@@ -805,7 +742,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 ))}
               </select>
             </div>
-
             {profile.role === 'supervisor' && (
               <div className="flex glass-card p-1 rounded-xl shadow-2xl">
               <button
@@ -893,7 +829,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             subtitle="Média por acordo registrado"
           />
         </section>
-
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 grid grid-cols-1 gap-6">
             <motion.div 
@@ -923,7 +858,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                   <p className="text-[8px] text-slate-500 font-medium uppercase mt-0.5">Base: {formatCurrency(stats.totalProjected)} projetado</p>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <span>Progresso da Recuperação</span>
@@ -943,7 +877,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             </motion.div>
           </div>
-
           <div id="performance-chart" className="glass-card p-6 rounded-2xl shadow-xl flex flex-col relative overflow-hidden group lg:col-span-2">
             {/* Background Glow */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all" />
@@ -1015,7 +948,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </div>
         </section>
-
         {/* Nova Seção: Heatmap e Resumo Adicional */}
         <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
@@ -1072,7 +1004,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             </div>
           </div>
-
           <div className="flex flex-col gap-6">
             <StatCard 
               title="Aguardando" 
@@ -1090,7 +1021,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             />
           </div>
         </section>
-
         <div className="flex flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">
@@ -1123,7 +1053,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 onClick={() => setFilterStatus(AgreementStatus.BROKEN)}
               />
             </div>
-
             <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 shadow-lg">
               <button
                 onClick={() => setDateFilter('all')}
@@ -1169,7 +1098,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               Exportar
             </button>
           </div>
-
           <AnimatePresence>
             {dateFilter === 'custom' && (
               <motion.div 
@@ -1205,14 +1133,12 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             )}
           </AnimatePresence>
         </div>
-
         {/* Performance Section (Leaderboard & Table) - Only for Team View */}
         {viewMode === 'team' && selectedTeamId !== 'all' && selectedMemberId === 'all' && (
           <div className="mb-12">
             <TeamPerformance agreements={monthFilteredAgreements} members={currentTeamMembers} />
           </div>
         )}
-
         {/* Grade de Equipes - Visão Macro */}
         {viewMode === 'team' && selectedTeamId === 'all' && managedTeamsData.length > 0 && (
           <section className="space-y-4">
@@ -1266,7 +1192,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                       </p>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <button 
                       onClick={(e) => {
@@ -1318,7 +1243,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </section>
         )}
-
         {/* Navegação por Membros da Equipe */}
         {selectedTeamId !== 'all' && viewMode === 'team' && currentTeamMembers.length > 0 && (
           <section className="space-y-3">
@@ -1380,7 +1304,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </section>
         )}
-
         {/* Advanced Insights Section */}
         <section className="mt-8">
           <div className="flex items-center gap-2 mb-6">
@@ -1392,7 +1315,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Performance e Projeções</p>
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Ticket Médio p/ Tipo */}
             <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group">
@@ -1413,7 +1335,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 ))}
               </div>
             </div>
-
             {/* Tempo Médio p/ Pagar */}
             <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group">
               <div className="flex justify-between items-start mb-4">
@@ -1435,7 +1356,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 </div>
               </div>
             </div>
-
             {/* Projeção 7 Dias */}
             <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group">
               <div className="flex justify-between items-start mb-4">
@@ -1457,7 +1377,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 </div>
               </div>
             </div>
-
             {/* Eficiência por Ciclo */}
             <div className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group">
               <div className="flex justify-between items-start mb-4">
@@ -1489,7 +1408,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </div>
         </section>
-
         <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
           <div className="relative group flex-1 w-full">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
@@ -1518,7 +1436,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </button>
         </section>
-
         <section className="glass-card rounded-2xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -1548,20 +1465,16 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     today.setHours(0, 0, 0, 0);
                     const isOverdue = agreement.status === AgreementStatus.WAITING && parseLocalDate(agreement.dueDate) < today;
                     const isBroken = agreement.status === AgreementStatus.BROKEN || isOverdue;
-
                     // Lógica de Ciclo (Manhã até 12:00, Tarde após 12:00)
                     const regDate = new Date(agreement.createdAt);
                     const isMorning = regDate.getHours() < 12;
-
                     const isCheckedToday = agreement.lastCheckedAt && 
                       new Date(agreement.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
-
                     // Lógica de Prioridade (Qualquer acordo criado antes de hoje que ainda esteja aguardando)
                     const isPriorityOntem = regDate < today && agreement.status === AgreementStatus.WAITING;
                     
                     // Lógica de Quebrado Ontem (Vencimento antes de hoje e ainda esperando)
                     const isBrokenOntem = isOverdue;
-
                     return (
                       <motion.tr 
                           key={agreement.id}
@@ -1616,28 +1529,24 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                     {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
                                   </div>
                                 )}
-
                                 {isCheckedToday && (
                                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-sky-500 text-white border border-sky-400">
                                     <Check size={8} strokeWidth={4} />
                                     Conferido
                                   </div>
                                 )}
-
                                 {isPriorityOntem && (
                                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-amber-500 text-white border border-amber-400">
                                     <Zap size={8} fill="currentColor" />
                                     Prioridade Ontem
                                   </div>
                                 )}
-
                                 {isOverdue && !isCheckedToday && (
                                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-orange-500/20 text-orange-400 border border-orange-500/30">
                                     <AlertTriangle size={8} />
                                     Vencimento Expirado
                                   </div>
                                 )}
-
                                 {isOverdue && isCheckedToday && (
                                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-rose-600 text-white border border-rose-500">
                                     <AlertTriangle size={8} />
@@ -1713,7 +1622,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                   </button>
                                 </>
                               )}
-
                             <div className="flex items-center gap-1 border-l border-slate-800 pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={() => {
@@ -1768,7 +1676,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           )}
         </section>
       </main>
-
       <AgreementModal 
         isOpen={isModalOpen}
         onClose={() => {
@@ -1778,7 +1685,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         onSubmit={handleAddOrEditAgreement}
         editingAgreement={editingAgreement}
       />
-
       <GoalModal 
         isOpen={isGoalModalOpen}
         onClose={() => setIsGoalModalOpen(false)}
@@ -1786,7 +1692,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         monthlyGoal={monthlyGoal}
         effectivenessGoal={effectivenessGoal}
       />
-
       <HistoryModal 
         isOpen={!!selectedClientCpf}
         onClose={() => setSelectedClientCpf(null)}
@@ -1794,7 +1699,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         history={clientHistory}
         isLoading={isLoadingHistory}
       />
-
       {/* Modal de Remanejamento */}
       <AnimatePresence>
         {transferringMember && (
@@ -1851,7 +1755,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     )}
                   </div>
                 </div>
-
                 <div className="pt-4 border-t border-slate-800/50">
                   <button
                     onClick={() => handleRemoveOperator(transferringMember.uid, transferringMember.displayName)}
@@ -1867,7 +1770,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
         )}
       </AnimatePresence>
-
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
@@ -1881,5 +1783,4 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     </div>
   );
 };
-
 export default Dashboard;
