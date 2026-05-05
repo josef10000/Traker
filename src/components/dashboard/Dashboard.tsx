@@ -540,7 +540,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   };
 
   const handleExport = () => {
-    const headers = ['Nome', 'CPF', 'Valor', 'Parcela', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
+    const headers = ['Nome', 'CPF', 'Valor', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
     
     const csvContent = [
       headers.join(';'),
@@ -548,7 +548,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         a.clientName,
         a.clientCpf,
         a.value.toString().replace('.', ','),
-        a.currentInstallment || '-',
+
         a.dueDate.split('-').reverse().join('/'),
         (() => {
           const today = new Date();
@@ -563,7 +563,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         a.type === 'quitacao' ? 'Quitação' : 
         a.type === 'parcelamento' ? 'Parcelamento' :
         a.type === 'parcela_atrasada' ? 'Parc. Atrasada' :
-        a.type === 'antecipacao' ? 'Antecipação' : a.type,
+        a.type === 'antecipacao' ? 'Antecipação' :
+        a.type === 'parcela_atual' ? 'Parcela Atual' : a.type,
         new Date(a.createdAt).toLocaleDateString('pt-BR')
       ].join(';'))
     ].join('\n');

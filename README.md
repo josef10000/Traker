@@ -23,7 +23,7 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 - **Gráficos Dinâmicos**: Visualização de performance meta vs. realizado usando `Recharts`.
 - **Máscaras Inteligentes**: Formatação automática de CPF e Telefone para melhor UX.
 - **Otimização de Cadastro**: Data de vencimento agora vem preenchida com o dia atual por padrão.
-- **Novos Campos de Negociação**: Implementação do campo "Tipo de Acordo" (Fixa ou Variável) para maior precisão no registro.
+- **Padronização de Acordos**: Remoção do campo redundante de "Parcela" e inclusão da opção "Parcela Atual" diretamente no seletor de Tipo de Acordo para maior agilidade no registro.
 - **CI/CD Integrado**: Validação automática de tipos e build via GitHub Actions.
 
 ## 📂 Estrutura do Projeto

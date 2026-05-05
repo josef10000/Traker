@@ -17,7 +17,8 @@ export enum AgreementType {
   QUITACAO = 'quitacao',
   PARCELAMENTO = 'parcelamento',
   PARCELA_ATRASADA = 'parcela_atrasada',
-  ANTECIPACAO = 'antecipacao'
+  ANTECIPACAO = 'antecipacao',
+  PARCELA_ATUAL = 'parcela_atual'
 }
 
 export enum AgreementCategory {
@@ -61,7 +62,7 @@ export interface Agreement {
   type: AgreementType;
   category: AgreementCategory;
   phone?: string;
-  currentInstallment?: string;
+
   operatorId: string; // Quem registrou
   teamId: string;     // A qual equipe pertence
   createdAt: string;
