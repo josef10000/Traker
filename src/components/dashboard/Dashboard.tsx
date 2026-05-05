@@ -22,7 +22,8 @@ import {
   History,
   ArrowLeftRight,
   Clock,
-  FileDown
+  FileDown,
+  ArrowUpDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -99,6 +100,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [team, setTeam] = useState<Team | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{ uid: string; name: string } | null>(null);
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
   const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
@@ -309,8 +311,15 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       }
     }
     
+    // Sort by createdAt
+    filtered = [...filtered].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
     return filtered;
-  }, [timeFilteredAgreements, searchTerm, filterStatus]);
+  }, [timeFilteredAgreements, searchTerm, filterStatus, sortOrder]);
 
   // Stats calculation
   const stats: DashboardStats = useMemo(() => {
@@ -1289,17 +1298,33 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </section>
         )}
 
-        <section className="relative group">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
-            <Search size={20} />
+        <section className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative group flex-1 w-full">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
+              <Search size={20} />
+            </div>
+            <input 
+              type="text" 
+              placeholder="Buscar por Nome ou CPF..." 
+              className="w-full bg-slate-950 border border-slate-800 pl-12 pr-6 py-4 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all text-slate-200 placeholder:text-slate-500 outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <input 
-            type="text" 
-            placeholder="Buscar por Nome ou CPF..." 
-            className="w-full bg-slate-950 border border-slate-800 pl-12 pr-6 py-4 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all text-slate-200 placeholder:text-slate-500 outline-none"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          
+          <button
+            onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+            className="flex items-center gap-3 bg-slate-900/50 border border-slate-800 px-6 py-4 rounded-2xl hover:border-sky-500/50 transition-all group shrink-0 w-full md:w-auto"
+            title={sortOrder === 'desc' ? 'Mudar para Mais Antigos' : 'Mudar para Mais Recentes'}
+          >
+            <ArrowUpDown size={18} className={sortOrder === 'desc' ? 'text-sky-400' : 'text-amber-400 rotate-180 transition-transform'} />
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Ordem de Lançamento</span>
+              <span className="text-xs font-bold text-slate-200 mt-1">
+                {sortOrder === 'desc' ? 'Mais Recentes' : 'Mais Antigos'}
+              </span>
+            </div>
+          </button>
         </section>
 
         <section className="glass-card rounded-2xl overflow-hidden shadow-2xl">
