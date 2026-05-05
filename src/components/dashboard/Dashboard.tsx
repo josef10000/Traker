@@ -1462,10 +1462,17 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                   </div>
                                 )}
 
-                                {isBrokenOntem && (
+                                {isOverdue && !isCheckedToday && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                    <AlertTriangle size={8} />
+                                    Vencimento Expirado
+                                  </div>
+                                )}
+
+                                {isOverdue && isCheckedToday && (
                                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-rose-600 text-white border border-rose-500">
                                     <AlertTriangle size={8} />
-                                    Quebrado Ontem
+                                    Confirmado: Quebrado
                                   </div>
                                 )}
                               </div>
