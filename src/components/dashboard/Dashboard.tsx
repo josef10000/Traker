@@ -1402,17 +1402,19 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                   <History size={12} />
                                 </button>
                                 
-                                <div 
-                                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
-                                    isMorning 
-                                      ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
-                                      : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                  }`}
-                                  title={isMorning ? 'Registrado no ciclo da manhã (Verificação Hoje)' : 'Registrado no ciclo da tarde (Verificação Amanhã)'}
-                                >
-                                  {isMorning ? <Sun size={8} /> : <Moon size={8} />}
-                                  {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
-                                </div>
+                                {agreement.status === AgreementStatus.WAITING && (
+                                  <div 
+                                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
+                                      isMorning 
+                                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
+                                        : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                    }`}
+                                    title={isMorning ? 'Registrado no ciclo da manhã (Verificação Hoje)' : 'Registrado no ciclo da tarde (Verificação Amanhã)'}
+                                  >
+                                    {isMorning ? <Sun size={8} /> : <Moon size={8} />}
+                                    {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
