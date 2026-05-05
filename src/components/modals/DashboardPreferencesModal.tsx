@@ -61,6 +61,19 @@ export const DashboardPreferencesModal = ({
   hiddenCards,
   onToggleCard
 }: DashboardPreferencesModalProps) => {
+  const [localHidden, setLocalHidden] = React.useState<string[]>(hiddenCards);
+
+  React.useEffect(() => {
+    setLocalHidden(hiddenCards);
+  }, [hiddenCards]);
+
+  const handleToggle = (cardId: string) => {
+    setLocalHidden(prev => 
+      prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]
+    );
+    onToggleCard(cardId);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -105,13 +118,13 @@ export const DashboardPreferencesModal = ({
 
               <div className="space-y-3">
                 {CARDS_OPTIONS.map((card) => {
-                  const isHidden = hiddenCards.includes(card.id);
+                  const isHidden = localHidden.includes(card.id);
                   const isVisible = !isHidden;
 
                   return (
                     <div 
                       key={card.id}
-                      onClick={() => onToggleCard(card.id)}
+                      onClick={() => handleToggle(card.id)}
                       className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all group ${
                         isVisible 
                           ? 'bg-slate-900/80 border-slate-700 hover:border-sky-500/50' 

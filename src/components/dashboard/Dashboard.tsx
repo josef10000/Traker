@@ -570,9 +570,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       : [...hiddenCards, cardId];
 
     try {
-      await updateDoc(doc(db, 'users', profile.uid), {
-        'dashboardPreferences.hiddenCards': newHiddenCards
-      });
+      await setDoc(doc(db, 'users', profile.uid), {
+        dashboardPreferences: {
+          hiddenCards: newHiddenCards
+        }
+      }, { merge: true });
     } catch (error) {
       console.error(error);
       showToast('Erro ao atualizar preferências', 'error');
