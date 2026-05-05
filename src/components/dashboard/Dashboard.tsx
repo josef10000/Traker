@@ -1441,7 +1441,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                 )}
 
                                 {isCheckedToday && (
-                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-sky-500 text-white border border-sky-400 animate-pulse">
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-sky-500 text-white border border-sky-400">
                                     <Check size={8} strokeWidth={4} />
                                     Conferido
                                   </div>
