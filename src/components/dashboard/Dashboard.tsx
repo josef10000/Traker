@@ -480,6 +480,19 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     }
   };
 
+  const handleToggleChecked = async (id: string, currentStatus: string | undefined) => {
+    try {
+      const isCurrentlyChecked = currentStatus && new Date(currentStatus).toLocaleDateString() === new Date().toLocaleDateString();
+      await updateDoc(doc(db, 'agreements', id), {
+        lastCheckedAt: isCurrentlyChecked ? null : new Date().toISOString()
+      });
+      showToast(isCurrentlyChecked ? 'Marcação de conferência removida.' : 'Acordo marcado como conferido hoje!', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao atualizar conferência.', 'error');
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja realmente excluir este acordo?')) return;
     try {
@@ -1369,6 +1382,9 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     const regDate = new Date(agreement.createdAt);
                     const isMorning = regDate.getHours() < 12;
 
+                    const isCheckedToday = agreement.lastCheckedAt && 
+                      new Date(agreement.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
+
                     return (
                       <motion.tr 
                           key={agreement.id}
@@ -1379,9 +1395,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                               ? 'bg-emerald-500/5 border-l-emerald-500/50' 
                               : isBroken
                                 ? 'bg-rose-500/5 border-l-rose-500/50' 
-                                : isMorning 
-                                  ? 'hover:bg-sky-500/5 border-l-sky-500/40 bg-slate-900/20' 
-                                  : 'hover:bg-amber-500/5 border-l-amber-500/30 bg-slate-900/40'
+                                : isCheckedToday
+                                  ? 'bg-sky-500/5 border-l-sky-500/50'
+                                  : isMorning 
+                                    ? 'hover:bg-sky-500/5 border-l-sky-500/40 bg-slate-900/20' 
+                                    : 'hover:bg-amber-500/5 border-l-amber-500/30 bg-slate-900/40'
                           }`}
                         >
                           <td className="px-6 py-5">
@@ -1419,6 +1437,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                   >
                                     {isMorning ? <Sun size={8} /> : <Moon size={8} />}
                                     {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
+                                  </div>
+                                )}
+
+                                {isCheckedToday && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-sky-500 text-white border border-sky-400 animate-pulse">
+                                    <Check size={8} strokeWidth={4} />
+                                    Conferido
                                   </div>
                                 )}
                               </div>
@@ -1475,6 +1500,18 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                     title="Efetivar Pagamento"
                                   >
                                     <Check size={18} />
+                                  </button>
+                                  
+                                  <button 
+                                    onClick={() => handleToggleChecked(agreement.id, agreement.lastCheckedAt)}
+                                    className={`p-2 rounded-lg transition-all border ${
+                                      isCheckedToday 
+                                        ? 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-500/20' 
+                                        : 'bg-slate-800 text-slate-400 hover:text-sky-400 hover:border-sky-500/50'
+                                    }`}
+                                    title={isCheckedToday ? 'Remover marcação de conferido' : 'Marcar como conferido hoje'}
+                                  >
+                                    <Search size={18} />
                                   </button>
                                 </>
                               )}

@@ -14,6 +14,7 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 
 ## 🚀 Novidades na Versão Atual
 
+- **Sistema de Conferência Diária**: Opção de marcar acordos como "Conferidos Hoje" (ícone 🔍), ajudando a identificar quais CPFs já foram consultados no banco e evitando retrabalho. A marcação reseta automaticamente no dia seguinte.
 - **Controle de Ciclos de Verificação**: Diferenciação visual (cores e ícones ☀️/🌙) para acordos feitos antes e depois do meio-dia, facilitando a identificação de prioridades de baixa bancária.
 - **Ordenação Inteligente**: Filtro de ordenação na listagem de clientes, permitindo alternar entre "Mais Recentes" e "Mais Antigos" (ordem de lançamento).
 - **Categorização Automática de Quebrados**: Acordos vencidos e não pagos são automaticamente categorizados como "Quebrados" no dashboard, com rótulos visuais de alerta.

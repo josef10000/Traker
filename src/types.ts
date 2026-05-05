@@ -67,6 +67,7 @@ export interface Agreement {
   teamId: string;     // A qual equipe pertence
   createdAt: string;
   paidAt?: string;
+  lastCheckedAt?: string;
 }
 
 export interface DashboardStats {
