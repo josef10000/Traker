@@ -1370,6 +1370,9 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                         setTransferringMember(member);
                       }}
                       className="absolute -top-2 -right-2 w-5 h-5 bg-sky-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/member:opacity-100 transition-all hover:bg-sky-600 shadow-lg z-10"
+                      title="Gerenciar Membro"
+                    >
+                      <ArrowLeftRight size={10} strokeWidth={3} />
                     </button>
                   )}
                 </div>
@@ -1878,3 +1881,5 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     </div>
   );
 };
+
+export default Dashboard;
