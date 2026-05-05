@@ -533,16 +533,28 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     return () => unsubscribe();
   };
   const handleUpdateGoal = async (newGoal: number, newEffGoal: number) => {
-    if (!profile.teamId) return;
+    const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
+    if (!targetTeamId) return;
+    
     try {
-      await setDoc(doc(db, 'settings', profile.teamId), { 
+      await setDoc(doc(db, 'settings', targetTeamId), { 
         monthlyGoal: newGoal,
         effectivenessGoal: newEffGoal,
         updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      await updateDoc(doc(db, 'teams', targetTeamId), {
+        monthlyGoal: newGoal,
+        effectivenessGoal: newEffGoal
       });
+
+      setMonthlyGoal(newGoal);
+      setEffectivenessGoal(newEffGoal);
       setIsGoalModalOpen(false);
+      showToast('Metas atualizadas com sucesso!', 'success');
     } catch (error) {
       console.error(error);
+      showToast('Erro ao atualizar metas', 'error');
     }
   };
   const handleAddOrEditAgreement = async (data: any) => {
