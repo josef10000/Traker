@@ -38,6 +38,9 @@ export interface UserProfile {
   jobTitle?: string;
   theme?: 'dark' | 'sky' | 'purple';
   hasSeenTour?: boolean;
+  dashboardPreferences?: {
+    hiddenCards: string[];
+  };
   createdAt: string;
 }
 

@@ -31,7 +31,8 @@ import {
   Clock3,
   BarChart3,
   CalendarDays,
-  MousePointer2
+  MousePointer2,
+  Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -78,6 +79,7 @@ import { AgreementModal } from '../modals/AgreementModal';
 import { startTour } from '../../utils/tour';
 import { GoalModal } from '../modals/GoalModal';
 import { HistoryModal } from '../modals/HistoryModal';
+import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
 import { MONTHS, getMonthName, getYearRange } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
 interface DashboardProps {
@@ -96,6 +98,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<Agreement | null>(null);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
   const [transferringMember, setTransferringMember] = useState<UserProfile | null>(null);
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -557,6 +560,25 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao atualizar metas', 'error');
     }
   };
+
+  const handleToggleCard = async (cardId: string) => {
+    const hiddenCards = profile.dashboardPreferences?.hiddenCards || [];
+    const isHidden = hiddenCards.includes(cardId);
+    
+    const newHiddenCards = isHidden 
+      ? hiddenCards.filter(id => id !== cardId)
+      : [...hiddenCards, cardId];
+
+    try {
+      await updateDoc(doc(db, 'users', profile.uid), {
+        'dashboardPreferences.hiddenCards': newHiddenCards
+      });
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao atualizar preferências', 'error');
+    }
+  };
+
   const handleAddOrEditAgreement = async (data: any) => {
     if (!profile.teamId) return;
     
@@ -717,9 +739,18 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         {/* Header com Toggle de Visão (Apenas para Supervisores) */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
-            <h2 className="text-2xl font-black text-white tracking-tight uppercase">
-              {viewMode === 'personal' ? 'Meu Desempenho' : 'Gestão de Equipe'}
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-black text-white tracking-tight uppercase">
+                {viewMode === 'personal' ? 'Meu Desempenho' : 'Gestão de Equipe'}
+              </h2>
+              <button
+                onClick={() => setIsPreferencesModalOpen(true)}
+                className="p-1.5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors border border-transparent hover:border-sky-500/20"
+                title="Personalizar Visão"
+              >
+                <Settings size={20} />
+              </button>
+            </div>
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
               {viewMode === 'personal' 
                 ? 'Acompanhe suas metas e acordos em tempo real' 
@@ -826,20 +857,24 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             color="amber"
             subtitle={`${stats.counts.month.pendingToday} acordos pendentes p/ hoje`}
           />
-          <StatCard 
-            title="Volume de Registros" 
-            value={stats.counts.today} 
-            icon={CheckCircle2} 
-            color="primary"
-            subtitle="Acordos cadastrados hoje"
-          />
-          <StatCard 
-            title="Ticket Médio" 
-            value={formatCurrency(stats.ticketAverage)} 
-            icon={Target} 
-            color="indigo"
-            subtitle="Média por acordo registrado"
-          />
+          {!profile.dashboardPreferences?.hiddenCards?.includes('cadastradosHoje') && (
+            <StatCard 
+              title="Volume de Registros" 
+              value={stats.counts.today} 
+              icon={CheckCircle2} 
+              color="primary"
+              subtitle="Acordos cadastrados hoje"
+            />
+          )}
+          {!profile.dashboardPreferences?.hiddenCards?.includes('ticketMedioGeral') && (
+            <StatCard 
+              title="Ticket Médio" 
+              value={formatCurrency(stats.ticketAverage)} 
+              icon={Target} 
+              color="indigo"
+              subtitle="Média por acordo registrado"
+            />
+          )}
         </section>
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 grid grid-cols-1 gap-6">
@@ -1329,107 +1364,115 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Ticket Médio p/ Tipo */}
-            <div 
-              className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
-              title="Mostra o valor financeiro médio de cada tipo de negociação (Quitação, Parcelamento) fechada no período selecionado."
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-emerald-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                  <BarChart3 size={20} className="text-emerald-400" />
-                </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ticket Médio</span>
-              </div>
-              <div className="space-y-3">
-                {Object.entries(stats.insights?.ticketByType || {}).slice(0, 3).map(([type, data]) => (
-                  <div key={type} className="flex justify-between items-center">
-                    <span className="text-xs text-slate-400 capitalize">
-                      {type === 'quitacao' ? 'Quitação' : type === 'parcelamento' ? 'Parc.' : 'Outros'}
-                    </span>
-                    <span className="text-xs font-bold text-white">{formatCurrency(data.total / (data.count || 1))}</span>
+            {!profile.dashboardPreferences?.hiddenCards?.includes('ticketMedioTipo') && (
+              <div 
+                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
+                title="Mostra o valor financeiro médio de cada tipo de negociação (Quitação, Parcelamento) fechada no período selecionado."
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-2 bg-emerald-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                    <BarChart3 size={20} className="text-emerald-400" />
                   </div>
-                ))}
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ticket Médio</span>
+                </div>
+                <div className="space-y-3">
+                  {Object.entries(stats.insights?.ticketByType || {}).slice(0, 3).map(([type, data]) => (
+                    <div key={type} className="flex justify-between items-center">
+                      <span className="text-xs text-slate-400 capitalize">
+                        {type === 'quitacao' ? 'Quitação' : type === 'parcelamento' ? 'Parc.' : 'Outros'}
+                      </span>
+                      <span className="text-xs font-bold text-white">{formatCurrency(data.total / (data.count || 1))}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             {/* Tempo Médio p/ Pagar */}
-            <div 
-              className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group"
-              title="Mede o tempo médio em horas que os clientes estão demorando para efetuar o pagamento após a data de registro do acordo."
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                  <Clock3 size={20} className="text-amber-400" />
+            {!profile.dashboardPreferences?.hiddenCards?.includes('tempoMedioPagar') && (
+              <div 
+                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group"
+                title="Mede o tempo médio em horas que os clientes estão demorando para efetuar o pagamento após a data de registro do acordo."
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-2 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                    <Clock3 size={20} className="text-amber-400" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Conversão</span>
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Conversão</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-black text-white tracking-tight">
-                  {stats.insights?.avgTimeToPay?.toFixed(1) || 0}h
-                </span>
-                <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Tempo médio p/ pagamento</span>
-                <div className="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                   <div 
-                    className="h-full bg-amber-500 transition-all duration-1000" 
-                    style={{ width: `${Math.min(100, (stats.insights?.avgTimeToPay || 0) * 4)}%` }} 
-                  />
+                <div className="flex flex-col">
+                  <span className="text-2xl font-black text-white tracking-tight">
+                    {stats.insights?.avgTimeToPay?.toFixed(1) || 0}h
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Tempo médio p/ pagamento</span>
+                  <div className="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
+                     <div 
+                      className="h-full bg-amber-500 transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, (stats.insights?.avgTimeToPay || 0) * 4)}%` }} 
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             {/* Projeção 7 Dias */}
-            <div 
-              className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group"
-              title="Soma de todos os acordos que ainda aguardam pagamento e têm vencimento agendado para os próximos 7 dias."
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-purple-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                  <CalendarDays size={20} className="text-purple-400" />
-                </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Próximos 7 Dias</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-black text-purple-400 tracking-tight">
-                  {formatCurrency(stats.insights?.projection7d || 0)}
-                </span>
-                <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Estimativa de entrada</span>
-                <div className="flex items-center gap-2 mt-4">
-                  <div className="flex-1 h-1 bg-slate-800 rounded-full">
-                    <div className="h-full bg-purple-500 w-1/2 opacity-50" />
+            {!profile.dashboardPreferences?.hiddenCards?.includes('projecao7Dias') && (
+              <div 
+                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group"
+                title="Soma de todos os acordos que ainda aguardam pagamento e têm vencimento agendado para os próximos 7 dias."
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-2 bg-purple-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                    <CalendarDays size={20} className="text-purple-400" />
                   </div>
-                  <span className="text-[10px] font-bold text-purple-400/50">Expectativa</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Próximos 7 Dias</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-black text-purple-400 tracking-tight">
+                    {formatCurrency(stats.insights?.projection7d || 0)}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Estimativa de entrada</span>
+                  <div className="flex items-center gap-2 mt-4">
+                    <div className="flex-1 h-1 bg-slate-800 rounded-full">
+                      <div className="h-full bg-purple-500 w-1/2 opacity-50" />
+                    </div>
+                    <span className="text-[10px] font-bold text-purple-400/50">Expectativa</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             {/* Eficiência por Ciclo */}
-            <div 
-              className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
-              title="Compara a taxa de sucesso (conversão) dos acordos feitos no período da Manhã (antes das 12h) contra o período da Tarde (após 12h)."
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-sky-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                  <Target size={20} className="text-sky-400" />
+            {!profile.dashboardPreferences?.hiddenCards?.includes('eficienciaCiclo') && (
+              <div 
+                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
+                title="Compara a taxa de sucesso (conversão) dos acordos feitos no período da Manhã (antes das 12h) contra o período da Tarde (após 12h)."
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-2 bg-sky-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                    <Target size={20} className="text-sky-400" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Eficiência Ciclo</span>
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Eficiência Ciclo</span>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
+                      <span className="text-sky-400">Manhã</span>
+                      <span className="text-white">{stats.insights?.cycleEfficiency?.morning.toFixed(0)}%</span>
+                    </div>
+                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-sky-500" style={{ width: `${stats.insights?.cycleEfficiency?.morning}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
+                      <span className="text-amber-500">Tarde</span>
+                      <span className="text-white">{stats.insights?.cycleEfficiency?.afternoon.toFixed(0)}%</span>
+                    </div>
+                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-amber-500" style={{ width: `${stats.insights?.cycleEfficiency?.afternoon}%` }} />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
-                    <span className="text-sky-400">Manhã</span>
-                    <span className="text-white">{stats.insights?.cycleEfficiency?.morning.toFixed(0)}%</span>
-                  </div>
-                  <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-sky-500" style={{ width: `${stats.insights?.cycleEfficiency?.morning}%` }} />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
-                    <span className="text-amber-500">Tarde</span>
-                    <span className="text-white">{stats.insights?.cycleEfficiency?.afternoon.toFixed(0)}%</span>
-                  </div>
-                  <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500" style={{ width: `${stats.insights?.cycleEfficiency?.afternoon}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </section>
         <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
@@ -1794,6 +1837,12 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
         )}
       </AnimatePresence>
+      <DashboardPreferencesModal
+        isOpen={isPreferencesModalOpen}
+        onClose={() => setIsPreferencesModalOpen(false)}
+        hiddenCards={profile.dashboardPreferences?.hiddenCards || []}
+        onToggleCard={handleToggleCard}
+      />
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
