@@ -540,7 +540,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   };
 
   const handleExport = () => {
-    const headers = ['Nome', 'CPF', 'Valor', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
+    const headers = ['Nome', 'CPF', 'Valor', 'Parcela', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
     
     const csvContent = [
       headers.join(';'),
@@ -548,6 +548,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         a.clientName,
         a.clientCpf,
         a.value.toString().replace('.', ','),
+        a.currentInstallment || '-',
         a.dueDate.split('-').reverse().join('/'),
         (() => {
           const today = new Date();
@@ -1373,12 +1374,19 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                             <OriginBadge origin={agreement.origin} />
                           </td>
                           <td className="px-6 py-5">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
-                              {agreement.type === 'quitacao' ? 'Quitação' : 
-                               agreement.type === 'parcelamento' ? 'Parcelamento' :
-                               agreement.type === 'parcela_atrasada' ? 'Parc. Atrasada' :
-                               agreement.type === 'antecipacao' ? 'Antecipação' : agreement.type}
-                            </span>
+                            <div className="flex flex-col">
+                              <span className="text-xs text-slate-300 font-medium px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 w-fit">
+                                {agreement.type === 'quitacao' ? 'Quitação' : 
+                                 agreement.type === 'parcelamento' ? 'Parcelamento' :
+                                 agreement.type === 'parcela_atrasada' ? 'Pcl Atrasada' : 
+                                 agreement.type === 'antecipacao' ? 'Antecipação' : agreement.type}
+                               </span>
+                               {agreement.currentInstallment && (
+                                 <span className="text-[10px] text-sky-400 font-bold mt-1 ml-1 uppercase tracking-tighter">
+                                   Parcela: {agreement.currentInstallment}
+                                 </span>
+                               )}
+                            </div>
                           </td>
                           <td className="px-6 py-5">
                             <div className="flex flex-col">

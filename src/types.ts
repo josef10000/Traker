@@ -61,6 +61,7 @@ export interface Agreement {
   type: AgreementType;
   category: AgreementCategory;
   phone?: string;
+  currentInstallment?: string;
   operatorId: string; // Quem registrou
   teamId: string;     // A qual equipe pertence
   createdAt: string;

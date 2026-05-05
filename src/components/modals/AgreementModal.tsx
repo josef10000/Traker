@@ -53,6 +53,7 @@ export const AgreementModal = ({
       type: formData.get('type') as AgreementType,
       category: formData.get('category') as AgreementCategory,
       status: formData.get('initialStatus') as AgreementStatus,
+      currentInstallment: formData.get('currentInstallment') as string,
     };
 
     onSubmit(agreementData);
@@ -137,6 +138,16 @@ export const AgreementModal = ({
                 <option value="parcela_atrasada">Parcela Atrasada</option>
                 <option value="antecipacao">Antecipação</option>
               </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Parcela Atual</label>
+              <input 
+                name="currentInstallment"
+                type="text" 
+                defaultValue={editingAgreement?.currentInstallment}
+                placeholder="Ex: 2/12 ou 1" 
+                className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Valor do Acordo *</label>
