@@ -99,6 +99,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [editingAgreement, setEditingAgreement] = useState<Agreement | null>(null);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
+  const [localHiddenCards, setLocalHiddenCards] = useState<string[]>(profile.dashboardPreferences?.hiddenCards || []);
   const [transferringMember, setTransferringMember] = useState<UserProfile | null>(null);
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -124,6 +125,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
+
+  useEffect(() => {
+    if (profile.dashboardPreferences?.hiddenCards) {
+      setLocalHiddenCards(profile.dashboardPreferences.hiddenCards);
+    }
+  }, [profile.dashboardPreferences?.hiddenCards]);
+
   // Load Members when team changes
   useEffect(() => {
     if (selectedTeamId !== 'all') {
@@ -562,12 +570,14 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   };
 
   const handleToggleCard = async (cardId: string) => {
-    const hiddenCards = profile.dashboardPreferences?.hiddenCards || [];
-    const isHidden = hiddenCards.includes(cardId);
+    const isHidden = localHiddenCards.includes(cardId);
     
     const newHiddenCards = isHidden 
-      ? hiddenCards.filter(id => id !== cardId)
-      : [...hiddenCards, cardId];
+      ? localHiddenCards.filter(id => id !== cardId)
+      : [...localHiddenCards, cardId];
+
+    // Atualização otimista imediata
+    setLocalHiddenCards(newHiddenCards);
 
     try {
       await setDoc(doc(db, 'users', profile.uid), {
@@ -578,6 +588,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     } catch (error) {
       console.error(error);
       showToast('Erro ao atualizar preferências', 'error');
+      // Reverter estado caso dê erro
+      setLocalHiddenCards(localHiddenCards);
     }
   };
 
@@ -859,7 +871,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             color="amber"
             subtitle={`${stats.counts.month.pendingToday} acordos pendentes p/ hoje`}
           />
-          {!profile.dashboardPreferences?.hiddenCards?.includes('cadastradosHoje') && (
+          {!localHiddenCards.includes('cadastradosHoje') && (
             <StatCard 
               title="Volume de Registros" 
               value={stats.counts.today} 
@@ -868,7 +880,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               subtitle="Acordos cadastrados hoje"
             />
           )}
-          {!profile.dashboardPreferences?.hiddenCards?.includes('ticketMedioGeral') && (
+          {!localHiddenCards.includes('ticketMedioGeral') && (
             <StatCard 
               title="Ticket Médio" 
               value={formatCurrency(stats.ticketAverage)} 
@@ -1366,7 +1378,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Ticket Médio p/ Tipo */}
-            {!profile.dashboardPreferences?.hiddenCards?.includes('ticketMedioTipo') && (
+            {!localHiddenCards.includes('ticketMedioTipo') && (
               <div 
                 className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
                 title="Mostra o valor financeiro médio de cada tipo de negociação (Quitação, Parcelamento) fechada no período selecionado."
@@ -1390,7 +1402,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             )}
             {/* Tempo Médio p/ Pagar */}
-            {!profile.dashboardPreferences?.hiddenCards?.includes('tempoMedioPagar') && (
+            {!localHiddenCards.includes('tempoMedioPagar') && (
               <div 
                 className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group"
                 title="Mede o tempo médio em horas que os clientes estão demorando para efetuar o pagamento após a data de registro do acordo."
@@ -1416,7 +1428,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             )}
             {/* Projeção 7 Dias */}
-            {!profile.dashboardPreferences?.hiddenCards?.includes('projecao7Dias') && (
+            {!localHiddenCards.includes('projecao7Dias') && (
               <div 
                 className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group"
                 title="Soma de todos os acordos que ainda aguardam pagamento e têm vencimento agendado para os próximos 7 dias."
@@ -1442,7 +1454,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             )}
             {/* Eficiência por Ciclo */}
-            {!profile.dashboardPreferences?.hiddenCards?.includes('eficienciaCiclo') && (
+            {!localHiddenCards.includes('eficienciaCiclo') && (
               <div 
                 className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
                 title="Compara a taxa de sucesso (conversão) dos acordos feitos no período da Manhã (antes das 12h) contra o período da Tarde (após 12h)."
@@ -1842,7 +1854,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       <DashboardPreferencesModal
         isOpen={isPreferencesModalOpen}
         onClose={() => setIsPreferencesModalOpen(false)}
-        hiddenCards={profile.dashboardPreferences?.hiddenCards || []}
+        hiddenCards={localHiddenCards}
         onToggleCard={handleToggleCard}
       />
       <ConfirmModal
