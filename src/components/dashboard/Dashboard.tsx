@@ -32,7 +32,9 @@ import {
   BarChart3,
   CalendarDays,
   MousePointer2,
-  Settings
+  Settings,
+  Tv,
+  Camera
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -80,6 +82,7 @@ import { startTour } from '../../utils/tour';
 import { GoalModal } from '../modals/GoalModal';
 import { HistoryModal } from '../modals/HistoryModal';
 import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
+import { AchievementCardModal } from '../modals/AchievementCardModal';
 import { MONTHS, getMonthName, getYearRange } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
 interface DashboardProps {
@@ -98,6 +101,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<Agreement | null>(null);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [isPresentMode, setIsPresentMode] = useState(false);
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
   const [localHiddenCards, setLocalHiddenCards] = useState<string[]>(profile.dashboardPreferences?.hiddenCards || []);
   const [transferringMember, setTransferringMember] = useState<UserProfile | null>(null);
@@ -131,6 +136,28 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       setLocalHiddenCards(profile.dashboardPreferences.hiddenCards);
     }
   }, [profile.dashboardPreferences?.hiddenCards]);
+
+  const togglePresentMode = () => {
+    if (!isPresentMode) {
+      document.documentElement.requestFullscreen().catch((e) => console.log(e));
+      setIsPresentMode(true);
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch((e) => console.log(e));
+      }
+      setIsPresentMode(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsPresentMode(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Load Members when team changes
   useEffect(() => {
@@ -673,8 +700,9 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   };
   return (
     <div className="min-h-screen font-sans pb-20">
-      <header className="glass-card sticky top-0 z-30 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      {!isPresentMode && (
+        <header className="glass-card sticky top-0 z-30 px-6 py-4">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="bg-primary text-white p-2 rounded-lg shadow-lg shadow-primary/20 cursor-pointer" onClick={onSettingsClick}>
               <PieIcon size={24} />
@@ -749,7 +777,22 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      )}
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8 relative">
+        <AnimatePresence>
+          {isPresentMode && (
+            <motion.button
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              onClick={togglePresentMode}
+              className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 text-slate-300 px-4 py-2 rounded-full hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/50 transition-all shadow-2xl"
+            >
+              <X size={16} />
+              <span className="text-[10px] uppercase tracking-widest font-bold">Sair da TV</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
         {/* Header com Toggle de Visão (Apenas para Supervisores) */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
@@ -757,13 +800,29 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               <h2 className="text-2xl font-black text-white tracking-tight uppercase">
                 {viewMode === 'personal' ? 'Meu Desempenho' : 'Gestão de Equipe'}
               </h2>
-              <button
-                onClick={() => setIsPreferencesModalOpen(true)}
-                className="p-1.5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors border border-transparent hover:border-sky-500/20"
-                title="Personalizar Visão"
-              >
-                <Settings size={20} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setIsPreferencesModalOpen(true)}
+                  className="p-1.5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors border border-transparent hover:border-sky-500/20"
+                  title="Personalizar Visão"
+                >
+                  <Settings size={20} />
+                </button>
+                <button
+                  onClick={() => setIsCardModalOpen(true)}
+                  className="p-1.5 text-slate-500 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors border border-transparent hover:border-purple-500/20"
+                  title="Compartilhar Vitória"
+                >
+                  <Camera size={20} />
+                </button>
+                <button
+                  onClick={togglePresentMode}
+                  className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/20"
+                  title="Modo Apresentação (TV)"
+                >
+                  <Tv size={20} />
+                </button>
+              </div>
             </div>
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
               {viewMode === 'personal' 
@@ -771,8 +830,9 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 : 'Visão macro e detalhada da performance do time'}
             </p>
           </div>
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-            <div className="flex glass-card p-1 rounded-xl shadow-2xl">
+          {!isPresentMode && (
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <div className="flex glass-card p-1 rounded-xl shadow-2xl">
               <select
                 value={selectedMonth}
                 onChange={(e) => {
@@ -824,6 +884,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 Equipe
               </button>
             </div>
+            )}
+          </div>
           )}
         </div>
       </div>
@@ -1489,8 +1551,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             )}
           </div>
         </section>
-        <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
-          <div className="relative group flex-1 w-full">
+        {!isPresentMode && (
+          <>
+            <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
+              <div className="relative group flex-1 w-full">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
               <Search size={20} />
             </div>
@@ -1753,9 +1817,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                   Próximo
                 </button>
               </div>
-            </div>
-          )}
-        </section>
+              </div>
+            )}
+          </section>
+        </>
+        )}
       </main>
       <AgreementModal 
         isOpen={isModalOpen}
@@ -1772,6 +1838,21 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         onSubmit={handleUpdateGoal}
         monthlyGoal={monthlyGoal}
         effectivenessGoal={effectivenessGoal}
+      />
+      <AchievementCardModal
+        isOpen={isCardModalOpen}
+        onClose={() => setIsCardModalOpen(false)}
+        userName={profile.displayName || 'Membro'}
+        amountPaid={stats.totalPaid}
+        goalPercentage={(stats.totalPaid / (monthlyGoal || 1)) * 100}
+        agreementsCount={stats.counts.filtered.paid}
+        ticketAverage={stats.ticketAverage}
+        periodLabel={`${getMonthName(selectedMonth)} ${selectedYear}`}
+        themeColor={
+          profile.theme === 'sky' ? '#0ea5e9' :
+          profile.theme === 'purple' ? '#a855f7' :
+          '#38bdf8'
+        }
       />
       <HistoryModal 
         isOpen={!!selectedClientCpf}
