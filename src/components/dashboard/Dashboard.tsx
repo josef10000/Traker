@@ -287,11 +287,17 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     
     // Filter by Search
     if (searchTerm) {
-      filtered = filtered.filter(agreement => 
-        agreement.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        agreement.clientCpf.includes(searchTerm) ||
-        (agreement.email?.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+      const searchLower = searchTerm.toLowerCase();
+      const searchDigits = searchTerm.replace(/\D/g, '');
+      
+      filtered = filtered.filter(agreement => {
+        const cpfDigits = agreement.clientCpf.replace(/\D/g, '');
+        return (
+          agreement.clientName.toLowerCase().includes(searchLower) ||
+          agreement.clientCpf.includes(searchTerm) ||
+          (searchDigits !== '' && cpfDigits.includes(searchDigits))
+        );
+      });
     }
     
     const today = new Date();
