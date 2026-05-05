@@ -1387,8 +1387,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     const isCheckedToday = agreement.lastCheckedAt && 
                       new Date(agreement.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
 
-                    // Lógica de Prioridade (Criado antes de hoje no ciclo da tarde e ainda esperando)
-                    const isPriorityOntem = !isMorning && regDate < today && agreement.status === AgreementStatus.WAITING;
+                    // Lógica de Prioridade (Qualquer acordo criado antes de hoje que ainda esteja aguardando)
+                    const isPriorityOntem = regDate < today && agreement.status === AgreementStatus.WAITING;
                     
                     // Lógica de Quebrado Ontem (Vencimento antes de hoje e ainda esperando)
                     const isBrokenOntem = isOverdue;
