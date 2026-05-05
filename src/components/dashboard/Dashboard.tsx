@@ -23,7 +23,9 @@ import {
   ArrowLeftRight,
   Clock,
   FileDown,
-  ArrowUpDown
+  ArrowUpDown,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -1357,17 +1359,23 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     const isOverdue = agreement.status === AgreementStatus.WAITING && parseLocalDate(agreement.dueDate) < today;
                     const isBroken = agreement.status === AgreementStatus.BROKEN || isOverdue;
 
+                    // Lógica de Ciclo (Manhã até 12:00, Tarde após 12:00)
+                    const regDate = new Date(agreement.createdAt);
+                    const isMorning = regDate.getHours() < 12;
+
                     return (
                       <motion.tr 
                           key={agreement.id}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className={`group transition-colors ${
+                          className={`group transition-colors relative border-l-4 ${
                             agreement.status === AgreementStatus.PAID 
-                              ? 'bg-emerald-500/5' 
+                              ? 'bg-emerald-500/5 border-l-emerald-500/50' 
                               : isBroken
-                                ? 'bg-rose-500/5' 
-                                : 'hover:bg-slate-800/30'
+                                ? 'bg-rose-500/5 border-l-rose-500/50' 
+                                : isMorning 
+                                  ? 'hover:bg-sky-500/5 border-l-sky-500/40 bg-slate-900/20' 
+                                  : 'hover:bg-amber-500/5 border-l-amber-500/30 bg-slate-900/40'
                           }`}
                         >
                           <td className="px-6 py-5">
@@ -1393,6 +1401,18 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                 >
                                   <History size={12} />
                                 </button>
+                                
+                                <div 
+                                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
+                                    isMorning 
+                                      ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
+                                      : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                  }`}
+                                  title={isMorning ? 'Registrado no ciclo da manhã (Verificação Hoje)' : 'Registrado no ciclo da tarde (Verificação Amanhã)'}
+                                >
+                                  {isMorning ? <Sun size={8} /> : <Moon size={8} />}
+                                  {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
+                                </div>
                               </div>
                             </div>
                           </td>

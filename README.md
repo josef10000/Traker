@@ -14,6 +14,7 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 
 ## 🚀 Novidades na Versão Atual
 
+- **Controle de Ciclos de Verificação**: Diferenciação visual (cores e ícones ☀️/🌙) para acordos feitos antes e depois do meio-dia, facilitando a identificação de prioridades de baixa bancária.
 - **Ordenação Inteligente**: Filtro de ordenação na listagem de clientes, permitindo alternar entre "Mais Recentes" e "Mais Antigos" (ordem de lançamento).
 - **Categorização Automática de Quebrados**: Acordos vencidos e não pagos são automaticamente categorizados como "Quebrados" no dashboard, com rótulos visuais de alerta.
 - **Sincronização Temporal Global**: Todo o dashboard (estatísticas, gráficos e cards) agora sincroniza instantaneamente com o filtro de data selecionado (Hoje, Ontem, Custom ou Tudo).
