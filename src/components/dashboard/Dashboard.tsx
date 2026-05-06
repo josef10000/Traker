@@ -33,7 +33,8 @@ import {
   CalendarDays,
   MousePointer2,
   Settings,
-  Tv
+  Tv,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -83,6 +84,8 @@ import { HistoryModal } from '../modals/HistoryModal';
 import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
 import { MONTHS, getMonthName, getYearRange } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
+import { TVLeaderboard } from './TVLeaderboard';
+import { Celebration } from './Celebration';
 interface DashboardProps {
   user: User;
   profile: UserProfile;
@@ -123,6 +126,9 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [selectedClientCpf, setSelectedClientCpf] = useState<string | null>(null);
   const [clientHistory, setClientHistory] = useState<Agreement[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [activeTVView, setActiveTVView] = useState<'stats' | 'ranking' | 'insights'>('stats');
+  const [isCarouselActive, setIsCarouselActive] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const parseLocalDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
@@ -151,10 +157,26 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       if (!document.fullscreenElement) {
         setIsPresentMode(false);
       }
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }
   }, []);
+
+  // Carousel Effect for TV Mode
+  useEffect(() => {
+    if (!isPresentMode || !isCarouselActive) {
+      setActiveTVView('stats');
+      return;
+    }
+
+    const views: ('stats' | 'ranking' | 'insights')[] = ['stats', 'ranking', 'insights'];
+    const interval = setInterval(() => {
+      setActiveTVView(prev => {
+        const currentIndex = views.indexOf(prev);
+        return views[(currentIndex + 1) % views.length];
+      });
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [isPresentMode, isCarouselActive]);
 
   // Load Members when team changes
   useEffect(() => {
@@ -343,6 +365,43 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     });
     return filtered;
   }, [timeFilteredAgreements, searchTerm, filterStatus, sortOrder]);
+
+  // Leaderboard Calculation
+  const leaderboardData = useMemo(() => {
+    const operatorStats: Record<string, { value: number; count: number }> = {};
+    
+    monthFilteredAgreements.forEach(a => {
+      if (a.status === AgreementStatus.PAID) {
+        if (!operatorStats[a.operatorId]) {
+          operatorStats[a.operatorId] = { value: 0, count: 0 };
+        }
+        operatorStats[a.operatorId].value += a.value;
+        operatorStats[a.operatorId].count += 1;
+      }
+    });
+
+    return Object.entries(operatorStats)
+      .map(([id, stats]) => {
+        const member = currentTeamMembers.find(m => m.uid === id);
+        return {
+          name: member?.displayName || 'Operador Externo',
+          value: stats.value,
+          count: stats.count
+        };
+      })
+      .sort((a, b) => b.value - a.value)
+      .map((item, index) => ({ ...item, rank: index + 1 }));
+  }, [monthFilteredAgreements, currentTeamMembers]);
+
+  // Check for Celebration
+  useEffect(() => {
+    if (stats.effectivenessRate >= 100 && !showCelebration) {
+      setShowCelebration(true);
+      // Reset after 10s to allow multiple celebrations if meta changes/updates
+      const timer = setTimeout(() => setShowCelebration(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [stats.effectivenessRate]);
   // Stats calculation
   const stats: DashboardStats = useMemo(() => {
     const today = new Date();
@@ -775,10 +834,24 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         </div>
       </header>
       )}
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-6 relative">
+      <main className={`flex-1 transition-all duration-700 relative ${isPresentMode ? 'p-12 bg-slate-950 min-h-screen' : 'p-4 md:p-6 pb-24 md:pb-6'}`}>
         <AnimatePresence>
           {isPresentMode && (
             <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+              <button
+                onClick={() => setIsCarouselActive(!isCarouselActive)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md border transition-all shadow-2xl ${
+                  isCarouselActive 
+                    ? 'bg-amber-500/80 border-amber-400 text-white animate-pulse' 
+                    : 'bg-slate-900/80 border-slate-700/50 text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <RefreshCw size={16} className={isCarouselActive ? 'animate-spin' : ''} />
+                <span className="text-[10px] uppercase tracking-widest font-bold">
+                  Carrossel: {isCarouselActive ? 'ON' : 'OFF'}
+                </span>
+              </button>
+
               <motion.button
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -792,461 +865,371 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           )}
         </AnimatePresence>
-        {/* Header com Toggle de Visão (Apenas para Supervisores) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-black text-white tracking-tight uppercase">
-                {viewMode === 'personal' ? 'Meu Desempenho' : 'Gestão de Equipe'}
-              </h2>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setIsPreferencesModalOpen(true)}
-                  className="p-1.5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors border border-transparent hover:border-sky-500/20"
-                  title="Personalizar Visão"
-                >
-                  <Settings size={20} />
-                </button>
+        
+        <AnimatePresence>
+          {showCelebration && <Celebration />}
+        </AnimatePresence>
 
-                <button
-                  onClick={togglePresentMode}
-                  className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/20"
-                  title="Modo Apresentação (TV)"
-                >
-                  <Tv size={20} />
-                </button>
-              </div>
-            </div>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-              {viewMode === 'personal' 
-                ? 'Acompanhe suas metas e acordos em tempo real' 
-                : 'Visão macro e detalhada da performance do time'}
-            </p>
-          </div>
-          {!isPresentMode && (
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              <div className="flex glass-card p-1 rounded-xl shadow-2xl">
-              <select
-                value={selectedMonth}
-                onChange={(e) => {
-                  setSelectedMonth(parseInt(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
-              >
-                {MONTHS.map((month, index) => (
-                  <option key={month} value={index} className="bg-slate-900 text-white">{month}</option>
-                ))}
-              </select>
-              <div className="w-[1px] h-4 bg-slate-800 my-auto" />
-              <select
-                value={selectedYear}
-                onChange={(e) => {
-                  setSelectedYear(parseInt(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
-              >
-                {getYearRange().map(year => (
-                  <option key={year} value={year} className="bg-slate-900 text-white">{year}</option>
-                ))}
-              </select>
-            </div>
-            {profile.role === 'supervisor' && (
-              <div className="flex glass-card p-1 rounded-xl shadow-2xl">
-              <button
-                onClick={() => setViewMode('personal')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                  viewMode === 'personal' 
-                    ? 'bg-primary text-white shadow-lg' 
-                    : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                <UserIcon size={14} />
-                Pessoal
-              </button>
-              <button
-                onClick={() => setViewMode('team')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                  viewMode === 'team' 
-                    ? 'bg-primary text-white shadow-lg' 
-                    : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                <Users size={14} />
-                Equipe
-              </button>
-            </div>
-            )}
-          </div>
-          )}
-        </div>
-        <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
-            title="Total Projetado" 
-            value={formatCurrency(stats.totalProjected)} 
-            icon={DollarSign} 
-            color="primary" 
-          />
-          <StatCard 
-            title="Produtividade Diária (Pagos)" 
-            value={formatCurrency(stats.filteredPaidValue)} 
-            icon={TrendingUp} 
-            color="emerald" 
-            subtitle={`${stats.counts.filtered.paid} acordos pagos no período`}
-          />
-          <StatCard 
-            title="Falta para Meta" 
-            value={formatCurrency(stats.remainingToGoal)} 
-            icon={Target} 
-            color="rose"
-            subtitle={`${((stats.totalPaid / (monthlyGoal || 1)) * 100).toFixed(1)}% atingido`}
-          />
-          <StatCard 
-            title="Projeção p/ Mês" 
-            value={formatCurrency(stats.projection)} 
-            icon={TrendingUp} 
-            color="sky"
-            subtitle="Baseado no ritmo atual"
-          />
-          
-          <StatCard 
-            id="overdue-card"
-            title="Valores Vencidos" 
-            value={formatCurrency(stats.totalOverdue)} 
-            icon={AlertCircle} 
-            color="rose"
-            subtitle={`${stats.counts.month.overdue} acordos não pagos até ontem`}
-          />
-          <StatCard 
-            title="Vencendo Hoje" 
-            value={formatCurrency(stats.totalPendingToday)} 
-            icon={Clock} 
-            color="amber"
-            subtitle={`${stats.counts.month.pendingToday} acordos pendentes p/ hoje`}
-          />
-          {!localHiddenCards.includes('cadastradosHoje') && (
-            <StatCard 
-              title="Volume de Registros" 
-              value={stats.counts.today} 
-              icon={CheckCircle2} 
-              color="primary"
-              subtitle="Acordos cadastrados hoje"
-            />
-          )}
-          {!localHiddenCards.includes('ticketMedioGeral') && (
-            <StatCard 
-              title="Ticket Médio" 
-              value={formatCurrency(stats.ticketAverage)} 
-              icon={Target} 
-              color="indigo"
-              subtitle="Média por acordo registrado"
-            />
-          )}
-        </section>
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-1 grid grid-cols-1 gap-4">
-            <motion.div 
+        <AnimatePresence mode="wait">
+          {(!isPresentMode || activeTVView === 'stats') && (
+            <motion.div
+              key="stats-view"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-card p-6 rounded-2xl shadow-xl relative group flex flex-col justify-center"
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-7xl mx-auto space-y-6"
             >
-              <button 
-                onClick={() => setIsGoalModalOpen(true)}
-                className="absolute top-4 right-4 p-2 text-slate-500 hover:text-primary opacity-0 group-hover:opacity-100 transition-all bg-slate-900/50 rounded-lg border border-slate-800"
-              >
-                <Target size={14} />
-              </button>
-              
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">Meta de recuperação</p>
-                  <h3 className="text-3xl font-bold text-white mt-1">
-                    {((stats.totalPaid / (monthlyGoal || 1)) * 100).toFixed(1)}%
-                  </h3>
+              {/* Header com Toggle de Visão (Apenas para Supervisores) */}
+              {!isPresentMode && (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-2xl font-black text-white tracking-tight uppercase">
+                        {viewMode === 'personal' ? 'Meu Desempenho' : 'Gestão de Equipe'}
+                      </h2>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setIsPreferencesModalOpen(true)}
+                          className="p-1.5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors border border-transparent hover:border-sky-500/20"
+                          title="Personalizar Visão"
+                        >
+                          <Settings size={20} />
+                        </button>
+
+                        <button
+                          onClick={togglePresentMode}
+                          className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/20"
+                          title="Modo Apresentação (TV)"
+                        >
+                          <Tv size={20} />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                      {viewMode === 'personal' 
+                        ? 'Acompanhe suas metas e acordos em tempo real' 
+                        : 'Visão macro e detalhada da performance do time'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                    <div className="flex glass-card p-1 rounded-xl shadow-2xl">
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => {
+                          setSelectedMonth(parseInt(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
+                      >
+                        {MONTHS.map((month, index) => (
+                          <option key={month} value={index} className="bg-slate-900 text-white">{month}</option>
+                        ))}
+                      </select>
+                      <div className="w-[1px] h-4 bg-slate-800 my-auto" />
+                      <select
+                        value={selectedYear}
+                        onChange={(e) => {
+                          setSelectedYear(parseInt(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
+                      >
+                        {getYearRange().map(year => (
+                          <option key={year} value={year} className="bg-slate-900 text-white">{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {profile.role === 'supervisor' && (
+                      <div className="flex glass-card p-1 rounded-xl shadow-2xl">
+                        <button
+                          onClick={() => setViewMode('personal')}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                            viewMode === 'personal' 
+                              ? 'bg-primary text-white shadow-lg' 
+                              : 'text-slate-500 hover:text-slate-300'
+                          }`}
+                        >
+                          <UserIcon size={14} />
+                          Pessoal
+                        </button>
+                        <button
+                          onClick={() => setViewMode('team')}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                            viewMode === 'team' 
+                              ? 'bg-primary text-white shadow-lg' 
+                              : 'text-slate-500 hover:text-slate-300'
+                          }`}
+                        >
+                          <Users size={14} />
+                          Equipe
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Taxa de Efetividade</p>
-                  <p className={`text-xl font-bold ${getEffectivenessColor((stats.totalPaid / (stats.totalProjected || 1)) * 100, effectivenessGoal)}`}>
-                    {((stats.totalPaid / (stats.totalProjected || 1)) * 100).toFixed(1)}%
-                  </p>
-                  <p className="text-[8px] text-slate-500 font-medium uppercase mt-0.5">Base: {formatCurrency(stats.totalProjected)} projetado</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                  <span>Progresso da Recuperação</span>
-                  <span>Meta: {formatCurrency(monthlyGoal)}</span>
-                </div>
-                <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden shadow-inner">
+              )}
+
+              <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard 
+                  title="Total Projetado" 
+                  value={formatCurrency(stats.totalProjected)} 
+                  icon={DollarSign} 
+                  color="primary"
+                />
+                <StatCard 
+                  title="Produtividade" 
+                  value={`${stats.effectivenessRate.toFixed(1)}%`} 
+                  icon={TrendingUp} 
+                  trend={stats.effectivenessRate >= effectivenessGoal ? "No Alvo" : ""}
+                  color={stats.effectivenessRate >= effectivenessGoal ? "emerald" : "amber"}
+                />
+                <StatCard 
+                  title="Falta p/ Meta" 
+                  value={formatCurrency(stats.remainingToGoal)} 
+                  icon={Target} 
+                  color="rose"
+                />
+                <StatCard 
+                  title="Projeção" 
+                  value={formatCurrency(stats.projection)} 
+                  icon={BarChart3} 
+                  subtitle="Estimativa Mensal"
+                  color="sky"
+                />
+              </section>
+
+              <section id="stats-grid-2" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard 
+                  title="Vencidos" 
+                  value={formatCurrency(stats.totalOverdue)} 
+                  icon={AlertTriangle} 
+                  color="rose"
+                />
+                <StatCard 
+                  title="Vencendo Hoje" 
+                  value={formatCurrency(stats.totalPendingToday)} 
+                  icon={Clock} 
+                  color="amber"
+                />
+                <StatCard 
+                  title="Volume" 
+                  value={stats.counts.month.total} 
+                  icon={Users} 
+                  subtitle="Acordos Totais"
+                  color="indigo"
+                />
+                <StatCard 
+                  title="Ticket Médio" 
+                  value={formatCurrency(stats.ticketAverage)} 
+                  icon={Zap} 
+                  color="emerald"
+                />
+              </section>
+
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-1 grid grid-cols-1 gap-4">
                   <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((stats.totalPaid / (monthlyGoal || 1)) * 100, 100)}%` }}
-                    className={`h-full rounded-full bg-gradient-to-r from-sky-600 to-sky-400 shadow-[0_0_15px_rgba(14,165,233,0.4)]`}
-                  />
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-slate-500 font-medium">
-                   <span>Recuperado: {formatCurrency(stats.totalPaid)}</span>
-                   <span>Faltam: {formatCurrency(Math.max(0, monthlyGoal - stats.totalPaid))}</span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-          <div id="performance-chart" className="glass-card p-6 rounded-2xl shadow-xl flex flex-col relative overflow-hidden group lg:col-span-2">
-            {/* Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all" />
-            
-            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-              <Trophy size={16} className="text-amber-500" />
-              Performance vs Meta
-            </h4>
-            
-            <div className="flex-1 min-h-[250px] relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorMeta" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#334155" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#1e293b" stopOpacity={0.4}/>
-                    </linearGradient>
-                    <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#059669" stopOpacity={0.4}/>
-                    </linearGradient>
-                    <linearGradient id="colorOverdue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#e11d48" stopOpacity={0.4}/>
-                    </linearGradient>
-                    <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#d97706" stopOpacity={0.4}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#64748b" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    dy={10}
-                  />
-                  <YAxis hide domain={[0, 'auto']} />
-                  <Tooltip 
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    contentStyle={{ 
-                      backgroundColor: '#0f172a', 
-                      border: '1px solid #1e293b', 
-                      borderRadius: '16px',
-                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)',
-                      padding: '12px'
-                    }}
-                    itemStyle={{ color: '#f8fafc', fontWeight: 'bold', fontSize: '12px' }}
-                    formatter={(value: number) => [formatCurrency(value), '']}
-                  />
-                  <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={40} animationDuration={1500}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              {chartData.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-        <section className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <div className="lg:col-span-3 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl" />
-            
-            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2">
-              <TrendingUp size={16} className="text-sky-400" />
-              Densidade de Acordos por Horário
-            </h4>
-            
-            <div className="grid grid-cols-12 md:grid-cols-24 gap-1.5 h-32 items-end">
-              {Array.from({ length: 24 }).map((_, hour) => {
-                const count = stats.hourlyDistribution[hour] || 0;
-                const counts = Object.values(stats.hourlyDistribution);
-                const max = counts.length > 0 ? Math.max(...counts) : 1;
-                const intensity = (count / max);
-                
-                return (
-                  <div key={hour} className="flex flex-col gap-2 items-center flex-1 h-full justify-end group/item">
-                    <motion.div 
-                      initial={{ height: 0 }}
-                      animate={{ height: count > 0 ? `${Math.max(10, intensity * 100)}%` : '4px' }}
-                      className="w-full rounded-t-sm transition-all duration-500 relative"
-                      style={{ 
-                        backgroundColor: count > 0 
-                          ? `rgba(14, 165, 233, ${0.3 + (intensity * 0.7)})` 
-                          : 'rgba(30, 41, 59, 0.3)',
-                        boxShadow: count > 0 ? `0 0 15px rgba(14, 165, 233, ${intensity * 0.4})` : 'none'
-                      }}
-                    >
-                      {count > 0 && (
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-[9px] font-bold text-white px-1.5 py-0.5 rounded border border-slate-700 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                          {count} acordos
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card p-6 rounded-2xl shadow-xl flex flex-col justify-between"
+                  >
+                    <div>
+                      <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">Meta de recuperação</h3>
+                      <div className="flex items-end justify-between mb-4">
+                        <span className="text-4xl font-black text-emerald-400">
+                          {formatCurrency(stats.totalPaid)}
+                        </span>
+                        <span className="text-slate-500 font-bold text-sm mb-1">
+                          de {formatCurrency(monthlyGoal)}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="h-4 bg-slate-900 rounded-full overflow-hidden p-1">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(stats.effectivenessRate, 100)}%` }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className={`h-full rounded-full ${stats.effectivenessRate >= 100 ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'bg-primary'}`}
+                          />
                         </div>
-                      )}
-                    </motion.div>
-                    <span className="text-[7px] text-slate-500 font-bold uppercase">{hour}h</span>
-                  </div>
-                );
-              })}
-            </div>
-            
-            <div className="mt-8 flex justify-between items-center border-t border-slate-800/50 pt-4">
-              <p className="text-[9px] text-slate-500 font-medium uppercase tracking-tighter">
-                Análise de produtividade temporal baseada em {stats.counts.filtered.total} registros
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="text-[8px] text-slate-500 uppercase font-bold">Intensidade:</span>
-                <div className="flex gap-0.5">
-                  {[0.2, 0.4, 0.6, 0.8, 1].map(v => (
-                    <div key={v} className="w-2 h-2 rounded-sm" style={{ backgroundColor: `rgba(14, 165, 233, ${v})` }} />
-                  ))}
+                        <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                          <span>Progresso</span>
+                          <span className={stats.effectivenessRate >= 100 ? 'text-emerald-400' : ''}>
+                            {stats.effectivenessRate.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <StatCard 
+                    title="Recuperado (Filtro)" 
+                    value={formatCurrency(stats.filteredPaidValue)} 
+                    icon={CheckCircle2} 
+                    subtitle={dateFilter === 'all' ? "Neste Mês" : "No Período"}
+                    color="emerald"
+                  />
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-4">
-            <StatCard 
-              title="Aguardando" 
-              value={stats.counts.month.waiting} 
-              icon={Loader2} 
-              color="amber"
-              subtitle="Pendente Pagto"
-            />
-            <StatCard 
-              title="Quebrados" 
-              value={stats.counts.month.broken} 
-              icon={X} 
-              color="rose"
-              subtitle="Faltas / Recusas"
-            />
-          </div>
-        </section>
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap gap-2">
-              <FilterButton 
-                label="Total" 
-                count={stats.counts.filtered.total} 
-                colorClass="bg-slate-800 text-slate-400" 
-                active={filterStatus === 'all'} 
-                onClick={() => setFilterStatus('all')}
-              />
-              <FilterButton 
-                label="Pagos" 
-                count={stats.counts.filtered.paid} 
-                colorClass="bg-emerald-500/10 text-emerald-400" 
-                active={filterStatus === AgreementStatus.PAID} 
-                onClick={() => setFilterStatus(AgreementStatus.PAID)}
-              />
-              <FilterButton 
-                label="Aguardando" 
-                count={stats.counts.filtered.waiting} 
-                colorClass="bg-amber-500/10 text-amber-400" 
-                active={filterStatus === AgreementStatus.WAITING} 
-                onClick={() => setFilterStatus(AgreementStatus.WAITING)}
-              />
-              <FilterButton 
-                label="Quebrados" 
-                count={stats.counts.filtered.broken} 
-                colorClass="bg-rose-500/10 text-rose-400" 
-                active={filterStatus === AgreementStatus.BROKEN} 
-                onClick={() => setFilterStatus(AgreementStatus.BROKEN)}
-              />
-            </div>
-            <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 shadow-lg">
-              <button
-                onClick={() => setDateFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                  dateFilter === 'all' ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                Tudo
-              </button>
-              <button
-                onClick={() => setDateFilter('today')}
-                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                  dateFilter === 'today' ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                Hoje
-              </button>
-              <button
-                onClick={() => setDateFilter('yesterday')}
-                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                  dateFilter === 'yesterday' ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                Ontem
-              </button>
-              <button
-                onClick={() => setDateFilter('custom')}
-                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                  dateFilter === 'custom' ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                Calendário
-              </button>
-            </div>
-            
-            <button
-              onClick={handleExport}
-              disabled={filteredAgreements.length === 0}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-emerald-600 text-emerald-400 hover:text-white px-4 py-2 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Exportar para Excel (CSV)"
+
+                <div className="lg:col-span-2 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32" />
+                  <TeamPerformance data={stats} />
+                </div>
+              </section>
+            </motion.div>
+          )}
+
+          {isPresentMode && activeTVView === 'ranking' && (
+            <motion.div
+              key="ranking-view"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-7xl mx-auto h-[calc(100vh-120px)]"
             >
-              <FileDown size={14} />
-              Exportar
-            </button>
-          </div>
-          <AnimatePresence>
-            {dateFilter === 'custom' && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="flex flex-wrap items-center gap-4 bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50 border-dashed">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Início:</span>
-                    <input 
-                      type="date" 
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-primary outline-none transition-all"
-                    />
+              <TVLeaderboard data={leaderboardData} />
+            </motion.div>
+          )}
+
+          {(activeTVView === 'insights' || (!isPresentMode)) && (
+            <motion.div
+              key="insights-view"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-7xl mx-auto space-y-6"
+            >
+              <section className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-3 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+                  <div className="absolute -top-24 -left-24 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl" />
+                  
+                  <div className="flex items-center justify-between mb-8 relative">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-sky-500/10 rounded-xl">
+                        <Clock3 className="text-sky-400" size={20} />
+                      </div>
+                      <h3 className="text-lg font-black text-white uppercase tracking-tight">Densidade por Horário</h3>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                      <div className="w-2 h-2 rounded-full bg-sky-500" />
+                      <span>Volume de Registros</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Fim:</span>
-                    <input 
-                      type="date" 
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-primary outline-none transition-all"
-                    />
-                  </div>
-                  <div className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">
-                    Filtrando acordos registrados entre {customStartDate || '...'} e {customEndDate || '...'}
+
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={Object.entries(stats.hourlyDistribution).map(([hour, count]) => ({ hour: `${hour}h`, count }))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                        <YAxis hide />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '12px' }}
+                          itemStyle={{ color: '#38bdf8', fontWeight: 700 }}
+                          cursor={{ fill: 'rgba(56, 189, 248, 0.05)' }}
+                        />
+                        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                          {Object.entries(stats.hourlyDistribution).map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#0ea5e9' : '#38bdf8'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                <div className="flex flex-col gap-4">
+                  <StatCard 
+                    title="Aguardando" 
+                    value={stats.counts.month.waiting} 
+                    icon={Clock} 
+                    subtitle="Dentro do Prazo"
+                    color="sky"
+                  />
+                  <StatCard 
+                    title="Registros Hoje" 
+                    value={stats.counts.today} 
+                    icon={Plus} 
+                    trend={stats.counts.today > 10 ? "Ativo" : ""}
+                    color="indigo"
+                  />
+                </div>
+              </section>
+
+              {!isPresentMode && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap gap-2">
+                      <FilterButton 
+                        active={filterStatus === 'all'} 
+                        onClick={() => setFilterStatus('all')}
+                        label="Todos"
+                      />
+                      <FilterButton 
+                        active={filterStatus === AgreementStatus.PAID} 
+                        onClick={() => setFilterStatus(AgreementStatus.PAID)}
+                        label="Pagos"
+                        color="emerald"
+                        count={stats.counts.filtered.paid}
+                      />
+                      <FilterButton 
+                        active={filterStatus === AgreementStatus.WAITING} 
+                        onClick={() => setFilterStatus(AgreementStatus.WAITING)}
+                        label="Pendentes"
+                        color="sky"
+                        count={stats.counts.filtered.waiting}
+                      />
+                      <FilterButton 
+                        active={filterStatus === AgreementStatus.BROKEN} 
+                        onClick={() => setFilterStatus(AgreementStatus.BROKEN)}
+                        label="Vencidos"
+                        color="rose"
+                        count={stats.counts.filtered.overdue}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/50 border border-slate-800 rounded-lg">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                          {stats.counts.filtered.total} Registros Encontrados
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {stats.insights && (
+                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="glass-card p-6 rounded-2xl border border-slate-800/50">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Eficiência por Ciclo</p>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-xs font-bold mb-2">
+                          <span className="text-sky-400">Manhã</span>
+                          <span className="text-white">{stats.insights?.cycleEfficiency?.morning.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-sky-500" style={{ width: `${stats.insights?.cycleEfficiency?.morning}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs font-bold mb-2">
+                          <span className="text-amber-400">Tarde</span>
+                          <span className="text-white">{stats.insights?.cycleEfficiency?.afternoon.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-500" style={{ width: `${stats.insights?.cycleEfficiency?.afternoon}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {viewMode === 'team' && selectedTeamId !== 'all' && selectedMemberId === 'all' && (
           <div className="mb-12">
             <TeamPerformance agreements={monthFilteredAgreements} members={currentTeamMembers} />
