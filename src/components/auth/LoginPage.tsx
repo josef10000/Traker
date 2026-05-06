@@ -70,8 +70,9 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
 
   if (isForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[#020617]">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md glass-card p-8 rounded-3xl space-y-8">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative" style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}>
+        <div className="absolute inset-0 bg-[#020617]/60 backdrop-blur-[2px]"></div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md glass-card p-8 rounded-3xl space-y-8 relative z-10">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold text-white">Recuperar Senha</h2>
             <p className="text-slate-500 text-sm">Digite seu e-mail para receber o link de recuperação.</p>
@@ -95,14 +96,15 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#020617]">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md glass-card p-8 rounded-3xl space-y-8 shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative" style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}>
+      <div className="absolute inset-0 bg-[#020617]/60 backdrop-blur-[2px]"></div>
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md glass-card p-8 rounded-3xl space-y-8 shadow-2xl relative z-10">
         <div className="text-center flex flex-col items-center gap-4">
           <div className="bg-sky-500 p-4 rounded-2xl shadow-xl shadow-sky-500/20">
             <PieChart size={32} className="text-white" />
           </div>
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-white">RNV Gestão</h2>
+            <h2 className="text-3xl font-bold text-white">Tracker</h2>
             <p className="text-slate-500 text-sm">{isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}</p>
           </div>
         </div>

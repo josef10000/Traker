@@ -728,7 +728,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               <PieIcon size={24} />
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold tracking-tight text-white leading-none">RNV Gestão</h1>
+              <h1 className="text-xl font-bold tracking-tight text-white leading-none">Tracker</h1>
               {profile.managedTeams && profile.managedTeams.length > 1 ? (
                 <select 
                   id="team-selector"
