@@ -33,9 +33,7 @@ import {
   CalendarDays,
   MousePointer2,
   Settings,
-  Tv,
-  Camera,
-  Printer
+  Tv
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -777,21 +775,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         </div>
       </header>
       )}
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8 relative">
+      <main className="max-w-7xl mx-auto px-6 py-6 space-y-6 relative">
         <AnimatePresence>
           {isPresentMode && (
-            <div className="fixed top-6 right-6 z-50 flex items-center gap-3 print:hidden">
-              <motion.button
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                onClick={() => window.print()}
-                className="flex items-center gap-2 bg-emerald-600/80 backdrop-blur-md border border-emerald-500/50 text-white px-4 py-2 rounded-full hover:bg-emerald-500 transition-all shadow-2xl"
-              >
-                <Camera size={16} />
-                <span className="text-[10px] uppercase tracking-widest font-bold">Capturar Tela</span>
-              </motion.button>
-
+            <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
               <motion.button
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -820,13 +807,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 >
                   <Settings size={20} />
                 </button>
-                <button
-                  onClick={() => window.print()}
-                  className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/20"
-                  title="Imprimir / Capturar Dados"
-                >
-                  <Printer size={20} />
-                </button>
+
                 <button
                   onClick={togglePresentMode}
                   className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/20"
@@ -900,7 +881,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
           )}
         </div>
-        <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard 
             title="Total Projetado" 
             value={formatCurrency(stats.totalProjected)} 
@@ -963,8 +944,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             />
           )}
         </section>
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 grid grid-cols-1 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-1 grid grid-cols-1 gap-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1082,7 +1063,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </div>
         </section>
-        <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-3 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
             <div className="absolute -top-24 -left-24 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl" />
             
@@ -1137,7 +1118,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
             <StatCard 
               title="Aguardando" 
               value={stats.counts.month.waiting} 
@@ -1154,7 +1135,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             />
           </div>
         </section>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">
               <FilterButton 
@@ -1558,7 +1539,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
         </section>
         {!isPresentMode && (
-          <>
             <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
               <div className="relative group flex-1 w-full">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
@@ -1826,7 +1806,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             )}
           </section>
-        </>
         )}
       </main>
       <AgreementModal 

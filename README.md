@@ -14,12 +14,11 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 
 ## 🚀 Novidades na Versão Atual
 
-- 📸 **Captura de Dados (Novo)**: Sistema de impressão otimizado para gerar relatórios visuais completos do dashboard, substituindo os antigos stories por uma solução que captura todos os indicadores.
-- 📺 **Modo TV (Apresentação)**: Interface otimizada para exibição em monitores externos, com botões de captura integrados.
+- 📺 **Modo TV (Apresentação)**: Interface otimizada para exibição em monitores externos.
 - 📊 **Dashboards Dinâmicos**: Visões detalhadas para operadores e supervisores com sincronização temporal global.
-- 🎯 **Gestão de Metas & Insights**: Acompanhamento de performance com projeções automáticas, Ticket Médio por tipo e Eficiência por Ciclo.
+- 🎯 **Gestão de Metas & Insights**: Acompanhamento de performance com projeções automáticas e eficiência por ciclo.
 - 🔍 **Conferência Diária**: Sistema de marcação de acordos conferidos para evitar retrabalho operacional.
-- 📅 **Histórico Mensal**: Seletor para visualizar e exportar dados de meses anteriores com reset automático mensal.
+- 📅 **Histórico Mensal**: Seletor para visualizar dados de meses anteriores com reset automático mensal.
 
 ## 📂 Estrutura do Projeto
 

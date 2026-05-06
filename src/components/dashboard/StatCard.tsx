@@ -35,7 +35,7 @@ export const StatCard = ({
       id={id}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-card p-6 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden group"
+      className="glass-card p-5 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden group"
     >
       <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] -mr-8 -mt-8 rounded-full blur-2xl group-hover:opacity-[0.07] transition-all" />
       
