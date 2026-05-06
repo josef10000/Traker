@@ -51,10 +51,10 @@ export const StatCard = ({
         )}
       </div>
       <div>
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{title}</p>
+        <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">{title}</p>
         <h3 className="text-2xl font-black text-white mt-1">{value}</h3>
         {subtitle && (
-          <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wider">{subtitle}</p>
+          <p className="text-[10px] font-bold text-white/40 mt-2 uppercase tracking-wider">{subtitle}</p>
         )}
       </div>
     </motion.div>

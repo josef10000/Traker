@@ -1177,7 +1177,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               />
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 shadow-lg">
+            <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 shadow-lg backdrop-blur-md">
               <button
                 onClick={() => setDateFilter('all')}
                 className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
@@ -1230,14 +1230,14 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="flex flex-wrap items-center gap-4 bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50 border-dashed">
+                <div className="flex flex-wrap items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 border-dashed backdrop-blur-sm">
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Início:</span>
                     <input 
                       type="date" 
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-primary outline-none transition-all"
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-primary outline-none transition-all backdrop-blur-sm"
                     />
                   </div>
                   <div className="flex items-center gap-3">
@@ -1246,7 +1246,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                       type="date" 
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-primary outline-none transition-all"
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-primary outline-none transition-all backdrop-blur-sm"
                     />
                   </div>
                   <div className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">
@@ -1275,7 +1275,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 <div 
                   key={t.id}
                   onClick={() => setSelectedTeamId(t.id)}
-                  className="bg-slate-900/50 border border-slate-800 p-5 rounded-2xl hover:border-primary/50 transition-all cursor-pointer group"
+                  className="glass-card p-5 rounded-2xl hover:border-primary/50 transition-all cursor-pointer group shadow-xl"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -1382,8 +1382,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 onClick={() => setSelectedMemberId('all')}
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
                   selectedMemberId === 'all' 
-                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' 
-                    : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-600'
+                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' 
+                        : 'bg-white/5 border-white/10 text-white/60 hover:border-white/30 backdrop-blur-sm'
                 }`}
               >
                 <Users size={14} />
@@ -1552,13 +1552,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           <>
             <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
               <div className="relative group flex-1 w-full">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-white/40 group-focus-within:text-sky-400 transition-colors">
               <Search size={20} />
             </div>
             <input 
               type="text" 
               placeholder="Buscar por Nome ou CPF..." 
-              className="w-full bg-slate-950 border border-slate-800 pl-12 pr-6 py-4 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all text-slate-200 placeholder:text-slate-500 outline-none"
+              className="w-full bg-white/5 border border-white/10 pl-12 pr-6 py-4 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all text-white placeholder:text-white/30 outline-none backdrop-blur-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -1566,10 +1566,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
 
           <button
             onClick={() => setIsChecklistMode(!isChecklistMode)}
-            className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shadow-2xl shrink-0 w-full md:w-auto ${
+            className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shadow-2xl shrink-0 w-full md:w-auto backdrop-blur-md ${
               isChecklistMode 
                 ? 'bg-sky-500 text-white border-sky-400' 
-                : 'bg-slate-900/50 text-slate-500 border-slate-800 hover:text-sky-400 hover:border-sky-500/30'
+                : 'bg-white/5 text-white/60 border-white/10 hover:text-sky-400 hover:border-sky-500/30'
             }`}
             title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
           >
@@ -1587,13 +1587,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           
           <button
             onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-            className="flex items-center gap-3 bg-slate-900/50 border border-slate-800 px-6 py-4 rounded-2xl hover:border-sky-500/50 transition-all group shrink-0 w-full md:w-auto"
+            className="flex items-center gap-3 bg-white/5 border border-white/10 px-6 py-4 rounded-2xl hover:border-sky-500/50 transition-all group shrink-0 w-full md:w-auto backdrop-blur-sm"
             title={sortOrder === 'desc' ? 'Mudar para Mais Antigos' : 'Mudar para Mais Recentes'}
           >
             <ArrowUpDown size={18} className={sortOrder === 'desc' ? 'text-sky-400' : 'text-amber-400 rotate-180 transition-transform'} />
             <div className="flex flex-col items-start">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Ordem de Lançamento</span>
-              <span className="text-xs font-bold text-slate-200 mt-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest leading-none">Ordem de Lançamento</span>
+              <span className="text-xs font-bold text-white mt-1">
                 {sortOrder === 'desc' ? 'Mais Recentes' : 'Mais Antigos'}
               </span>
             </div>
@@ -1603,16 +1603,16 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900/50 border-b border-slate-800 text-slate-500">
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Cliente</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Origem</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Tipo</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Vencimento</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Valor</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Ação</th>
+                <tr className="bg-white/5 border-b border-white/10 text-white/40">
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Cliente</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Origem</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Tipo</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Vencimento</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Valor</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right">Ação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-white/5">
                 {isLoading ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-slate-500 italic">

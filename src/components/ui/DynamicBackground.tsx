@@ -16,26 +16,25 @@ export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) =>
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-b from-[#7dd3fc] via-[#bae6fd] to-[#f0f9ff]"
+            className="absolute inset-0"
           >
-            {/* Sun Glow */}
-            <div className="absolute -top-20 -left-20 w-96 h-96 bg-yellow-100/20 blur-[120px] rounded-full" />
+            {/* Imagem de Fundo Premium */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110" 
+              style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}
+            />
             
-            {/* Refined Clouds */}
+            {/* Overlay Gradiente Integrado */}
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-950/40 via-sky-950/20 to-slate-950/80 backdrop-blur-[2px]"></div>
+            
+            {/* Luzes Dinâmicas */}
             <motion.div 
-              animate={{ x: [0, 100, 0], y: [0, 20, 0], scale: [1, 1.1, 1] }}
-              transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-20 left-[10%] w-72 h-40 bg-white/50 blur-[60px] rounded-[100%]"
-            />
-            <motion.div 
-              animate={{ x: [0, -150, 0], y: [0, -30, 0], scale: [1.1, 1, 1.1] }}
-              transition={{ duration: 35, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-60 right-[15%] w-[500px] h-64 bg-white/40 blur-[80px] rounded-[100%]"
-            />
-            <motion.div 
-              animate={{ x: [0, 80, 0], scale: [1, 1.2, 1] }}
-              transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute bottom-40 left-[20%] w-96 h-48 bg-white/30 blur-[70px] rounded-[100%]"
+              animate={{ 
+                opacity: [0.1, 0.2, 0.1],
+                scale: [1, 1.2, 1]
+              }}
+              transition={{ duration: 15, repeat: Infinity }}
+              className="absolute -top-1/4 -left-1/4 w-[1000px] h-[1000px] bg-sky-500/10 blur-[150px] rounded-full"
             />
           </motion.div>
         )}
