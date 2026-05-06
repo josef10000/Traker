@@ -48,18 +48,34 @@ export const AchievementCardModal = ({
     
     try {
       setIsGenerating(true);
+      
+      // Pequeno delay para garantir que as animações do Framer Motion terminaram
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await (window as any).html2canvas(cardRef.current, {
-        scale: 3, // High resolution
-        backgroundColor: null,
+        scale: 2, // Escala 2 é mais estável que 3 em dispositivos móveis
+        backgroundColor: '#020617', // Cor sólida evita problemas de transparência
         useCORS: true,
         logging: false,
+        onclone: (clonedDoc: Document) => {
+          // html2canvas não suporta bg-clip-text. 
+          // Vamos forçar uma cor sólida nos elementos que usam essa classe no clone.
+          const textElements = clonedDoc.querySelectorAll('.bg-clip-text');
+          textElements.forEach((el: any) => {
+            el.style.backgroundClip = 'none';
+            el.style.webkitBackgroundClip = 'none';
+            el.style.color = 'white';
+          });
+        }
       });
 
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
       link.download = `noverde-conquista-${userName.split(' ')[0]}-${Date.now()}.png`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error('Error generating image:', error);
       alert('Erro ao gerar a imagem. Tente novamente.');
