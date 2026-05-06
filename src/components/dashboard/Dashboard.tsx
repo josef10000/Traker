@@ -888,7 +888,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
           )}
         </div>
-      </div>
         <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             title="Total Projetado" 
@@ -1064,14 +1063,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             <div className="grid grid-cols-2 gap-4 mt-6">
               {chartData.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color.includes('#') ? item.color : '#334155' }} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{item.name}</span>
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.name}</span>
                 </div>
               ))}
             </div>
           </div>
         </section>
-        {/* Nova Seção: Heatmap e Resumo Adicional */}
         <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
             <div className="absolute -top-24 -left-24 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl" />
@@ -1256,13 +1254,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             )}
           </AnimatePresence>
         </div>
-        {/* Performance Section (Leaderboard & Table) - Only for Team View */}
         {viewMode === 'team' && selectedTeamId !== 'all' && selectedMemberId === 'all' && (
           <div className="mb-12">
             <TeamPerformance agreements={monthFilteredAgreements} members={currentTeamMembers} />
           </div>
         )}
-        {/* Grade de Equipes - Visão Macro */}
         {viewMode === 'team' && selectedTeamId === 'all' && managedTeamsData.length > 0 && (
           <section className="space-y-4">
             <div className="flex items-center justify-between">
@@ -1336,7 +1332,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                           try {
                             await updateDoc(doc(db, 'users', profile.uid), { teamId: newTeamId });
                             showToast(newTeamId ? `Você agora faz parte da equipe ${t.name}!` : 'Vínculo com a equipe removido.');
-                            // Nota: O profile será atualizado pelo listener global no App.tsx
                           } catch (error) {
                             showToast('Erro ao atualizar vínculo.', 'error');
                           }
@@ -1366,7 +1361,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </section>
         )}
-        {/* Navegação por Membros da Equipe */}
         {selectedTeamId !== 'all' && viewMode === 'team' && currentTeamMembers.length > 0 && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
@@ -1374,13 +1368,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               {selectedMemberId !== 'all' && (
                 <button 
                   onClick={() => setSelectedMemberId('all')}
-                  className="text-[10px] font-bold text-primary hover:text-sky-400 uppercase transition-colors"
+                  className="text-[10px] font-black text-sky-400 uppercase tracking-tighter hover:text-sky-300 transition-colors"
                 >
                   Limpar Filtro
                 </button>
               )}
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex items-center gap-3 overflow-x-auto pb-4">
               <button
                 onClick={() => setSelectedMemberId('all')}
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
