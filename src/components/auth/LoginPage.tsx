@@ -210,7 +210,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
           <p className="text-center text-[10px] font-black uppercase tracking-widest text-slate-500">
             {isLogin ? 'Não possui acesso?' : 'Já tem um Tracker?'}
             <button onClick={() => setIsLogin(!isLogin)} className="ml-2 text-sky-500 hover:text-sky-400 transition-colors">
-              {isLogin ? 'Cadastrar Equipe' : 'Fazer Login'}
+              {isLogin ? 'Cadastrar-se' : 'Fazer Login'}
             </button>
           </p>
         </div>
