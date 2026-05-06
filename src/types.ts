@@ -108,6 +108,7 @@ export interface DashboardStats {
       overdue: number;
     };
     today: number; // Volume de registros hoje
+    checklist: number; // Quantidade de itens pendentes de conferência
   };
   hourlyDistribution: Record<number, number>;
 }

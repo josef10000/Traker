@@ -33,7 +33,8 @@ import {
   CalendarDays,
   MousePointer2,
   Settings,
-  Tv
+  Tv,
+  CheckSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -107,6 +108,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [viewMode, setViewMode] = useState<'personal' | 'team'>(profile.role === 'supervisor' ? 'team' : 'personal');
+  const [isChecklistMode, setIsChecklistMode] = useState(false);
   const [team, setTeam] = useState<Team | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{ uid: string; name: string } | null>(null);
@@ -301,7 +303,22 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   }, [memberFilteredAgreements, dateFilter, customStartDate, customEndDate]);
   const displayAgreements = useMemo(() => {
     let filtered = timeFilteredAgreements;
-    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Filter by Checklist Mode (Filtro Inteligente de Conferência)
+    if (isChecklistMode) {
+      filtered = filtered.filter(a => {
+        const dueDate = parseLocalDate(a.dueDate);
+        const isPending = a.status === AgreementStatus.WAITING;
+        const wasCheckedToday = a.lastCheckedAt && 
+          new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
+        
+        // Vence hoje ou já venceu (e ainda não foi conferido hoje nem pago/quebrado)
+        return dueDate <= today && isPending && !wasCheckedToday;
+      });
+    }
+
     // Filter by Search
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -399,6 +416,12 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           overdue: filteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today).length,
         },
         today: agreementsToday.length,
+        checklist: monthAgreements.filter(a => {
+          const dueDate = parseLocalDate(a.dueDate);
+          const wasCheckedToday = a.lastCheckedAt && 
+            new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
+          return dueDate <= today && a.status === AgreementStatus.WAITING && !wasCheckedToday;
+        }).length,
       },
       ticketAverage: monthAgreements.length > 0 ? totalProjected / monthAgreements.length : 0,
       remainingToGoal: Math.max(0, (monthlyGoal || 0) - totalPaidMonth),
@@ -1153,6 +1176,27 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 onClick={() => setFilterStatus(AgreementStatus.BROKEN)}
               />
             </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsChecklistMode(!isChecklistMode)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shadow-lg ${
+                  isChecklistMode 
+                    ? 'bg-sky-500 text-white border-sky-400' 
+                    : 'bg-slate-900/50 text-slate-500 border-slate-800 hover:text-sky-400 hover:border-sky-500/30'
+                }`}
+                title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
+              >
+                <CheckSquare size={16} />
+                {isChecklistMode ? 'Modo: Conferindo' : 'Verificar Pendentes'}
+                {stats.counts.checklist > 0 && !isChecklistMode && (
+                  <span className="ml-1 bg-sky-500 text-white px-1.5 py-0.5 rounded-full text-[8px] animate-pulse">
+                    {stats.counts.checklist}
+                  </span>
+                )}
+              </button>
+            </div>
+
             <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 shadow-lg">
               <button
                 onClick={() => setDateFilter('all')}
