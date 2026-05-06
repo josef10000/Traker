@@ -70,9 +70,9 @@ export const AchievementCardModal = ({
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach((el: any) => {
             const style = window.getComputedStyle(el);
-            if (style.backdropFilter !== 'none' || style.webkitBackdropFilter !== 'none') {
+            if (style.backdropFilter !== 'none' || (style as any).webkitBackdropFilter !== 'none') {
               el.style.backdropFilter = 'none';
-              el.style.webkitBackdropFilter = 'none';
+              (el.style as any).webkitBackdropFilter = 'none';
               el.style.backgroundColor = 'rgba(15, 23, 42, 0.8)'; // Fundo sólido substituto
             }
           });
@@ -151,14 +151,14 @@ export const AchievementCardModal = ({
               />
 
               {/* Card Header */}
-              <div className="p-4 pb-1 text-center relative z-10 flex flex-col items-center mt-2">
+              <div className="p-3 pb-0 text-center relative z-10 flex flex-col items-center mt-1">
                 <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg mb-4"
+                  className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg mb-2"
                   style={{ background: `linear-gradient(135deg, ${themeColor} 0%, rgba(255,255,255,0.1) 100%)` }}
                 >
                   <Trophy size={32} className="text-white" />
                 </div>
-                <h3 className="text-2xl font-black text-white tracking-tight leading-none mb-1">
+                <h3 className="text-xl font-black text-white tracking-tight leading-none mb-0.5">
                   {getAchievementTitle()}
                 </h3>
                 <p className="text-sm text-slate-300 font-medium">
@@ -179,7 +179,7 @@ export const AchievementCardModal = ({
                   {formatCurrency(amountPaid)}
                 </h1>
                 
-                <div className="mt-4 w-full max-w-[200px] flex flex-col items-center">
+                <div className="mt-2 w-full max-w-[180px] flex flex-col items-center">
                   <div className="flex justify-between w-full text-xs font-bold text-slate-300 mb-2">
                     <span>Meta</span>
                     <span style={{ color: goalPercentage >= 100 ? '#10b981' : themeColor }}>
@@ -200,7 +200,7 @@ export const AchievementCardModal = ({
               </div>
 
               {/* Secondary Stats Footer */}
-              <div className="p-4 relative z-10 grid grid-cols-2 gap-3 mt-auto mb-2">
+              <div className="p-3 relative z-10 grid grid-cols-2 gap-2 mt-auto mb-1">
                 <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5 text-center flex flex-col items-center justify-center">
                   <Star size={16} className="text-amber-400 mb-2" />
                   <p className="text-2xl font-black text-white leading-none">{agreementsCount}</p>
