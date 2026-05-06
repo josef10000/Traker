@@ -808,61 +808,65 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </p>
           </div>
           {!isPresentMode && (
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              <div className="flex glass-card p-1 rounded-xl shadow-2xl">
-              <select
-                value={selectedMonth}
-                onChange={(e) => {
-                  setSelectedMonth(parseInt(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
-              >
-                {MONTHS.map((month, index) => (
-                  <option key={month} value={index} className="bg-slate-900 text-white">{month}</option>
-                ))}
-              </select>
-              <div className="w-[1px] h-4 bg-slate-800 my-auto" />
-              <select
-                value={selectedYear}
-                onChange={(e) => {
-                  setSelectedYear(parseInt(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
-              >
-                {getYearRange().map(year => (
-                  <option key={year} value={year} className="bg-slate-900 text-white">{year}</option>
-                ))}
-              </select>
+            <>
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                <div className="flex glass-card p-1 rounded-xl shadow-2xl">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => {
+                    setSelectedMonth(parseInt(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
+                >
+                  {MONTHS.map((month, index) => (
+                    <option key={month} value={index} className="bg-slate-900 text-white">{month}</option>
+                  ))}
+                </select>
+                <div className="w-[1px] h-4 bg-slate-800 my-auto" />
+                <select
+                  value={selectedYear}
+                  onChange={(e) => {
+                    setSelectedYear(parseInt(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
+                >
+                  {getYearRange().map(year => (
+                    <option key={year} value={year} className="bg-slate-900 text-white">{year}</option>
+                  ))}
+                </select>
+              </div>
+              {profile.role === 'supervisor' && (
+                <div className="flex glass-card p-1 rounded-xl shadow-2xl">
+                <button
+                  onClick={() => setViewMode('personal')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    viewMode === 'personal' 
+                      ? 'bg-primary text-white shadow-lg' 
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <UserIcon size={14} />
+                  Pessoal
+                </button>
+                <button
+                  onClick={() => setViewMode('team')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    viewMode === 'team' 
+                      ? 'bg-primary text-white shadow-lg' 
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <Users size={14} />
+                  Equipe
+                </button>
+                </div>
+              )}
             </div>
-            {profile.role === 'supervisor' && (
-              <div className="flex glass-card p-1 rounded-xl shadow-2xl">
-              <button
-                onClick={() => setViewMode('personal')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                  viewMode === 'personal' 
-                    ? 'bg-primary text-white shadow-lg' 
-                    : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                <UserIcon size={14} />
-                Pessoal
-              </button>
-              <button
-                onClick={() => setViewMode('team')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                  viewMode === 'team' 
-                    ? 'bg-primary text-white shadow-lg' 
-                    : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                <Users size={14} />
-                Equipe
-              </button>
-            </div>
-          )}
-        </div>
+          </>
+        )}
+      </div>
         <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard 
             title="Total Projetado" 
@@ -1521,6 +1525,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
         </section>
         {!isPresentMode && (
+          <>
             <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
               <div className="relative group flex-1 w-full">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
@@ -1786,8 +1791,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 </button>
               </div>
               </div>
+            )}
           </section>
-        )}
+        </>
+      )}
       </main>
       <AgreementModal 
         isOpen={isModalOpen}
