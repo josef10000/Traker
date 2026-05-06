@@ -14,9 +14,8 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 
 ## 🚀 Novidades na Versão Atual
 
-- 📺 **Modo TV (Apresentação)**: Interface otimizada para exibição em monitores externos com transições dinâmicas entre métricas principais.
+- 📺 **Modo TV (Apresentação)**: Interface otimizada e em tela cheia para exibição de métricas em tempo real.
 - 🎯 **Gestão de Metas & Performance**: Acompanhamento de produtividade financeira e progresso em relação à meta mensal.
-- 🔄 **Carrossel de Estatísticas**: Alternância automática de visões no Modo TV para cobertura completa de dados.
 - 🔍 **Conferência Diária**: Sistema de marcação de acordos conferidos para evitar retrabalho operacional.
 - 📊 **Dashboards Dinâmicos**: Visões personalizadas para operadores e supervisores com filtros avançados.
 - 📅 **Histórico Mensal**: Seletor para visualizar dados de meses anteriores com reset automático mensal.
