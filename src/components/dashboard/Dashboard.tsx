@@ -34,7 +34,8 @@ import {
   MousePointer2,
   Settings,
   Tv,
-  Camera
+  Camera,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -82,7 +83,6 @@ import { startTour } from '../../utils/tour';
 import { GoalModal } from '../modals/GoalModal';
 import { HistoryModal } from '../modals/HistoryModal';
 import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
-import { AchievementCardModal } from '../modals/AchievementCardModal';
 import { MONTHS, getMonthName, getYearRange } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
 interface DashboardProps {
@@ -101,7 +101,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<Agreement | null>(null);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isPresentMode, setIsPresentMode] = useState(false);
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
   const [localHiddenCards, setLocalHiddenCards] = useState<string[]>(profile.dashboardPreferences?.hiddenCards || []);
@@ -781,16 +780,29 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8 relative">
         <AnimatePresence>
           {isPresentMode && (
-            <motion.button
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              onClick={togglePresentMode}
-              className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 text-slate-300 px-4 py-2 rounded-full hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/50 transition-all shadow-2xl"
-            >
-              <X size={16} />
-              <span className="text-[10px] uppercase tracking-widest font-bold">Sair da TV</span>
-            </motion.button>
+            <div className="fixed top-6 right-6 z-50 flex items-center gap-3 print:hidden">
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onClick={() => window.print()}
+                className="flex items-center gap-2 bg-emerald-600/80 backdrop-blur-md border border-emerald-500/50 text-white px-4 py-2 rounded-full hover:bg-emerald-500 transition-all shadow-2xl"
+              >
+                <Camera size={16} />
+                <span className="text-[10px] uppercase tracking-widest font-bold">Capturar Tela</span>
+              </motion.button>
+
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onClick={togglePresentMode}
+                className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 text-slate-300 px-4 py-2 rounded-full hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/50 transition-all shadow-2xl"
+              >
+                <X size={16} />
+                <span className="text-[10px] uppercase tracking-widest font-bold">Sair da TV</span>
+              </motion.button>
+            </div>
           )}
         </AnimatePresence>
         {/* Header com Toggle de Visão (Apenas para Supervisores) */}
@@ -809,11 +821,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                   <Settings size={20} />
                 </button>
                 <button
-                  onClick={() => setIsCardModalOpen(true)}
-                  className="p-1.5 text-slate-500 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors border border-transparent hover:border-purple-500/20"
-                  title="Compartilhar Vitória"
+                  onClick={() => window.print()}
+                  className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/20"
+                  title="Imprimir / Capturar Dados"
                 >
-                  <Camera size={20} />
+                  <Printer size={20} />
                 </button>
                 <button
                   onClick={togglePresentMode}
@@ -1832,21 +1844,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         onSubmit={handleUpdateGoal}
         monthlyGoal={monthlyGoal}
         effectivenessGoal={effectivenessGoal}
-      />
-      <AchievementCardModal
-        isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
-        userName={profile.displayName || 'Membro'}
-        amountPaid={stats.totalPaid}
-        goalPercentage={(stats.totalPaid / (monthlyGoal || 1)) * 100}
-        agreementsCount={stats.counts.filtered.paid}
-        ticketAverage={stats.ticketAverage}
-        periodLabel={`${getMonthName(selectedMonth)} ${selectedYear}`}
-        themeColor={
-          profile.theme === 'sky' ? '#0ea5e9' :
-          profile.theme === 'purple' ? '#a855f7' :
-          '#38bdf8'
-        }
       />
       <HistoryModal 
         isOpen={!!selectedClientCpf}

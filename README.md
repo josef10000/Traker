@@ -14,23 +14,12 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 
 ## 🚀 Novidades na Versão Atual
 
-- **Stories de Conquista**: Novo sistema para gerar e baixar cards personalizados (Stories) com suas principais conquistas do mês (Total Pago, Meta e Ticket Médio). O sistema foi otimizado com correções de estabilidade para `html2canvas` (resolvendo erros de renderização) e layout mais compacto para compartilhamento.
-- **Painel de Insights Analíticos**: Nova seção com métricas avançadas, incluindo Ticket Médio por tipo, Tempo Médio de Pagamento, Projeção Financeira para os próximos 7 dias e Eficiência por Ciclo (Manhã vs Tarde).
-- **Sinalização de Transição de Dia**: Selos automáticos de **"Prioridade Ontem"** (para acordos do ciclo da tarde que precisam de conferência hoje) e **"Quebrado Ontem"** (para acordos que venceram e não foram pagos), garantindo que nada seja esquecido na virada do dia.
-- **Sistema de Conferência Diária**: Opção de marcar acordos como "Conferidos Hoje" (ícone 🔍), ajudando a identificar quais CPFs já foram consultados no banco e evitando retrabalho. A marcação reseta automaticamente no dia seguinte.
-- **Controle de Ciclos de Verificação**: Diferenciação visual (cores e ícones ☀️/🌙) para acordos feitos antes e depois do meio-dia, facilitando a identificação de prioridades de baixa bancária.
-- **Ordenação Inteligente**: Filtro de ordenação na listagem de clientes, permitindo alternar entre "Mais Recentes" e "Mais Antigos" (ordem de lançamento).
-- **Categorização Automática de Quebrados**: Acordos vencidos e não pagos são automaticamente categorizados como "Quebrados" no dashboard, com rótulos visuais de alerta.
-- **Sincronização Temporal Global**: Todo o dashboard (estatísticas, gráficos e cards) agora sincroniza instantaneamente com o filtro de data selecionado (Hoje, Ontem, Custom ou Tudo).
-- **Exportação Inteligente**: O CSV de exportação agora respeita os filtros ativos e inclui o status detalhado "Quebrado (Vencido)".
-- **Efetividade Financeira**: Taxa de efetividade agora baseada no valor total recuperado vs. total projetado.
-- **Refatoração Completa**: Código modularizado em componentes reutilizáveis (`src/components`).
-- **Reset Mensal e Histórico**: O dashboard agora "reseta" automaticamente ao início de cada mês, com um seletor de histórico para visualizar e exportar dados de meses anteriores.
-- **Gráficos Dinâmicos**: Visualização de performance meta vs. realizado usando `Recharts`.
-- **Máscaras Inteligentes**: Formatação automática de CPF e Telefone para melhor UX.
-- **Otimização de Cadastro**: Data de vencimento agora vem preenchida com o dia atual por padrão.
-- **Padronização de Acordos**: Remoção do campo redundante de "Parcela" e inclusão da opção "Parcela Atual" diretamente no seletor de Tipo de Acordo para maior agilidade no registro.
-- **CI/CD Integrado**: Validação automática de tipos e build via GitHub Actions.
+- 📸 **Captura de Dados (Novo)**: Sistema de impressão otimizado para gerar relatórios visuais completos do dashboard, substituindo os antigos stories por uma solução que captura todos os indicadores.
+- 📺 **Modo TV (Apresentação)**: Interface otimizada para exibição em monitores externos, com botões de captura integrados.
+- 📊 **Dashboards Dinâmicos**: Visões detalhadas para operadores e supervisores com sincronização temporal global.
+- 🎯 **Gestão de Metas & Insights**: Acompanhamento de performance com projeções automáticas, Ticket Médio por tipo e Eficiência por Ciclo.
+- 🔍 **Conferência Diária**: Sistema de marcação de acordos conferidos para evitar retrabalho operacional.
+- 📅 **Histórico Mensal**: Seletor para visualizar e exportar dados de meses anteriores com reset automático mensal.
 
 ## 📂 Estrutura do Projeto
 
