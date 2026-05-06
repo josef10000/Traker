@@ -70,8 +70,6 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
 
   if (isForgotPassword) {
     return (
-  if (isForgotPassword) {
-    return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative selection:bg-sky-500/30" style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}>
         {/* Overlay gradiente para profundidade */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/40 via-transparent to-slate-950/80 backdrop-blur-[4px]"></div>
