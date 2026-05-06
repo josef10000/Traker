@@ -302,7 +302,9 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     return filtered;
   }, [memberFilteredAgreements, dateFilter, customStartDate, customEndDate]);
   const displayAgreements = useMemo(() => {
-    let filtered = timeFilteredAgreements;
+    // Se estiver no Modo Checklist, ignoramos o filtro de tempo (timeFilteredAgreements)
+    // e usamos a base de membros filtrados para pegar todos os períodos.
+    let filtered = isChecklistMode ? memberFilteredAgreements : timeFilteredAgreements;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -1175,26 +1177,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsChecklistMode(!isChecklistMode)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shadow-lg ${
-                  isChecklistMode 
-                    ? 'bg-sky-500 text-white border-sky-400' 
-                    : 'bg-slate-900/50 text-slate-500 border-slate-800 hover:text-sky-400 hover:border-sky-500/30'
-                }`}
-                title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
-              >
-                <CheckSquare size={16} />
-                {isChecklistMode ? 'Modo: Conferindo' : 'Verificar Pendentes'}
-                {stats.counts.checklist > 0 && !isChecklistMode && (
-                  <span className="ml-1 bg-sky-500 text-white px-1.5 py-0.5 rounded-full text-[8px] animate-pulse">
-                    {stats.counts.checklist}
-                  </span>
-                )}
-              </button>
-            </div>
-
             <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 shadow-lg">
               <button
                 onClick={() => setDateFilter('all')}
@@ -1581,6 +1563,27 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
+          <button
+            onClick={() => setIsChecklistMode(!isChecklistMode)}
+            className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shadow-2xl shrink-0 w-full md:w-auto ${
+              isChecklistMode 
+                ? 'bg-sky-500 text-white border-sky-400' 
+                : 'bg-slate-900/50 text-slate-500 border-slate-800 hover:text-sky-400 hover:border-sky-500/30'
+            }`}
+            title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
+          >
+            <CheckSquare size={20} />
+            <div className="flex flex-col items-start">
+              <span className="leading-none">{isChecklistMode ? 'Conferindo' : 'Verificar'}</span>
+              <span className="text-[8px] opacity-60 mt-0.5">{isChecklistMode ? 'Pendentes Hoje' : 'Pendentes'}</span>
+            </div>
+            {stats.counts.checklist > 0 && !isChecklistMode && (
+              <span className="ml-2 bg-sky-500 text-white px-2 py-0.5 rounded-full text-[9px] animate-pulse border border-sky-400/50">
+                {stats.counts.checklist}
+              </span>
+            )}
+          </button>
           
           <button
             onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
