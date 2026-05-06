@@ -1539,6 +1539,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
         </section>
         {!isPresentMode && (
+          <>
             <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
               <div className="relative group flex-1 w-full">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-sky-400 transition-colors">
@@ -1806,6 +1807,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </div>
             )}
           </section>
+          </>
         )}
       </main>
       <AgreementModal 
