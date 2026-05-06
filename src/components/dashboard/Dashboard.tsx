@@ -1294,20 +1294,20 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     )}
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div className="flex-1 bg-white/10 h-1.5 rounded-full overflow-hidden">
                       <div className="bg-primary h-full rounded-full" style={{ width: '0%' }} /> 
                     </div>
                     <span className="text-xs font-bold text-slate-300">0%</span>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-2 mt-4">
-                    <div className="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                    <div className="bg-white/5 p-2 rounded-lg border border-white/5">
                       <p className="text-[8px] text-slate-500 uppercase font-black tracking-tighter">Hoje</p>
                       <p className="text-sm font-bold text-sky-400">
                         {agreements.filter(a => a.teamId === t.id && new Date(a.createdAt).getTime() >= new Date().setHours(0,0,0,0)).length}
                       </p>
                     </div>
-                    <div className="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                    <div className="bg-white/5 p-2 rounded-lg border border-white/5">
                       <p className="text-[8px] text-slate-500 uppercase font-black tracking-tighter">Mês</p>
                       <p className="text-sm font-bold text-white">
                         {agreements.filter(a => a.teamId === t.id && new Date(a.createdAt).getTime() >= new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime()).length}
@@ -1321,7 +1321,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                         navigator.clipboard.writeText(t.inviteToken);
                         showToast(`Código de convite para ${t.name} copiado!`);
                       }}
-                      className="py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1"
+                      className="py-2 bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1"
                     >
                       <UserPlus size={12} />
                       Convite

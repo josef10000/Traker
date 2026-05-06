@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Mail, Lock, LogIn, Loader2, Chrome, PieChart } from 'lucide-react';
+import { Mail, Lock, LogIn, Loader2, Chrome, PieChart, Eye, EyeOff } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -24,6 +24,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,7 +146,14 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">E-mail</label>
               <div className="relative group">
                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
-                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.03] border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-slate-600" placeholder="seu@email.com" />
+                <input 
+                  required 
+                  type="email" 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  className="w-full bg-transparent border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-white/20" 
+                  placeholder="seu@email.com" 
+                />
               </div>
             </div>
             <div className="space-y-2">
@@ -159,7 +167,17 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
               </div>
               <div className="relative group">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
-                <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-white/[0.03] border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-slate-600" placeholder="••••••••" />
+                <input 
+                  required 
+                  type={showPassword ? "text" : "password"} 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  className="w-full bg-transparent border border-white/10 pl-14 pr-12 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-white/20" 
+                  placeholder="••••••••" 
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
           </div>

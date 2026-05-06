@@ -89,7 +89,7 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
             <div className="space-y-4">
               <button 
                 onClick={() => setMode('create')}
-                className="w-full flex items-center justify-between p-6 bg-slate-900/50 hover:bg-sky-500/10 border border-slate-800 hover:border-sky-500/30 rounded-2xl transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-white/5 hover:bg-sky-500/10 border border-white/10 hover:border-sky-500/30 rounded-2xl transition-all group backdrop-blur-sm"
               >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-sky-500/20 text-sky-400 rounded-xl">
@@ -105,7 +105,7 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
 
               <button 
                 onClick={() => setMode('join')}
-                className="w-full flex items-center justify-between p-6 bg-slate-900/50 hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/30 rounded-2xl transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/30 rounded-2xl transition-all group backdrop-blur-sm"
               >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
@@ -128,7 +128,7 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
                 <input 
                   autoFocus
                   type="text" 
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-sky-500/50 outline-none transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-sky-500/50 outline-none transition-all backdrop-blur-sm"
                   placeholder="Ex: Time Comercial Sul"
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
@@ -160,7 +160,7 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
                 <input 
                   autoFocus
                   type="text" 
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-mono focus:border-emerald-500/50 outline-none transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-mono focus:border-emerald-500/50 outline-none transition-all backdrop-blur-sm"
                   placeholder="Cole o código aqui..."
                   value={inviteToken}
                   onChange={(e) => setInviteToken(e.target.value)}

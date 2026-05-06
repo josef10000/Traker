@@ -101,7 +101,7 @@ export const AgreementModal = ({
                 placeholder="000.000.000-00" 
                 defaultValue={editingAgreement?.clientCpf}
                 onChange={(e) => e.target.value = formatCPF(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-mono text-slate-200"
+                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-mono text-white backdrop-blur-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -111,7 +111,7 @@ export const AgreementModal = ({
                 type="text" 
                 defaultValue={editingAgreement?.clientName}
                 placeholder="Ex: João Silva" 
-                className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
+                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white backdrop-blur-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -130,7 +130,7 @@ export const AgreementModal = ({
                 required
                 name="type"
                 defaultValue={editingAgreement?.type || ""}
-                className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-slate-200"
+                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-white backdrop-blur-sm"
               >
                 <option value="" disabled>Selecione o tipo...</option>
                 <option value="quitacao">Quitação</option>
@@ -150,7 +150,7 @@ export const AgreementModal = ({
                   type="text" 
                   defaultValue={editingAgreement?.value}
                   placeholder="0,00" 
-                  className="w-full bg-slate-950 border border-slate-800 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
+                  className="w-full bg-white/5 border border-white/10 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white backdrop-blur-sm"
                 />
               </div>
             </div>
@@ -161,7 +161,7 @@ export const AgreementModal = ({
                 name="dueDate"
                 type="date" 
                 defaultValue={editingAgreement?.dueDate || new Date().toISOString().split('T')[0]}
-                className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200 color-scheme-dark"
+                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white color-scheme-dark backdrop-blur-sm"
               />
             </div>
           </div>
@@ -172,7 +172,7 @@ export const AgreementModal = ({
                 required
                 name="origin"
                 defaultValue={editingAgreement?.origin || ""}
-                className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-slate-200"
+                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-white backdrop-blur-sm"
               >
                 <option value="" disabled>Selecione uma origem...</option>
                 <option value={AgreementOrigin.SALESFORCE}>Salesforce</option>
@@ -195,7 +195,7 @@ export const AgreementModal = ({
                     defaultChecked={!editingAgreement || editingAgreement.category === AgreementCategory.FIXA}
                     className="peer hidden"
                   />
-                  <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-800 bg-slate-950 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all">
+                  <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all backdrop-blur-sm">
                     <div className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center peer-checked:border-sky-500 group-hover:border-slate-600 transition-all">
                       <div className="w-2.5 h-2.5 rounded-full bg-sky-500 scale-0 peer-checked:scale-100 transition-all" />
                     </div>
@@ -211,7 +211,7 @@ export const AgreementModal = ({
                     defaultChecked={editingAgreement?.category === AgreementCategory.VARIAVEL}
                     className="peer hidden"
                   />
-                  <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-800 bg-slate-950 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all">
+                  <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all backdrop-blur-sm">
                     <div className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center peer-checked:border-sky-500 group-hover:border-slate-600 transition-all">
                       <div className="w-2.5 h-2.5 rounded-full bg-sky-500 scale-0 peer-checked:scale-100 transition-all" />
                     </div>
@@ -232,7 +232,7 @@ export const AgreementModal = ({
                     defaultChecked={!editingAgreement || editingAgreement.status === AgreementStatus.WAITING}
                     className="peer hidden"
                   />
-                  <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-800 bg-slate-950 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all">
+                  <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all backdrop-blur-sm">
                     <div className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center peer-checked:border-sky-500 group-hover:border-slate-600 transition-all">
                       <div className="w-2.5 h-2.5 rounded-full bg-sky-500 scale-0 peer-checked:scale-100 transition-all" />
                     </div>
@@ -251,7 +251,7 @@ export const AgreementModal = ({
                     defaultChecked={editingAgreement?.status === AgreementStatus.PAID}
                     className="peer hidden"
                   />
-                  <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-800 bg-slate-950 peer-checked:border-emerald-500/50 peer-checked:bg-emerald-500/5 transition-all">
+                  <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 peer-checked:border-emerald-500/50 peer-checked:bg-emerald-500/5 transition-all backdrop-blur-sm">
                     <div className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center peer-checked:border-emerald-500 group-hover:border-slate-600 transition-all">
                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 scale-0 peer-checked:scale-100 transition-all" />
                     </div>

@@ -209,7 +209,7 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-700"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
                     placeholder="Seu nome"
                     required
                   />
@@ -224,7 +224,7 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
                     type="text"
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-700"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
                     placeholder="Ex: Gerente de Receptivo"
                   />
                 </div>
@@ -247,8 +247,8 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
                     key={t.id}
                     type="button"
                     onClick={() => setTheme(t.id as any)}
-                    className={`relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                      theme === t.id ? 'border-primary bg-primary/5' : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    className={`relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 backdrop-blur-sm ${
+                      theme === t.id ? 'border-primary bg-primary/10' : 'border-white/10 bg-white/5 hover:border-white/30'
                     }`}
                   >
                     <div className={`w-6 h-6 rounded-full ${t.color} ${t.border} border shadow-inner`} />
