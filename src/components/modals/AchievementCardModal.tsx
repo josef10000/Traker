@@ -73,7 +73,7 @@ export const AchievementCardModal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8">
+        <div className="fixed inset-0 z-[100] flex justify-center items-start p-4 sm:p-8 overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -82,7 +82,7 @@ export const AchievementCardModal = ({
             className="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
           />
           
-          <div className="relative w-full max-w-sm flex flex-col items-center">
+          <div className="relative w-full max-w-sm flex flex-col items-center py-4 sm:py-10">
             
             {/* Download Action Area */}
             <motion.div 
