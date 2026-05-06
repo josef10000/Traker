@@ -336,8 +336,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       });
     }
     
-    // Filter by Status
-    if (filterStatus !== 'all') {
+    // Filter by Status (Ignorado se estiver no Modo Checklist para evitar conflitos)
+    if (!isChecklistMode && filterStatus !== 'all') {
       if (filterStatus === AgreementStatus.BROKEN) {
         filtered = filtered.filter(a => 
           a.status === AgreementStatus.BROKEN || 
