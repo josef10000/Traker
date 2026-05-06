@@ -334,8 +334,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       });
     }
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     // Filter by Status
     if (filterStatus !== 'all') {
       if (filterStatus === AgreementStatus.BROKEN) {
