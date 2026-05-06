@@ -49,19 +49,15 @@ export const AchievementCardModal = ({
     try {
       setIsGenerating(true);
       
-      // Delay maior para garantir que as animações do Framer Motion terminaram e o DOM estabilizou
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Delay para garantir estabilidade do DOM e animações
+      await new Promise(resolve => setTimeout(resolve, 600));
 
       const canvas = await (window as any).html2canvas(cardRef.current, {
         scale: 2, 
         backgroundColor: '#020617', 
         useCORS: true,
-        allowTaint: true,
         logging: false,
         onclone: (clonedDoc: Document) => {
-          // html2canvas não suporta bg-clip-text nem backdrop-blur. 
-          // Forçamos estilos compatíveis no clone.
-          
           const textElements = clonedDoc.querySelectorAll('.bg-clip-text');
           textElements.forEach((el: any) => {
             el.style.backgroundClip = 'none';
@@ -70,27 +66,32 @@ export const AchievementCardModal = ({
             el.style.backgroundImage = 'none';
           });
 
-          // Remover backdrop-blur que causa falhas de renderização em alguns browsers/html2canvas
-          const blurElements = clonedDoc.querySelectorAll('.backdrop-blur-sm, .backdrop-blur-md, .backdrop-blur-lg, .backdrop-blur-xl');
-          blurElements.forEach((el: any) => {
-            el.style.backdropFilter = 'none';
-            el.style.webkitBackdropFilter = 'none';
-            // Adicionar um fundo levemente opaco para compensar a perda do blur
-            el.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+          // Remover blurs e filtros que html2canvas tem dificuldade em processar
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el: any) => {
+            const style = window.getComputedStyle(el);
+            if (style.backdropFilter !== 'none' || style.webkitBackdropFilter !== 'none') {
+              el.style.backdropFilter = 'none';
+              el.style.webkitBackdropFilter = 'none';
+              el.style.backgroundColor = 'rgba(15, 23, 42, 0.8)'; // Fundo sólido substituto
+            }
           });
         }
       });
 
-      const image = canvas.toDataURL('image/png', 0.9);
+      // Se chegamos aqui, o canvas foi gerado. Vamos tentar converter para imagem.
+      // Removendo o parâmetro de qualidade do PNG (que não existe na spec e pode ser ignorado ou causar erro em browsers antigos)
+      const image = canvas.toDataURL('image/png');
+      
       const link = document.createElement('a');
       link.href = image;
-      link.download = `noverde-conquista-${userName.split(' ')[0]}-${Date.now()}.png`;
+      link.download = `noverde-conquista-${userName.split(' ')[0] || 'user'}-${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error generating image:', error);
-      alert('Erro ao gerar a imagem. Verifique se o navegador permite o download e tente novamente.');
+      console.error('Html2Canvas Error Details:', error);
+      alert('Erro técnico ao gerar a imagem. Tente baixar em outro navegador ou verifique as permissões de download.');
     } finally {
       setIsGenerating(false);
     }
