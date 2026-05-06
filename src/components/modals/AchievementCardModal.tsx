@@ -66,14 +66,28 @@ export const AchievementCardModal = ({
             el.style.backgroundImage = 'none';
           });
 
-          // Remover blurs e filtros que html2canvas tem dificuldade em processar
+          // Remover blurs e oklch (cores modernas não suportadas pelo html2canvas)
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach((el: any) => {
             const style = window.getComputedStyle(el);
+            
+            // Corrigir oklch nas propriedades comuns
+            const properties = ['color', 'backgroundColor', 'borderColor', 'fill', 'stroke'];
+            properties.forEach(prop => {
+              const val = (el.style as any)[prop] || style.getPropertyValue(prop);
+              if (val && val.includes('oklch')) {
+                // Se for oklch, tentamos simplificar para uma cor sólida ou remover
+                // O ideal seria converter, mas como o html2canvas trava, vamos forçar cores seguras
+                if (prop === 'color') el.style.color = 'white';
+                if (prop === 'backgroundColor') el.style.backgroundColor = style.backgroundColor.includes('oklch') ? '#0f172a' : style.backgroundColor;
+                if (prop === 'borderColor') el.style.borderColor = 'rgba(255,255,255,0.1)';
+              }
+            });
+
             if (style.backdropFilter !== 'none' || (style as any).webkitBackdropFilter !== 'none') {
               el.style.backdropFilter = 'none';
               (el.style as any).webkitBackdropFilter = 'none';
-              el.style.backgroundColor = 'rgba(15, 23, 42, 0.8)'; // Fundo sólido substituto
+              el.style.backgroundColor = 'rgba(15, 23, 42, 0.9)'; 
             }
           });
         }
