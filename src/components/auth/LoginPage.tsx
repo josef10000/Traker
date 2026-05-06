@@ -120,8 +120,8 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
         <div className="text-center flex flex-col items-center gap-6">
           <div className="relative group">
             <div className="absolute -inset-4 bg-sky-500/20 rounded-full blur-2xl group-hover:bg-sky-500/30 transition-all duration-500"></div>
-            <div className="bg-sky-500 p-5 rounded-[1.5rem] shadow-2xl shadow-sky-500/40 relative">
-              <PieChart size={36} className="text-white" />
+            <div className="relative">
+              <img src="https://i.imgur.com/JPJTsAQ.png" alt="Tracker Logo" className="w-20 h-20 drop-shadow-2xl" />
             </div>
           </div>
           <div className="space-y-2">

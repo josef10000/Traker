@@ -724,8 +724,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         <header className="glass-card sticky top-0 z-30 px-6 py-4">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="bg-primary text-white p-2 rounded-lg shadow-lg shadow-primary/20 cursor-pointer" onClick={onSettingsClick}>
-              <PieIcon size={24} />
+            <div className="cursor-pointer transition-transform hover:scale-105 active:scale-95" onClick={onSettingsClick}>
+              <img src="https://i.imgur.com/JPJTsAQ.png" alt="Tracker Logo" className="w-10 h-10 drop-shadow-lg" />
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold tracking-tight text-white leading-none">Tracker</h1>
