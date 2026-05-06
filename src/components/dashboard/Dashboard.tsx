@@ -159,22 +159,16 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     }
   }, []);
 
-  // Carousel Effect for TV Mode
+  // Controle de Carrossel Modo TV
   useEffect(() => {
-    if (!isPresentMode || !isCarouselActive) {
-      setActiveTVView('stats');
-      return;
-    }
+    if (!isPresentMode || !isCarouselActive) return;
 
-    const views: ('stats' | 'ranking' | 'insights')[] = ['stats', 'ranking', 'insights'];
-    const interval = setInterval(() => {
-      setActiveTVView(prev => {
-        const currentIndex = views.indexOf(prev);
-        return views[(currentIndex + 1) % views.length];
-      });
+    const timer = setInterval(() => {
+      // No momento apenas 'stats' está ativo, mas mantemos o timer para expansões futuras
+      setActiveTVView('stats');
     }, 15000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   }, [isPresentMode, isCarouselActive]);
 
   // Load Members when team changes
