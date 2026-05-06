@@ -49,27 +49,39 @@ export const AchievementCardModal = ({
     try {
       setIsGenerating(true);
       
-      // Pequeno delay para garantir que as animações do Framer Motion terminaram
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Delay maior para garantir que as animações do Framer Motion terminaram e o DOM estabilizou
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const canvas = await (window as any).html2canvas(cardRef.current, {
-        scale: 2, // Escala 2 é mais estável que 3 em dispositivos móveis
-        backgroundColor: '#020617', // Cor sólida evita problemas de transparência
+        scale: 2, 
+        backgroundColor: '#020617', 
         useCORS: true,
+        allowTaint: true,
         logging: false,
         onclone: (clonedDoc: Document) => {
-          // html2canvas não suporta bg-clip-text. 
-          // Vamos forçar uma cor sólida nos elementos que usam essa classe no clone.
+          // html2canvas não suporta bg-clip-text nem backdrop-blur. 
+          // Forçamos estilos compatíveis no clone.
+          
           const textElements = clonedDoc.querySelectorAll('.bg-clip-text');
           textElements.forEach((el: any) => {
             el.style.backgroundClip = 'none';
             el.style.webkitBackgroundClip = 'none';
             el.style.color = 'white';
+            el.style.backgroundImage = 'none';
+          });
+
+          // Remover backdrop-blur que causa falhas de renderização em alguns browsers/html2canvas
+          const blurElements = clonedDoc.querySelectorAll('.backdrop-blur-sm, .backdrop-blur-md, .backdrop-blur-lg, .backdrop-blur-xl');
+          blurElements.forEach((el: any) => {
+            el.style.backdropFilter = 'none';
+            el.style.webkitBackdropFilter = 'none';
+            // Adicionar um fundo levemente opaco para compensar a perda do blur
+            el.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
           });
         }
       });
 
-      const image = canvas.toDataURL('image/png');
+      const image = canvas.toDataURL('image/png', 0.9);
       const link = document.createElement('a');
       link.href = image;
       link.download = `noverde-conquista-${userName.split(' ')[0]}-${Date.now()}.png`;
@@ -78,7 +90,7 @@ export const AchievementCardModal = ({
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error generating image:', error);
-      alert('Erro ao gerar a imagem. Tente novamente.');
+      alert('Erro ao gerar a imagem. Verifique se o navegador permite o download e tente novamente.');
     } finally {
       setIsGenerating(false);
     }
@@ -138,7 +150,7 @@ export const AchievementCardModal = ({
               />
 
               {/* Card Header */}
-              <div className="p-6 pb-2 text-center relative z-10 flex flex-col items-center mt-4">
+              <div className="p-4 pb-1 text-center relative z-10 flex flex-col items-center mt-2">
                 <div 
                   className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg mb-4"
                   style={{ background: `linear-gradient(135deg, ${themeColor} 0%, rgba(255,255,255,0.1) 100%)` }}
@@ -166,7 +178,7 @@ export const AchievementCardModal = ({
                   {formatCurrency(amountPaid)}
                 </h1>
                 
-                <div className="mt-8 w-full max-w-[200px] flex flex-col items-center">
+                <div className="mt-4 w-full max-w-[200px] flex flex-col items-center">
                   <div className="flex justify-between w-full text-xs font-bold text-slate-300 mb-2">
                     <span>Meta</span>
                     <span style={{ color: goalPercentage >= 100 ? '#10b981' : themeColor }}>
@@ -187,7 +199,7 @@ export const AchievementCardModal = ({
               </div>
 
               {/* Secondary Stats Footer */}
-              <div className="p-6 relative z-10 grid grid-cols-2 gap-4 mt-auto mb-4">
+              <div className="p-4 relative z-10 grid grid-cols-2 gap-3 mt-auto mb-2">
                 <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5 text-center flex flex-col items-center justify-center">
                   <Star size={16} className="text-amber-400 mb-2" />
                   <p className="text-2xl font-black text-white leading-none">{agreementsCount}</p>
