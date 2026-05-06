@@ -130,7 +130,7 @@ export const AgreementModal = ({
                 required
                 name="type"
                 defaultValue={editingAgreement?.type || ""}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-white backdrop-blur-sm"
+                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-white backdrop-blur-sm select-custom-arrow"
               >
                 <option value="" disabled>Selecione o tipo...</option>
                 <option value="quitacao">Quitação</option>
@@ -172,7 +172,7 @@ export const AgreementModal = ({
                 required
                 name="origin"
                 defaultValue={editingAgreement?.origin || ""}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-white backdrop-blur-sm"
+                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-white backdrop-blur-sm select-custom-arrow"
               >
                 <option value="" disabled>Selecione uma origem...</option>
                 <option value={AgreementOrigin.SALESFORCE}>Salesforce</option>

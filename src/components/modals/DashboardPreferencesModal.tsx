@@ -125,14 +125,14 @@ export const DashboardPreferencesModal = ({
                     <div 
                       key={card.id}
                       onClick={() => handleToggle(card.id)}
-                      className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all group ${
+                      className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all group backdrop-blur-sm ${
                         isVisible 
-                          ? 'bg-slate-900/80 border-slate-700 hover:border-sky-500/50' 
-                          : 'bg-slate-950/50 border-slate-800/50 opacity-60 hover:opacity-100 hover:border-slate-700'
+                          ? 'bg-white/10 border-white/20 hover:border-sky-500/50' 
+                          : 'bg-white/5 border-white/5 opacity-60 hover:opacity-100 hover:border-white/10'
                       }`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-xl transition-colors ${isVisible ? 'bg-slate-800' : 'bg-slate-900 text-slate-600'}`}>
+                        <div className={`p-2 rounded-xl transition-colors ${isVisible ? 'bg-white/10' : 'bg-white/5 text-slate-600'}`}>
                           {card.icon}
                         </div>
                         <div>
@@ -146,7 +146,7 @@ export const DashboardPreferencesModal = ({
                       </div>
 
                       {/* Custom Toggle Switch */}
-                      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isVisible ? 'bg-sky-500' : 'bg-slate-800'}`}>
+                      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isVisible ? 'bg-sky-500' : 'bg-white/10'}`}>
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isVisible ? 'translate-x-6' : 'translate-x-1'}`} />
                       </div>
                     </div>
@@ -155,7 +155,7 @@ export const DashboardPreferencesModal = ({
               </div>
             </div>
 
-            <div className="p-6 border-t border-white/5 bg-slate-900/50 shrink-0">
+            <div className="p-6 border-t border-white/5 bg-white/5 shrink-0">
               <button 
                 onClick={onClose}
                 className="w-full py-4 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl transition-colors shadow-lg shadow-sky-500/20"
