@@ -70,25 +70,38 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
 
   if (isForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative" style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}>
-        <div className="absolute inset-0 bg-[#020617]/60 backdrop-blur-[2px]"></div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md glass-card p-8 rounded-3xl space-y-8 relative z-10">
+  if (isForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative selection:bg-sky-500/30" style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}>
+        {/* Overlay gradiente para profundidade */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/40 via-transparent to-slate-950/80 backdrop-blur-[4px]"></div>
+        
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="w-full max-w-md bg-white/[0.03] backdrop-blur-xl p-10 rounded-[2.5rem] space-y-8 relative z-10 border border-white/10 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
+        >
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-white">Recuperar Senha</h2>
-            <p className="text-slate-500 text-sm">Digite seu e-mail para receber o link de recuperação.</p>
+            <h2 className="text-3xl font-black text-white tracking-tight">Recuperar Senha</h2>
+            <p className="text-slate-400 text-sm font-medium">Digite seu e-mail para receber o link.</p>
           </div>
           <form onSubmit={handleResetPassword} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">E-mail</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">E-mail de Trabalho</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400" size={18} />
-                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-950 border border-slate-800 pl-12 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all text-slate-200" placeholder="seu@email.com" />
+                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
+                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-slate-600" placeholder="seu@email.com" />
               </div>
             </div>
-            <button disabled={loading} type="submit" className="w-full bg-sky-500 py-4 rounded-xl font-bold text-white hover:bg-sky-400 transition-all flex items-center justify-center gap-2">
-              {loading ? <Loader2 className="animate-spin" size={20} /> : 'Enviar E-mail'}
+            <button disabled={loading} type="submit" className="w-full bg-sky-500 py-4 rounded-2xl font-black text-white hover:bg-sky-400 transition-all flex items-center justify-center gap-3 shadow-xl shadow-sky-500/20 active:scale-[0.98]">
+              {loading ? <Loader2 className="animate-spin" size={20} /> : (
+                <>
+                  <span>Enviar Link</span>
+                  <LogIn size={18} className="opacity-50" />
+                </>
+              )}
             </button>
-            <button type="button" onClick={() => setIsForgotPassword(false)} className="w-full text-slate-500 text-sm hover:text-white transition-colors">Voltar para entrar</button>
+            <button type="button" onClick={() => setIsForgotPassword(false)} className="w-full text-slate-400 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors">Voltar para o início</button>
           </form>
         </motion.div>
       </div>
@@ -96,70 +109,95 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative" style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}>
-      <div className="absolute inset-0 bg-[#020617]/60 backdrop-blur-[2px]"></div>
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md glass-card p-8 rounded-3xl space-y-8 shadow-2xl relative z-10">
-        <div className="text-center flex flex-col items-center gap-4">
-          <div className="bg-sky-500 p-4 rounded-2xl shadow-xl shadow-sky-500/20">
-            <PieChart size={32} className="text-white" />
+    <div className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative selection:bg-sky-500/30" style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}>
+      {/* Camada de Integração Visual */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/20 backdrop-blur-[3px]"></div>
+      <div className="absolute inset-0 bg-slate-950/20"></div>
+
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }} 
+        animate={{ opacity: 1, scale: 1 }} 
+        className="w-full max-w-md bg-white/[0.02] backdrop-blur-2xl p-10 rounded-[3rem] space-y-10 border border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] relative z-10"
+      >
+        <div className="text-center flex flex-col items-center gap-6">
+          <div className="relative group">
+            <div className="absolute -inset-4 bg-sky-500/20 rounded-full blur-2xl group-hover:bg-sky-500/30 transition-all duration-500"></div>
+            <div className="bg-sky-500 p-5 rounded-[1.5rem] shadow-2xl shadow-sky-500/40 relative">
+              <PieChart size={36} className="text-white" />
+            </div>
           </div>
-          <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-white">Tracker</h2>
-            <p className="text-slate-500 text-sm">{isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}</p>
+          <div className="space-y-2">
+            <h2 className="text-4xl font-black text-white tracking-tighter italic">TRACKER</h2>
+            <div className="h-1 w-12 bg-sky-500 mx-auto rounded-full"></div>
+            <p className="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mt-2">
+              {isLogin ? 'Autenticação' : 'Registro de Conta'}
+            </p>
           </div>
         </div>
 
         {error && (
-          <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl text-rose-400 text-xs font-medium">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl text-rose-400 text-[10px] font-black uppercase tracking-widest text-center">
             {error}
-          </div>
+          </motion.div>
         )}
 
-        <form onSubmit={handleAuth} className="space-y-6">
-          <div className="space-y-4">
+        <form onSubmit={handleAuth} className="space-y-8">
+          <div className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">E-mail</label>
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">E-mail</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400" size={18} />
-                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-950 border border-slate-800 pl-12 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all text-slate-200" placeholder="seu@email.com" />
+                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
+                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/[0.03] border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-slate-600" placeholder="seu@email.com" />
               </div>
             </div>
             <div className="space-y-2">
-              <div className="flex justify-between items-center px-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Senha</label>
-                {isLogin && <button type="button" onClick={() => setIsForgotPassword(true)} className="text-[10px] font-bold text-sky-500 uppercase hover:text-sky-400">Esqueci a senha</button>}
+              <div className="flex justify-between items-center px-2">
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Senha</label>
+                {isLogin && (
+                  <button type="button" onClick={() => setIsForgotPassword(true)} className="text-[9px] font-black text-sky-500 uppercase hover:text-sky-400 tracking-wider">
+                    Recuperar
+                  </button>
+                )}
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400" size={18} />
-                <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 pl-12 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 outline-none transition-all text-slate-200" placeholder="••••••••" />
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
+                <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-white/[0.03] border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-slate-600" placeholder="••••••••" />
               </div>
             </div>
           </div>
 
-          <button disabled={loading} type="submit" className="w-full bg-sky-500 py-4 rounded-xl font-bold text-white hover:bg-sky-400 transition-all shadow-lg shadow-sky-500/10 flex items-center justify-center gap-2">
-            {loading ? <Loader2 className="animate-spin" size={20} /> : (isLogin ? 'Entrar' : 'Cadastrar')}
-            <LogIn size={20} />
+          <button disabled={loading} type="submit" className="w-full bg-sky-500 py-5 rounded-2xl font-black text-white hover:bg-sky-400 transition-all shadow-2xl shadow-sky-500/30 flex items-center justify-center gap-3 active:scale-[0.98]">
+            {loading ? <Loader2 className="animate-spin" size={24} /> : (
+              <>
+                <span className="uppercase tracking-[0.2em] text-sm">{isLogin ? 'Entrar' : 'Registrar'}</span>
+                <LogIn size={20} className="opacity-50" />
+              </>
+            )}
           </button>
         </form>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center px-2">
-            <div className="w-full border-t border-slate-800"></div>
+        <div className="space-y-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-transparent px-4 text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] backdrop-blur-md">Conexão Rápida</span>
+            </div>
           </div>
-          <div className="relative flex justify-center">
-            <span className="bg-[#020617] px-4 text-[10px] text-slate-500 font-bold uppercase tracking-widest">Ou continuar com</span>
-          </div>
+
+          <button onClick={handleGoogleSignIn} className="w-full bg-white/5 border border-white/10 py-4 rounded-2xl font-black text-slate-200 hover:bg-white/10 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]">
+            <Chrome size={20} className="group-hover:text-sky-400 transition-colors" />
+            <span className="uppercase tracking-[0.1em] text-xs">Acessar com Google</span>
+          </button>
+
+          <p className="text-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+            {isLogin ? 'Não possui acesso?' : 'Já tem um Tracker?'}
+            <button onClick={() => setIsLogin(!isLogin)} className="ml-2 text-sky-500 hover:text-sky-400 transition-colors">
+              {isLogin ? 'Cadastrar Equipe' : 'Fazer Login'}
+            </button>
+          </p>
         </div>
-
-        <button onClick={handleGoogleSignIn} className="w-full bg-slate-900 border border-slate-800 py-4 rounded-xl font-bold text-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3">
-          <Chrome size={20} />
-          Google
-        </button>
-
-        <p className="text-center text-sm text-slate-500">
-          {isLogin ? 'Ainda não tem conta?' : 'Já possui conta?'}
-          <button onClick={() => setIsLogin(!isLogin)} className="ml-2 font-bold text-sky-500 hover:text-sky-400">{isLogin ? 'Cadastre-se' : 'Faça login'}</button>
-        </p>
       </motion.div>
     </div>
   );
