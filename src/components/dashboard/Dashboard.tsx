@@ -359,7 +359,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
     return filtered;
-  }, [timeFilteredAgreements, searchTerm, filterStatus, sortOrder]);
+  }, [isChecklistMode, memberFilteredAgreements, timeFilteredAgreements, searchTerm, filterStatus, sortOrder]);
   // Stats calculation
   const stats: DashboardStats = useMemo(() => {
     const today = new Date();
