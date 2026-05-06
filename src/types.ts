@@ -83,6 +83,14 @@ export interface DashboardStats {
   ticketAverage: number;
   remainingToGoal: number;
   projection: number;
+  insights?: {
+    avgTimeToPay: number;
+    projection7d: number;
+    performanceByOrigin: Record<string, { total: number; paid: number }>;
+    ticketByType: Record<string, { total: number; count: number }>;
+    cycleEfficiency: { morning: number; afternoon: number };
+    earlyBreakRate: number;
+  };
   counts: {
     month: {
       total: number;
@@ -101,4 +109,5 @@ export interface DashboardStats {
     };
     today: number; // Volume de registros hoje
   };
+  hourlyDistribution: Record<number, number>;
 }
