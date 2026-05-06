@@ -84,7 +84,6 @@ import { HistoryModal } from '../modals/HistoryModal';
 import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
 import { MONTHS, getMonthName, getYearRange } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
-import { TVLeaderboard } from './TVLeaderboard';
 import { Celebration } from './Celebration';
 interface DashboardProps {
   user: User;
@@ -273,6 +272,115 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       return () => clearTimeout(timer);
     }
   }, [profile?.hasSeenTour]);
+  // Stats calculation
+  const stats: DashboardStats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Fonte Mensal (Sempre o mês selecionado)
+    const monthAgreements = agreements.filter(a => {
+      const d = new Date(a.createdAt);
+      return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    });
+    
+    // Fonte Filtrada (Tabela e Gráfico)
+    let filtered = monthAgreements;
+    // Filter by View Mode
+    if (viewMode === 'personal') {
+      filtered = filtered.filter(a => a.operatorId === profile.uid);
+    } else if (selectedMemberId !== 'all') {
+      filtered = filtered.filter(a => a.operatorId === selectedMemberId);
+    }
+
+    const timeFiltered = (() => {
+      let f = filtered;
+      if (dateFilter === 'today') {
+        const t = new Date();
+        t.setHours(0,0,0,0);
+        f = f.filter(a => new Date(a.createdAt) >= t);
+      } else if (dateFilter === 'yesterday') {
+        const y = new Date();
+        y.setDate(y.getDate() - 1);
+        y.setHours(0,0,0,0);
+        const t = new Date();
+        t.setHours(0,0,0,0);
+        f = f.filter(a => {
+          const d = new Date(a.createdAt);
+          return d >= y && d < t;
+        });
+      } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+        const s = new Date(customStartDate + 'T00:00:00');
+        const e = new Date(customEndDate + 'T23:59:59');
+        f = f.filter(a => {
+          const d = new Date(a.createdAt);
+          return d >= s && d <= e;
+        });
+      }
+      return f;
+    })();
+
+    // Cálculos Mensais
+    const totalProjected = monthAgreements.reduce((acc, curr) => acc + curr.value, 0);
+    const paidAgreementsMonth = monthAgreements.filter(a => a.status === AgreementStatus.PAID);
+    const totalPaidMonth = paidAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
+    
+    const overdueAgreementsMonth = monthAgreements.filter(a => 
+      a.status === AgreementStatus.WAITING && 
+      parseLocalDate(a.dueDate) < today
+    );
+    const totalOverdueMonth = overdueAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
+    const pendingTodayAgreementsMonth = monthAgreements.filter(a => 
+      a.status === AgreementStatus.WAITING && 
+      parseLocalDate(a.dueDate).getTime() === today.getTime()
+    );
+    const totalPendingTodayMonth = pendingTodayAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
+
+    // Cálculos Filtrados (Produtividade Diária)
+    const paidAgreementsFiltered = timeFiltered.filter(a => a.status === AgreementStatus.PAID);
+    const totalPaidFiltered = paidAgreementsFiltered.reduce((acc, curr) => acc + curr.value, 0);
+    const isCurrentMonth = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear();
+    
+    const agreementsToday = isCurrentMonth 
+      ? monthAgreements.filter(a => new Date(a.createdAt) >= today)
+      : [];
+
+    return {
+      totalProjected,
+      totalPaid: totalPaidMonth,
+      filteredPaidValue: totalPaidFiltered,
+      totalOverdue: totalOverdueMonth,
+      totalPendingToday: totalPendingTodayMonth,
+      effectivenessRate: (totalPaidMonth / (totalProjected || 1)) * 100,
+      counts: {
+        month: {
+          total: monthAgreements.length,
+          paid: paidAgreementsMonth.length,
+          waiting: monthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
+          broken: monthAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
+          overdue: overdueAgreementsMonth.length,
+          pendingToday: pendingTodayAgreementsMonth.length,
+        },
+        filtered: {
+          total: timeFiltered.length,
+          paid: paidAgreementsFiltered.length,
+          waiting: timeFiltered.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
+          broken: timeFiltered.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
+          overdue: timeFiltered.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today).length,
+        },
+        today: agreementsToday.length,
+      },
+      ticketAverage: monthAgreements.length > 0 ? totalProjected / monthAgreements.length : 0,
+      remainingToGoal: Math.max(0, (monthlyGoal || 0) - totalPaidMonth),
+      projection: (() => {
+        if (!isCurrentMonth) return totalPaidMonth;
+        const now = new Date();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const currentDay = now.getDate();
+        const dailyAvg = totalPaidMonth / currentDay;
+        return dailyAvg * daysInMonth;
+      })()
+    };
+  }, [agreements, selectedMonth, selectedYear, viewMode, profile.uid, selectedMemberId, dateFilter, customStartDate, customEndDate, monthlyGoal]);
+
   // Filtering Logic
   const monthFilteredAgreements = useMemo(() => {
     return agreements.filter(a => {
@@ -381,12 +489,12 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     });
 
     return Object.entries(operatorStats)
-      .map(([id, stats]) => {
+      .map(([id, opStats]) => {
         const member = currentTeamMembers.find(m => m.uid === id);
         return {
           name: member?.displayName || 'Operador Externo',
-          value: stats.value,
-          count: stats.count
+          value: opStats.value,
+          count: opStats.count
         };
       })
       .sort((a, b) => b.value - a.value)
@@ -401,134 +509,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       const timer = setTimeout(() => setShowCelebration(false), 10000);
       return () => clearTimeout(timer);
     }
-  }, [stats.effectivenessRate]);
-  // Stats calculation
-  const stats: DashboardStats = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    // Fonte Mensal (Sempre o mês selecionado)
-    const monthAgreements = memberFilteredAgreements;
-    
-    // Fonte Filtrada (Tabela e Gráfico)
-    const filteredAgreements = timeFilteredAgreements;
-    // Cálculos Mensais
-    const totalProjected = monthAgreements.reduce((acc, curr) => acc + curr.value, 0);
-    const paidAgreementsMonth = monthAgreements.filter(a => a.status === AgreementStatus.PAID);
-    const totalPaidMonth = paidAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-    
-    const overdueAgreementsMonth = monthAgreements.filter(a => 
-      a.status === AgreementStatus.WAITING && 
-      parseLocalDate(a.dueDate) < today
-    );
-    const totalOverdueMonth = overdueAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-    const pendingTodayAgreementsMonth = monthAgreements.filter(a => 
-      a.status === AgreementStatus.WAITING && 
-      parseLocalDate(a.dueDate).getTime() === today.getTime()
-    );
-    const totalPendingTodayMonth = pendingTodayAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-    // Cálculos Filtrados (Produtividade Diária)
-    const paidAgreementsFiltered = filteredAgreements.filter(a => a.status === AgreementStatus.PAID);
-    const totalPaidFiltered = paidAgreementsFiltered.reduce((acc, curr) => acc + curr.value, 0);
-    const isCurrentMonth = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear();
-    
-    const agreementsToday = isCurrentMonth 
-      ? monthAgreements.filter(a => new Date(a.createdAt) >= today)
-      : [];
-    return {
-      totalProjected,
-      totalPaid: totalPaidMonth,
-      filteredPaidValue: totalPaidFiltered,
-      totalOverdue: totalOverdueMonth,
-      totalPendingToday: totalPendingTodayMonth,
-      effectivenessRate: (totalPaidMonth / (totalProjected || 1)) * 100,
-      counts: {
-        month: {
-          total: monthAgreements.length,
-          paid: paidAgreementsMonth.length,
-          waiting: monthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
-          broken: monthAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
-          overdue: overdueAgreementsMonth.length,
-          pendingToday: pendingTodayAgreementsMonth.length,
-        },
-        filtered: {
-          total: filteredAgreements.length,
-          paid: paidAgreementsFiltered.length,
-          waiting: filteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
-          broken: filteredAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
-          overdue: filteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today).length,
-        },
-        today: agreementsToday.length,
-      },
-      ticketAverage: monthAgreements.length > 0 ? totalProjected / monthAgreements.length : 0,
-      remainingToGoal: Math.max(0, (monthlyGoal || 0) - totalPaidMonth),
-      
-      // Advanced Insights
-      insights: {
-        avgTimeToPay: (() => {
-          const paidWithTime = monthAgreements.filter(a => a.status === AgreementStatus.PAID && a.paidAt);
-          if (paidWithTime.length === 0) return 0;
-          const totalMs = paidWithTime.reduce((acc, a) => {
-            const created = new Date(a.createdAt).getTime();
-            const paid = new Date(a.paidAt!).getTime();
-            return acc + Math.max(0, paid - created);
-          }, 0);
-          return totalMs / paidWithTime.length / (1000 * 60 * 60); // In hours
-        })(),
-        projection7d: (() => {
-          const next7 = new Date(today);
-          next7.setDate(today.getDate() + 7);
-          return monthAgreements
-            .filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today && parseLocalDate(a.dueDate) <= next7)
-            .reduce((acc, curr) => acc + curr.value, 0);
-        })(),
-        performanceByOrigin: monthAgreements.reduce((acc, curr) => {
-          const origin = curr.origin;
-          if (!acc[origin]) acc[origin] = { total: 0, paid: 0 };
-          acc[origin].total += curr.value;
-          if (curr.status === AgreementStatus.PAID) acc[origin].paid += curr.value;
-          return acc;
-        }, {} as Record<string, { total: number; paid: number }>),
-        ticketByType: monthAgreements.reduce((acc, curr) => {
-          const type = curr.type;
-          if (!acc[type]) acc[type] = { total: 0, count: 0 };
-          acc[type].total += curr.value;
-          acc[type].count += 1;
-          return acc;
-        }, {} as Record<string, { total: number; count: number }>),
-        cycleEfficiency: {
-          morning: (() => {
-            const morning = monthAgreements.filter(a => new Date(a.createdAt).getHours() < 12);
-            if (morning.length === 0) return 0;
-            return (morning.filter(a => a.status === AgreementStatus.PAID).length / morning.length) * 100;
-          })(),
-          afternoon: (() => {
-            const afternoon = monthAgreements.filter(a => new Date(a.createdAt).getHours() >= 12);
-            if (afternoon.length === 0) return 0;
-            return (afternoon.filter(a => a.status === AgreementStatus.PAID).length / afternoon.length) * 100;
-          })()
-        },
-        earlyBreakRate: (() => {
-          const expiredWaiting = monthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today);
-          if (expiredWaiting.length === 0) return 0;
-          const checked = expiredWaiting.filter(a => a.lastCheckedAt && new Date(a.lastCheckedAt).toLocaleDateString() === today.toLocaleDateString());
-          return (checked.length / expiredWaiting.length) * 100;
-        })()
-      },
-      projection: (() => {
-        if (!isCurrentMonth) return totalPaidMonth;
-        const now = new Date();
-        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const currentDay = now.getDate();
-        const dailyAvg = totalPaidMonth / currentDay;
-        return dailyAvg * daysInMonth;
-      })(),
-      hourlyDistribution: filteredAgreements.reduce((acc, a) => {
-        const hour = new Date(a.createdAt).getHours();
-        acc[hour] = (acc[hour] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>)
-    };
-  }, [timeFilteredAgreements, memberFilteredAgreements, monthlyGoal, selectedMonth, selectedYear]);
+  }, [stats.effectivenessRate, showCelebration]);
+
   // Chart Data
   const chartData = useMemo(() => [
     { name: 'Meta', value: monthlyGoal, color: 'url(#colorMeta)' },
@@ -879,353 +861,220 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               exit={{ opacity: 0, y: -20 }}
               className="max-w-7xl mx-auto space-y-6"
             >
-              {/* Header com Toggle de Visão (Apenas para Supervisores) */}
-              {!isPresentMode && (
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-2xl font-black text-white tracking-tight uppercase">
-                        {viewMode === 'personal' ? 'Meu Desempenho' : 'Gestão de Equipe'}
-                      </h2>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setIsPreferencesModalOpen(true)}
-                          className="p-1.5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors border border-transparent hover:border-sky-500/20"
-                          title="Personalizar Visão"
-                        >
-                          <Settings size={20} />
-                        </button>
+              <>
+                {/* Header com Toggle de Visão (Apenas para Supervisores) */}
+                {!isPresentMode && (
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-2xl font-black text-white tracking-tight uppercase">
+                          {viewMode === 'personal' ? 'Meu Desempenho' : 'Gestão de Equipe'}
+                        </h2>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setIsPreferencesModalOpen(true)}
+                            className="p-1.5 text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors border border-transparent hover:border-sky-500/20"
+                            title="Personalizar Visão"
+                          >
+                            <Settings size={20} />
+                          </button>
 
-                        <button
-                          onClick={togglePresentMode}
-                          className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/20"
-                          title="Modo Apresentação (TV)"
-                        >
-                          <Tv size={20} />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-                      {viewMode === 'personal' 
-                        ? 'Acompanhe suas metas e acordos em tempo real' 
-                        : 'Visão macro e detalhada da performance do time'}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                    <div className="flex glass-card p-1 rounded-xl shadow-2xl">
-                      <select
-                        value={selectedMonth}
-                        onChange={(e) => {
-                          setSelectedMonth(parseInt(e.target.value));
-                          setCurrentPage(1);
-                        }}
-                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
-                      >
-                        {MONTHS.map((month, index) => (
-                          <option key={month} value={index} className="bg-slate-900 text-white">{month}</option>
-                        ))}
-                      </select>
-                      <div className="w-[1px] h-4 bg-slate-800 my-auto" />
-                      <select
-                        value={selectedYear}
-                        onChange={(e) => {
-                          setSelectedYear(parseInt(e.target.value));
-                          setCurrentPage(1);
-                        }}
-                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
-                      >
-                        {getYearRange().map(year => (
-                          <option key={year} value={year} className="bg-slate-900 text-white">{year}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {profile.role === 'supervisor' && (
-                      <div className="flex glass-card p-1 rounded-xl shadow-2xl">
-                        <button
-                          onClick={() => setViewMode('personal')}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                            viewMode === 'personal' 
-                              ? 'bg-primary text-white shadow-lg' 
-                              : 'text-slate-500 hover:text-slate-300'
-                          }`}
-                        >
-                          <UserIcon size={14} />
-                          Pessoal
-                        </button>
-                        <button
-                          onClick={() => setViewMode('team')}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                            viewMode === 'team' 
-                              ? 'bg-primary text-white shadow-lg' 
-                              : 'text-slate-500 hover:text-slate-300'
-                          }`}
-                        >
-                          <Users size={14} />
-                          Equipe
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard 
-                  title="Total Projetado" 
-                  value={formatCurrency(stats.totalProjected)} 
-                  icon={DollarSign} 
-                  color="primary"
-                />
-                <StatCard 
-                  title="Produtividade" 
-                  value={`${stats.effectivenessRate.toFixed(1)}%`} 
-                  icon={TrendingUp} 
-                  trend={stats.effectivenessRate >= effectivenessGoal ? "No Alvo" : ""}
-                  color={stats.effectivenessRate >= effectivenessGoal ? "emerald" : "amber"}
-                />
-                <StatCard 
-                  title="Falta p/ Meta" 
-                  value={formatCurrency(stats.remainingToGoal)} 
-                  icon={Target} 
-                  color="rose"
-                />
-                <StatCard 
-                  title="Projeção" 
-                  value={formatCurrency(stats.projection)} 
-                  icon={BarChart3} 
-                  subtitle="Estimativa Mensal"
-                  color="sky"
-                />
-              </section>
-
-              <section id="stats-grid-2" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard 
-                  title="Vencidos" 
-                  value={formatCurrency(stats.totalOverdue)} 
-                  icon={AlertTriangle} 
-                  color="rose"
-                />
-                <StatCard 
-                  title="Vencendo Hoje" 
-                  value={formatCurrency(stats.totalPendingToday)} 
-                  icon={Clock} 
-                  color="amber"
-                />
-                <StatCard 
-                  title="Volume" 
-                  value={stats.counts.month.total} 
-                  icon={Users} 
-                  subtitle="Acordos Totais"
-                  color="indigo"
-                />
-                <StatCard 
-                  title="Ticket Médio" 
-                  value={formatCurrency(stats.ticketAverage)} 
-                  icon={Zap} 
-                  color="emerald"
-                />
-              </section>
-
-              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-1 grid grid-cols-1 gap-4">
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="glass-card p-6 rounded-2xl shadow-xl flex flex-col justify-between"
-                  >
-                    <div>
-                      <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">Meta de recuperação</h3>
-                      <div className="flex items-end justify-between mb-4">
-                        <span className="text-4xl font-black text-emerald-400">
-                          {formatCurrency(stats.totalPaid)}
-                        </span>
-                        <span className="text-slate-500 font-bold text-sm mb-1">
-                          de {formatCurrency(monthlyGoal)}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div className="h-4 bg-slate-900 rounded-full overflow-hidden p-1">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(stats.effectivenessRate, 100)}%` }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className={`h-full rounded-full ${stats.effectivenessRate >= 100 ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'bg-primary'}`}
-                          />
+                          <button
+                            onClick={togglePresentMode}
+                            className="p-1.5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors border border-transparent hover:border-emerald-500/20"
+                            title="Modo Apresentação (TV)"
+                          >
+                            <Tv size={20} />
+                          </button>
                         </div>
-                        <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                          <span>Progresso</span>
-                          <span className={stats.effectivenessRate >= 100 ? 'text-emerald-400' : ''}>
-                            {stats.effectivenessRate.toFixed(1)}%
+                      </div>
+                      <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                        {viewMode === 'personal' 
+                          ? 'Acompanhe suas metas e acordos em tempo real' 
+                          : 'Visão macro e detalhada da performance do time'}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                      <div className="flex glass-card p-1 rounded-xl shadow-2xl">
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                          className="bg-transparent text-xs font-bold text-slate-300 px-3 py-1.5 border-none outline-none focus:ring-0 cursor-pointer hover:text-white transition-colors"
+                        >
+                          {MONTHS.map((month, idx) => (
+                            <option key={month} value={idx} className="bg-slate-900">{month}</option>
+                          ))}
+                        </select>
+                        <div className="w-px h-4 bg-slate-800 self-center" />
+                        <select
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(Number(e.target.value))}
+                          className="bg-transparent text-xs font-bold text-slate-300 px-3 py-1.5 border-none outline-none focus:ring-0 cursor-pointer hover:text-white transition-colors"
+                        >
+                          {getYearRange().map(year => (
+                            <option key={year} value={year} className="bg-slate-900">{year}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatCard 
+                    title="Total Projetado" 
+                    value={formatCurrency(stats.totalProjected)} 
+                    icon={DollarSign} 
+                    color="primary"
+                  />
+                  <StatCard 
+                    title="Produtividade" 
+                    value={`${stats.effectivenessRate.toFixed(1)}%`} 
+                    icon={TrendingUp} 
+                    trend={stats.effectivenessRate >= effectivenessGoal ? "No Alvo" : ""}
+                    color={stats.effectivenessRate >= effectivenessGoal ? "emerald" : "amber"}
+                  />
+                  <StatCard 
+                    title="Falta p/ Meta" 
+                    value={formatCurrency(stats.remainingToGoal)} 
+                    icon={Target} 
+                    color="rose"
+                  />
+                  <StatCard 
+                    title="Projeção" 
+                    value={formatCurrency(stats.projection)} 
+                    icon={BarChart3} 
+                    subtitle="Estimativa Mensal"
+                    color="sky"
+                  />
+                </section>
+
+                <section id="stats-grid-2" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatCard 
+                    title="Vencidos" 
+                    value={formatCurrency(stats.totalOverdue)} 
+                    icon={AlertTriangle} 
+                    color="rose"
+                  />
+                  <StatCard 
+                    title="Vencendo Hoje" 
+                    value={formatCurrency(stats.totalPendingToday)} 
+                    icon={Clock} 
+                    color="amber"
+                  />
+                  <StatCard 
+                    title="Volume" 
+                    value={stats.counts.month.total} 
+                    icon={Users} 
+                    subtitle="Acordos Totais"
+                    color="indigo"
+                  />
+                  <StatCard 
+                    title="Ticket Médio" 
+                    value={formatCurrency(stats.ticketAverage)} 
+                    icon={Zap} 
+                    color="emerald"
+                  />
+                </section>
+
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="lg:col-span-1 grid grid-cols-1 gap-4">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-6 rounded-2xl shadow-xl flex flex-col justify-between"
+                    >
+                      <div>
+                        <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">Meta de recuperação</h3>
+                        <div className="flex items-end justify-between mb-4">
+                          <span className="text-4xl font-black text-emerald-400">
+                            {formatCurrency(stats.totalPaid)}
+                          </span>
+                          <span className="text-slate-500 font-bold text-sm mb-1">
+                            de {formatCurrency(monthlyGoal)}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div className="h-4 bg-slate-900 rounded-full overflow-hidden p-1">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min(stats.effectivenessRate, 100)}%` }}
+                              transition={{ duration: 1, ease: "easeOut" }}
+                              className={`h-full rounded-full ${stats.effectivenessRate >= 100 ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'bg-primary'}`}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                            <span>Progresso</span>
+                            <span className={stats.effectivenessRate >= 100 ? 'text-emerald-400' : ''}>
+                              {stats.effectivenessRate.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <StatCard 
+                      title="Recuperado (Filtro)" 
+                      value={formatCurrency(stats.filteredPaidValue)} 
+                      icon={CheckCircle2} 
+                      subtitle={dateFilter === 'all' ? "Neste Mês" : "No Período"}
+                      color="emerald"
+                    />
+                  </div>
+
+                  <div className="lg:col-span-2 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32" />
+                    <TeamPerformance agreements={monthFilteredAgreements} members={currentTeamMembers} />
+                  </div>
+                </section>
+
+                {!isPresentMode && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex flex-wrap gap-2">
+                        <FilterButton 
+                          active={filterStatus === 'all'} 
+                          onClick={() => setFilterStatus('all')}
+                          label="Todos"
+                          count={stats.counts.filtered.total}
+                          colorClass="bg-slate-800 text-slate-400"
+                        />
+                        <FilterButton 
+                          active={filterStatus === AgreementStatus.PAID} 
+                          onClick={() => setFilterStatus(AgreementStatus.PAID)}
+                          label="Pagos"
+                          colorClass="bg-emerald-500/10 text-emerald-400"
+                          count={stats.counts.filtered.paid}
+                        />
+                        <FilterButton 
+                          active={filterStatus === AgreementStatus.WAITING} 
+                          onClick={() => setFilterStatus(AgreementStatus.WAITING)}
+                          label="Pendentes"
+                          colorClass="bg-sky-500/10 text-sky-400"
+                          count={stats.counts.filtered.waiting}
+                        />
+                        <FilterButton 
+                          active={filterStatus === AgreementStatus.BROKEN} 
+                          onClick={() => setFilterStatus(AgreementStatus.BROKEN)}
+                          label="Vencidos"
+                          colorClass="bg-rose-500/10 text-rose-400"
+                          count={stats.counts.filtered.overdue}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/50 border border-slate-800 rounded-lg">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                            {stats.counts.filtered.total} Registros Encontrados
                           </span>
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-
-                  <StatCard 
-                    title="Recuperado (Filtro)" 
-                    value={formatCurrency(stats.filteredPaidValue)} 
-                    icon={CheckCircle2} 
-                    subtitle={dateFilter === 'all' ? "Neste Mês" : "No Período"}
-                    color="emerald"
-                  />
-                </div>
-
-                <div className="lg:col-span-2 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32" />
-                  <TeamPerformance data={stats} />
-                </div>
-              </section>
-            </motion.div>
-          )}
-
-          {isPresentMode && activeTVView === 'ranking' && (
-            <motion.div
-              key="ranking-view"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-7xl mx-auto h-[calc(100vh-120px)]"
-            >
-              <TVLeaderboard data={leaderboardData} />
-            </motion.div>
-          )}
-
-          {(activeTVView === 'insights' || (!isPresentMode)) && (
-            <motion.div
-              key="insights-view"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-7xl mx-auto space-y-6"
-            >
-              <section className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                <div className="lg:col-span-3 glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group">
-                  <div className="absolute -top-24 -left-24 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl" />
-                  
-                  <div className="flex items-center justify-between mb-8 relative">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-sky-500/10 rounded-xl">
-                        <Clock3 className="text-sky-400" size={20} />
-                      </div>
-                      <h3 className="text-lg font-black text-white uppercase tracking-tight">Densidade por Horário</h3>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                      <div className="w-2 h-2 rounded-full bg-sky-500" />
-                      <span>Volume de Registros</span>
-                    </div>
                   </div>
-
-                  <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={Object.entries(stats.hourlyDistribution).map(([hour, count]) => ({ hour: `${hour}h`, count }))}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
-                        <YAxis hide />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '12px' }}
-                          itemStyle={{ color: '#38bdf8', fontWeight: 700 }}
-                          cursor={{ fill: 'rgba(56, 189, 248, 0.05)' }}
-                        />
-                        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                          {Object.entries(stats.hourlyDistribution).map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#0ea5e9' : '#38bdf8'} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-4">
-                  <StatCard 
-                    title="Aguardando" 
-                    value={stats.counts.month.waiting} 
-                    icon={Clock} 
-                    subtitle="Dentro do Prazo"
-                    color="sky"
-                  />
-                  <StatCard 
-                    title="Registros Hoje" 
-                    value={stats.counts.today} 
-                    icon={Plus} 
-                    trend={stats.counts.today > 10 ? "Ativo" : ""}
-                    color="indigo"
-                  />
-                </div>
-              </section>
-
-              {!isPresentMode && (
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-wrap gap-2">
-                      <FilterButton 
-                        active={filterStatus === 'all'} 
-                        onClick={() => setFilterStatus('all')}
-                        label="Todos"
-                      />
-                      <FilterButton 
-                        active={filterStatus === AgreementStatus.PAID} 
-                        onClick={() => setFilterStatus(AgreementStatus.PAID)}
-                        label="Pagos"
-                        color="emerald"
-                        count={stats.counts.filtered.paid}
-                      />
-                      <FilterButton 
-                        active={filterStatus === AgreementStatus.WAITING} 
-                        onClick={() => setFilterStatus(AgreementStatus.WAITING)}
-                        label="Pendentes"
-                        color="sky"
-                        count={stats.counts.filtered.waiting}
-                      />
-                      <FilterButton 
-                        active={filterStatus === AgreementStatus.BROKEN} 
-                        onClick={() => setFilterStatus(AgreementStatus.BROKEN)}
-                        label="Vencidos"
-                        color="rose"
-                        count={stats.counts.filtered.overdue}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/50 border border-slate-800 rounded-lg">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                          {stats.counts.filtered.total} Registros Encontrados
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {stats.insights && (
-                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="glass-card p-6 rounded-2xl border border-slate-800/50">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Eficiência por Ciclo</p>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-xs font-bold mb-2">
-                          <span className="text-sky-400">Manhã</span>
-                          <span className="text-white">{stats.insights?.cycleEfficiency?.morning.toFixed(0)}%</span>
-                        </div>
-                        <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-sky-500" style={{ width: `${stats.insights?.cycleEfficiency?.morning}%` }} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-xs font-bold mb-2">
-                          <span className="text-amber-400">Tarde</span>
-                          <span className="text-white">{stats.insights?.cycleEfficiency?.afternoon.toFixed(0)}%</span>
-                        </div>
-                        <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-500" style={{ width: `${stats.insights?.cycleEfficiency?.afternoon}%` }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              )}
+                )}
+              </>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1397,130 +1246,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </section>
         )}
-        {/* Advanced Insights Section */}
-        <section className="mt-8">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-sky-500/10 rounded-lg">
-              <TrendingUp size={20} className="text-sky-400" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white leading-tight">Insights Analíticos</h2>
-              <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Performance e Projeções</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Ticket Médio p/ Tipo */}
-            {!localHiddenCards.includes('ticketMedioTipo') && (
-              <div 
-                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
-                title="Mostra o valor financeiro médio de cada tipo de negociação (Quitação, Parcelamento) fechada no período selecionado."
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-emerald-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <BarChart3 size={20} className="text-emerald-400" />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ticket Médio</span>
-                </div>
-                <div className="space-y-3">
-                  {Object.entries(stats.insights?.ticketByType || {}).slice(0, 3).map(([type, data]) => (
-                    <div key={type} className="flex justify-between items-center">
-                      <span className="text-xs text-slate-400 capitalize">
-                        {type === 'quitacao' ? 'Quitação' : type === 'parcelamento' ? 'Parc.' : 'Outros'}
-                      </span>
-                      <span className="text-xs font-bold text-white">{formatCurrency(data.total / (data.count || 1))}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* Tempo Médio p/ Pagar */}
-            {!localHiddenCards.includes('tempoMedioPagar') && (
-              <div 
-                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group"
-                title="Mede o tempo médio em horas que os clientes estão demorando para efetuar o pagamento após a data de registro do acordo."
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <Clock3 size={20} className="text-amber-400" />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Conversão</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-white tracking-tight">
-                    {stats.insights?.avgTimeToPay?.toFixed(1) || 0}h
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Tempo médio p/ pagamento</span>
-                  <div className="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                     <div 
-                      className="h-full bg-amber-500 transition-all duration-1000" 
-                      style={{ width: `${Math.min(100, (stats.insights?.avgTimeToPay || 0) * 4)}%` }} 
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Projeção 7 Dias */}
-            {!localHiddenCards.includes('projecao7Dias') && (
-              <div 
-                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group"
-                title="Soma de todos os acordos que ainda aguardam pagamento e têm vencimento agendado para os próximos 7 dias."
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-purple-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <CalendarDays size={20} className="text-purple-400" />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Próximos 7 Dias</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-purple-400 tracking-tight">
-                    {formatCurrency(stats.insights?.projection7d || 0)}
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Estimativa de entrada</span>
-                  <div className="flex items-center gap-2 mt-4">
-                    <div className="flex-1 h-1 bg-slate-800 rounded-full">
-                      <div className="h-full bg-purple-500 w-1/2 opacity-50" />
-                    </div>
-                    <span className="text-[10px] font-bold text-purple-400/50">Expectativa</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Eficiência por Ciclo */}
-            {!localHiddenCards.includes('eficienciaCiclo') && (
-              <div 
-                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-sky-500/30 transition-all group"
-                title="Compara a taxa de sucesso (conversão) dos acordos feitos no período da Manhã (antes das 12h) contra o período da Tarde (após 12h)."
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-sky-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <Target size={20} className="text-sky-400" />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Eficiência Ciclo</span>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
-                      <span className="text-sky-400">Manhã</span>
-                      <span className="text-white">{stats.insights?.cycleEfficiency?.morning.toFixed(0)}%</span>
-                    </div>
-                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-sky-500" style={{ width: `${stats.insights?.cycleEfficiency?.morning}%` }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
-                      <span className="text-amber-500">Tarde</span>
-                      <span className="text-white">{stats.insights?.cycleEfficiency?.afternoon.toFixed(0)}%</span>
-                    </div>
-                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-500" style={{ width: `${stats.insights?.cycleEfficiency?.afternoon}%` }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
         {!isPresentMode && (
           <>
             <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
