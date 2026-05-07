@@ -11,6 +11,7 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 - 🔍 **Conferência Diária**: Sistema de marcação de acordos conferidos para evitar retrabalho operacional.
 - 📊 **Dashboards Dinâmicos**: Visões personalizadas para operadores e supervisores com filtros avançados.
 - 📅 **Histórico Mensal**: Seletor para visualizar dados de meses anteriores com reset automático mensal.
+- 🧮 **Conciliação de Resultados**: Ferramenta para alinhar o Dashboard com os dados oficiais enviados via Microsoft Teams, incluindo normalização de saldo automática.
 
 ## 📂 Estrutura do Projeto
 
