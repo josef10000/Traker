@@ -67,6 +67,7 @@ import {
   AgreementStatus, 
   AgreementOrigin, 
   AgreementType,
+  AgreementCategory,
   DashboardStats, 
   UserProfile, 
   Team,
@@ -2057,6 +2058,15 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         confirmText="Sim, Remover"
         cancelText="Cancelar"
         variant="danger"
+      />
+
+      <ReconciliationModal 
+        isOpen={isReconciliationModalOpen}
+        onClose={() => setIsReconciliationModalOpen(false)}
+        trackerValue={stats.totalPaid}
+        currentOfficialValue={reconciliation?.officialValue || 0}
+        onSave={handleSaveReconciliation}
+        onNormalize={handleNormalizeSaldo}
       />
     </div>
   );
