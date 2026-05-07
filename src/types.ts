@@ -71,6 +71,7 @@ export interface Agreement {
   createdAt: string;
   paidAt?: string;
   lastCheckedAt?: string;
+  isAdjustment?: boolean;
 }
 
 export interface DashboardStats {
@@ -111,4 +112,15 @@ export interface DashboardStats {
     checklist: number; // Quantidade de itens pendentes de conferência
   };
   hourlyDistribution: Record<number, number>;
+}
+export interface Reconciliation {
+  id: string;
+  userId: string;
+  teamId: string;
+  month: number;
+  year: number;
+  officialValue: number;
+  trackerValue: number;
+  difference: number;
+  updatedAt: string;
 }

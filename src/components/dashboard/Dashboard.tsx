@@ -15,6 +15,7 @@ import {
   UserPlus,
   Users,
   X,
+  Calculator,
   AlertCircle,
   Trophy,
   TrendingUp,
@@ -68,7 +69,8 @@ import {
   AgreementType,
   DashboardStats, 
   UserProfile, 
-  Team 
+  Team,
+  Reconciliation
 } from '../../types';
 import { getTeamData, getTeamMembers, removeTeamMember } from '../../lib/teams';
 import { formatCurrency } from '../../utils/masks';
@@ -82,6 +84,7 @@ import { startTour } from '../../utils/tour';
 import { GoalModal } from '../modals/GoalModal';
 import { HistoryModal } from '../modals/HistoryModal';
 import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
+import { ReconciliationModal } from '../modals/ReconciliationModal';
 import { MONTHS, getMonthName, getYearRange } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
 interface DashboardProps {
@@ -113,6 +116,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{ uid: string; name: string } | null>(null);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
+  const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
   const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
   
@@ -253,6 +258,25 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       return () => clearTimeout(timer);
     }
   }, [profile?.hasSeenTour]);
+
+  // Load Reconciliation Data
+  useEffect(() => {
+    const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
+    if (!targetTeamId) return;
+
+    const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
+    const reconRef = doc(db, 'reconciliations', reconId);
+
+    const unsubscribe = onSnapshot(reconRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setReconciliation({ id: snapshot.id, ...snapshot.data() } as Reconciliation);
+      } else {
+        setReconciliation(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [selectedTeamId, selectedMonth, selectedYear, profile.uid, profile.teamId]);
   // Filtering Logic
   const monthFilteredAgreements = useMemo(() => {
     return agreements.filter(a => {
@@ -358,6 +382,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       const dateB = new Date(b.createdAt).getTime();
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
+
+    // Ocultar registros de ajuste técnico da lista principal
+    filtered = filtered.filter(a => !a.isAdjustment);
+
     return filtered;
   }, [isChecklistMode, memberFilteredAgreements, timeFilteredAgreements, searchTerm, filterStatus, sortOrder]);
   // Stats calculation
@@ -369,6 +397,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     
     // Fonte Filtrada (Tabela e Gráfico)
     const filteredAgreements = timeFilteredAgreements;
+
+    // Filtrar apenas acordos reais para contagens e médias
+    const realMonthAgreements = monthAgreements.filter(a => !a.isAdjustment);
+    const realFilteredAgreements = filteredAgreements.filter(a => !a.isAdjustment);
+
     // Cálculos Mensais
     const totalProjected = monthAgreements.reduce((acc, curr) => acc + curr.value, 0);
     const paidAgreementsMonth = monthAgreements.filter(a => a.status === AgreementStatus.PAID);
@@ -401,29 +434,29 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       effectivenessRate: (totalPaidMonth / (totalProjected || 1)) * 100,
       counts: {
         month: {
-          total: monthAgreements.length,
-          paid: paidAgreementsMonth.length,
-          waiting: monthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
-          broken: monthAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
-          overdue: overdueAgreementsMonth.length,
-          pendingToday: pendingTodayAgreementsMonth.length,
+          total: realMonthAgreements.length,
+          paid: realMonthAgreements.filter(a => a.status === AgreementStatus.PAID).length,
+          waiting: realMonthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
+          broken: realMonthAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
+          overdue: realMonthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today).length,
+          pendingToday: realMonthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate).getTime() === today.getTime()).length,
         },
         filtered: {
-          total: filteredAgreements.length,
-          paid: paidAgreementsFiltered.length,
-          waiting: filteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
-          broken: filteredAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
-          overdue: filteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today).length,
+          total: realFilteredAgreements.length,
+          paid: realFilteredAgreements.filter(a => a.status === AgreementStatus.PAID).length,
+          waiting: realFilteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
+          broken: realFilteredAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
+          overdue: realFilteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today).length,
         },
-        today: agreementsToday.length,
-        checklist: monthAgreements.filter(a => {
+        today: realMonthAgreements.filter(a => new Date(a.createdAt) >= today).length,
+        checklist: realMonthAgreements.filter(a => {
           const dueDate = parseLocalDate(a.dueDate);
           const wasCheckedToday = a.lastCheckedAt && 
             new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
           return dueDate <= today && a.status === AgreementStatus.WAITING && !wasCheckedToday;
         }).length,
       },
-      ticketAverage: monthAgreements.length > 0 ? totalProjected / monthAgreements.length : 0,
+      ticketAverage: realMonthAgreements.length > 0 ? totalProjected / realMonthAgreements.length : 0,
       remainingToGoal: Math.max(0, (monthlyGoal || 0) - totalPaidMonth),
       
       // Advanced Insights
@@ -554,6 +587,70 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao remover membro.', 'error');
     }
   };
+
+  const handleSaveReconciliation = async (officialValue: number) => {
+    const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
+    if (!targetTeamId) return;
+
+    const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
+    const reconRef = doc(db, 'reconciliations', reconId);
+
+    try {
+      await setDoc(reconRef, {
+        userId: profile.uid,
+        teamId: targetTeamId,
+        month: selectedMonth,
+        year: selectedYear,
+        officialValue,
+        trackerValue: stats.totalPaid,
+        difference: officialValue - stats.totalPaid,
+        updatedAt: new Date().toISOString()
+      });
+      showToast('Valor oficial salvo com sucesso!', 'success');
+    } catch (error) {
+      showToast('Erro ao salvar conciliação.', 'error');
+    }
+  };
+
+  const handleNormalizeSaldo = async (difference: number) => {
+    const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
+    if (!targetTeamId) return;
+
+    try {
+      // Cria um acordo especial de "Ajuste Técnico"
+      const adjustmentData = {
+        clientName: "Ajuste de Saldo Oficial",
+        clientCpf: "000.000.000-00",
+        value: Math.abs(difference),
+        dueDate: new Date().toISOString().split('T')[0],
+        status: AgreementStatus.PAID,
+        origin: AgreementOrigin.SALESFORCE,
+        type: AgreementType.QUITACAO,
+        category: AgreementCategory.FIXA,
+        operatorId: profile.uid,
+        teamId: targetTeamId,
+        createdAt: new Date().toISOString(),
+        paidAt: new Date().toISOString(),
+        isAdjustment: true // Flag interna
+      };
+
+      await setDoc(doc(collection(db, 'agreements')), adjustmentData);
+      
+      // Atualiza o registro de conciliação para zerar a diferença
+      const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
+      await updateDoc(doc(db, 'reconciliations', reconId), {
+        trackerValue: stats.totalPaid + difference,
+        difference: 0,
+        updatedAt: new Date().toISOString()
+      });
+
+      showToast('Saldo normalizado com sucesso!', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao normalizar saldo.', 'error');
+    }
+  };
+
   const handleToggleChecked = async (id: string, currentStatus: string | undefined) => {
     try {
       const isCurrentlyChecked = currentStatus && new Date(currentStatus).toLocaleDateString() === new Date().toLocaleDateString();
@@ -785,6 +882,16 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             >
               <LogOut size={20} />
             </button>
+            <button 
+              onClick={() => setIsReconciliationModalOpen(true)}
+              disabled={selectedTeamId === 'all'}
+              className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
+              title="Conciliar com Sistema Oficial"
+            >
+              <Calculator size={18} className="text-sky-400 group-hover:rotate-12 transition-transform" />
+              <span className="hidden sm:inline">Conciliar</span>
+            </button>
+
             <button 
               id="new-agreement-btn"
               onClick={() => setIsModalOpen(true)}
