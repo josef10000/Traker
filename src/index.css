@@ -45,7 +45,7 @@
 
 [data-theme='sky'] {
   --primary-color: #0ea5e9;
-  --bg-color: #075985; /* Azul sólido para contraste com vidro */
+  --bg-color: #082f49; /* Azul meia-noite profundo para melhor legibilidade */
   --surface-color: rgba(15, 23, 42, 0.3);
   --card-bg: rgba(255, 255, 255, 0.03);
   --text-main: #ffffff;

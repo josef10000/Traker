@@ -16,19 +16,25 @@ export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) =>
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-[#075985]"
+            className="absolute inset-0 bg-[#082f49]"
           >
-            {/* Overlay Gradiente Sutil para profundidade */}
-            <div className="absolute inset-0 bg-gradient-to-br from-sky-400/10 via-transparent to-sky-900/40 backdrop-blur-[1px]"></div>
+            {/* Textura de Grão (Noise) */}
+            <div className="absolute inset-0 opacity-[0.15] mix-blend-overlay pointer-events-none" 
+                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
+            </div>
+
+            {/* Overlay Gradiente Profundo */}
+            <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-slate-950/60 backdrop-blur-[1px]"></div>
             
-            {/* Luzes Dinâmicas Suaves */}
+            {/* Luzes Dinâmicas Suaves e Lentas */}
             <motion.div 
               animate={{ 
-                opacity: [0.2, 0.4, 0.2],
-                scale: [1, 1.1, 1]
+                opacity: [0.1, 0.2, 0.1],
+                scale: [1, 1.1, 1],
+                x: [0, 20, 0]
               }}
-              transition={{ duration: 10, repeat: Infinity }}
-              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-sky-300/10 blur-[120px] rounded-full"
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-sky-400/10 blur-[120px] rounded-full"
             />
           </motion.div>
         )}
