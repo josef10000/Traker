@@ -57,7 +57,6 @@ export const AgreementModal = ({
     };
 
     onSubmit(agreementData);
-    onClose();
   };
 
   return (
