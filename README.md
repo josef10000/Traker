@@ -12,6 +12,7 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 - 📊 **Dashboards Dinâmicos**: Visões personalizadas para operadores e supervisores com filtros avançados.
 - 📅 **Histórico Mensal**: Seletor para visualizar dados de meses anteriores com reset automático mensal.
 - 🧮 **Conciliação de Resultados**: Ferramenta para alinhar o Dashboard com os dados oficiais enviados via Microsoft Teams, incluindo normalização de saldo automática.
+- 🎨 **Temas Dinâmicos Premium**: Personalização de interface com temas (Dark, Sky, Purple) utilizando glassmorphism e cores otimizadas para contraste.
 
 ## 📂 Estrutura do Projeto
 

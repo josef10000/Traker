@@ -16,25 +16,19 @@ export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) =>
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0"
+            className="absolute inset-0 bg-[#075985]"
           >
-            {/* Imagem de Fundo Premium */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110" 
-              style={{ backgroundImage: 'url("https://i.imgur.com/0Tdqz5f.png")' }}
-            />
+            {/* Overlay Gradiente Sutil para profundidade */}
+            <div className="absolute inset-0 bg-gradient-to-br from-sky-400/10 via-transparent to-sky-900/40 backdrop-blur-[1px]"></div>
             
-            {/* Overlay Gradiente Integrado */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-950/40 via-sky-950/20 to-slate-950/80 backdrop-blur-[2px]"></div>
-            
-            {/* Luzes Dinâmicas */}
+            {/* Luzes Dinâmicas Suaves */}
             <motion.div 
               animate={{ 
-                opacity: [0.1, 0.2, 0.1],
-                scale: [1, 1.2, 1]
+                opacity: [0.2, 0.4, 0.2],
+                scale: [1, 1.1, 1]
               }}
-              transition={{ duration: 15, repeat: Infinity }}
-              className="absolute -top-1/4 -left-1/4 w-[1000px] h-[1000px] bg-sky-500/10 blur-[150px] rounded-full"
+              transition={{ duration: 10, repeat: Infinity }}
+              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-sky-300/10 blur-[120px] rounded-full"
             />
           </motion.div>
         )}
