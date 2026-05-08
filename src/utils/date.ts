@@ -23,3 +23,16 @@ export const getMonthBoundaries = (month: number, year: number) => {
   const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
   return { start, end };
 };
+
+export const getWorkingDaysInMonth = (month: number, year: number) => {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let workingDays = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Ignorar Domingo (0) e Sábado (6)
+      workingDays++;
+    }
+  }
+  return workingDays;
+};

@@ -6,9 +6,10 @@ import { formatCurrency } from '../../utils/masks';
 interface TeamPerformanceProps {
   agreements: Agreement[];
   members: UserProfile[];
+  dailyGoal?: number;
 }
 
-export const TeamPerformance = ({ agreements, members }: TeamPerformanceProps) => {
+export const TeamPerformance = ({ agreements, members, dailyGoal = 0 }: TeamPerformanceProps) => {
   if (members.length === 0) {
     return (
       <div className="p-8 border-2 border-dashed border-white/10 rounded-3xl text-center text-slate-500">
@@ -171,13 +172,20 @@ export const TeamPerformance = ({ agreements, members }: TeamPerformanceProps) =
                   <td className="px-4 py-3 font-black text-[11px] text-white uppercase bg-sky-600/40 border-r border-white/10 sticky left-0 z-10">
                     Total
                   </td>
-                  {tableDates.map(date => (
-                    <td key={date} className="px-4 py-3 text-center text-[11px] font-black text-white border-r border-white/10 bg-white/5">
-                      {formatCurrency(
-                        ranking.reduce((acc, curr) => acc + (curr.daily[date] || 0), 0)
-                      )}
-                    </td>
-                  ))}
+                  {tableDates.map(date => {
+                    const totalDay = ranking.reduce((acc, curr) => acc + (curr.daily[date] || 0), 0);
+                    const isGoalReached = dailyGoal > 0 && totalDay >= dailyGoal;
+                    
+                    return (
+                      <td key={date} className={`px-4 py-3 text-center text-[11px] font-black border-r border-white/10 transition-colors ${
+                        isGoalReached 
+                          ? 'bg-emerald-500/20 text-emerald-400' 
+                          : 'bg-rose-500/10 text-rose-400'
+                      }`}>
+                        {formatCurrency(totalDay)}
+                      </td>
+                    );
+                  })}
                   <td className="px-4 py-3 text-right font-black text-[12px] text-sky-400 bg-black/20 sticky right-0 z-10 border-l border-white/10">
                     {formatCurrency(ranking.reduce((acc, curr) => acc + curr.paid, 0))}
                   </td>

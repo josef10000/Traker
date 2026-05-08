@@ -86,7 +86,7 @@ import { GoalModal } from '../modals/GoalModal';
 import { HistoryModal } from '../modals/HistoryModal';
 import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
 import { ReconciliationModal } from '../modals/ReconciliationModal';
-import { MONTHS, getMonthName, getYearRange } from '../../utils/date';
+import { MONTHS, getMonthName, getYearRange, getWorkingDaysInMonth } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
 interface DashboardProps {
   user: User;
@@ -131,6 +131,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [selectedClientCpf, setSelectedClientCpf] = useState<string | null>(null);
   const [clientHistory, setClientHistory] = useState<Agreement[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  
+  const workingDays = useMemo(() => getWorkingDaysInMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
+  const dailyGoal = useMemo(() => monthlyGoal / (workingDays || 1), [monthlyGoal, workingDays]);
+
   const parseLocalDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
@@ -1108,6 +1112,43 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 </div>
               </div>
             </motion.div>
+
+            {/* Novo Card de Meta Diária */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group border-l-4 border-l-sky-500 flex flex-col justify-center"
+            >
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Calculator size={40} className="text-sky-400" />
+              </div>
+              
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Ritmo Necessário</p>
+              <h4 className="text-sm font-bold text-white uppercase tracking-tight flex items-center gap-2 mb-4">
+                Meta Diária
+                <span className="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 text-[9px] border border-sky-500/20">
+                  {workingDays} dias úteis
+                </span>
+              </h4>
+              
+              <div className="flex flex-col">
+                <span className="text-2xl font-black text-white tracking-tight">
+                  {formatCurrency(dailyGoal)}
+                </span>
+                <p className="text-[9px] text-slate-500 font-bold uppercase mt-2 leading-relaxed">
+                  Valor diário para atingir a meta de <br />
+                  <span className="text-sky-400/70">{formatCurrency(monthlyGoal)}</span> no mês
+                </p>
+              </div>
+
+              <div className="mt-6 flex items-center gap-2">
+                <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-sky-500/50 w-full animate-pulse" />
+                </div>
+                <TrendingUp size={12} className="text-sky-500/50" />
+              </div>
+            </motion.div>
           </div>
           <div id="performance-chart" className="glass-card p-6 rounded-2xl shadow-xl flex flex-col relative overflow-hidden group lg:col-span-2">
             {/* Background Glow */}
@@ -1367,7 +1408,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         </div>
         {viewMode === 'team' && selectedTeamId !== 'all' && selectedMemberId === 'all' && (
           <div className="mb-12">
-            <TeamPerformance agreements={monthFilteredAgreements} members={currentTeamMembers} />
+            <TeamPerformance agreements={monthFilteredAgreements} members={currentTeamMembers} dailyGoal={dailyGoal} />
           </div>
         )}
         {viewMode === 'team' && selectedTeamId === 'all' && managedTeamsData.length > 0 && (
