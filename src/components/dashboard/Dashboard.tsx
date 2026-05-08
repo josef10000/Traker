@@ -1406,10 +1406,56 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             )}
           </AnimatePresence>
         </div>
-        {viewMode === 'team' && selectedTeamId !== 'all' && selectedMemberId === 'all' && (
-          <div className="mb-12">
-            <TeamPerformance agreements={monthFilteredAgreements} members={currentTeamMembers} dailyGoal={dailyGoal} />
-          </div>
+        {!isPresentMode && (
+          <section className="mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
+            <div className="relative group flex-1 w-full">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-white/40 group-focus-within:text-sky-400 transition-colors">
+                <Search size={20} />
+              </div>
+              <input 
+                type="text" 
+                placeholder="Buscar por Nome ou CPF..." 
+                className="w-full bg-white/5 border border-white/10 pl-12 pr-6 py-4 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all text-white placeholder:text-white/30 outline-none backdrop-blur-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <button
+              onClick={() => setIsChecklistMode(!isChecklistMode)}
+              className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shadow-2xl shrink-0 w-full md:w-auto backdrop-blur-md ${
+                isChecklistMode 
+                  ? 'bg-sky-500 text-white border-sky-400' 
+                  : 'bg-white/5 text-white/60 border-white/10 hover:text-sky-400 hover:border-sky-500/30'
+              }`}
+              title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
+            >
+              <CheckSquare size={20} />
+              <div className="flex flex-col items-start">
+                <span className="leading-none">{isChecklistMode ? 'Conferindo' : 'Verificar'}</span>
+                <span className="text-[8px] opacity-60 mt-0.5">{isChecklistMode ? 'Pendentes Hoje' : 'Pendentes'}</span>
+              </div>
+              {stats.counts.checklist > 0 && !isChecklistMode && (
+                <span className="ml-2 bg-sky-500 text-white px-2 py-0.5 rounded-full text-[9px] animate-pulse border border-sky-400/50">
+                  {stats.counts.checklist}
+                </span>
+              )}
+            </button>
+            
+            <button
+              onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+              className="flex items-center gap-3 bg-white/5 border border-white/10 px-6 py-4 rounded-2xl hover:border-sky-500/50 transition-all group shrink-0 w-full md:w-auto backdrop-blur-sm"
+              title={sortOrder === 'desc' ? 'Mudar para Mais Antigos' : 'Mudar para Mais Recentes'}
+            >
+              <ArrowUpDown size={18} className={sortOrder === 'desc' ? 'text-sky-400' : 'text-amber-400 rotate-180 transition-transform'} />
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest leading-none">Ordem de Lançamento</span>
+                <span className="text-xs font-bold text-white mt-1">
+                  {sortOrder === 'desc' ? 'Mais Recentes' : 'Mais Antigos'}
+                </span>
+              </div>
+            </button>
+          </section>
         )}
         {viewMode === 'team' && selectedTeamId === 'all' && managedTeamsData.length > 0 && (
           <section className="space-y-4">
@@ -1697,57 +1743,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             )}
           </div>
         </section>
-        {!isPresentMode && (
-          <>
-            <section className="mt-12 mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
-              <div className="relative group flex-1 w-full">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-white/40 group-focus-within:text-sky-400 transition-colors">
-              <Search size={20} />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Buscar por Nome ou CPF..." 
-              className="w-full bg-white/5 border border-white/10 pl-12 pr-6 py-4 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all text-white placeholder:text-white/30 outline-none backdrop-blur-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        {viewMode === 'team' && selectedTeamId !== 'all' && selectedMemberId === 'all' && (
+          <div className="mb-12">
+            <TeamPerformance agreements={monthFilteredAgreements} members={currentTeamMembers} dailyGoal={dailyGoal} />
           </div>
-
-          <button
-            onClick={() => setIsChecklistMode(!isChecklistMode)}
-            className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shadow-2xl shrink-0 w-full md:w-auto backdrop-blur-md ${
-              isChecklistMode 
-                ? 'bg-sky-500 text-white border-sky-400' 
-                : 'bg-white/5 text-white/60 border-white/10 hover:text-sky-400 hover:border-sky-500/30'
-            }`}
-            title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
-          >
-            <CheckSquare size={20} />
-            <div className="flex flex-col items-start">
-              <span className="leading-none">{isChecklistMode ? 'Conferindo' : 'Verificar'}</span>
-              <span className="text-[8px] opacity-60 mt-0.5">{isChecklistMode ? 'Pendentes Hoje' : 'Pendentes'}</span>
-            </div>
-            {stats.counts.checklist > 0 && !isChecklistMode && (
-              <span className="ml-2 bg-sky-500 text-white px-2 py-0.5 rounded-full text-[9px] animate-pulse border border-sky-400/50">
-                {stats.counts.checklist}
-              </span>
-            )}
-          </button>
-          
-          <button
-            onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-            className="flex items-center gap-3 bg-white/5 border border-white/10 px-6 py-4 rounded-2xl hover:border-sky-500/50 transition-all group shrink-0 w-full md:w-auto backdrop-blur-sm"
-            title={sortOrder === 'desc' ? 'Mudar para Mais Antigos' : 'Mudar para Mais Recentes'}
-          >
-            <ArrowUpDown size={18} className={sortOrder === 'desc' ? 'text-sky-400' : 'text-amber-400 rotate-180 transition-transform'} />
-            <div className="flex flex-col items-start">
-              <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest leading-none">Ordem de Lançamento</span>
-              <span className="text-xs font-bold text-white mt-1">
-                {sortOrder === 'desc' ? 'Mais Recentes' : 'Mais Antigos'}
-              </span>
-            </div>
-          </button>
-        </section>
+        )}
 
         {viewMode === 'personal' && (
           <div className="mb-12">
@@ -1755,6 +1755,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               agreements={memberFilteredAgreements} 
               members={[profile]} 
               dailyGoal={dailyGoal} 
+              showRanking={false}
             />
           </div>
         )}

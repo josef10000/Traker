@@ -7,9 +7,15 @@ interface TeamPerformanceProps {
   agreements: Agreement[];
   members: UserProfile[];
   dailyGoal?: number;
+  showRanking?: boolean;
 }
 
-export const TeamPerformance = ({ agreements, members, dailyGoal = 0 }: TeamPerformanceProps) => {
+export const TeamPerformance = ({ 
+  agreements, 
+  members, 
+  dailyGoal = 0,
+  showRanking = true
+}: TeamPerformanceProps) => {
   if (members.length === 0) {
     return (
       <div className="p-8 border-2 border-dashed border-white/10 rounded-3xl text-center text-slate-500">
@@ -69,60 +75,62 @@ export const TeamPerformance = ({ agreements, members, dailyGoal = 0 }: TeamPerf
   return (
     <div className="space-y-8">
       {/* Ranking / Leaderboard */}
-      <section>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg">
-            <Trophy size={20} />
+      {showRanking && (
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg">
+              <Trophy size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-white">Ranking de Performance</h2>
           </div>
-          <h2 className="text-xl font-bold text-white">Ranking de Performance</h2>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {ranking.slice(0, 4).map((item, index) => (
-            <div 
-              key={item.id}
-              className={`relative p-6 rounded-3xl border transition-all ${
-                index === 0 
-                  ? 'bg-amber-500/10 border-amber-500/30 ring-1 ring-amber-500/20' 
-                  : 'glass-card'
-              }`}
-            >
-              {index < 3 && (
-                <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-                  index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-slate-300' : 'bg-orange-600'
-                }`}>
-                  <Medal size={16} className="text-white" />
-                </div>
-              )}
-              
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-300 border border-slate-700">
-                    {item.name[0].toUpperCase()}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {ranking.slice(0, 4).map((item, index) => (
+              <div 
+                key={item.id}
+                className={`relative p-6 rounded-3xl border transition-all ${
+                  index === 0 
+                    ? 'bg-amber-500/10 border-amber-500/30 ring-1 ring-amber-500/20' 
+                    : 'glass-card'
+                }`}
+              >
+                {index < 3 && (
+                  <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
+                    index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-slate-300' : 'bg-orange-600'
+                  }`}>
+                    <Medal size={16} className="text-white" />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">#{index + 1} Lugar</p>
-                    <p className="text-sm font-bold text-white truncate max-w-[120px]">{item.name}</p>
+                )}
+                
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-300 border border-slate-700">
+                      {item.name[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">#{index + 1} Lugar</p>
+                      <p className="text-sm font-bold text-white truncate max-w-[120px]">{item.name}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">Total Pago</span>
-                    <span className="text-sm font-bold text-emerald-400">{formatCurrency(item.paid)}</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${index === 0 ? 'bg-amber-500' : 'bg-primary'}`}
-                      style={{ width: `${(item.paid / (ranking[0]?.paid || 1)) * 100}%` }}
-                    />
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Total Pago</span>
+                      <span className="text-sm font-bold text-emerald-400">{formatCurrency(item.paid)}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${index === 0 ? 'bg-amber-500' : 'bg-primary'}`}
+                        style={{ width: `${(item.paid / (ranking[0]?.paid || 1)) * 100}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Daily Productivity Table - Request Format */}
       <section>
