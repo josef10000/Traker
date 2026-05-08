@@ -1748,6 +1748,17 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
           </button>
         </section>
+
+        {viewMode === 'personal' && (
+          <div className="mb-12">
+            <TeamPerformance 
+              agreements={memberFilteredAgreements} 
+              members={[profile]} 
+              dailyGoal={dailyGoal} 
+            />
+          </div>
+        )}
+
         <section className="glass-card rounded-2xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
