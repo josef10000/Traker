@@ -35,7 +35,8 @@ import {
   MousePointer2,
   Settings,
   Tv,
-  CheckSquare
+  CheckSquare,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -131,6 +132,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [selectedClientCpf, setSelectedClientCpf] = useState<string | null>(null);
   const [clientHistory, setClientHistory] = useState<Agreement[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
   
   const workingDays = useMemo(() => getWorkingDaysInMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
   const dailyGoal = useMemo(() => monthlyGoal / (workingDays || 1), [monthlyGoal, workingDays]);
@@ -832,17 +834,15 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             <div className="flex-1">
               <h1 className="text-xl font-bold tracking-tight text-white leading-none">Tracker</h1>
               {profile.managedTeams && profile.managedTeams.length > 1 ? (
-                <select 
-                  id="team-selector"
-                  value={selectedTeamId}
-                  onChange={(e) => setSelectedTeamId(e.target.value)}
-                  className="bg-transparent text-[10px] text-sky-400 uppercase tracking-widest font-bold mt-1 outline-none border-none cursor-pointer hover:text-sky-300 transition-colors"
+                <button 
+                  onClick={() => setIsTeamSelectorOpen(true)}
+                  className="flex items-center gap-1.5 text-[10px] text-sky-400 uppercase tracking-widest font-bold mt-1.5 hover:text-sky-300 transition-colors group"
                 >
-                  <option value="all" className="bg-slate-900 text-white">Visão Macro (Todas)</option>
-                  {managedTeamsData.map(t => (
-                    <option key={t.id} value={t.id} className="bg-slate-900 text-white">{t.name}</option>
-                  ))}
-                </select>
+                  {selectedTeamId === 'all' 
+                    ? 'Visão Macro (Todas)' 
+                    : managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Selecionar Equipe'}
+                  <ChevronDown size={12} className={`transition-transform duration-300 ${isTeamSelectorOpen ? 'rotate-180' : ''}`} />
+                </button>
               ) : (
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">
                   {managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Dashboard Operacional'}
@@ -2120,6 +2120,97 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         onSave={handleSaveReconciliation}
         onNormalize={handleNormalizeSaldo}
       />
+
+      {/* Modal de Seleção de Equipe */}
+      <AnimatePresence>
+        {isTeamSelectorOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsTeamSelectorOpen(false)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative bg-slate-900/90 w-full max-w-4xl max-h-[85vh] rounded-[2.5rem] shadow-2xl border border-white/10 overflow-hidden flex flex-col"
+            >
+              <div className="px-10 py-8 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-black text-white tracking-tight">Selecionar Equipe</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Gerencie a visão de performance por time</p>
+                </div>
+                <button 
+                  onClick={() => setIsTeamSelectorOpen(false)}
+                  className="p-3 hover:bg-white/10 rounded-full transition-all text-slate-400 hover:text-white border border-transparent hover:border-white/10"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              
+              <div className="p-10 overflow-y-auto custom-scrollbar flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => {
+                      setSelectedTeamId('all');
+                      setIsTeamSelectorOpen(false);
+                    }}
+                    className={`flex items-center justify-between p-6 rounded-[2rem] transition-all border group text-left ${
+                      selectedTeamId === 'all' 
+                        ? 'bg-sky-500 border-sky-400 shadow-[0_0_30px_rgba(14,165,233,0.3)]' 
+                        : 'bg-white/5 border-white/5 hover:border-sky-500/50 hover:bg-sky-500/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-5">
+                      <div className={`p-4 rounded-2xl transition-colors ${selectedTeamId === 'all' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-400 group-hover:bg-sky-500/20'}`}>
+                        <PieIcon size={28} />
+                      </div>
+                      <div>
+                        <p className={`text-lg font-black tracking-tight ${selectedTeamId === 'all' ? 'text-white' : 'text-slate-200'}`}>Visão Macro</p>
+                        <p className={`text-xs font-bold uppercase tracking-widest ${selectedTeamId === 'all' ? 'text-white/70' : 'text-slate-500'}`}>Resumo de todas as equipes</p>
+                      </div>
+                    </div>
+                    {selectedTeamId === 'all' && <CheckCircle2 size={24} className="text-white" />}
+                  </button>
+
+                  {managedTeamsData.map(team => (
+                    <button
+                      key={team.id}
+                      onClick={() => {
+                        setSelectedTeamId(team.id);
+                        setIsTeamSelectorOpen(false);
+                      }}
+                      className={`flex items-center justify-between p-6 rounded-[2rem] transition-all border group text-left ${
+                        selectedTeamId === team.id 
+                          ? 'bg-emerald-500 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)]' 
+                          : 'bg-white/5 border-white/5 hover:border-emerald-500/50 hover:bg-emerald-500/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-5">
+                        <div className={`p-4 rounded-2xl transition-colors ${selectedTeamId === team.id ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20'}`}>
+                          <Users size={28} />
+                        </div>
+                        <div>
+                          <p className={`text-lg font-black tracking-tight ${selectedTeamId === team.id ? 'text-white' : 'text-slate-200'}`}>{team.name}</p>
+                          <p className={`text-xs font-bold uppercase tracking-widest ${selectedTeamId === team.id ? 'text-white/70' : 'text-slate-500'}`}>Meta: {formatCurrency(team.monthlyGoal)}</p>
+                        </div>
+                      </div>
+                      {selectedTeamId === team.id && <CheckCircle2 size={24} className="text-white" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="p-8 bg-white/5 border-t border-white/5 text-center">
+                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Pressione ESC para fechar</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
