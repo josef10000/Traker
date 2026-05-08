@@ -1974,34 +1974,228 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </tbody>
             </table>
           </div>
-          
+
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-slate-800 flex items-center justify-between bg-slate-900/30">
-              <p className="text-xs text-slate-500">
-                Mostrando <span className="font-bold text-slate-300">{(currentPage - 1) * itemsPerPage + 1}</span> a <span className="font-bold text-slate-300">{Math.min(currentPage * itemsPerPage, filteredAgreements.length)}</span> de <span className="font-bold text-slate-300">{filteredAgreements.length}</span> acordos
-              </p>
+            <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between bg-white/5">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                Página {currentPage} de {totalPages}
+              </span>
               <div className="flex gap-2">
-                <button 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                <button
+const isOverdue = agreement.status === AgreementStatus.WAITING && parseLocalDate(agreement.dueDate) < today;
+                    const isBroken = agreement.status === AgreementStatus.BROKEN || isOverdue;
+                    // Lógica de Ciclo (Manhã até 12:00, Tarde após 12:00)
+                    const regDate = new Date(agreement.createdAt);
+                    const isMorning = regDate.getHours() < 12;
+                    const isCheckedToday = agreement.lastCheckedAt && 
+                      new Date(agreement.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
+                    // Lógica de Prioridade (Qualquer acordo criado antes de hoje que ainda esteja aguardando)
+                    const isPriorityOntem = regDate < today && agreement.status === AgreementStatus.WAITING;
+                    
+                    // Lógica de Quebrado Ontem (Vencimento antes de hoje e ainda esperando)
+                    const isBrokenOntem = isOverdue;
+                    return (
+                      <motion.tr 
+                          key={agreement.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className={`group transition-colors relative border-l-4 ${
+                            agreement.status === AgreementStatus.PAID 
+                              ? 'bg-emerald-500/5 border-l-emerald-500/50' 
+                              : isBroken
+                                ? 'bg-rose-500/5 border-l-rose-500/50' 
+                                : isCheckedToday
+                                  ? 'bg-sky-500/5 border-l-sky-500/50'
+                                  : isMorning 
+                                    ? 'hover:bg-sky-500/5 border-l-sky-500/40 bg-slate-900/20' 
+                                    : 'hover:bg-amber-500/5 border-l-amber-500/30 bg-slate-900/40'
+                          }`}
+                        >
+                          <td className="px-6 py-5">
+                            <div className="flex flex-col text-left">
+                              <span className={`font-semibold text-slate-100 ${isBroken ? 'text-slate-500' : ''}`}>
+                                {agreement.clientName}
+                              </span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <button 
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(agreement.clientCpf.replace(/\D/g, ''));
+                                    showToast('CPF (apenas números) copiado!', 'success');
+                                  }}
+                                  className="text-xs text-sky-400/70 font-mono hover:text-sky-400 transition-colors"
+                                  title="Copiar CPF"
+                                >
+                                  {agreement.clientCpf}
+                                </button>
+                                <button 
+                                  onClick={() => handleClientClick(agreement.clientCpf)}
+                                  className="p-1 text-slate-500 hover:text-sky-400 hover:bg-sky-400/10 rounded transition-all"
+                                  title="Ver Histórico"
+                                >
+                                  <History size={12} />
+                                </button>
+                                
+                                {agreement.status === AgreementStatus.WAITING && (
+                                  <div 
+                                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
+                                      isMorning 
+                                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
+                                        : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                    }`}
+                                    title={isMorning ? 'Registrado no ciclo da manhã (Verificação Hoje)' : 'Registrado no ciclo da tarde (Verificação Amanhã)'}
+                                  >
+                                    {isMorning ? <Sun size={8} /> : <Moon size={8} />}
+                                    {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
+                                  </div>
+                                )}
+                                {isCheckedToday && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-sky-500 text-white border border-sky-400">
+                                    <Check size={8} strokeWidth={4} />
+                                    Conferido
+                                  </div>
+                                )}
+                                {isPriorityOntem && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-amber-500 text-white border border-amber-400">
+                                    <Zap size={8} fill="currentColor" />
+                                    Prioridade Ontem
+                                  </div>
+                                )}
+                                {isOverdue && !isCheckedToday && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                    <AlertTriangle size={8} />
+                                    Vencimento Expirado
+                                  </div>
+                                )}
+                                {isOverdue && isCheckedToday && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-rose-600 text-white border border-rose-500">
+                                    <AlertTriangle size={8} />
+                                    Confirmado: Quebrado
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <OriginBadge origin={agreement.origin} />
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="flex flex-col">
+                              <span className="text-xs text-slate-300 font-medium px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 w-fit">
+                                {agreement.type === 'quitacao' ? 'Quitação' : 
+                                 agreement.type === 'parcelamento' ? 'Parcelamento' :
+                                 agreement.type === 'parcela_atrasada' ? 'Pcl Atrasada' : 
+                                 agreement.type === 'antecipacao' ? 'Antecipação' : agreement.type}
+                               </span>
+                               {agreement.currentInstallment && (
+                                 <span className="text-[10px] text-sky-400 font-bold mt-1 ml-1 uppercase tracking-tighter">
+                                   Parcela: {agreement.currentInstallment}
+                                 </span>
+                               )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="flex flex-col">
+                              <span className={`text-sm font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                                {agreement.dueDate.split('-').reverse().join('/')}
+                              </span>
+                              {isOverdue && (
+                                <span className="text-[8px] font-black text-rose-500 uppercase tracking-tighter">Vencido</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-5 text-sm font-bold text-white tabular-nums">
+                            {formatCurrency(agreement.value)}
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {agreement.status === AgreementStatus.PAID ? (
+                                <div className="flex items-center gap-1.5 text-emerald-400 pr-2">
+                                   <CheckCircle2 size={16} />
+                                   <span className="text-xs font-bold uppercase tracking-wide">Pago</span>
+                                </div>
+                              ) : (
+                                <>
+                                  {isOverdue && (
+                                    <div className="flex items-center gap-1 text-rose-500/40 mr-1 hidden sm:flex">
+                                      <AlertCircle size={14} />
+                                    </div>
+                                  )}
+                                  <button 
+                                    onClick={() => handleEfetivar(agreement.id)}
+                                    className="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
+                                    title="Efetivar Pagamento"
+                                  >
+                                    <Check size={18} />
+                                  </button>
+                                  
+                                  <button 
+                                    onClick={() => handleToggleChecked(agreement.id, agreement.lastCheckedAt)}
+                                    className={`p-2 rounded-lg transition-all border ${
+                                      isCheckedToday 
+                                        ? 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-500/20' 
+                                        : 'bg-slate-800 text-slate-400 hover:text-sky-400 hover:border-sky-500/50'
+                                    }`}
+                                    title={isCheckedToday ? 'Remover marcação de conferido' : 'Marcar como conferido hoje'}
+                                  >
+                                    <Search size={18} />
+                                  </button>
+                                </>
+                              )}
+                            <div className="flex items-center gap-1 border-l border-slate-800 pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => {
+                                  setEditingAgreement(agreement);
+                                  setIsModalOpen(true);
+                                }}
+                                className="p-2 text-slate-500 hover:text-sky-400 hover:bg-primary/10 rounded-lg transition-all"
+                                title="Editar"
+                              >
+                                <Edit3 size={16} />
+                              </button>
+                              <button 
+                                onClick={() => handleDelete(agreement.id)}
+                                className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                                title="Excluir"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                        </motion.tr>
+                    );
+                  })
+                  )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between bg-white/5">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                Página {currentPage} de {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-lg border border-slate-800 text-xs font-bold text-slate-400 hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
                   Anterior
                 </button>
-                <button 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-lg border border-slate-800 text-xs font-bold text-slate-400 hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
                   Próximo
                 </button>
               </div>
-              </div>
-            )}
-          </section>
-        </>
-      )}
+            </div>
+          )}
+        </section>
       </main>
+
       <AgreementModal 
         isOpen={isModalOpen}
         onClose={() => {
@@ -2011,6 +2205,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         onSubmit={handleAddOrEditAgreement}
         editingAgreement={editingAgreement}
       />
+
       <GoalModal 
         isOpen={isGoalModalOpen}
         onClose={() => setIsGoalModalOpen(false)}
@@ -2018,6 +2213,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         monthlyGoal={monthlyGoal}
         effectivenessGoal={effectivenessGoal}
       />
+
       <HistoryModal 
         isOpen={!!selectedClientCpf}
         onClose={() => setSelectedClientCpf(null)}
@@ -2025,10 +2221,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         history={clientHistory}
         isLoading={isLoadingHistory}
       />
+
       {/* Modal de Remanejamento */}
       <AnimatePresence>
         {transferringMember && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2040,76 +2237,69 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-800 overflow-hidden"
+              className="relative bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-white/10 overflow-hidden"
             >
-              <div className="px-8 py-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
-                <div>
-                  <h2 className="text-lg font-bold text-white">Gerenciar Membro</h2>
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-widest">{transferringMember.displayName}</p>
-                </div>
+              <div className="p-6 border-b border-white/5 flex justify-between items-center">
+                <h3 className="text-lg font-black text-white tracking-tight uppercase">Gerenciar Membro</h3>
                 <button 
                   onClick={() => setTransferringMember(null)}
-                  className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-500 hover:text-white"
+                  className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-500 hover:text-white"
                 >
                   <X size={20} />
                 </button>
               </div>
               
-              <div className="p-8 space-y-6">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Transferir para Equipe</label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {managedTeamsData
-                      .filter(t => t.id !== profile.teamId)
-                      .map(team => (
-                        <button
-                          key={team.id}
-                          onClick={() => handleTransferOperator(transferringMember.uid, team.id, team.name)}
-                          className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-2xl hover:border-primary/50 hover:bg-primary/5 transition-all group text-left"
-                        >
-                          <div>
-                            <p className="font-bold text-slate-200 group-hover:text-primary transition-colors">{team.name}</p>
-                            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">ID: {team.id}</p>
-                          </div>
-                          <ArrowLeftRight size={18} className="text-slate-700 group-hover:text-primary transition-colors" />
-                        </button>
-                      ))}
-                    {managedTeamsData.filter(t => t.id !== profile.teamId).length === 0 && (
-                      <p className="text-xs text-slate-500 italic text-center py-4 bg-slate-950/50 rounded-2xl border border-dashed border-slate-800">
-                        Nenhuma outra equipe disponível para transferência.
-                      </p>
-                    )}
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <div className="w-12 h-12 bg-sky-500/20 rounded-full flex items-center justify-center text-sky-400 font-black text-xl">
+                    {transferringMember.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-bold text-white leading-none">{transferringMember.name}</p>
+                    <p className="text-xs text-slate-500 font-bold uppercase mt-1">Membro da Equipe</p>
                   </div>
                 </div>
-                <div className="pt-4 border-t border-slate-800/50">
+
+                <div className="space-y-3">
+                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest px-1">Ações de Gestão</p>
                   <button
-                    onClick={() => handleRemoveOperator(transferringMember.uid, transferringMember.displayName)}
-                    className="w-full flex items-center justify-center gap-2 p-4 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 rounded-2xl transition-all font-bold text-xs uppercase tracking-widest"
+                    onClick={() => {
+                      if (window.confirm(`Tem certeza que deseja remover ${transferringMember.name} da equipe?`)) {
+                        handleRemoveMember(transferringMember.id);
+                        setTransferringMember(null);
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 p-4 bg-rose-500/10 text-rose-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20"
                   >
-                    <LogOut size={16} />
-                    Remover da Equipe Atual
+                    <Trash2 size={20} />
+                    <span className="font-bold">Remover da Equipe</span>
                   </button>
-                  <p className="text-[9px] text-slate-600 text-center mt-3 uppercase font-bold">Ao remover, o membro voltará para o onboarding</p>
                 </div>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
       <DashboardPreferencesModal
         isOpen={isPreferencesModalOpen}
         onClose={() => setIsPreferencesModalOpen(false)}
         hiddenCards={localHiddenCards}
-        onToggleCard={handleToggleCard}
+        onToggleCard={(cardId) => {
+          const newHidden = localHiddenCards.includes(cardId)
+            ? localHiddenCards.filter(id => id !== cardId)
+            : [...localHiddenCards, cardId];
+          setLocalHiddenCards(newHidden);
+          localStorage.setItem('dashboard_hidden_cards', JSON.stringify(newHidden));
+        }}
       />
+
       <ConfirmModal
-        isOpen={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        onConfirm={confirmRemoveOperator}
-        title="Remover Membro"
-        message={`Tem certeza que deseja remover ${memberToRemove?.name} desta equipe? Esta ação não pode ser desfeita.`}
-        confirmText="Sim, Remover"
-        cancelText="Cancelar"
+        isOpen={isConfirmLogoutOpen}
+        onClose={() => setIsConfirmLogoutOpen(false)}
+        onConfirm={handleLogout}
+        title="Encerrar Sessão"
+        message="Tem certeza que deseja sair do sistema? Suas alterações salvas não serão perdidas."
         variant="danger"
       />
 
@@ -2213,6 +2403,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         )}
       </AnimatePresence>
     </div>
+    </div>
   );
 };
+
 export default Dashboard;
