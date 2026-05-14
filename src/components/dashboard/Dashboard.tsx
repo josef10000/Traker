@@ -569,7 +569,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   }, [memberFilteredAgreements, selectedMonth, selectedYear]);
 
   const maxPaidPerDay = useMemo(() => {
-    const values = Object.values(paidHeatmapData).map(d => d.count);
+    const values = (Object.values(paidHeatmapData) as any[]).map(d => d.count);
     return values.length > 0 ? Math.max(...(values as number[])) : 1;
   }, [paidHeatmapData]);
 
