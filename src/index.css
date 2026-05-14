@@ -158,3 +158,11 @@ option {
     transform: rotateY(180deg);
   }
 }
+
+.shadow-glow {
+  filter: blur(2px);
+}
+
+.perspective-2000 {
+  perspective: 2000px;
+}
