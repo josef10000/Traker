@@ -550,6 +550,25 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       }, {} as Record<number, number>)
     };
   }, [timeFilteredAgreements, memberFilteredAgreements, monthlyGoal, selectedMonth, selectedYear]);
+  const paidHeatmapData = useMemo(() => {
+    const data: Record<number, number> = {};
+    memberFilteredAgreements
+      .filter(a => a.status === AgreementStatus.PAID && a.paidAt)
+      .forEach(a => {
+        const d = new Date(a.paidAt!);
+        if (d.getMonth() === selectedMonth && d.getFullYear() === selectedYear) {
+          const day = d.getDate();
+          data[day] = (data[day] || 0) + 1;
+        }
+      });
+    return data;
+  }, [memberFilteredAgreements, selectedMonth, selectedYear]);
+
+  const maxPaidPerDay = useMemo(() => {
+    const values = Object.values(paidHeatmapData);
+    return values.length > 0 ? Math.max(...values) : 1;
+  }, [paidHeatmapData]);
+
   // Chart Data
   const chartData = useMemo(() => [
     { name: 'Meta', value: monthlyGoal, color: 'url(#colorMeta)' },
@@ -1712,28 +1731,66 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                 </div>
               </div>
             )}
-            {/* Tempo Médio p/ Pagar */}
+            {/* Heatmap de Pagamentos */}
             {!localHiddenCards.includes('tempoMedioPagar') && (
               <div 
-                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group"
-                title="Mede o tempo médio em horas que os clientes estão demorando para efetuar o pagamento após a data de registro do acordo."
+                className="glass-card p-5 rounded-2xl border border-slate-800/50 hover:border-emerald-500/30 transition-all group"
+                title="Mapa de calor que mostra a distribuição dos pagamentos efetuados ao longo do mês selecionado."
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                    <Clock3 size={20} className="text-amber-400" />
+                <div className="flex justify-between items-start mb-2">
+                  <div className="p-2 bg-emerald-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                    <CalendarDays size={20} className="text-emerald-400" />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Conversão</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Volume de Pagos</span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-white tracking-tight">
-                    {stats.insights?.avgTimeToPay?.toFixed(1) || 0}h
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Tempo médio p/ pagamento</span>
-                  <div className="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
-                     <div 
-                      className="h-full bg-amber-500 transition-all duration-1000" 
-                      style={{ width: `${Math.min(100, (stats.insights?.avgTimeToPay || 0) * 4)}%` }} 
-                    />
+                
+                <div className="grid grid-cols-7 gap-1 mt-2">
+                  {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
+                    <div key={i} className="text-[7px] font-black text-slate-600 text-center uppercase">{d}</div>
+                  ))}
+                  {(() => {
+                    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+                    const firstDayOfWeek = new Date(selectedYear, selectedMonth, 1).getDay();
+                    const days = [];
+                    for (let i = 0; i < firstDayOfWeek; i++) days.push(null);
+                    for (let i = 1; i <= daysInMonth; i++) days.push(i);
+                    
+                    return days.map((day, idx) => {
+                      const count = day ? (paidHeatmapData[day] || 0) : 0;
+                      const intensity = count / (maxPaidPerDay || 1);
+                      
+                      let heatClass = 'bg-white/5 text-slate-600';
+                      if (day) {
+                        if (count > 0) {
+                          if (intensity > 0.8) heatClass = 'bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.3)]';
+                          else if (intensity > 0.5) heatClass = 'bg-emerald-500/60 text-white';
+                          else if (intensity > 0.2) heatClass = 'bg-emerald-500/30 text-emerald-300';
+                          else heatClass = 'bg-emerald-500/10 text-emerald-400';
+                        }
+                      }
+
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`aspect-square rounded-[3px] flex items-center justify-center text-[8px] font-black transition-all ${day ? heatClass : 'opacity-0'}`}
+                          title={day ? `${day}/${selectedMonth + 1}: ${count} pagos` : ''}
+                        >
+                          {day}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                <div className="mt-3 flex justify-between items-center">
+                  <span className="text-[9px] text-slate-500 font-bold uppercase">Intensidade</span>
+                  <div className="flex gap-0.5">
+                    {[0.1, 0.3, 0.6, 0.9].map(v => (
+                      <div 
+                        key={v} 
+                        className="w-2 h-2 rounded-[1px]" 
+                        style={{ backgroundColor: `rgba(16, 185, 129, ${v})` }} 
+                      />
+                    ))}
                   </div>
                 </div>
               </div>

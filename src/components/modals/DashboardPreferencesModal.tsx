@@ -37,9 +37,9 @@ const CARDS_OPTIONS: CardOption[] = [
   },
   {
     id: 'tempoMedioPagar',
-    title: 'Conversão (Tempo p/ Pagar)',
-    description: 'Tempo médio em horas que os clientes levam para pagar.',
-    icon: <LayoutDashboard size={18} className="text-amber-400" />
+    title: 'Heatmap de Pagamentos',
+    description: 'Mapa de calor mostrando a distribuição dos dias com mais acordos pagos.',
+    icon: <LayoutDashboard size={18} className="text-emerald-400" />
   },
   {
     id: 'projecao7Dias',
