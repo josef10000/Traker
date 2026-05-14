@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { TrendingUp, LucideIcon, Info } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 interface StatCardProps {
   title: string;
@@ -12,6 +12,7 @@ interface StatCardProps {
   color: 'primary' | 'emerald' | 'rose' | 'amber' | 'sky' | 'indigo';
   id?: string;
   chartData?: any[];
+  chartType?: 'area' | 'bar' | 'pie';
 }
 
 export const StatCard = ({ 
@@ -22,7 +23,8 @@ export const StatCard = ({
   subtitle,
   color,
   id,
-  chartData = []
+  chartData = [],
+  chartType = 'area'
 }: StatCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -44,6 +46,79 @@ export const StatCard = ({
     indigo: '#6366f1'
   };
 
+  const renderChart = () => {
+    if (!chartData || chartData.length === 0) {
+      return (
+        <div className="h-full flex items-center justify-center text-white/10 text-[10px] uppercase font-bold tracking-widest">
+          Sem dados
+        </div>
+      );
+    }
+
+    if (chartType === 'bar') {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData}>
+            <Bar 
+              dataKey="value" 
+              fill={chartColors[color]} 
+              radius={[4, 4, 0, 0]}
+              isAnimationActive={true}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (chartType === 'pie') {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              innerRadius="60%"
+              outerRadius="85%"
+              paddingAngle={5}
+              dataKey="value"
+              isAnimationActive={true}
+              stroke="none"
+            >
+              {chartData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={index === 0 ? chartColors[color] : 'rgba(255,255,255,0.05)'} 
+                />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // Default: Area Chart
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData}>
+          <defs>
+            <linearGradient id={`gradient-${color}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={chartColors[color]} stopOpacity={0.3}/>
+              <stop offset="95%" stopColor={chartColors[color]} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <Area 
+            type="monotone" 
+            dataKey="value" 
+            stroke={chartColors[color]} 
+            strokeWidth={2}
+            fillOpacity={1} 
+            fill={`url(#gradient-${color})`} 
+            isAnimationActive={true}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    );
+  };
+
   return (
     <div 
       className="relative h-40 w-full cursor-pointer perspective-1000 group"
@@ -51,9 +126,9 @@ export const StatCard = ({
       id={id}
     >
       <motion.div
-        className="relative w-full h-full transition-all duration-500 preserve-3d"
+        className="relative w-full h-full transition-all preserve-3d"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       >
         {/* Face Frontal */}
         <div className="absolute inset-0 backface-hidden">
@@ -89,42 +164,18 @@ export const StatCard = ({
         {/* Face Traseira */}
         <div className="absolute inset-0 backface-hidden rotate-y-180">
           <div className="glass-card h-full p-5 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden border border-white/5">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em]">Tendência Mensal</p>
-              <div className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: chartColors[color] }} />
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em]">Visão Analítica</p>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse`} style={{ backgroundColor: chartColors[color] }} />
             </div>
             
-            <div className="flex-1 -mx-5 -mb-5 mt-2 opacity-80 group-hover:opacity-100 transition-opacity">
-              {chartData && chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id={`gradient-${color}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={chartColors[color]} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={chartColors[color]} stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <Area 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke={chartColors[color]} 
-                      strokeWidth={2}
-                      fillOpacity={1} 
-                      fill={`url(#gradient-${color})`} 
-                      isAnimationActive={true}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-white/10 text-[10px] uppercase font-bold tracking-widest">
-                  Sem dados históricos
-                </div>
-              )}
+            <div className="flex-1 -mx-2 mt-1 opacity-90 group-hover:opacity-100 transition-opacity">
+              {renderChart()}
             </div>
             
-            <div className="relative z-10 pointer-events-none">
-              <p className="text-[10px] font-bold text-white/80">{title}</p>
-              <p className="text-xs font-black text-white">{value}</p>
+            <div className="relative z-10 pointer-events-none mt-1">
+              <p className="text-[9px] font-bold text-white/60 truncate uppercase tracking-tighter">{title}</p>
+              <p className="text-sm font-black text-white">{value}</p>
             </div>
           </div>
         </div>

@@ -1148,6 +1148,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             icon={DollarSign} 
             color="primary" 
             chartData={statTrends.projected}
+            chartType="area"
           />
           <StatCard 
             title="Produtividade Diária (Pagos)" 
@@ -1156,6 +1157,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             color="emerald" 
             subtitle={`${stats.counts.filtered.paid} acordos pagos no período`}
             chartData={statTrends.paid}
+            chartType="bar"
           />
           <StatCard 
             title="Falta para Meta" 
@@ -1163,7 +1165,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             icon={Target} 
             color="rose"
             subtitle={`${((stats.totalPaid / (monthlyGoal || 1)) * 100).toFixed(1)}% atingido`}
-            chartData={statTrends.paid}
+            chartData={[
+              { name: 'Atingido', value: stats.totalPaid },
+              { name: 'Restante', value: Math.max(0, monthlyGoal - stats.totalPaid) }
+            ]}
+            chartType="pie"
           />
           <StatCard 
             title="Projeção p/ Mês" 
@@ -1172,6 +1178,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             color="sky"
             subtitle="Baseado no ritmo atual"
             chartData={statTrends.paid}
+            chartType="area"
           />
           
           <StatCard 
@@ -1182,6 +1189,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             color="rose"
             subtitle={`${stats.counts.month.overdue} acordos não pagos até ontem`}
             chartData={statTrends.overdue}
+            chartType="bar"
           />
           <StatCard 
             title="Vencendo Hoje" 
@@ -1190,6 +1198,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             color="amber"
             subtitle={`${stats.counts.month.pendingToday} acordos pendentes p/ hoje`}
             chartData={statTrends.overdue}
+            chartType="bar"
           />
           {!localHiddenCards.includes('cadastradosHoje') && (
             <StatCard 
@@ -1199,6 +1208,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               color="primary"
               subtitle="Acordos cadastrados hoje"
               chartData={statTrends.projected}
+              chartType="area"
             />
           )}
           {!localHiddenCards.includes('ticketMedioGeral') && (
@@ -1209,6 +1219,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               color="indigo"
               subtitle="Média por acordo registrado"
               chartData={statTrends.projected}
+              chartType="bar"
             />
           )}
         </section>
