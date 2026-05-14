@@ -118,6 +118,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{ uid: string; name: string } | null>(null);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false);
   const [isReconciliationModalOpen, setIsReconciliationModalOpen] = useState(false);
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
@@ -148,8 +149,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       .reduce((acc, curr) => acc + curr.value, 0);
   }, [agreements, selectedMonth, selectedYear, viewMode, profile.uid, selectedMemberId]);
 
+  const workingDays = useMemo(() => getWorkingDaysInMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
   const remainingWorkingDays = useMemo(() => getRemainingWorkingDays(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
-  // Removed redundant workingDays
 
   const dailyGoal = useMemo(() => Math.max(0, (monthlyGoal || 0) - totalPaidMonth) / (remainingWorkingDays || 1), [monthlyGoal, totalPaidMonth, remainingWorkingDays]);
 
@@ -674,6 +675,29 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao sair do sistema.', 'error');
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!selectedTeamId || selectedTeamId === 'all') return;
+    try {
+      await removeTeamMember(selectedTeamId, memberId);
+      showToast('Membro removido com sucesso!', 'success');
+      // Recarregar membros
+      const members = await getTeamMembers(selectedTeamId);
+      setCurrentTeamMembers(members);
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao remover membro.', 'error');
+    }
+  };
+
   const handleToggleChecked = async (id: string, currentStatus: string | undefined) => {
     try {
       const agreement = agreements.find(a => a.id === id);
@@ -691,7 +715,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           status: AgreementStatus.BROKEN,
           lastCheckedAt: new Date().toISOString()
         });
-        showToast('Acordo marcado como quebrado (conferência após o vencimento).', 'warning');
+        showToast('Acordo marcado como quebrado (conferência após o vencimento).', 'info');
       } else {
         await updateDoc(doc(db, 'agreements', id), {
           lastCheckedAt: isCurrentlyChecked ? null : new Date().toISOString()
@@ -914,7 +938,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               </button>
             )}
             <button 
-              onClick={() => signOut(auth)}
+              onClick={() => setIsConfirmLogoutOpen(true)}
               className="p-2.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 rounded-xl transition-all"
               title="Sair"
             >
