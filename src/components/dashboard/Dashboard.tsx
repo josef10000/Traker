@@ -687,7 +687,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const handleRemoveMember = async (memberId: string) => {
     if (!selectedTeamId || selectedTeamId === 'all') return;
     try {
-      await removeTeamMember(selectedTeamId, memberId);
+      await removeTeamMember(memberId);
       showToast('Membro removido com sucesso!', 'success');
       // Recarregar membros
       const members = await getTeamMembers(selectedTeamId);
