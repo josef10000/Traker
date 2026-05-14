@@ -13,8 +13,9 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 - 📅 **Histórico Mensal**: Seletor para visualizar dados de meses anteriores com reset automático mensal.
 - 🧮 **Conciliação de Resultados**: Ferramenta para alinhar o Dashboard com os dados oficiais enviados via Microsoft Teams, incluindo normalização de saldo automática.
 - 🎨 **Temas Dinâmicos Premium**: Personalização de interface com temas (Dark, Sky, Purple) utilizando glassmorphism e cores otimizadas para contraste.
-- 📈 **Meta Diária & Ritmo**: Cálculo automático de meta diária baseado em dias úteis e indicadores visuais de performance (Verde/Vermelho) na visão de equipe.
-- ✨ **Melhorias de UX**: Fechamento automático de modais após submissão bem-sucedida para um fluxo de trabalho mais ágil.
+- 📈 **Meta Diária Dinâmica**: Cálculo automático de meta diária recalibrado diariamente com base no valor já recuperado e nos dias úteis restantes.
+- ✅ **Lógica de Conferência Inteligente**: Acordos conferidos após a data de vencimento são automaticamente marcados como **Quebrados**, garantindo a integridade dos dados e foco nos pendentes.
+- ✨ **Melhorias de UX**: Fechamento automático de modais e transições suaves entre visões de dashboard.
 
 ## 📂 Estrutura do Projeto
 

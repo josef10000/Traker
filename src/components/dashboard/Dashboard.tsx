@@ -87,7 +87,7 @@ import { GoalModal } from '../modals/GoalModal';
 import { HistoryModal } from '../modals/HistoryModal';
 import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
 import { ReconciliationModal } from '../modals/ReconciliationModal';
-import { MONTHS, getMonthName, getYearRange, getWorkingDaysInMonth } from '../../utils/date';
+import { MONTHS, getMonthName, getYearRange, getWorkingDaysInMonth, getRemainingWorkingDays } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
 interface DashboardProps {
   user: User;
@@ -134,8 +134,24 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
   
-  const workingDays = useMemo(() => getWorkingDaysInMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
-  const dailyGoal = useMemo(() => monthlyGoal / (workingDays || 1), [monthlyGoal, workingDays]);
+  const totalPaidMonth = useMemo(() => {
+    return agreements
+      .filter(a => {
+        const d = new Date(a.createdAt);
+        const isMonthMatch = d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+        const isStatusMatch = a.status === AgreementStatus.PAID;
+        const isMemberMatch = viewMode === 'personal' 
+          ? a.operatorId === profile.uid 
+          : (selectedMemberId === 'all' || a.operatorId === selectedMemberId);
+        return isMonthMatch && isStatusMatch && isMemberMatch && !a.isAdjustment;
+      })
+      .reduce((acc, curr) => acc + curr.value, 0);
+  }, [agreements, selectedMonth, selectedYear, viewMode, profile.uid, selectedMemberId]);
+
+  const remainingWorkingDays = useMemo(() => getRemainingWorkingDays(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
+  // Removed redundant workingDays
+
+  const dailyGoal = useMemo(() => Math.max(0, (monthlyGoal || 0) - totalPaidMonth) / (remainingWorkingDays || 1), [monthlyGoal, totalPaidMonth, remainingWorkingDays]);
 
   const parseLocalDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -660,11 +676,28 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
 
   const handleToggleChecked = async (id: string, currentStatus: string | undefined) => {
     try {
+      const agreement = agreements.find(a => a.id === id);
+      if (!agreement) return;
+
+      const dueDate = parseLocalDate(agreement.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       const isCurrentlyChecked = currentStatus && new Date(currentStatus).toLocaleDateString() === new Date().toLocaleDateString();
-      await updateDoc(doc(db, 'agreements', id), {
-        lastCheckedAt: isCurrentlyChecked ? null : new Date().toISOString()
-      });
-      showToast(isCurrentlyChecked ? 'Marcação de conferência removida.' : 'Acordo marcado como conferido hoje!', 'success');
+      const isAfterDueDate = today > dueDate;
+
+      if (!isCurrentlyChecked && isAfterDueDate) {
+        await updateDoc(doc(db, 'agreements', id), {
+          status: AgreementStatus.BROKEN,
+          lastCheckedAt: new Date().toISOString()
+        });
+        showToast('Acordo marcado como quebrado (conferência após o vencimento).', 'warning');
+      } else {
+        await updateDoc(doc(db, 'agreements', id), {
+          lastCheckedAt: isCurrentlyChecked ? null : new Date().toISOString()
+        });
+        showToast(isCurrentlyChecked ? 'Marcação de conferência removida.' : 'Acordo marcado como conferido hoje!', 'success');
+      }
     } catch (error) {
       console.error(error);
       showToast('Erro ao atualizar conferência.', 'error');

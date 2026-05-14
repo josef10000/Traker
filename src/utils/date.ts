@@ -36,3 +36,33 @@ export const getWorkingDaysInMonth = (month: number, year: number) => {
   }
   return workingDays;
 };
+
+export const getRemainingWorkingDays = (month: number, year: number) => {
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  // Se o mês selecionado já passou, não há dias restantes
+  if (year < currentYear || (year === currentYear && month < currentMonth)) {
+    return 0;
+  }
+
+  // Se o mês selecionado é no futuro, todos os dias úteis são restantes
+  if (year > currentYear || (year === currentYear && month > currentMonth)) {
+    return getWorkingDaysInMonth(month, year);
+  }
+
+  // Se o mês selecionado é o atual
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let remainingDays = 0;
+  
+  for (let day = today.getDate(); day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      remainingDays++;
+    }
+  }
+  
+  return remainingDays;
+};
