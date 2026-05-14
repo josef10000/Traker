@@ -551,21 +551,25 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     };
   }, [timeFilteredAgreements, memberFilteredAgreements, monthlyGoal, selectedMonth, selectedYear]);
   const paidHeatmapData = useMemo(() => {
-    const data: Record<number, number> = {};
+    const data: Record<number, { count: number; total: number; totalValue: number }> = {};
     memberFilteredAgreements
-      .filter(a => a.status === AgreementStatus.PAID && a.paidAt)
       .forEach(a => {
-        const d = new Date(a.paidAt!);
+        const d = new Date(a.createdAt);
         if (d.getMonth() === selectedMonth && d.getFullYear() === selectedYear) {
           const day = d.getDate();
-          data[day] = (data[day] || 0) + 1;
+          if (!data[day]) data[day] = { count: 0, total: 0, totalValue: 0 };
+          data[day].total += 1;
+          if (a.status === AgreementStatus.PAID) {
+            data[day].count += 1;
+            data[day].totalValue += a.value;
+          }
         }
       });
     return data;
   }, [memberFilteredAgreements, selectedMonth, selectedYear]);
 
   const maxPaidPerDay = useMemo(() => {
-    const values = Object.values(paidHeatmapData);
+    const values = Object.values(paidHeatmapData).map(d => d.count);
     return values.length > 0 ? Math.max(...(values as number[])) : 1;
   }, [paidHeatmapData]);
 
@@ -1756,7 +1760,10 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     for (let i = 1; i <= daysInMonth; i++) days.push(i);
                     
                     return days.map((day, idx) => {
-                      const count = day ? (paidHeatmapData[day] || 0) : 0;
+                      const dayData = day ? paidHeatmapData[day] : null;
+                      const count = dayData?.count || 0;
+                      const total = dayData?.total || 0;
+                      const totalValue = dayData?.totalValue || 0;
                       const intensity = count / (maxPaidPerDay || 1);
                       
                       let heatClass = 'bg-white/5 text-slate-600';
@@ -1773,7 +1780,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                         <div 
                           key={idx} 
                           className={`aspect-square rounded-[3px] flex items-center justify-center text-[8px] font-black transition-all ${day ? heatClass : 'opacity-0'}`}
-                          title={day ? `${day}/${selectedMonth + 1}: ${count} pagos` : ''}
+                          title={day ? `${day}/${selectedMonth + 1}: ${count}/${total} pagos (${formatCurrency(totalValue)})` : ''}
                         >
                           {day}
                         </div>
