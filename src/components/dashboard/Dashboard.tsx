@@ -550,6 +550,65 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       }, {} as Record<number, number>)
     };
   }, [timeFilteredAgreements, memberFilteredAgreements, monthlyGoal, selectedMonth, selectedYear]);
+  const statTrends = useMemo(() => {
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const trendData: Record<number, { projected: number; paid: number; overdue: number }> = {};
+    
+    // Inicializa todos os dias do mês
+    for (let i = 1; i <= daysInMonth; i++) {
+      trendData[i] = { projected: 0, paid: 0, overdue: 0 };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    memberFilteredAgreements.forEach(a => {
+      const d = new Date(a.createdAt);
+      if (d.getMonth() === selectedMonth && d.getFullYear() === selectedYear) {
+        const day = d.getDate();
+        if (trendData[day]) {
+          trendData[day].projected += a.value;
+          if (a.status === AgreementStatus.PAID) {
+            trendData[day].paid += a.value;
+          }
+          if (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today) {
+            trendData[day].overdue += a.value;
+          }
+        }
+      }
+    });
+
+    const projectedData = Object.keys(trendData).map(day => ({
+      day,
+      value: trendData[parseInt(day)].projected
+    }));
+
+    const paidData = Object.keys(trendData).map(day => ({
+      day,
+      value: trendData[parseInt(day)].paid
+    }));
+
+    const overdueData = Object.keys(trendData).map(day => ({
+      day,
+      value: trendData[parseInt(day)].overdue
+    }));
+
+    const efficiencyData = Object.keys(trendData).map(day => {
+      const dayData = trendData[parseInt(day)];
+      return {
+        day,
+        value: dayData.projected > 0 ? (dayData.paid / dayData.projected) * 100 : 0
+      };
+    });
+
+    return {
+      projected: projectedData,
+      paid: paidData,
+      overdue: overdueData,
+      efficiency: efficiencyData
+    };
+  }, [memberFilteredAgreements, selectedMonth, selectedYear]);
+
   const paidHeatmapData = useMemo(() => {
     const data: Record<number, { count: number; total: number; totalValue: number }> = {};
     memberFilteredAgreements
@@ -1088,6 +1147,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             value={formatCurrency(stats.totalProjected)} 
             icon={DollarSign} 
             color="primary" 
+            chartData={statTrends.projected}
           />
           <StatCard 
             title="Produtividade Diária (Pagos)" 
@@ -1095,6 +1155,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             icon={TrendingUp} 
             color="emerald" 
             subtitle={`${stats.counts.filtered.paid} acordos pagos no período`}
+            chartData={statTrends.paid}
           />
           <StatCard 
             title="Falta para Meta" 
@@ -1102,6 +1163,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             icon={Target} 
             color="rose"
             subtitle={`${((stats.totalPaid / (monthlyGoal || 1)) * 100).toFixed(1)}% atingido`}
+            chartData={statTrends.paid}
           />
           <StatCard 
             title="Projeção p/ Mês" 
@@ -1109,6 +1171,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             icon={TrendingUp} 
             color="sky"
             subtitle="Baseado no ritmo atual"
+            chartData={statTrends.paid}
           />
           
           <StatCard 
@@ -1118,6 +1181,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             icon={AlertCircle} 
             color="rose"
             subtitle={`${stats.counts.month.overdue} acordos não pagos até ontem`}
+            chartData={statTrends.overdue}
           />
           <StatCard 
             title="Vencendo Hoje" 
@@ -1125,6 +1189,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             icon={Clock} 
             color="amber"
             subtitle={`${stats.counts.month.pendingToday} acordos pendentes p/ hoje`}
+            chartData={statTrends.overdue}
           />
           {!localHiddenCards.includes('cadastradosHoje') && (
             <StatCard 
@@ -1133,6 +1198,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               icon={CheckCircle2} 
               color="primary"
               subtitle="Acordos cadastrados hoje"
+              chartData={statTrends.projected}
             />
           )}
           {!localHiddenCards.includes('ticketMedioGeral') && (
@@ -1142,6 +1208,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               icon={Target} 
               color="indigo"
               subtitle="Média por acordo registrado"
+              chartData={statTrends.projected}
             />
           )}
         </section>
