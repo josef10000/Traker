@@ -364,8 +364,21 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         const wasCheckedToday = a.lastCheckedAt && 
           new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
         
-        // Vence hoje ou já venceu (e ainda não foi conferido hoje nem pago/quebrado)
-        return dueDate <= today && isPending && !wasCheckedToday;
+        const isOverdue = dueDate < today;
+        const isDueToday = dueDate.getTime() === today.getTime();
+        const wasCheckedAtAnyTime = !!a.lastCheckedAt;
+
+        // Se vence hoje: mostra se não foi conferido hoje
+        if (isDueToday) {
+          return isPending && !wasCheckedToday;
+        } 
+        
+        // Se já venceu (ontem ou antes): mostra apenas se NUNCA foi conferido
+        if (isOverdue) {
+          return isPending && !wasCheckedAtAnyTime;
+        }
+
+        return false;
       });
     }
 
@@ -477,7 +490,17 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           const dueDate = parseLocalDate(a.dueDate);
           const wasCheckedToday = a.lastCheckedAt && 
             new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
-          return dueDate <= today && a.status === AgreementStatus.WAITING && !wasCheckedToday;
+          const isOverdue = dueDate < today;
+          const isDueToday = dueDate.getTime() === today.getTime();
+          const wasCheckedAtAnyTime = !!a.lastCheckedAt;
+
+          if (isDueToday) {
+            return a.status === AgreementStatus.WAITING && !wasCheckedToday;
+          }
+          if (isOverdue) {
+            return a.status === AgreementStatus.WAITING && !wasCheckedAtAnyTime;
+          }
+          return false;
         }).length,
       },
       ticketAverage: realMonthAgreements.length > 0 ? totalProjected / realMonthAgreements.length : 0,
@@ -792,6 +815,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       const isCurrentlyChecked = currentStatus && new Date(currentStatus).toLocaleDateString() === new Date().toLocaleDateString();
       const isAfterDueDate = today > dueDate;
 
+      // Se estiver conferindo após o vencimento, marcamos como BROKEN e registramos a data
       if (!isCurrentlyChecked && isAfterDueDate) {
         await updateDoc(doc(db, 'agreements', id), {
           status: AgreementStatus.BROKEN,
@@ -799,10 +823,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         });
         showToast('Acordo marcado como quebrado (conferência após o vencimento).', 'info');
       } else {
+        // Se for no dia do vencimento ou se estiver removendo a marcação
         await updateDoc(doc(db, 'agreements', id), {
           lastCheckedAt: isCurrentlyChecked ? null : new Date().toISOString()
         });
-        showToast(isCurrentlyChecked ? 'Marcação de conferência removida.' : 'Acordo marcado como conferido hoje!', 'success');
+        showToast(isCurrentlyChecked ? 'Marcação de conferência removida.' : 'Acordo marcado como conferido!', 'success');
       }
     } catch (error) {
       console.error(error);
