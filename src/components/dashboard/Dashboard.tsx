@@ -838,16 +838,17 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     }
   };
 
-  const handleNormalizeSaldo = async (difference: number) => {
+  const handleNormalizeSaldo = async (difference: number, officialEffectiveness?: number | null) => {
     const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
     if (!targetTeamId) return;
 
     try {
       // Cria um acordo especial de "Ajuste Técnico"
+      // O valor mantém o sinal original: negativo para reduzir, positivo para aumentar
       const adjustmentData = {
         clientName: "Ajuste de Saldo Oficial",
         clientCpf: "000.000.000-00",
-        value: Math.abs(difference),
+        value: difference,
         dueDate: new Date().toISOString().split('T')[0],
         status: AgreementStatus.PAID,
         origin: AgreementOrigin.SALESFORCE,
@@ -864,11 +865,21 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       
       // Atualiza o registro de conciliação para zerar a diferença
       const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
-      await updateDoc(doc(db, 'reconciliations', reconId), {
+      const reconUpdate: any = {
         trackerValue: stats.totalPaid + difference,
         difference: 0,
         updatedAt: new Date().toISOString()
-      });
+      };
+
+      // Se a efetividade oficial foi informada, salva junto sem afetar o saldo
+      if (officialEffectiveness !== undefined && officialEffectiveness !== null) {
+        const trackerEff = stats.totalProjected > 0 ? ((stats.totalPaid + difference) / stats.totalProjected) * 100 : 0;
+        reconUpdate.officialEffectiveness = officialEffectiveness;
+        reconUpdate.trackerEffectiveness = trackerEff;
+        reconUpdate.differenceEffectiveness = officialEffectiveness - trackerEff;
+      }
+
+      await updateDoc(doc(db, 'reconciliations', reconId), reconUpdate);
 
       showToast('Saldo normalizado com sucesso!', 'success');
     } catch (error) {

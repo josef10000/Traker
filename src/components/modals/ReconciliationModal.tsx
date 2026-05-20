@@ -11,7 +11,7 @@ interface ReconciliationModalProps {
   currentOfficialValue: number;
   currentOfficialEffectiveness: number; // Prop para exibir a efetividade oficial atual
   onSave: (officialValue: number | null, officialEffectiveness: number | null) => void;
-  onNormalize: (difference: number) => void;
+  onNormalize: (difference: number, officialEffectiveness: number | null) => void;
   onClear: () => void;
   adjustments: any[];
   onDeleteAdjustment: (id: string) => Promise<void>;
@@ -293,7 +293,8 @@ export const ReconciliationModal = ({
             <button 
               disabled={difference === 0}
               onClick={() => {
-                onNormalize(difference);
+                const officialEff = inputEffectiveness !== '' ? (parseFloat(inputEffectiveness.replace(',', '.')) || 0) : null;
+                onNormalize(difference, officialEff);
                 onClose();
               }}
               className="flex-[1.5] py-4 bg-sky-500 hover:bg-sky-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2"
