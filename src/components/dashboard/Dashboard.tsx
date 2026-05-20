@@ -728,12 +728,15 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     }
   };
 
-  const handleSaveReconciliation = async (officialValue: number) => {
+  const handleSaveReconciliation = async (officialValue: number, officialEffectiveness: number) => {
     const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
     if (!targetTeamId) return;
 
     const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
     const reconRef = doc(db, 'reconciliations', reconId);
+
+    const trackerEff = stats.totalProjected > 0 ? (stats.totalPaid / stats.totalProjected) * 100 : 0;
+    const diffEff = officialEffectiveness - trackerEff;
 
     try {
       await setDoc(reconRef, {
@@ -744,9 +747,12 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         officialValue,
         trackerValue: stats.totalPaid,
         difference: officialValue - stats.totalPaid,
+        officialEffectiveness,
+        trackerEffectiveness: trackerEff,
+        differenceEffectiveness: diffEff,
         updatedAt: new Date().toISOString()
       });
-      showToast('Valor oficial salvo com sucesso!', 'success');
+      showToast('Dados de conciliação salvos com sucesso!', 'success');
     } catch (error) {
       showToast('Erro ao salvar conciliação.', 'error');
     }
@@ -1322,12 +1328,20 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     {((stats.totalPaid / (monthlyGoal || 1)) * 100).toFixed(1)}%
                   </h3>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end">
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Taxa de Efetividade</p>
                   <p className={`text-xl font-bold ${getEffectivenessColor((stats.totalPaid / (stats.totalProjected || 1)) * 100, effectivenessGoal)}`}>
                     {((stats.totalPaid / (stats.totalProjected || 1)) * 100).toFixed(1)}%
                   </p>
                   <p className="text-[8px] text-slate-500 font-medium uppercase mt-0.5">Base: {formatCurrency(stats.totalProjected)} projetado</p>
+                  {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && reconciliation.officialEffectiveness > 0 && (
+                    <div className="mt-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[9px] text-emerald-400 font-bold inline-flex items-center leading-none">
+                      Oficial: {reconciliation.officialEffectiveness.toFixed(1)}% 
+                      <span className={`ml-1 font-extrabold ${reconciliation.differenceEffectiveness !== undefined && reconciliation.differenceEffectiveness >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        (Dif: {reconciliation.differenceEffectiveness !== undefined && reconciliation.differenceEffectiveness > 0 ? '+' : ''}{reconciliation.differenceEffectiveness?.toFixed(1)}%)
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -2389,7 +2403,9 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         isOpen={isReconciliationModalOpen}
         onClose={() => setIsReconciliationModalOpen(false)}
         trackerValue={stats.totalPaid}
+        trackerProjected={stats.totalProjected}
         currentOfficialValue={reconciliation?.officialValue || 0}
+        currentOfficialEffectiveness={reconciliation?.officialEffectiveness || 0}
         onSave={handleSaveReconciliation}
         onNormalize={handleNormalizeSaldo}
         onClear={handleDeleteReconciliation}

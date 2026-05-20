@@ -122,5 +122,8 @@ export interface Reconciliation {
   officialValue: number;
   trackerValue: number;
   difference: number;
+  officialEffectiveness?: number;
+  trackerEffectiveness?: number;
+  differenceEffectiveness?: number;
   updatedAt: string;
 }
