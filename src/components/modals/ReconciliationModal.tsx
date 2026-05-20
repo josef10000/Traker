@@ -10,6 +10,7 @@ interface ReconciliationModalProps {
   currentOfficialValue: number;
   onSave: (officialValue: number) => void;
   onNormalize: (difference: number) => void;
+  onClear: () => void;
 }
 
 export const ReconciliationModal = ({
@@ -18,10 +19,21 @@ export const ReconciliationModal = ({
   trackerValue,
   currentOfficialValue,
   onSave,
-  onNormalize
+  onNormalize,
+  onClear
 }: ReconciliationModalProps) => {
-  const [inputValue, setInputValue] = useState(currentOfficialValue ? currentOfficialValue.toString() : '');
+  const [inputValue, setInputValue] = useState('');
   const [difference, setDifference] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (currentOfficialValue) {
+        setInputValue((currentOfficialValue * 100).toFixed(0));
+      } else {
+        setInputValue('');
+      }
+    }
+  }, [isOpen, currentOfficialValue]);
 
   useEffect(() => {
     const official = parseFloat(inputValue.replace(/[^\d]/g, '')) / 100 || 0;
@@ -148,6 +160,20 @@ export const ReconciliationModal = ({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {currentOfficialValue > 0 && (
+            <button 
+              onClick={() => {
+                if (window.confirm("Tem certeza que deseja apagar a conciliação salva? Isso também removerá todos os ajustes automáticos gerados.")) {
+                  onClear();
+                  onClose();
+                }
+              }}
+              className="w-full py-3.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 font-bold rounded-xl border border-rose-500/20 transition-all text-xs flex items-center justify-center gap-2 mb-2"
+            >
+              Apagar Conciliação Salva
+            </button>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button 

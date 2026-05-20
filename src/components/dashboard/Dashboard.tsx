@@ -741,6 +741,38 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     }
   };
 
+  const handleDeleteReconciliation = async () => {
+    const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
+    if (!targetTeamId) return;
+
+    const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
+    const reconRef = doc(db, 'reconciliations', reconId);
+
+    try {
+      // 1. Apaga a conciliação
+      await deleteDoc(reconRef);
+
+      // 2. Apaga quaisquer acordos de ajuste técnico vinculados a essa conciliação
+      const adjustmentsToDelete = agreements.filter(a => {
+        if (!a.isAdjustment) return false;
+        if (a.operatorId !== profile.uid) return false;
+        if (a.teamId !== targetTeamId) return false;
+        
+        const d = new Date(a.createdAt);
+        return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+      });
+
+      for (const adj of adjustmentsToDelete) {
+        await deleteDoc(doc(db, 'agreements', adj.id));
+      }
+
+      showToast('Conciliação e ajustes de saldo apagados com sucesso! O saldo voltou ao normal.', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao apagar conciliação.', 'error');
+    }
+  };
+
   const handleNormalizeSaldo = async (difference: number) => {
     const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
     if (!targetTeamId) return;
@@ -2339,6 +2371,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         currentOfficialValue={reconciliation?.officialValue || 0}
         onSave={handleSaveReconciliation}
         onNormalize={handleNormalizeSaldo}
+        onClear={handleDeleteReconciliation}
       />
 
       {/* Modal de Seleção de Equipe */}
