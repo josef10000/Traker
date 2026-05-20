@@ -10,7 +10,7 @@ interface ReconciliationModalProps {
   trackerProjected: number; // Prop para calcular a efetividade do tracker
   currentOfficialValue: number;
   currentOfficialEffectiveness: number; // Prop para exibir a efetividade oficial atual
-  onSave: (officialValue: number, officialEffectiveness: number) => void;
+  onSave: (officialValue: number | null, officialEffectiveness: number | null) => void;
   onNormalize: (difference: number) => void;
   onClear: () => void;
   adjustments: any[];
@@ -40,7 +40,7 @@ export const ReconciliationModal = ({
       if (currentOfficialValue) {
         setInputValue((currentOfficialValue * 100).toFixed(0));
       } else {
-        setInputValue('');
+        setInputValue((trackerValue * 100).toFixed(0));
       }
       
       if (currentOfficialEffectiveness) {
@@ -49,7 +49,7 @@ export const ReconciliationModal = ({
         setInputEffectiveness('');
       }
     }
-  }, [isOpen, currentOfficialValue, currentOfficialEffectiveness]);
+  }, [isOpen, currentOfficialValue, currentOfficialEffectiveness, trackerValue]);
 
   useEffect(() => {
     const official = parseFloat(inputValue.replace(/[^\d]/g, '')) / 100 || 0;
@@ -83,8 +83,8 @@ export const ReconciliationModal = ({
   };
 
   const handleSave = () => {
-    const official = parseFloat(inputValue) / 100 || 0;
-    const officialEff = parseFloat(inputEffectiveness.replace(',', '.')) || 0;
+    const official = inputValue !== '' ? (parseFloat(inputValue) / 100 || 0) : null;
+    const officialEff = inputEffectiveness !== '' ? (parseFloat(inputEffectiveness.replace(',', '.')) || 0) : null;
     onSave(official, officialEff);
     onClose();
   };
@@ -161,6 +161,21 @@ export const ReconciliationModal = ({
                   className="w-full bg-white/5 border border-white/10 pl-10 pr-4 py-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white text-xl font-bold backdrop-blur-sm"
                 />
               </div>
+              {currentOfficialValue > 0 && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Deseja realmente apagar o saldo conciliado? Isso também excluirá todos os acordos de ajuste vinculados.")) {
+                      onSave(null, currentOfficialEffectiveness || null);
+                      onClose();
+                    }
+                  }}
+                  className="w-full mt-2 py-2.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 font-bold rounded-xl border border-rose-500/20 transition-all text-[10px] flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <Trash2 size={12} />
+                  Apagar Saldo Conciliado
+                </button>
+              )}
             </div>
           </div>
 
@@ -236,20 +251,35 @@ export const ReconciliationModal = ({
                   className="w-full bg-white/5 border border-white/10 pl-4 pr-10 py-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white text-xl font-bold backdrop-blur-sm"
                 />
               </div>
+              {currentOfficialEffectiveness > 0 && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Deseja realmente apagar a efetividade oficial conciliada?")) {
+                      onSave(currentOfficialValue || null, null);
+                      onClose();
+                    }
+                  }}
+                  className="w-full mt-2 py-2.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 font-bold rounded-xl border border-rose-500/20 transition-all text-[10px] flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <Trash2 size={12} />
+                  Apagar Efetividade Conciliada
+                </button>
+              )}
             </div>
           </div>
 
-          {currentOfficialValue > 0 && (
+          {(currentOfficialValue > 0 || currentOfficialEffectiveness > 0) && (
             <button 
               onClick={() => {
-                if (window.confirm("Tem certeza que deseja apagar a conciliação salva? Isso também removerá todos os ajustes automáticos gerados.")) {
+                if (window.confirm("Tem certeza que deseja apagar ambas as conciliações salvas? Isso também removerá todos os ajustes automáticos gerados.")) {
                   onClear();
                   onClose();
                 }
               }}
               className="w-full py-3.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 font-bold rounded-xl border border-rose-500/20 transition-all text-xs flex items-center justify-center gap-2 mb-2"
             >
-              Apagar Conciliação Salva
+              Apagar Tudo (Limpar Conciliações)
             </button>
           )}
 

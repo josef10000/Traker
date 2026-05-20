@@ -49,7 +49,8 @@ import {
   query, 
   orderBy,
   where,
-  getDocFromServer
+  getDocFromServer,
+  deleteField
 } from 'firebase/firestore';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -728,33 +729,70 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     }
   };
 
-  const handleSaveReconciliation = async (officialValue: number, officialEffectiveness: number) => {
+  const handleSaveReconciliation = async (officialValue: number | null, officialEffectiveness: number | null) => {
     const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
     if (!targetTeamId) return;
+
+    if (officialValue === null && officialEffectiveness === null) {
+      await handleDeleteReconciliation();
+      return;
+    }
 
     const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
     const reconRef = doc(db, 'reconciliations', reconId);
 
     const trackerEff = stats.totalProjected > 0 ? (stats.totalPaid / stats.totalProjected) * 100 : 0;
-    const diffEff = officialEffectiveness - trackerEff;
+
+    const reconData: any = {
+      userId: profile.uid,
+      teamId: targetTeamId,
+      month: selectedMonth,
+      year: selectedYear,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (officialValue === null) {
+      reconData.officialValue = deleteField();
+      reconData.difference = deleteField();
+      
+      try {
+        const adjustmentsToDelete = agreements.filter(a => {
+          if (!a.isAdjustment) return false;
+          if (a.operatorId !== profile.uid) return false;
+          if (a.teamId !== targetTeamId) return false;
+          
+          const d = new Date(a.createdAt);
+          return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+        });
+
+        for (const adj of adjustmentsToDelete) {
+          await deleteDoc(doc(db, 'agreements', adj.id));
+        }
+      } catch (e) {
+        console.error("Erro ao remover ajustes ao apagar saldo:", e);
+      }
+    } else {
+      reconData.officialValue = officialValue;
+      reconData.trackerValue = stats.totalPaid;
+      reconData.difference = officialValue - stats.totalPaid;
+    }
+
+    if (officialEffectiveness === null) {
+      reconData.officialEffectiveness = deleteField();
+      reconData.trackerEffectiveness = deleteField();
+      reconData.differenceEffectiveness = deleteField();
+    } else {
+      const diffEff = officialEffectiveness - trackerEff;
+      reconData.officialEffectiveness = officialEffectiveness;
+      reconData.trackerEffectiveness = trackerEff;
+      reconData.differenceEffectiveness = diffEff;
+    }
 
     try {
-      await setDoc(reconRef, {
-        userId: profile.uid,
-        teamId: targetTeamId,
-        month: selectedMonth,
-        year: selectedYear,
-        officialValue,
-        trackerValue: stats.totalPaid,
-        difference: officialValue - stats.totalPaid,
-        officialEffectiveness,
-        trackerEffectiveness: trackerEff,
-        differenceEffectiveness: diffEff,
-        updatedAt: new Date().toISOString()
-      });
-      showToast('Dados de conciliação salvos com sucesso!', 'success');
+      await setDoc(reconRef, reconData, { merge: true });
+      showToast('Dados de conciliação atualizados com sucesso!', 'success');
     } catch (error) {
-      showToast('Erro ao salvar conciliação.', 'error');
+      showToast('Erro ao atualizar conciliação.', 'error');
     }
   };
 
