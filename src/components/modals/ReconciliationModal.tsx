@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Calculator, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Calculator, RefreshCw, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/masks';
 
 interface ReconciliationModalProps {
@@ -11,6 +11,8 @@ interface ReconciliationModalProps {
   onSave: (officialValue: number) => void;
   onNormalize: (difference: number) => void;
   onClear: () => void;
+  adjustments: any[];
+  onDeleteAdjustment: (id: string) => Promise<void>;
 }
 
 export const ReconciliationModal = ({
@@ -20,7 +22,9 @@ export const ReconciliationModal = ({
   currentOfficialValue,
   onSave,
   onNormalize,
-  onClear
+  onClear,
+  adjustments,
+  onDeleteAdjustment
 }: ReconciliationModalProps) => {
   const [inputValue, setInputValue] = useState('');
   const [difference, setDifference] = useState(0);
@@ -96,7 +100,7 @@ export const ReconciliationModal = ({
           </button>
         </div>
 
-        <div className="p-8 space-y-6">
+        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/5">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
@@ -193,6 +197,52 @@ export const ReconciliationModal = ({
               <RefreshCw size={18} className={difference !== 0 ? 'animate-spin-slow' : ''} />
               Normalizar Saldo
             </button>
+          </div>
+
+          {/* Histórico de Ajustes Técnicos no Mês */}
+          <div className="pt-6 border-t border-white/5 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-sky-500/10 rounded-lg text-sky-400">
+                <RefreshCw size={12} className="animate-spin-slow" />
+              </div>
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                Ajustes de Saldo Realizados neste Mês
+              </h3>
+            </div>
+            
+            {adjustments.length === 0 ? (
+              <p className="text-[10px] text-slate-500 italic ml-1">Nenhum ajuste de saldo realizado neste período.</p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                {adjustments.map((adj) => {
+                  const dateStr = new Date(adj.createdAt).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                  return (
+                    <div key={adj.id} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 hover:border-white/10 rounded-2xl text-xs transition-all">
+                      <div>
+                        <span className="font-bold text-white block">{formatCurrency(adj.value)}</span>
+                        <span className="text-[9px] text-slate-500 block font-semibold mt-0.5">{dateStr}</span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          if (window.confirm(`Deseja realmente excluir este ajuste de saldo de ${formatCurrency(adj.value)}?`)) {
+                            onDeleteAdjustment(adj.id);
+                          }
+                        }}
+                        className="p-2 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white rounded-xl transition-all border border-rose-500/10 hover:border-transparent active:scale-95"
+                        title="Excluir Ajuste"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </motion.div>

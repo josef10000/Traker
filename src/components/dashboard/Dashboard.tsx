@@ -308,6 +308,17 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
   }, [agreements, selectedMonth, selectedYear]);
+
+  const monthAdjustments = useMemo(() => {
+    const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
+    return agreements.filter(a => {
+      if (!a.isAdjustment) return false;
+      if (a.operatorId !== profile.uid) return false;
+      if (a.teamId !== targetTeamId) return false;
+      const d = new Date(a.createdAt);
+      return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    });
+  }, [agreements, selectedMonth, selectedYear, profile.uid, selectedTeamId, profile.teamId]);
   const memberFilteredAgreements = useMemo(() => {
     let filtered = monthFilteredAgreements;
     
@@ -770,6 +781,16 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     } catch (error) {
       console.error(error);
       showToast('Erro ao apagar conciliação.', 'error');
+    }
+  };
+
+  const handleDeleteAdjustment = async (agreementId: string) => {
+    try {
+      await deleteDoc(doc(db, 'agreements', agreementId));
+      showToast('Ajuste de saldo apagado com sucesso! O saldo foi recalculado.', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao apagar ajuste técnico.', 'error');
     }
   };
 
@@ -2372,6 +2393,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         onSave={handleSaveReconciliation}
         onNormalize={handleNormalizeSaldo}
         onClear={handleDeleteReconciliation}
+        adjustments={monthAdjustments}
+        onDeleteAdjustment={handleDeleteAdjustment}
       />
 
       {/* Modal de Seleção de Equipe */}
