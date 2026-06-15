@@ -36,7 +36,10 @@ import {
   Settings,
   Tv,
   CheckSquare,
-  ChevronDown
+  ChevronDown,
+  Eye,
+  EyeOff,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -50,7 +53,9 @@ import {
   orderBy,
   where,
   getDocFromServer,
-  deleteField
+  deleteField,
+  getDocs,
+  writeBatch
 } from 'firebase/firestore';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -76,7 +81,8 @@ import {
   Reconciliation
 } from '../../types';
 import { getTeamData, getTeamMembers, removeTeamMember } from '../../lib/teams';
-import { formatCurrency } from '../../utils/masks';
+import { formatCurrency, maskCPF } from '../../utils/masks';
+import { logAudit } from '../../lib/audit';
 import { StatCard } from './StatCard';
 import { FilterButton } from './FilterButton';
 import { ConfirmModal } from '../modals/ConfirmModal';
@@ -88,6 +94,8 @@ import { GoalModal } from '../modals/GoalModal';
 import { HistoryModal } from '../modals/HistoryModal';
 import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
 import { ReconciliationModal } from '../modals/ReconciliationModal';
+import { ExportCpfModal } from '../modals/ExportCpfModal';
+import { TermsModal } from '../modals/TermsModal';
 import { MONTHS, getMonthName, getYearRange, getWorkingDaysInMonth, getRemainingWorkingDays } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
 interface DashboardProps {
@@ -98,6 +106,9 @@ interface DashboardProps {
 }
 export const Dashboard = ({ user, profile, onSettingsClick, showToast }: DashboardProps) => {
   const [agreements, setAgreements] = useState<Agreement[]>([]);
+  const [revealedCpfs, setRevealedCpfs] = useState<Record<string, boolean>>({});
+  const [isExportCpfModalOpen, setIsExportCpfModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [monthlyGoal, setMonthlyGoal] = useState<number>(50000);
   const [effectivenessGoal, setEffectivenessGoal] = useState<number>(85);
   const [isLoading, setIsLoading] = useState(true);
@@ -302,6 +313,74 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
 
     return () => unsubscribe();
   }, [selectedTeamId, selectedMonth, selectedYear, profile.uid, profile.teamId]);
+
+  // Verify Terms of Use
+  useEffect(() => {
+    if (profile && !profile.acceptedTermsAt) {
+      setIsTermsModalOpen(true);
+    }
+  }, [profile?.acceptedTermsAt]);
+
+  const handleAcceptTerms = async () => {
+    try {
+      const now = new Date().toISOString();
+      await updateDoc(doc(db, 'users', profile.uid), {
+        acceptedTermsAt: now
+      });
+      await logAudit('ACCEPT_TERMS', {}, profile.name);
+      setIsTermsModalOpen(false);
+      showToast('Termos de Uso aceitos com sucesso!', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao salvar aceite dos termos.', 'error');
+    }
+  };
+
+  const toggleRevealCpf = (agreementId: string, cpf: string) => {
+    if (revealedCpfs[agreementId]) {
+      setRevealedCpfs(prev => ({ ...prev, [agreementId]: false }));
+    } else {
+      setRevealedCpfs(prev => ({ ...prev, [agreementId]: true }));
+      logAudit('REVEAL_CPF', { agreementId, cpf, context: 'AgreementsTable' }, profile.name);
+      setTimeout(() => {
+        setRevealedCpfs(prev => ({ ...prev, [agreementId]: false }));
+      }, 10000);
+    }
+  };
+
+  const handleAnonimizeClient = async (cpf: string) => {
+    try {
+      setIsLoading(true);
+      const agreementsRef = collection(db, 'agreements');
+      const q = query(agreementsRef, where('clientCpf', '==', cpf));
+      const querySnapshot = await getDocs(q);
+      
+      const batch = writeBatch(db);
+      querySnapshot.forEach((documento) => {
+        batch.update(doc(db, 'agreements', documento.id), {
+          clientName: 'Cliente Anonimizado',
+          clientCpf: '000.000.000-00',
+          phone: ''
+        });
+      });
+      
+      await batch.commit();
+      
+      // Se o modal de histórico estiver aberto para esse CPF, fecha ou reseta
+      if (selectedClientCpf === cpf) {
+        setSelectedClientCpf(null);
+      }
+
+      await logAudit('ANONIMIZE_CLIENT', { count: querySnapshot.size }, profile.name);
+      showToast(`${querySnapshot.size} acordos anonimizados com sucesso.`, 'success');
+      setIsLoading(false);
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao anonimizar cliente.', 'error');
+      setIsLoading(false);
+    }
+  };
+
   // Filtering Logic
   const monthFilteredAgreements = useMemo(() => {
     return agreements.filter(a => {
@@ -1049,14 +1128,17 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       showToast('Erro ao salvar acordo.', 'error');
     }
   };
-  const handleExport = () => {
+  const handleExportClick = () => {
+    setIsExportCpfModalOpen(true);
+  };
+  const executeExport = async (complete: boolean) => {
     const headers = ['Nome', 'CPF', 'Valor', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
     
     const csvContent = [
       headers.join(';'),
       ...filteredAgreements.map(a => [
         a.clientName,
-        a.clientCpf,
+        complete ? a.clientCpf : maskCPF(a.clientCpf),
         a.value.toString().replace('.', ','),
         a.dueDate.split('-').reverse().join('/'),
         (() => {
@@ -1087,6 +1169,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     link.click();
     document.body.removeChild(link);
     
+    await logAudit(
+      complete ? 'EXPORT_CSV_COMPLETE' : 'EXPORT_CSV_MASKED', 
+      { count: filteredAgreements.length }, 
+      profile.name
+    );
     showToast('Exportação concluída!', 'success');
   };
   const getEffectivenessColor = (rate: number, goal: number) => {
@@ -1661,7 +1748,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
             
             <button
-              onClick={handleExport}
+              onClick={handleExportClick}
               disabled={filteredAgreements.length === 0}
               className="flex items-center gap-2 bg-slate-800 hover:bg-emerald-600 text-emerald-400 hover:text-white px-4 py-2 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               title="Exportar para Excel (CSV)"
@@ -2161,16 +2248,35 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                               <span className={`font-semibold text-slate-100 ${isBroken ? 'text-slate-500' : ''}`}>
                                 {agreement.clientName}
                               </span>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <button 
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-xs text-slate-400 font-mono">
+                                  {revealedCpfs[agreement.id] ? agreement.clientCpf : maskCPF(agreement.clientCpf)}
+                                </span>
+                                <button
                                   onClick={() => {
-                                    navigator.clipboard.writeText(agreement.clientCpf.replace(/\D/g, ''));
-                                    showToast('CPF (apenas números) copiado!', 'success');
+                                    const isRevealed = revealedCpfs[agreement.id];
+                                    if (isRevealed) {
+                                      navigator.clipboard.writeText(agreement.clientCpf.replace(/\D/g, ''));
+                                      showToast('CPF copiado!', 'success');
+                                    } else {
+                                      if (window.confirm('Você tem certeza que deseja copiar o CPF completo? Essa ação envolve acesso a dados pessoais sob a LGPD.')) {
+                                        navigator.clipboard.writeText(agreement.clientCpf.replace(/\D/g, ''));
+                                        logAudit('REVEAL_CPF', { agreementId: agreement.id, cpf: agreement.clientCpf, context: 'CopyToClipboard' }, profile.name);
+                                        showToast('CPF copiado!', 'success');
+                                      }
+                                    }
                                   }}
-                                  className="text-xs text-sky-400/70 font-mono hover:text-sky-400 transition-colors"
-                                  title="Copiar CPF"
+                                  className="p-1 text-slate-500 hover:text-sky-400 hover:bg-sky-400/10 rounded transition-all"
+                                  title="Copiar CPF completo"
                                 >
-                                  {agreement.clientCpf}
+                                  <Copy size={11} />
+                                </button>
+                                <button 
+                                  onClick={() => toggleRevealCpf(agreement.id, agreement.clientCpf)}
+                                  className="p-1 text-slate-500 hover:text-sky-400 hover:bg-sky-400/10 rounded transition-all"
+                                  title={revealedCpfs[agreement.id] ? "Ocultar CPF" : "Revelar CPF completo"}
+                                >
+                                  {revealedCpfs[agreement.id] ? <EyeOff size={12} /> : <Eye size={12} />}
                                 </button>
                                 <button 
                                   onClick={() => handleClientClick(agreement.clientCpf)}
@@ -2349,6 +2455,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         }}
         onSubmit={handleAddOrEditAgreement}
         editingAgreement={editingAgreement}
+        currentUserProfile={profile}
       />
 
       <GoalModal 
@@ -2365,6 +2472,20 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         clientCpf={selectedClientCpf}
         history={clientHistory}
         isLoading={isLoadingHistory}
+        userName={profile.name}
+        isSupervisor={profile.role === 'supervisor'}
+        onAnonimize={handleAnonimizeClient}
+      />
+
+      <ExportCpfModal
+        isOpen={isExportCpfModalOpen}
+        onClose={() => setIsExportCpfModalOpen(false)}
+        onExport={executeExport}
+      />
+
+      <TermsModal
+        isOpen={isTermsModalOpen}
+        onAccept={handleAcceptTerms}
       />
 
       {/* Modal de Remanejamento */}

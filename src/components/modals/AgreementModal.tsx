@@ -1,23 +1,29 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X } from 'lucide-react';
-import { Agreement, AgreementOrigin, AgreementStatus, AgreementType, AgreementCategory } from '../../types';
-import { formatCPF } from '../../utils/masks';
+import { Agreement, AgreementOrigin, AgreementStatus, AgreementType, AgreementCategory, UserProfile } from '../../types';
+import { formatCPF, maskCPF } from '../../utils/masks';
 
 interface AgreementModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
   editingAgreement: Agreement | null;
+  currentUserProfile?: UserProfile;
 }
 
 export const AgreementModal = ({ 
   isOpen, 
   onClose, 
   onSubmit, 
-  editingAgreement 
+  editingAgreement,
+  currentUserProfile
 }: AgreementModalProps) => {
   if (!isOpen) return null;
+
+  const canEditCpf = !editingAgreement || 
+    editingAgreement.operatorId === currentUserProfile?.uid || 
+    currentUserProfile?.role === 'supervisor';
 
   const normalizeValue = (val: string): number => {
     if (!val) return 0;
@@ -42,10 +48,11 @@ export const AgreementModal = ({
     
     const rawValue = formData.get('value') as string;
     const normalizedValue = normalizeValue(rawValue);
+    const finalCpf = canEditCpf ? (formData.get('cpf') as string) : (editingAgreement?.clientCpf || '');
 
     const agreementData = {
       clientName: formData.get('name') as string,
-      clientCpf: formData.get('cpf') as string,
+      clientCpf: finalCpf,
       origin: formData.get('origin') as AgreementOrigin,
       dueDate: formData.get('dueDate') as string,
       value: normalizedValue,
@@ -58,6 +65,7 @@ export const AgreementModal = ({
 
     onSubmit(agreementData);
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -99,9 +107,10 @@ export const AgreementModal = ({
                 name="cpf"
                 type="text" 
                 placeholder="000.000.000-00" 
-                defaultValue={editingAgreement?.clientCpf}
+                defaultValue={editingAgreement ? (canEditCpf ? editingAgreement.clientCpf : maskCPF(editingAgreement.clientCpf)) : ''}
+                disabled={!canEditCpf}
                 onChange={(e) => e.target.value = formatCPF(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-mono text-white backdrop-blur-sm"
+                className={`w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-mono text-white backdrop-blur-sm ${!canEditCpf ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
             </div>
             <div className="space-y-1.5">

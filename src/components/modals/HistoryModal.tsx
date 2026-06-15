@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { X, Loader2, Clock, CheckCircle2 } from 'lucide-react';
+import { X, Loader2, Clock, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Agreement, AgreementStatus, AgreementType } from '../../types';
 import { OriginBadge } from '../dashboard/OriginBadge';
-import { formatCurrency } from '../../utils/masks';
+import { formatCurrency, maskCPF } from '../../utils/masks';
+import { logAudit } from '../../lib/audit';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -11,6 +12,9 @@ interface HistoryModalProps {
   clientCpf: string | null;
   history: Agreement[];
   isLoading: boolean;
+  userName?: string;
+  isSupervisor?: boolean;
+  onAnonimize?: (cpf: string) => void;
 }
 
 export const HistoryModal = ({ 
@@ -18,8 +22,32 @@ export const HistoryModal = ({
   onClose, 
   clientCpf, 
   history, 
-  isLoading 
+  isLoading,
+  userName = 'Operador',
+  isSupervisor = false,
+  onAnonimize
 }: HistoryModalProps) => {
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  useEffect(() => {
+    if (isRevealed) {
+      const timer = setTimeout(() => setIsRevealed(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [isRevealed]);
+
+  const handleReveal = () => {
+    if (!isRevealed && clientCpf) {
+      logAudit('REVEAL_CPF', { cpf: clientCpf, context: 'HistoryModal' }, userName);
+    }
+    setIsRevealed(!isRevealed);
+  };
+
+  const handleClose = () => {
+    setIsRevealed(false);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -28,7 +56,7 @@ export const HistoryModal = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
+        onClick={handleClose}
         className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
       />
       <motion.div 
@@ -40,10 +68,24 @@ export const HistoryModal = ({
         <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0">
           <div>
             <h2 className="text-lg font-bold text-white">Histórico do Cliente</h2>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest font-mono mt-0.5">CPF: {clientCpf}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest font-mono">
+                CPF: {clientCpf ? (isRevealed ? clientCpf : maskCPF(clientCpf)) : ''}
+              </span>
+              {clientCpf && (
+                <button
+                  type="button"
+                  onClick={handleReveal}
+                  className="text-slate-500 hover:text-sky-400 transition-colors p-0.5 rounded"
+                  title={isRevealed ? "Ocultar CPF" : "Revelar CPF"}
+                >
+                  {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
+                </button>
+              )}
+            </div>
           </div>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
           >
             <X size={20} />
@@ -114,8 +156,23 @@ export const HistoryModal = ({
             </div>
           )}
         </div>
-        <div className="px-8 py-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex justify-end shrink-0">
+        <div className="px-8 py-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex justify-between items-center shrink-0">
            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Total de negociações: {history.length}</p>
+           {onAnonimize && isSupervisor && clientCpf && (
+             <button
+               type="button"
+               onClick={() => {
+                 if (window.confirm("Atenção: Ao anonimizar este cliente, o CPF, Nome e Telefone dele serão permanentemente removidos/alterados para dados genéricos em todos os acordos associados no sistema. Esta ação cumpre o Direito ao Esquecimento da LGPD e NÃO pode ser desfeita. Deseja continuar?")) {
+                   onAnonimize(clientCpf);
+                   handleClose();
+                 }
+               }}
+               className="text-[10px] text-rose-500 hover:text-rose-400 font-bold uppercase tracking-wider flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-rose-500/10 border border-rose-500/20"
+               title="Anonimizar dados do cliente (Direito ao Esquecimento — LGPD)"
+             >
+               Anonimizar Cliente
+             </button>
+           )}
         </div>
       </motion.div>
     </div>
