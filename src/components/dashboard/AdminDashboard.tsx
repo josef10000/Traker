@@ -70,8 +70,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [editMaxTeams, setEditMaxTeams] = useState(1);
   const [editExpiresAt, setEditExpiresAt] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [isMigrating, setIsMigrating] = useState(false);
-  const [migrationLog, setMigrationLog] = useState<string[]>([]);
 
   // Modal de criação de organização
   const [isCreateOrgOpen, setIsCreateOrgOpen] = useState(false);
@@ -441,158 +439,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     }
   };
 
-  const handleMigrateLegacyData = async () => {
-    if (!window.confirm("Deseja realmente iniciar a migração dos dados legados? Isso adicionará a organização 'rnv-gestao' em todos os documentos sem tenant definido. Recomendamos fazer um backup das coleções antes.")) {
-      return;
-    }
-    
-    setIsMigrating(true);
-    setMigrationLog([]);
-    const log = (msg: string) => setMigrationLog(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
-    
-    try {
-      // 1. Criar organização padrão se não existir
-      log("Verificando organização padrão 'rnv-gestao'...");
-      const defaultOrgId = 'rnv-gestao';
-      const orgRef = doc(db, 'organizations', defaultOrgId);
-      const orgSnap = await getDoc(orgRef);
-      
-      if (!orgSnap.exists()) {
-        log("Criando organização padrão 'rnv-gestao'...");
-        await setDoc(orgRef, {
-          id: defaultOrgId,
-          name: 'RNV Gestão',
-          status: 'active',
-          plan: 'pro',
-          maxUsers: 100,
-          maxTeams: 20,
-          createdAt: new Date().toISOString()
-        });
-        log("Organização padrão criada com sucesso.");
-      } else {
-        log("Organização padrão 'rnv-gestao' já existe.");
-      }
-
-      // 2. Migrar usuários
-      log("Buscando usuários sem organização...");
-      const usersRef = collection(db, 'users');
-      const usersSnap = await getDocs(usersRef);
-      let usersMigrated = 0;
-      const userBatch = writeBatch(db);
-      
-      usersSnap.docs.forEach(d => {
-        const data = d.data();
-        if (data.role !== 'super_admin' && !data.organizationId) {
-          userBatch.update(d.ref, { organizationId: defaultOrgId });
-          usersMigrated++;
-        }
-      });
-      if (usersMigrated > 0) {
-        await userBatch.commit();
-        log(`Migrados ${usersMigrated} usuários.`);
-      } else {
-        log("Nenhum usuário pendente de migração.");
-      }
-
-      // 3. Migrar equipes (teams)
-      log("Buscando equipes sem organização...");
-      const teamsRef = collection(db, 'teams');
-      const teamsSnap = await getDocs(teamsRef);
-      let teamsMigrated = 0;
-      const teamBatch = writeBatch(db);
-      
-      teamsSnap.docs.forEach(d => {
-        const data = d.data();
-        if (!data.organizationId) {
-          teamBatch.update(d.ref, { organizationId: defaultOrgId });
-          teamsMigrated++;
-        }
-      });
-      if (teamsMigrated > 0) {
-        await teamBatch.commit();
-        log(`Migradas ${teamsMigrated} equipes.`);
-      } else {
-        log("Nenhuma equipe pendente de migração.");
-      }
-
-      // 4. Migrar acordos (agreements)
-      log("Buscando acordos sem organização...");
-      const agreementsRef = collection(db, 'agreements');
-      const agreementsSnap = await getDocs(agreementsRef);
-      let agreementsMigrated = 0;
-      
-      // Acordos podem passar de 500 itens, vamos fazer batches divididos
-      let batch = writeBatch(db);
-      let count = 0;
-      for (const d of agreementsSnap.docs) {
-        const data = d.data();
-        if (!data.organizationId) {
-          batch.update(d.ref, { organizationId: defaultOrgId });
-          agreementsMigrated++;
-          count++;
-          if (count === 400) {
-            await batch.commit();
-            batch = writeBatch(db);
-            count = 0;
-          }
-        }
-      }
-      if (count > 0) {
-        await batch.commit();
-      }
-      log(`Migrados ${agreementsMigrated} acordos.`);
-
-      // 5. Migrar conciliações (reconciliations)
-      log("Buscando conciliações sem organização...");
-      const reconciliationsRef = collection(db, 'reconciliations');
-      const reconciliationsSnap = await getDocs(reconciliationsRef);
-      let reconciliationsMigrated = 0;
-      const reconBatch = writeBatch(db);
-      
-      reconciliationsSnap.docs.forEach(d => {
-        const data = d.data();
-        if (!data.organizationId) {
-          reconBatch.update(d.ref, { organizationId: defaultOrgId });
-          reconciliationsMigrated++;
-        }
-      });
-      if (reconciliationsMigrated > 0) {
-        await reconBatch.commit();
-        log(`Migradas ${reconciliationsMigrated} conciliações.`);
-      } else {
-        log("Nenhuma conciliação pendente de migração.");
-      }
-
-      // 6. Migrar configurações (settings)
-      log("Buscando configurações sem organização...");
-      const settingsRef = collection(db, 'settings');
-      const settingsSnap = await getDocs(settingsRef);
-      let settingsMigrated = 0;
-      const settingsBatch = writeBatch(db);
-      
-      settingsSnap.docs.forEach(d => {
-        const data = d.data();
-        if (!data.organizationId) {
-          settingsBatch.update(d.ref, { organizationId: defaultOrgId });
-          settingsMigrated++;
-        }
-      });
-      if (settingsMigrated > 0) {
-        await settingsBatch.commit();
-        log(`Migradas ${settingsMigrated} configurações.`);
-      } else {
-        log("Nenhuma configuração pendente de migração.");
-      }
-
-      log("🎉 MIGRACAO CONCLUÍDA COM SUCESSO!");
-      showToast("Dados legados migrados para 'rnv-gestao'!", "success");
-    } catch (e: any) {
-      log(`Erro na migração: ${e.message}`);
-      showToast("Ocorreu um erro na migração.", "error");
-    } finally {
-      setIsMigrating(false);
-    }
-  };
 
   const stats = useMemo(() => {
     const filteredOrgs = organizations.filter(o => o.id !== 'sandbox-test');
@@ -765,31 +611,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           </div>
         </section>
 
-        {/* Ferramentas de Suporte */}
-        <section className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/10 space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-white">Ferramentas de Suporte e Migração</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Use para migrar dados de bancos legados para a organização padrão 'rnv-gestao'.</p>
-            </div>
-            <button 
-              onClick={handleMigrateLegacyData}
-              disabled={isMigrating}
-              className="px-5 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/10 active:scale-95 disabled:opacity-50 flex items-center gap-2 text-xs uppercase tracking-wider"
-            >
-              {isMigrating ? <Loader2 className="animate-spin" size={14} /> : <Activity size={14} />}
-              Migrar Dados Legados (SaaS)
-            </button>
-          </div>
-          
-          {migrationLog.length > 0 && (
-            <div className="bg-black/40 border border-white/5 p-4 rounded-2xl max-h-48 overflow-y-auto font-mono text-xs text-amber-400/90 space-y-1">
-              {migrationLog.map((logLine, idx) => (
-                <div key={idx}>{logLine}</div>
-              ))}
-            </div>
-          )}
-        </section>
 
         {/* Lista de Empresas */}
         <section className="glass-card rounded-3xl border border-white/5 bg-slate-900/10 overflow-hidden shadow-xl">
