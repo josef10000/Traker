@@ -204,7 +204,9 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
 
           <button onClick={handleGoogleSignIn} className="w-full bg-white/5 border border-white/10 py-4 rounded-2xl font-black text-slate-200 hover:bg-white/10 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]">
             <Chrome size={20} className="group-hover:text-sky-400 transition-colors" />
-            <span className="uppercase tracking-[0.1em] text-xs">Acessar com Google</span>
+            <span className="uppercase tracking-[0.1em] text-xs">
+              {isLogin ? 'Acessar com Google' : 'Cadastrar-se pelo Google'}
+            </span>
           </button>
 
           <p className="text-center text-[10px] font-black uppercase tracking-widest text-slate-500">

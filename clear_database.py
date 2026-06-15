@@ -1,45 +1,75 @@
-import firebase_admin
-from firebase_admin import credentials, firestore
 import json
+import requests
+from google.oauth2 import service_account
+from google.auth.transport.requests import Request
 
-def delete_collection(coll_ref, batch_size=100):
-    docs = list(coll_ref.limit(batch_size).stream())
-    deleted = 0
+def get_auth_headers():
+    with open('service-account.json', 'r') as f:
+        sa_info = json.load(f)
+    scopes = ['https://www.googleapis.com/auth/cloud-platform']
+    creds = service_account.Credentials.from_service_account_info(sa_info, scopes=scopes)
+    creds.refresh(Request())
+    return {
+        "Authorization": f"Bearer {creds.token}",
+        "Content-Type": "application/json"
+    }
 
-    for doc in docs:
-        doc.reference.delete()
-        deleted += 1
+def delete_document(doc_name, headers):
+    url = f"https://firestore.googleapis.com/v1/{doc_name}"
+    res = requests.delete(url, headers=headers)
+    if res.status_code == 200:
+        print(f"Deletado: {doc_name}")
+    else:
+        print(f"Erro ao deletar {doc_name}: {res.status_code} - {res.text}")
 
-    if deleted >= batch_size:
-        return delete_collection(coll_ref, batch_size)
+def clear_collection(project_id, database_id, collection_id, headers):
+    page_token = None
+    while True:
+        url = f"https://firestore.googleapis.com/v1/projects/{project_id}/databases/{database_id}/documents/{collection_id}"
+        params = {}
+        if page_token:
+            params['pageToken'] = page_token
+            
+        res = requests.get(url, headers=headers, params=params)
+        if res.status_code == 404:
+            break
+        if res.status_code != 200:
+            print(f"Erro ao listar colecao {collection_id}: {res.status_code} - {res.text}")
+            break
+
+        data = res.json()
+        documents = data.get('documents', [])
+        for doc in documents:
+            doc_name = doc.get('name')
+            delete_document(doc_name, headers)
+
+        page_token = data.get('nextPageToken')
+        if not page_token:
+            break
 
 def clear_all():
-    print("Iniciando limpeza total do banco de dados Firestore...")
+    print("Iniciando reset do banco de dados via API REST do Firestore...")
     try:
-        cred = credentials.Certificate('service-account.json')
+        with open('service-account.json', 'r') as f:
+            sa_info = json.load(f)
         with open('firebase-applet-config.json', 'r') as f:
-            client_config = json.load(f)
-        database_id = client_config.get('firestoreDatabaseId')
+            config = json.load(f)
+            
+        database_id = config.get('firestoreDatabaseId')
+        project_id = sa_info['project_id']
         
-        firebase_admin.initialize_app(cred)
-        try:
-            db = firestore.client(database=database_id)
-            print(f"Conectado ao banco de dados nomeado: {database_id}")
-        except Exception as e:
-            db = firestore.client()
-            print("Conectado ao banco de dados padrão (default)")
+        headers = get_auth_headers()
+        print(f"Conectado ao projeto {project_id}, banco de dados: {database_id}")
 
         collections = ['users', 'organizations', 'teams', 'agreements', 'reconciliations', 'audit_logs']
-        for col_name in collections:
-            coll_ref = db.collection(col_name)
-            print(f"Limpando colecao '{col_name}'...")
-            delete_collection(coll_ref)
-            print(f"Colecao '{col_name}' limpa com sucesso.")
+        for col in collections:
+            print(f"Limpando colecao '{col}'...")
+            clear_collection(project_id, database_id, col, headers)
+            print(f"Colecao '{col}' processada.")
 
-        print("--- BANCO DE DADOS RESETADO COM SUCESSO! ---")
-
+        print("--- RESET CONCLUIDO COM SUCESSO! ---")
     except Exception as e:
-        print(f"Erro ao resetar banco de dados: {e}")
+        print(f"Erro no reset: {e}")
 
 if __name__ == "__main__":
     clear_all()
