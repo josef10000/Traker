@@ -5,7 +5,7 @@ export interface AuditLog {
   userId: string;
   userEmail: string | null;
   userName: string;
-  action: 'REVEAL_CPF' | 'EXPORT_CSV_COMPLETE' | 'EXPORT_CSV_MASKED' | 'ANONIMIZE_CLIENT' | 'ACCEPT_TERMS';
+  action: 'REVEAL_CPF' | 'EXPORT_CSV_COMPLETE' | 'EXPORT_CSV_MASKED' | 'ANONIMIZE_CLIENT' | 'ACCEPT_TERMS' | 'CREATE_ORGANIZATION' | 'DELETE_ORGANIZATION' | 'UPDATE_ORGANIZATION_LIMITS';
   details: Record<string, any>;
   timestamp: string;
 }

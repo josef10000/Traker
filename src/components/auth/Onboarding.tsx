@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Users, UserPlus, ArrowRight, Loader2, Building, Shield } from 'lucide-react';
 import { createTeam, joinTeam, createOrganization, joinOrganizationAsManager, joinOrganizationAsSupervisor } from '../../lib/teams';
 import { User } from 'firebase/auth';
-import { UserProfile, UserRole, Organization } from '../../types';
+import { UserProfile, UserRole, Organization, Team } from '../../types';
 import { collection, query, where, getDocs, limit, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
