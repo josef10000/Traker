@@ -42,6 +42,17 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 - 🧪 **Restrições de Cargos & Ambiente Sandbox (Fase 8)**:
   - **Restrições de Gerente (`manager`)**: Proteção contra edições e conciliações individuais de acordos (ocultação de botões de escrita), exibindo apenas tags visuais de status. Permissão para visualização macro em cascata de equipes e importação em lote de CSV preservadas.
   - **Ambiente de Testes Sandbox**: Recurso exclusivo para o Super Admin simular em tempo real os papéis de Gerente, Supervisor ou Operador dentro da organização isolada de testes `sandbox-test`, provisionando automaticamente dados fictícios de equipes, usuários e acordos no Firestore.
+- 🔗 **Convites Estruturados por Código & Autonomia de Times (Fase 10)**:
+  - **Convites por Prefixo**: Fluxo de convites estruturados utilizando os prefixos distintos `MGR-` (Gerente) e `SUP-` (Supervisor) inseridos de forma transparente no mesmo campo de convite no onboarding.
+  - **Onboarding Interativo do Supervisor**: O supervisor insere o token `SUP-` e visualiza reativamente a listagem de todas as equipes cadastradas na empresa, escolhendo interativamente quais equipes gerenciar.
+  - **Diário de Convites de Equipes**: Exibição dos tokens de convite de operador (`inviteToken`) para cada time e botões para geração de novos convites diretamente na aba de equipes no perfil do gestor.
+  - **Criação de Times Autônoma**: Gerentes e Supervisores têm autonomia para criar e excluir times no perfil (respeitando os limites do plano) sem alterar sua role no Firestore.
+- 👥 **Gestão de Colaboradores & Diário de Ocorrências Privado (Fase 11)**:
+  - **Alternador de Visão no Dashboard**: Botão exclusivo para gestores (Gerentes e Supervisores) alternarem a tela principal entre "Desempenho Financeiro" e "Gestão da Equipe".
+  - **Quadro de Ocorrências**: Listagem de todos os operadores da equipe (ou de toda a empresa se Gerente) com sua respectiva performance simplificada (total de acordos e total recuperado) no mês ativo.
+  - **Apontamentos Rápidos e Presença Diária**: Seletores rápidos para registrar o status diário de presença do colaborador (🟢 Presente, 🟡 Atrasado, 🔴 Falta) e campo de texto de envio rápido de notas privadas (ex: feedback, atestados, incidentes).
+  - **Histórico Privado de Agente**: Gaveta ou modal com a timeline cronológica de todas as notas comportamentais do operador (visível apenas por gestores).
+  - **Relatório Executivo Consolidado**: Modal executivo reunindo o balanço mensal de faltas/atrasos e o feed de todas as notas do período de todos os agentes da empresa para emissão de relatório PDF ou impressão formal A4.
 
 ## 📂 Estrutura do Projeto
 
