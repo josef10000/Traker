@@ -190,7 +190,7 @@ export default function App() {
         organizationId: 'sandbox-test',
         teamId: simulation.role === 'manager' ? undefined : 'sandbox-team-alpha',
         managedTeams: simulation.role === 'supervisor' ? ['sandbox-team-alpha'] : undefined,
-        termsAcceptedAt: new Date().toISOString(),
+        acceptedTermsAt: new Date().toISOString(),
         theme: profile.theme || 'sky',
         createdAt: new Date().toISOString()
       };
@@ -230,7 +230,7 @@ export default function App() {
             <Dashboard 
               user={user} 
               profile={simulatedProfile} 
-              onSettingsClick={() => showToast('Configurações de perfil desativadas no modo simulação.', 'warning')} 
+              onSettingsClick={() => showToast('Configurações de perfil desativadas no modo simulação.', 'info')} 
               showToast={showToast}
             />
           </div>
