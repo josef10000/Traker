@@ -146,12 +146,14 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isImportCsvOpen, setIsImportCsvOpen] = useState(false);
   const [isWebhookSettingsOpen, setIsWebhookSettingsOpen] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState<string>('');
+  const [organizationName, setOrganizationName] = useState<string>('');
 
   useEffect(() => {
     if (profile.organizationId) {
       getDoc(doc(db, 'organizations', profile.organizationId)).then(snap => {
         if (snap.exists()) {
           setWebhookUrl(snap.data().webhookUrl || '');
+          setOrganizationName(snap.data().name || '');
         }
       });
     }
@@ -1264,7 +1266,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-black text-slate-900 tracking-tight">RNV GESTÃO - RELATÓRIO EXECUTIVO</h1>
-              <p className="text-slate-500 text-sm">Organização: {profile.organizationName || 'Noverde'}</p>
+              <p className="text-slate-500 text-sm">Organização: {organizationName || 'Noverde'}</p>
             </div>
             <div className="text-right">
               <p className="text-slate-500 text-xs">Gerado em: {new Date().toLocaleString('pt-BR')}</p>
