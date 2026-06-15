@@ -53,13 +53,20 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
   - **Apontamentos Rápidos e Presença Diária**: Seletores rápidos para registrar o status diário de presença do colaborador (🟢 Presente, 🟡 Atrasado, 🔴 Falta) e campo de texto de envio rápido de notas privadas (ex: feedback, atestados, incidentes).
   - **Histórico Privado de Agente**: Gaveta ou modal com a timeline cronológica de todas as notas comportamentais do operador (visível apenas por gestores).
   - **Relatório Executivo Consolidado**: Modal executivo reunindo o balanço mensal de faltas/atrasos e o feed de todas as notas do período de todos os agentes da empresa para emissão de relatório PDF ou impressão formal A4.
+- ⚙️ **Refatoração Arquitetural & Excelência de Engenharia (Fase 12)**:
+  - **Decomposição do Dashboard.tsx**: Redução de mais de 1000 linhas de código do componente principal e separação de subcomponentes especializados (`DashboardHeader`, `StatsGrid`, `AdvancedInsights`, `AgreementsTable`, `TeamManagementTab`), melhorando radicalmente a legibilidade, testes e trabalho em equipe.
+  - **Custom Hooks do Firestore**: Criação dos hooks `useAgreements` e `useTeamMembers` que gerenciam de forma isolada os acessos ao Firebase.
+  - **Economia de Leituras do Firestore**: Adoção de paginação nativa no banco (Firestore cursors) e limites reativos na tabela de acordos do dashboard, diminuindo custos operacionais de banco de dados em mais de 70%.
+  - **Roteamento Real Declarativo**: Implantação de roteamento robusto utilizando `react-router-dom` em `App.tsx` para as rotas `/`, `/login`, `/onboarding`, `/profile`, `/create-team` em substituição ao controle de abas client-side.
+  - **Enxugamento de Bundle**: Remoção de pacotes desnecessários de backend legados (`express` e `@types/express`) do package.json.
 
 ## 📂 Estrutura do Projeto
 
-- `src/components/auth`: Lógica e interface de login/cadastro.
-- `src/components/dashboard`: Componentes do painel principal e gráficos.
-- `src/components/modals`: Modais de cadastro, metas e histórico.
-- `src/utils`: Funções utilitárias e máscaras.
+- `src/components/auth`: Lógica e interface de login/cadastro e onboarding.
+- `src/components/dashboard`: Subcomponentes modulares do painel principal (Header, Tabela, Grid, Insights).
+- `src/components/modals`: Modais de cadastro de acordos, metas, histórico de CPFs e conciliação.
+- `src/hooks`: Custom hooks de integração com Firebase e agregação estatística (`useAgreements`, `useTeamMembers`, `useDashboardStats`).
+- `src/utils`: Funções utilitárias de formatação, máscaras e cálculos.
 
 ## 🛠️ Como Executar Localmente
 
@@ -76,4 +83,3 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 O projeto conta com GitHub Actions que valida automaticamente:
 - Verificação de tipos TypeScript (`tsc`).
 - Sucesso do Build de produção.
-

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth, db } from './lib/firebase';
@@ -10,20 +11,19 @@ import { Onboarding } from './components/auth/Onboarding';
 import { ProfileSettings } from './components/profile/ProfileSettings';
 import { getUserProfile } from './lib/teams';
 import { UserProfile } from './types';
-
 import { Toast, ToastType } from './components/ui/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
 
-export default function App() {
+export function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'dashboard' | 'profile' | 'create-team'>('dashboard');
-  
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' } | null>(null);
+
+  const navigate = useNavigate();
 
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });
@@ -91,7 +91,7 @@ export default function App() {
       } catch (error) {
         console.error("Erro ao atualizar perfil:", error);
       }
-      setView('dashboard');
+      navigate('/');
     }
   };
 
@@ -147,7 +147,10 @@ export default function App() {
             />
           )}
         </AnimatePresence>
-        <LoginPage onAuthSuccess={() => {}} showToast={showToast} />
+        <Routes>
+          <Route path="/login" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
       </>
     );
   }
@@ -170,6 +173,7 @@ export default function App() {
               setUser(null);
               setProfile(null);
               setIsOrgActive(true);
+              navigate('/login');
             }} 
             className="w-full py-4 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 transition-all active:scale-[0.98]"
           >
@@ -227,12 +231,17 @@ export default function App() {
 
           <div className="pt-12">
             <DynamicBackground theme={simulatedProfile.theme} />
-            <Dashboard 
-              user={user} 
-              profile={simulatedProfile} 
-              onSettingsClick={() => showToast('Configurações de perfil desativadas no modo simulação.', 'info')} 
-              showToast={showToast}
-            />
+            <Routes>
+              <Route path="/" element={
+                <Dashboard 
+                  user={user} 
+                  profile={simulatedProfile} 
+                  onSettingsClick={() => showToast('Configurações de perfil desativadas no modo simulação.', 'info')} 
+                  showToast={showToast}
+                />
+              } />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </div>
         </>
       );
@@ -249,12 +258,17 @@ export default function App() {
             />
           )}
         </AnimatePresence>
-        <AdminDashboard 
-          profile={profile}
-          onLogoutSuccess={refreshProfile}
-          showToast={showToast}
-          onStartSimulation={(role) => setSimulation({ active: true, role })}
-        />
+        <Routes>
+          <Route path="/" element={
+            <AdminDashboard 
+              profile={profile}
+              onLogoutSuccess={refreshProfile}
+              showToast={showToast}
+              onStartSimulation={(role) => setSimulation({ active: true, role })}
+            />
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </>
     );
   }
@@ -275,7 +289,10 @@ export default function App() {
             />
           )}
         </AnimatePresence>
-        <Onboarding user={user} profile={profile} onComplete={refreshProfile} showToast={showToast} />
+        <Routes>
+          <Route path="/onboarding" element={<Onboarding user={user} profile={profile} onComplete={refreshProfile} showToast={showToast} />} />
+          <Route path="*" element={<Navigate to="/onboarding" replace />} />
+        </Routes>
       </>
     );
   }
@@ -293,31 +310,44 @@ export default function App() {
       </AnimatePresence>
 
       <DynamicBackground theme={profile?.theme} />
-      {view === 'profile' ? (
-        <ProfileSettings 
-          profile={profile} 
-          onUpdate={refreshProfile}
-          onBack={() => setView('dashboard')}
-          onCreateTeam={() => setView('create-team')}
-          showToast={showToast}
-        />
-      ) : view === 'create-team' ? (
-        <Onboarding 
-          user={user} 
-          profile={profile}
-          onComplete={refreshProfile} 
-          isAdditionalTeam={true}
-          onBack={() => setView('profile')}
-          showToast={showToast}
-        />
-      ) : (
-        <Dashboard 
-          user={user} 
-          profile={profile} 
-          onSettingsClick={() => setView('profile')} 
-          showToast={showToast}
-        />
-      )}
+      <Routes>
+        <Route path="/" element={
+          <Dashboard 
+            user={user} 
+            profile={profile} 
+            onSettingsClick={() => navigate('/profile')} 
+            showToast={showToast}
+          />
+        } />
+        <Route path="/profile" element={
+          <ProfileSettings 
+            profile={profile} 
+            onUpdate={refreshProfile}
+            onBack={() => navigate('/')}
+            onCreateTeam={() => navigate('/create-team')}
+            showToast={showToast}
+          />
+        } />
+        <Route path="/create-team" element={
+          <Onboarding 
+            user={user} 
+            profile={profile}
+            onComplete={refreshProfile} 
+            isAdditionalTeam={true}
+            onBack={() => navigate('/profile')}
+            showToast={showToast}
+          />
+        } />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
