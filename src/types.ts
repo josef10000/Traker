@@ -38,6 +38,7 @@ export interface UserProfile {
   jobTitle?: string;
   theme?: 'dark' | 'sky' | 'purple';
   hasSeenTour?: boolean;
+  acceptedTermsAt?: string; // Aceite da LGPD no primeiro login
   dashboardPreferences?: {
     hiddenCards: string[];
   };
@@ -49,6 +50,7 @@ export interface Team {
   name: string;
   supervisorId: string;
   inviteToken: string;
+  inviteTokenExpiresAt?: string; // Expiração do convite (LGPD/Segurança)
   monthlyGoal?: number;
   effectivenessGoal?: number;
   createdAt: string;

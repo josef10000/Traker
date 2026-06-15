@@ -1,8 +1,72 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    
+    // Funções auxiliares de segurança
+    function getProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function getUserTeamId() {
+      return getProfile().teamId;
+    }
+    
+    function isSupervisor() {
+      return getProfile().role == 'supervisor';
+    }
+    
+    // Coleção de usuários (users)
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == userId || isSupervisor());
+    }
+    
+    // Coleção de times (teams)
+    match /teams/{teamId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isSupervisor();
+    }
+    
+    // Coleção de configurações (settings)
+    match /settings/{teamId} {
+      allow read: if request.auth != null && getUserTeamId() == teamId;
+      allow write: if request.auth != null && isSupervisor() && getUserTeamId() == teamId;
+    }
+    
+    // Coleção de acordos (agreements)
+    match /agreements/{agreementId} {
+      allow read: if request.auth != null 
+        && (resource == null || getUserTeamId() == resource.data.teamId);
+        
+      allow create: if request.auth != null 
+        && getUserTeamId() == request.resource.data.teamId;
+        
+      allow update: if request.auth != null 
+        && (
+             resource.data.operatorId == request.auth.uid 
+             || (isSupervisor() && getUserTeamId() == resource.data.teamId)
+           );
+           
+      allow delete: if request.auth != null 
+        && (
+             resource.data.operatorId == request.auth.uid 
+             || (isSupervisor() && getUserTeamId() == resource.data.teamId)
+           );
+    }
+    
+    // Coleção de conciliações (reconciliations)
+    match /reconciliations/{reconId} {
+      allow read: if request.auth != null 
+        && (resource == null || getUserTeamId() == resource.data.teamId);
+      allow write: if request.auth != null 
+        && (request.resource == null || getUserTeamId() == request.resource.data.teamId);
+    }
+    
+    // Coleção de logs de auditoria (audit_logs)
+    match /audit_logs/{logId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && isSupervisor();
+      allow update, delete: if false; // Logs são imutáveis e perenes
     }
   }
 }

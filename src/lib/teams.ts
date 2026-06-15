@@ -14,15 +14,37 @@ import {
 import { db } from './firebase';
 import { Team, UserProfile, UserRole } from '../types';
 
+const generateSecureToken = (length: number): string => {
+  const array = new Uint8Array(length);
+  if (typeof window !== 'undefined' && window.crypto) {
+    window.crypto.getRandomValues(array);
+  } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(array);
+  } else {
+    // Fallback pseudo-aleatório seguro se crypto não estiver disponível
+    for (let i = 0; i < length; i++) {
+      array[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[array[i] % chars.length];
+  }
+  return result;
+};
+
 export const createTeam = async (uid: string, userEmail: string, teamName: string): Promise<string> => {
-  const teamId = Math.random().toString(36).substr(2, 9);
-  const inviteToken = Math.random().toString(36).substr(2, 12);
+  const teamId = generateSecureToken(9);
+  const inviteToken = generateSecureToken(12);
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // Expira em 48h
   
   const teamData: Team = {
     id: teamId,
     name: teamName,
     supervisorId: uid,
     inviteToken,
+    inviteTokenExpiresAt: expiresAt,
     createdAt: new Date().toISOString()
   };
 
@@ -62,7 +84,13 @@ export const joinTeam = async (uid: string, userEmail: string, inviteToken: stri
     throw new Error('Token de convite inválido.');
   }
 
-  const teamData = querySnapshot.docs[0].data() as Team;
+  const teamDoc = querySnapshot.docs[0];
+  const teamData = teamDoc.data() as Team;
+
+  // Validar expiração do token (48 horas)
+  if (teamData.inviteTokenExpiresAt && new Date().getTime() > new Date(teamData.inviteTokenExpiresAt).getTime()) {
+    throw new Error('O token de convite expirou. Solicite um novo link ao supervisor.');
+  }
 
   const userProfile: UserProfile = {
     uid,
@@ -74,6 +102,14 @@ export const joinTeam = async (uid: string, userEmail: string, inviteToken: stri
   };
 
   await setDoc(doc(db, 'users', uid), userProfile);
+  
+  // Invalidação por uso único (Gera um novo token e expiração para a equipe)
+  const newInviteToken = generateSecureToken(12);
+  const newExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+  await updateDoc(doc(db, 'teams', teamData.id), {
+    inviteToken: newInviteToken,
+    inviteTokenExpiresAt: newExpiresAt
+  });
   
   return true;
 };

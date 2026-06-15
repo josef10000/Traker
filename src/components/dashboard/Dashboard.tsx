@@ -1106,8 +1106,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           status: data.status || editingAgreement.status
         });
         showToast('Acordo atualizado com sucesso!', 'success');
-      } else {
-        const id = Math.random().toString(36).substr(2, 9);
+        const id = doc(collection(db, 'agreements')).id;
         const now = new Date().toISOString();
         const agreementData = {
           id,
