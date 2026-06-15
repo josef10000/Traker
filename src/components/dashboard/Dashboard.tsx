@@ -190,6 +190,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const dailyGoal = useMemo(() => Math.max(0, (monthlyGoal || 0) - totalPaidMonth) / (remainingWorkingDays || 1), [monthlyGoal, totalPaidMonth, remainingWorkingDays]);
 
   const parseLocalDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
@@ -1099,7 +1100,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         a.clientName,
         complete ? a.clientCpf : maskCPF(a.clientCpf),
         a.value.toString().replace('.', ','),
-        a.dueDate.split('-').reverse().join('/'),
+        (a.dueDate || '').split('-').reverse().join('/'),
         (() => {
           const today = new Date();
           today.setHours(0,0,0,0);
@@ -1992,9 +1993,9 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                       selectedMemberId === member.uid ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-500'
                     }`}>
-                      {member.displayName[0].toUpperCase()}
+                      {member.displayName ? member.displayName[0].toUpperCase() : 'U'}
                     </div>
-                    <span className="text-xs font-bold whitespace-nowrap">{member.displayName.split(' ')[0]}</span>
+                    <span className="text-xs font-bold whitespace-nowrap">{member.displayName ? member.displayName.split(' ')[0] : 'Usuário'}</span>
                   </button>
                   
                   {profile.role === 'supervisor' && member.uid !== profile.uid && (
@@ -2356,7 +2357,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                           <td className="px-6 py-5">
                             <div className="flex flex-col">
                               <span className={`text-sm font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
-                                {agreement.dueDate.split('-').reverse().join('/')}
+                                {(agreement.dueDate || '').split('-').reverse().join('/')}
                               </span>
                               {isOverdue && (
                                 <span className="text-[8px] font-black text-rose-500 uppercase tracking-tighter">Vencido</span>

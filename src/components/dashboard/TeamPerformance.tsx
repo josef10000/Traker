@@ -39,12 +39,12 @@ export const TeamPerformance = ({
     });
 
     // Get all unique dates from agreements (sorted)
-    const uniqueDates = Array.from(new Set(agreements.map(a => a.createdAt.split('T')[0]))).sort();
+    const uniqueDates = Array.from(new Set(agreements.map(a => (a.createdAt || '').split('T')[0]))).filter(Boolean).sort();
 
     agreements.forEach(a => {
       if (!data[a.operatorId]) return;
       
-      const date = a.createdAt.split('T')[0];
+      const date = (a.createdAt || '').split('T')[0];
       const val = a.value;
       
       data[a.operatorId].projected += val;
@@ -67,7 +67,10 @@ export const TeamPerformance = ({
   const tableDates = useMemo(() => uniqueDates.slice(-5), [uniqueDates]);
 
   const formatDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-');
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length < 3) return dateStr;
+    const [year, month, day] = parts;
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
   };
@@ -105,11 +108,11 @@ export const TeamPerformance = ({
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-300 border border-slate-700">
-                      {item.name[0].toUpperCase()}
+                      {item.name ? item.name[0].toUpperCase() : 'U'}
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">#{index + 1} Lugar</p>
-                      <p className="text-sm font-bold text-white truncate max-w-[120px]">{item.name}</p>
+                      <p className="text-sm font-bold text-white truncate max-w-[120px]">{item.name || 'Usuário'}</p>
                     </div>
                   </div>
 
@@ -163,7 +166,7 @@ export const TeamPerformance = ({
                 {ranking.map((row) => (
                   <tr key={row.id} className="hover:bg-white/5 border-b border-white/5">
                     <td className="px-4 py-2.5 font-bold text-xs bg-black/20 border-r border-white/10 sticky left-0 z-10 transition-colors">
-                      {row.name}
+                      {row.name || 'Usuário'}
                     </td>
                     {tableDates.map(date => (
                       <td key={date} className="px-4 py-2.5 text-center text-[11px] font-medium border-r border-slate-800/30">
