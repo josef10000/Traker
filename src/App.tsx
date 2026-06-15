@@ -30,7 +30,7 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
+      setLoading(true);
       if (u) {
         try {
           const userProfile = await getUserProfile(u.uid);
@@ -46,12 +46,15 @@ export default function App() {
           } else {
             setIsOrgActive(true);
           }
+          setUser(u);
         } catch (error) {
           console.error("Erro ao buscar perfil:", error);
           setProfile(null);
           setIsOrgActive(true);
+          setUser(u);
         }
       } else {
+        setUser(null);
         setProfile(null);
         setIsOrgActive(true);
       }
@@ -93,8 +96,40 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-        <Loader2 className="animate-spin text-sky-500" size={48} />
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center relative overflow-hidden selection:bg-sky-500/30">
+        <DynamicBackground theme="dark" />
+        
+        <div className="absolute w-[300px] h-[300px] bg-sky-500/10 rounded-full blur-[80px] -z-10 animate-pulse"></div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }} 
+          animate={{ opacity: 1, scale: 1 }} 
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center gap-6"
+        >
+          <motion.div
+            animate={{ 
+              scale: [1, 1.05, 1],
+              filter: ["drop-shadow(0 0 10px rgba(14, 165, 233, 0.2))", "drop-shadow(0 0 20px rgba(14, 165, 233, 0.4))", "drop-shadow(0 0 10px rgba(14, 165, 233, 0.2))"]
+            }}
+            transition={{ 
+              duration: 3, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="relative"
+          >
+            <img src="https://i.imgur.com/JPJTsAQ.png" alt="Tracker Logo" className="w-24 h-24" />
+          </motion.div>
+
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-black text-white tracking-tighter italic">TRACKER</h2>
+            <div className="h-1 w-12 bg-sky-500 mx-auto rounded-full"></div>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2 animate-pulse">
+              Carregando Ambiente...
+            </p>
+          </div>
+        </motion.div>
       </div>
     );
   }
