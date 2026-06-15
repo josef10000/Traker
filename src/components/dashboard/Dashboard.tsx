@@ -10,7 +10,8 @@ import {
   where,
   getDoc,
   onSnapshot,
-  deleteField
+  deleteField,
+  orderBy
 } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
 import { 
@@ -27,7 +28,7 @@ import {
 import { removeTeamMember, getTeamMembers } from '../../lib/teams';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { logAudit } from '../../lib/audit';
-import { parseLocalDate, getMonthName } from '../../utils/date';
+import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
 
@@ -42,7 +43,6 @@ import { StatsGrid } from './StatsGrid';
 import { AdvancedInsights } from './AdvancedInsights';
 import { AgreementsTable } from './AgreementsTable';
 import { TeamManagementTab } from './TeamManagementTab';
-import { TeamPerformance } from './TeamPerformance';
 
 // Modais do sistema
 import { AgreementModal } from '../modals/AgreementModal';
@@ -56,6 +56,7 @@ import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { CollaboratorHistoryModal } from '../modals/CollaboratorHistoryModal';
 import { PeopleReportModal } from '../modals/PeopleReportModal';
+import { ReconciliationModal } from '../modals/ReconciliationModal';
 import { startTour } from '../../utils/tour';
 
 interface DashboardProps {
@@ -95,7 +96,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Preferências Visuais
   const [localHiddenCards, setLocalHiddenCards] = useState<string[]>(profile.dashboardPreferences?.hiddenCards || []);
   const [isPresentMode, setIsPresentMode] = useState(false);
-  const [isChecklistMode, setIsChecklistMode] = useState(false);
 
   // Organização e Webhooks
   const [organizationName, setOrganizationName] = useState<string>('');
@@ -370,8 +370,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [memberFilteredAgreements]);
 
   // Meta diária baseada nos dias úteis restantes
-  const remainingWorkingDays = useMemo(() => stats.remainingWorkingDays, [stats.remainingWorkingDays]);
+  const workingDays = useMemo(() => getWorkingDaysInMonth(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
+  const remainingWorkingDays = useMemo(() => getRemainingWorkingDays(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
   const dailyGoal = useMemo(() => Math.max(0, (monthlyGoal || 0) - totalPaidMonth) / (remainingWorkingDays || 1), [monthlyGoal, totalPaidMonth, remainingWorkingDays]);
+
+  // Tendência estatística para mini-gráficos de cada StatCard
+  const statTrends = useMemo(() => {
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const trendData: Record<number, { projected: number; paid: number; overdue: number }> = {};
+    
+    // Inicializa todos os dias do mês
+    for (let i = 1; i <= daysInMonth; i++) {
+      trendData[i] = { projected: 0, paid: 0, overdue: 0 };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    memberFilteredAgreements.forEach(a => {
+      const d = new Date(a.createdAt);
+      if (d.getMonth() === selectedMonth && d.getFullYear() === selectedYear) {
+        const day = d.getDate();
+        if (trendData[day]) {
+          trendData[day].projected += a.value;
+          if (a.status === AgreementStatus.PAID) {
+            trendData[day].paid += a.value;
+          }
+          if (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today) {
+            trendData[day].overdue += a.value;
+          }
+        }
+      }
+    });
+
+    return {
+      projected: Object.keys(trendData).map(day => ({ name: `${day}/${selectedMonth + 1}`, value: trendData[Number(day)].projected })),
+      paid: Object.keys(trendData).map(day => ({ name: `${day}/${selectedMonth + 1}`, value: trendData[Number(day)].paid })),
+      overdue: Object.keys(trendData).map(day => ({ name: `${day}/${selectedMonth + 1}`, value: trendData[Number(day)].overdue }))
+    };
+  }, [memberFilteredAgreements, selectedMonth, selectedYear]);
 
   // Acordos consolidados de filtro completo para fins de Exportação CSV e Relatório de Impressão Executiva
   const filteredAgreements = useMemo(() => {
@@ -678,6 +715,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleExportClick = () => {
+    setIsExportCpfModalOpen(true);
+  };
+
   const executeExport = async (complete: boolean) => {
     const headers = ['Nome', 'CPF', 'Valor', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
     
@@ -762,7 +803,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           await deleteDoc(doc(db, 'agreements', adj.id));
         }
       } catch (e) {
-        console.error("Erro ao remover ajustes ao apagar saldo:", e);
+        console.error("Erro ao remover adjustments ao apagar saldo:", e);
       }
     } else {
       reconData.officialValue = officialValue;
@@ -899,12 +940,36 @@ export const Dashboard: React.FC<DashboardProps> = ({
           clientCpf: '000.000.000-00'
         });
       }
-      await logAudit('ANONYMIZE_CLIENT', { clientCpf: cpf }, profile.displayName || '');
+      await logAudit('ANONIMIZE_CLIENT', { clientCpf: cpf }, profile.displayName || '');
       setSelectedClientCpf(null);
       showToast('Direito ao esquecimento aplicado com sucesso!', 'success');
     } catch (error) {
       console.error("Erro ao anonimizar cliente:", error);
       showToast('Erro ao aplicar direito ao esquecimento.', 'error');
+    }
+  };
+
+  const handleToggleCard = async (cardId: string) => {
+    const isHidden = localHiddenCards.includes(cardId);
+    
+    const newHiddenCards = isHidden 
+      ? localHiddenCards.filter(id => id !== cardId)
+      : [...localHiddenCards, cardId];
+
+    // Atualização otimista imediata
+    setLocalHiddenCards(newHiddenCards);
+
+    try {
+      await setDoc(doc(db, 'users', profile.uid), {
+        dashboardPreferences: {
+          hiddenCards: newHiddenCards
+        }
+      }, { merge: true });
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao atualizar preferências', 'error');
+      // Reverter estado caso dê erro
+      setLocalHiddenCards(localHiddenCards);
     }
   };
 
@@ -915,6 +980,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
       console.error(error);
       showToast('Erro ao sair do sistema.', 'error');
     }
+  };
+
+  const getEffectivenessColor = (rate: number, goal: number) => {
+    if (rate >= goal) return 'text-emerald-400';
+    if (rate >= goal * 0.75) return 'text-amber-400';
+    return 'text-rose-400';
   };
 
   // 5. CÁLCULO DE DADOS COMPLEMENTARES PARA IMPRESSÃO DO RELATÓRIO
@@ -972,7 +1043,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const revealedCpfs: Record<string, boolean> = {}; // Gerenciado localmente se necessário ou herdado por props
   const toggleRevealCpf = (id: string, cpf: string) => {
     // Implementação mock simples para re-uso na AgreementsTable
-    // Como revealedCpfs é controlado localmente, apenas passamos o mock
   };
 
   return (
@@ -981,20 +1051,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {!isPresentMode && (
           <DashboardHeader 
             profile={profile}
-            managedTeamsData={managedTeamsData}
             selectedTeamId={selectedTeamId}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            setSelectedMonth={setSelectedMonth}
-            setSelectedYear={setSelectedYear}
-            setIsTeamSelectorOpen={setIsTeamSelectorOpen}
+            managedTeamsData={managedTeamsData}
+            isPresentMode={isPresentMode}
             onSettingsClick={onSettingsClick}
+            setIsTeamSelectorOpen={setIsTeamSelectorOpen}
             setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
+            setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
+            setIsImportCsvOpen={setIsImportCsvOpen}
+            setIsReconciliationModalOpen={setIsReconciliationModalOpen}
+            setIsModalOpen={setIsModalOpen}
+            showToast={showToast}
           />
         )}
 
         <main className="max-w-7xl mx-auto px-6 mt-8 space-y-8 no-print">
-          {/* Barra Superior Executiva (Abas, Meta, Filtros) */}
+          {/* Barra Superior Executiva (Abas, Meta, Filtros, Seletores) */}
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-slate-900/20 p-6 rounded-[2rem] border border-white/5">
             {/* Abas e Meta Diária */}
             <div className="flex flex-wrap items-center gap-6">
@@ -1031,47 +1103,48 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
 
-            {/* Controles do Painel Financeiro */}
-            {dashboardTab === 'financial' && (
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => setIsPreferencesModalOpen(true)}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
+            {/* Controles do Painel Financeiro e Seletores de Data */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Seletores de Mês e Ano */}
+              <div className="flex bg-slate-950 p-1 rounded-xl border border-white/5 shadow-2xl mr-2">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
                 >
-                  Personalizar
-                </button>
-                <button
-                  onClick={togglePresentMode}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
+                  {MONTHS.map((month, index) => (
+                    <option key={month} value={index} className="bg-slate-900 text-white">{month}</option>
+                  ))}
+                </select>
+                <div className="w-[1px] h-4 bg-slate-800 my-auto" />
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
                 >
-                  {isPresentMode ? 'Sair do Modo TV' : 'Modo TV'}
-                </button>
-                {profile.role !== 'manager' && (
-                  <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs font-bold transition-all"
-                  >
-                    Novo Acordo
-                  </button>
-                )}
-                {profile.role === 'supervisor' && (
-                  <>
-                    <button
-                      onClick={() => setIsGoalModalOpen(true)}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
-                    >
-                      Ajustar Metas
-                    </button>
-                    <button
-                      onClick={() => setIsReconciliationModalOpen(true)}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
-                    >
-                      Conciliar
-                    </button>
-                  </>
-                )}
+                  {getYearRange().map(year => (
+                    <option key={year} value={year} className="bg-slate-900 text-white">{year}</option>
+                  ))}
+                </select>
               </div>
-            )}
+
+              {dashboardTab === 'financial' && (
+                <>
+                  <button
+                    onClick={() => setIsPreferencesModalOpen(true)}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
+                  >
+                    Personalizar
+                  </button>
+                  <button
+                    onClick={togglePresentMode}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
+                  >
+                    {isPresentMode ? 'Sair do Modo TV' : 'Modo TV'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* CONTEÚDO DA ABA FINANCEIRA */}
@@ -1080,24 +1153,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {/* KPIs de Monitoramento */}
               <StatsGrid 
                 stats={stats}
+                statTrends={statTrends}
                 monthlyGoal={monthlyGoal}
                 localHiddenCards={localHiddenCards}
-                reconciliation={reconciliation}
+                formatCurrency={formatCurrency}
               />
 
               {/* Insights Avançados (Gráficos, Turnos, Metas) */}
               <AdvancedInsights 
                 stats={stats}
                 monthlyGoal={monthlyGoal}
-                localHiddenCards={localHiddenCards}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
+                effectivenessGoal={effectivenessGoal}
+                workingDays={workingDays}
+                dailyGoal={dailyGoal}
                 viewMode={viewMode}
                 selectedTeamId={selectedTeamId}
-                managedTeamsData={managedTeamsData}
-                monthFilteredAgreements={monthFilteredAgreements}
                 currentTeamMembers={currentTeamMembers}
+                monthAgreements={monthAgreements}
                 profile={profile}
+                reconciliation={reconciliation}
+                setIsGoalModalOpen={setIsGoalModalOpen}
+                formatCurrency={formatCurrency}
+                getEffectivenessColor={getEffectivenessColor}
               />
 
               {/* Tabela de Liderança de Equipes se estiver no modo Macro */}
