@@ -147,6 +147,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [isWebhookSettingsOpen, setIsWebhookSettingsOpen] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
+  const [organizationCnpj, setOrganizationCnpj] = useState<string>('');
 
   useEffect(() => {
     if (profile.organizationId) {
@@ -154,6 +155,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         if (snap.exists()) {
           setWebhookUrl(snap.data().webhookUrl || '');
           setOrganizationName(snap.data().name || '');
+          setOrganizationCnpj(snap.data().cnpj || '');
         }
       });
     }
@@ -1141,9 +1143,63 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     if (rate >= goal * 0.75) return 'text-amber-400';
     return 'text-rose-400';
   };
+
+  const printTeamPerformance = useMemo(() => {
+    if (selectedTeamId !== 'all') return [];
+    return managedTeamsData.map(t => {
+      const teamAgreements = agreements.filter(a => {
+        const d = new Date(a.createdAt);
+        const isMonthMatch = d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+        return isMonthMatch && a.teamId === t.id && !a.isAdjustment;
+      });
+      const totalProjected = teamAgreements.reduce((acc, curr) => acc + curr.value, 0);
+      const totalPaid = teamAgreements.filter(a => a.status === AgreementStatus.PAID).reduce((acc, curr) => acc + curr.value, 0);
+      const effectiveness = totalProjected > 0 ? (totalPaid / totalProjected) * 100 : 0;
+      const goal = t.monthlyGoal || 0;
+      const pctGoal = goal > 0 ? (totalPaid / goal) * 100 : 0;
+      
+      return {
+        id: t.id,
+        name: t.name,
+        monthlyGoal: goal,
+        totalProjected,
+        totalPaid,
+        effectiveness,
+        pctGoal
+      };
+    }).sort((a, b) => b.totalPaid - a.totalPaid);
+  }, [managedTeamsData, agreements, selectedMonth, selectedYear, selectedTeamId]);
+
+  const printOperatorRanking = useMemo(() => {
+    if (selectedTeamId === 'all') return [];
+    const members = viewMode === 'personal' ? [profile] : currentTeamMembers;
+    if (members.length === 0) return [];
+    
+    return members.map(m => {
+      const opAgreements = monthFilteredAgreements.filter(a => a.operatorId === m.uid && !a.isAdjustment);
+      const totalProjected = opAgreements.reduce((acc, curr) => acc + curr.value, 0);
+      const totalPaid = opAgreements.filter(a => a.status === AgreementStatus.PAID).reduce((acc, curr) => acc + curr.value, 0);
+      const countTotal = opAgreements.length;
+      const countPaid = opAgreements.filter(a => a.status === AgreementStatus.PAID).length;
+      const effectiveness = totalProjected > 0 ? (totalPaid / totalProjected) * 100 : 0;
+      
+      return {
+        uid: m.uid,
+        displayName: m.displayName,
+        jobTitle: m.jobTitle,
+        totalProjected,
+        totalPaid,
+        countTotal,
+        countPaid,
+        effectiveness
+      };
+    }).sort((a, b) => b.totalPaid - a.totalPaid);
+  }, [selectedTeamId, viewMode, profile, currentTeamMembers, monthFilteredAgreements]);
+
   return (
     <div className="min-h-screen font-sans pb-20">
-      {!isPresentMode && (
+      <div className="no-print">
+        {!isPresentMode && (
         <header className="glass-card sticky top-0 z-30 px-6 py-4 no-print">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -1266,19 +1322,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       </header>
       )}
       <main className={`flex-1 transition-all duration-700 relative ${isPresentMode ? 'p-12 bg-slate-950 min-h-screen' : 'max-w-7xl mx-auto px-6 py-6 space-y-6'}`}>
-        {/* Cabeçalho de Impressão (Apenas PDF) */}
-        <div className="print-only mb-8 p-6 bg-slate-50 border border-slate-200 rounded-2xl">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">RNV GESTÃO - RELATÓRIO EXECUTIVO</h1>
-              <p className="text-slate-500 text-sm">Organização: {organizationName || 'Noverde'}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-slate-500 text-xs">Gerado em: {new Date().toLocaleString('pt-BR')}</p>
-              <p className="text-slate-500 text-xs">Mês de Referência: {getMonthName(selectedMonth)}/{selectedYear}</p>
-            </div>
-          </div>
-        </div>
 
         {/* Header com Toggle de Visão (Apenas para Supervisores) */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -2715,6 +2758,268 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
         )}
       </AnimatePresence>
+      </div>
+
+      {/* DEDICATED PRINT-ONLY LAYOUT */}
+      <div className="print-only p-8 bg-white text-slate-900 font-sans min-h-screen">
+        {/* Cabeçalho Executivo */}
+        <div className="border-b-4 border-slate-900 pb-6 mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900 mb-1">
+              Relatório Executivo de Performance
+            </h1>
+            <p className="text-sm font-bold text-slate-700">
+              {organizationName || 'Noverde'} {organizationCnpj && `| CNPJ: ${organizationCnpj}`}
+            </p>
+          </div>
+          <div className="text-right text-xs text-slate-600 space-y-1">
+            <p><strong>Emissão:</strong> {new Date().toLocaleString('pt-BR')}</p>
+            <p><strong>Período:</strong> {getMonthName(selectedMonth)} de {selectedYear}</p>
+            <p><strong>Emissor:</strong> {profile.displayName} ({profile.role === 'manager' ? 'Gerente' : profile.role === 'supervisor' ? 'Supervisor' : 'Operador'})</p>
+          </div>
+        </div>
+
+        {/* Filtros Ativos */}
+        <div className="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+          <p className="font-bold text-slate-800 mb-1 uppercase tracking-wider text-[10px]">Filtros Aplicados no Painel</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-slate-600">
+            <p><strong>Visão:</strong> {viewMode === 'personal' ? 'Pessoal' : 'Equipe'}</p>
+            <p><strong>Equipe:</strong> {selectedTeamId === 'all' ? 'Todas' : (managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Equipe Selecionada')}</p>
+            <p><strong>Operador:</strong> {selectedMemberId === 'all' ? 'Todos' : (currentTeamMembers.find(m => m.uid === selectedMemberId)?.displayName || 'Selecionado')}</p>
+            <p><strong>Filtro Status:</strong> {filterStatus === 'all' ? 'Todos' : filterStatus === 'paid' ? 'Pago' : filterStatus === 'waiting' ? 'Aguardando' : 'Quebrado'}</p>
+          </div>
+        </div>
+
+        {/* Resumo Financeiro (KPIs) */}
+        <div className="print-section mb-8">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-300 pb-2 mb-4">
+            Resumo Financeiro (Período)
+          </h2>
+          <table className="min-w-full text-xs text-slate-950">
+            <thead>
+              <tr className="bg-slate-100 border-b border-slate-300">
+                <th className="px-4 py-2 text-left">Indicador</th>
+                <th className="px-4 py-2 text-right">Valor</th>
+                <th className="px-4 py-2 text-right">Acordos</th>
+                <th className="px-4 py-2 text-left">Observações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-slate-200">
+                <td className="px-4 py-2.5 font-bold">Meta Definida</td>
+                <td className="px-4 py-2.5 text-right font-semibold">{formatCurrency(monthlyGoal || 0)}</td>
+                <td className="px-4 py-2.5 text-right">-</td>
+                <td className="px-4 py-2.5 text-slate-600">Meta estipulada para o período de faturamento</td>
+              </tr>
+              <tr className="border-b border-slate-200">
+                <td className="px-4 py-2.5 font-bold">Total Recuperado (Pago)</td>
+                <td className="px-4 py-2.5 text-right text-emerald-700 font-bold">{formatCurrency(stats.totalPaid)}</td>
+                <td className="px-4 py-2.5 text-right font-semibold">{stats.counts.month.paid}</td>
+                <td className="px-4 py-2.5 text-slate-600">Acordos efetivamente quitados / pagos no mês</td>
+              </tr>
+              <tr className="border-b border-slate-200">
+                <td className="px-4 py-2.5 font-bold">Total Aguardando</td>
+                <td className="px-4 py-2.5 text-right text-amber-700 font-semibold">{formatCurrency(Math.max(0, stats.totalProjected - stats.totalPaid - stats.totalOverdue))}</td>
+                <td className="px-4 py-2.5 text-right">{stats.counts.month.waiting}</td>
+                <td className="px-4 py-2.5 text-slate-600">Acordos pendentes dentro do prazo de vencimento</td>
+              </tr>
+              <tr className="border-b border-slate-200">
+                <td className="px-4 py-2.5 font-bold">Total Quebrado (Vencido)</td>
+                <td className="px-4 py-2.5 text-right text-rose-700 font-semibold">{formatCurrency(stats.totalOverdue)}</td>
+                <td className="px-4 py-2.5 text-right">{stats.counts.month.broken}</td>
+                <td className="px-4 py-2.5 text-slate-600">Acordos não pagos até a data do vencimento</td>
+              </tr>
+              <tr className="border-b border-slate-200">
+                <td className="px-4 py-2.5 font-bold">Total Projetado (Carteira)</td>
+                <td className="px-4 py-2.5 text-right font-semibold">{formatCurrency(stats.totalProjected)}</td>
+                <td className="px-4 py-2.5 text-right">{stats.counts.month.total}</td>
+                <td className="px-4 py-2.5 text-slate-600">Soma geral de todos os acordos cadastrados</td>
+              </tr>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <td className="px-4 py-2.5 font-bold">Atingimento da Meta (%)</td>
+                <td className="px-4 py-2.5 text-right font-bold text-slate-900">{((stats.totalPaid / (monthlyGoal || 1)) * 100).toFixed(1)}%</td>
+                <td className="px-4 py-2.5 text-right">-</td>
+                <td className="px-4 py-2.5 text-slate-600">Percentual de cumprimento da meta mensal</td>
+              </tr>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <td className="px-4 py-2.5 font-bold">Taxa de Efetividade (%)</td>
+                <td className="px-4 py-2.5 text-right font-bold text-slate-900">{((stats.totalPaid / (stats.totalProjected || 1)) * 100).toFixed(1)}%</td>
+                <td className="px-4 py-2.5 text-right">-</td>
+                <td className="px-4 py-2.5 text-slate-600">Percentual de conversão de acordos (Pago / Projetado)</td>
+              </tr>
+              <tr className="border-b border-slate-200">
+                <td className="px-4 py-2.5 font-bold">Projeção Matemática de Fim de Mês</td>
+                <td className="px-4 py-2.5 text-right font-semibold text-slate-900">{formatCurrency(stats.projection)}</td>
+                <td className="px-4 py-2.5 text-right">-</td>
+                <td className="px-4 py-2.5 text-slate-600">Expectativa com base no ritmo atual de arrecadação</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Tabela de Rankings / Equipes ou Operadores */}
+        {selectedTeamId === 'all' && printTeamPerformance.length > 0 && (
+          <div className="print-section mb-8">
+            <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-300 pb-2 mb-4">
+              Ranking de Performance por Equipe
+            </h2>
+            <table className="min-w-full text-xs text-slate-950">
+              <thead>
+                <tr className="bg-slate-100 border-b border-slate-300">
+                  <th className="px-4 py-2 text-left">Pos.</th>
+                  <th className="px-4 py-2 text-left">Equipe</th>
+                  <th className="px-4 py-2 text-right">Meta</th>
+                  <th className="px-4 py-2 text-right">Recuperado</th>
+                  <th className="px-4 py-2 text-right">Projetado</th>
+                  <th className="px-4 py-2 text-right">Atingimento %</th>
+                  <th className="px-4 py-2 text-right">Efetividade %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {printTeamPerformance.map((item, index) => (
+                  <tr key={item.id} className="border-b border-slate-200">
+                    <td className="px-4 py-2 font-bold">#{index + 1}</td>
+                    <td className="px-4 py-2 font-semibold">{item.name}</td>
+                    <td className="px-4 py-2 text-right">{formatCurrency(item.monthlyGoal)}</td>
+                    <td className="px-4 py-2 text-right text-emerald-700 font-bold">{formatCurrency(item.totalPaid)}</td>
+                    <td className="px-4 py-2 text-right">{formatCurrency(item.totalProjected)}</td>
+                    <td className="px-4 py-2 text-right font-semibold">{item.pctGoal.toFixed(1)}%</td>
+                    <td className="px-4 py-2 text-right">{item.effectiveness.toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {selectedTeamId !== 'all' && printOperatorRanking.length > 0 && (
+          <div className="print-section mb-8">
+            <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-300 pb-2 mb-4">
+              Ranking de Performance de Operadores (Equipe: {managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Selecionada'})
+            </h2>
+            <table className="min-w-full text-xs text-slate-950">
+              <thead>
+                <tr className="bg-slate-100 border-b border-slate-300">
+                  <th className="px-4 py-2 text-left">Pos.</th>
+                  <th className="px-4 py-2 text-left">Operador</th>
+                  <th className="px-4 py-2 text-right">Acordos Pagos</th>
+                  <th className="px-4 py-2 text-right">Valor Pago</th>
+                  <th className="px-4 py-2 text-right">Acordos Projetados</th>
+                  <th className="px-4 py-2 text-right">Valor Projetado</th>
+                  <th className="px-4 py-2 text-right">Efetividade %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {printOperatorRanking.map((item, index) => (
+                  <tr key={item.uid} className="border-b border-slate-200">
+                    <td className="px-4 py-2 font-bold">#{index + 1}</td>
+                    <td className="px-4 py-2 font-semibold">
+                      {item.displayName} {item.jobTitle && <span className="text-[10px] text-slate-500 font-normal">({item.jobTitle})</span>}
+                    </td>
+                    <td className="px-4 py-2 text-right">{item.countPaid}</td>
+                    <td className="px-4 py-2 text-right text-emerald-700 font-bold">{formatCurrency(item.totalPaid)}</td>
+                    <td className="px-4 py-2 text-right">{item.countTotal}</td>
+                    <td className="px-4 py-2 text-right">{formatCurrency(item.totalProjected)}</td>
+                    <td className="px-4 py-2 text-right font-semibold">{item.effectiveness.toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Tabela Geral de Acordos */}
+        <div className="print-section mb-8">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-300 pb-2 mb-4">
+            Demonstrativo Analítico de Acordos
+          </h2>
+          {filteredAgreements.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">Nenhum acordo cadastrado para os filtros selecionados.</p>
+          ) : (
+            <table className="min-w-full text-xs text-slate-950">
+              <thead>
+                <tr className="bg-slate-100 border-b border-slate-300">
+                  <th className="px-4 py-2 text-left">Data Reg.</th>
+                  <th className="px-4 py-2 text-left">Cliente</th>
+                  <th className="px-4 py-2 text-left">CPF</th>
+                  <th className="px-4 py-2 text-left">Origem</th>
+                  <th className="px-4 py-2 text-left">Tipo</th>
+                  <th className="px-4 py-2 text-left">Vencimento</th>
+                  <th className="px-4 py-2 text-right">Valor</th>
+                  <th className="px-4 py-2 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAgreements.map((agreement) => {
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  const dueDate = parseLocalDate(agreement.dueDate);
+                  const isBroken = agreement.status === AgreementStatus.BROKEN || 
+                    (agreement.status === AgreementStatus.WAITING && dueDate < today);
+                  
+                  return (
+                    <tr key={agreement.id} className="border-b border-slate-200">
+                      <td className="px-4 py-2 text-slate-600">
+                        {new Date(agreement.createdAt).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-4 py-2 font-semibold">
+                        {agreement.clientName}
+                      </td>
+                      <td className="px-4 py-2 font-mono text-slate-600">
+                        {maskCPF(agreement.clientCpf)}
+                      </td>
+                      <td className="px-4 py-2 uppercase tracking-tighter font-semibold text-[10px]">
+                        {agreement.origin}
+                      </td>
+                      <td className="px-4 py-2">
+                        {agreement.type === 'quitacao' ? 'Quitação' : 
+                         agreement.type === 'parcelamento' ? 'Parcelamento' :
+                         agreement.type === 'parcela_atrasada' ? 'Parc. Atrasada' : 
+                         agreement.type === 'antecipacao' ? 'Antecipação' :
+                         agreement.type === 'parcela_atual' ? 'Parc. Atual' : agreement.type}
+                      </td>
+                      <td className="px-4 py-2">
+                        {(agreement.dueDate || '').split('-').reverse().join('/')}
+                      </td>
+                      <td className="px-4 py-2 text-right font-semibold">
+                        {formatCurrency(agreement.value)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${
+                          agreement.status === AgreementStatus.PAID
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : isBroken
+                              ? 'bg-rose-50 text-rose-800 border-rose-200'
+                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                        }`}>
+                          {agreement.status === AgreementStatus.PAID ? 'Pago' : isBroken ? 'Quebrado' : 'Aguardando'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Parecer Técnico e Bloco de Assinatura */}
+        <div className="print-section mt-12 pt-8 border-t border-slate-300 grid grid-cols-1 md:grid-cols-2 gap-8 text-xs">
+          <div>
+            <h3 className="font-bold text-slate-800 mb-2 uppercase tracking-wider text-[10px]">Observações / Parecer da Gestão</h3>
+            <div className="border border-slate-200 rounded p-4 h-24 text-slate-400 italic">
+              Espaço reservado para anotações manuais, justificativas ou parecer técnico da supervisão.
+            </div>
+          </div>
+          <div className="flex flex-col justify-end items-center text-center">
+            <div className="w-64 border-b border-slate-400 mb-2"></div>
+            <p className="font-bold text-slate-800">{profile.displayName}</p>
+            <p className="text-slate-600 text-[10px] uppercase tracking-wider">
+              {profile.role === 'manager' ? 'Gerente Geral' : profile.role === 'supervisor' ? 'Supervisor de Equipe' : 'Operador'}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

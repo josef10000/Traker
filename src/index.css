@@ -169,9 +169,16 @@ option {
 
 /* Print/PDF Layout */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 15mm 12mm;
+  }
+
   body {
     background: #ffffff !important;
     color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
   }
   
   .no-print {
@@ -200,18 +207,37 @@ option {
     width: 100% !important;
     border-collapse: collapse !important;
     color: #000000 !important;
+    page-break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  thead {
+    display: table-header-group;
   }
   
   th {
-    background-color: #f1f5f9 !important;
+    background-color: #f8fafc !important;
     color: #0f172a !important;
     border-bottom: 2px solid #cbd5e1 !important;
     font-weight: 700 !important;
+    padding: 8px 12px !important;
+    font-size: 10pt !important;
+    text-align: left;
   }
   
   td {
     border-bottom: 1px solid #e2e8f0 !important;
     color: #334155 !important;
+    padding: 8px 12px !important;
+    font-size: 9.5pt !important;
+  }
+  
+  .print-section {
+    page-break-inside: avoid;
   }
   
   /* Removendo scrollbars e fundos dinâmicos */

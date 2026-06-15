@@ -29,7 +29,7 @@ interface ProfileSettingsProps {
 export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showToast }: ProfileSettingsProps) {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
-  const [theme, setTheme] = useState(profile.theme || 'sky');
+  const [theme, setTheme] = useState(profile.theme || 'dark');
   const [isSaving, setIsSaving] = useState(false);
   
   const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);

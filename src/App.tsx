@@ -68,7 +68,7 @@ export default function App() {
     if (profile?.theme) {
       document.documentElement.setAttribute('data-theme', profile.theme);
     } else {
-      document.documentElement.setAttribute('data-theme', 'sky');
+      document.documentElement.setAttribute('data-theme', 'dark');
     }
   }, [profile?.theme]);
 
@@ -191,7 +191,7 @@ export default function App() {
         teamId: simulation.role === 'manager' ? undefined : 'sandbox-team-alpha',
         managedTeams: simulation.role === 'supervisor' ? ['sandbox-team-alpha'] : undefined,
         acceptedTermsAt: new Date().toISOString(),
-        theme: profile.theme || 'sky',
+        theme: profile.theme || 'dark',
         createdAt: new Date().toISOString()
       };
 
