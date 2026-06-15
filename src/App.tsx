@@ -12,7 +12,7 @@ import { getUserProfile } from './lib/teams';
 import { UserProfile } from './types';
 
 import { Toast, ToastType } from './components/ui/Toast';
-import { AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
 
 export default function App() {
