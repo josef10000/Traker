@@ -37,6 +37,7 @@ export interface Organization {
   planExpiresAt?: string;
   maxUsers: number;
   maxTeams: number;
+  webhookUrl?: string;
   createdAt: string;
 }
 

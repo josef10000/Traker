@@ -39,7 +39,10 @@ import {
   ChevronDown,
   Eye,
   EyeOff,
-  Copy
+  Copy,
+  Globe,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -55,7 +58,8 @@ import {
   getDocFromServer,
   deleteField,
   getDocs,
-  writeBatch
+  writeBatch,
+  getDoc
 } from 'firebase/firestore';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -98,6 +102,10 @@ import { ExportCpfModal } from '../modals/ExportCpfModal';
 import { TermsModal } from '../modals/TermsModal';
 import { MONTHS, getMonthName, getYearRange, getWorkingDaysInMonth, getRemainingWorkingDays } from '../../utils/date';
 import { ToastType } from '../ui/Toast';
+import { useDashboardStats } from '../../hooks/useDashboardStats';
+import { ImportCsvModal } from '../modals/ImportCsvModal';
+import { WebhookSettingsModal } from '../modals/WebhookSettingsModal';
+import { triggerWebhook } from '../../utils/webhook';
 interface DashboardProps {
   user: User;
   profile: UserProfile;
@@ -135,6 +143,19 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
   const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
+  const [isImportCsvOpen, setIsImportCsvOpen] = useState(false);
+  const [isWebhookSettingsOpen, setIsWebhookSettingsOpen] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (profile.organizationId) {
+      getDoc(doc(db, 'organizations', profile.organizationId)).then(snap => {
+        if (snap.exists()) {
+          setWebhookUrl(snap.data().webhookUrl || '');
+        }
+      });
+    }
+  }, [profile.organizationId]);
   
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>('all');
   const [currentTeamMembers, setCurrentTeamMembers] = useState<UserProfile[]>([]);
@@ -553,153 +574,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     return filtered;
   }, [isChecklistMode, memberFilteredAgreements, timeFilteredAgreements, searchTerm, filterStatus, sortOrder]);
   // Stats calculation
-  const stats: DashboardStats = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    // Fonte Mensal (Sempre o mês selecionado)
-    const monthAgreements = memberFilteredAgreements;
-    
-    // Fonte Filtrada (Tabela e Gráfico)
-    const filteredAgreements = timeFilteredAgreements;
-
-    // Filtrar apenas acordos reais para contagens e médias
-    const realMonthAgreements = monthAgreements.filter(a => !a.isAdjustment);
-    const realFilteredAgreements = filteredAgreements.filter(a => !a.isAdjustment);
-
-    // Cálculos Mensais
-    const totalProjected = monthAgreements.reduce((acc, curr) => acc + curr.value, 0);
-    const paidAgreementsMonth = monthAgreements.filter(a => a.status === AgreementStatus.PAID);
-    const totalPaidMonth = paidAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-    
-    const overdueAgreementsMonth = monthAgreements.filter(a => 
-      a.status === AgreementStatus.WAITING && 
-      parseLocalDate(a.dueDate) < today
-    );
-    const totalOverdueMonth = overdueAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-    const pendingTodayAgreementsMonth = monthAgreements.filter(a => 
-      a.status === AgreementStatus.WAITING && 
-      parseLocalDate(a.dueDate).getTime() === today.getTime()
-    );
-    const totalPendingTodayMonth = pendingTodayAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-    // Cálculos Filtrados (Produtividade Diária)
-    const paidAgreementsFiltered = filteredAgreements.filter(a => a.status === AgreementStatus.PAID);
-    const totalPaidFiltered = paidAgreementsFiltered.reduce((acc, curr) => acc + curr.value, 0);
-    const isCurrentMonth = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear();
-    
-    const agreementsToday = isCurrentMonth 
-      ? monthAgreements.filter(a => new Date(a.createdAt) >= today)
-      : [];
-    return {
-      totalProjected,
-      totalPaid: totalPaidMonth,
-      filteredPaidValue: totalPaidFiltered,
-      totalOverdue: totalOverdueMonth,
-      totalPendingToday: totalPendingTodayMonth,
-      effectivenessRate: (totalPaidMonth / (totalProjected || 1)) * 100,
-      counts: {
-        month: {
-          total: realMonthAgreements.length,
-          paid: realMonthAgreements.filter(a => a.status === AgreementStatus.PAID).length,
-          waiting: realMonthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
-          broken: realMonthAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
-          overdue: realMonthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today).length,
-          pendingToday: realMonthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate).getTime() === today.getTime()).length,
-        },
-        filtered: {
-          total: realFilteredAgreements.length,
-          paid: realFilteredAgreements.filter(a => a.status === AgreementStatus.PAID).length,
-          waiting: realFilteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today).length,
-          broken: realFilteredAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)).length,
-          overdue: realFilteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today).length,
-        },
-        today: realMonthAgreements.filter(a => new Date(a.createdAt) >= today).length,
-        checklist: realMonthAgreements.filter(a => {
-          const dueDate = parseLocalDate(a.dueDate);
-          const wasCheckedToday = a.lastCheckedAt && 
-            new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
-          const isOverdue = dueDate < today;
-          const isDueToday = dueDate.getTime() === today.getTime();
-          const wasCheckedAtAnyTime = !!a.lastCheckedAt;
-
-          if (isDueToday) {
-            return a.status === AgreementStatus.WAITING && !wasCheckedToday;
-          }
-          if (isOverdue) {
-            return a.status === AgreementStatus.WAITING && !wasCheckedAtAnyTime;
-          }
-          return false;
-        }).length,
-      },
-      ticketAverage: realMonthAgreements.length > 0 ? totalProjected / realMonthAgreements.length : 0,
-      remainingToGoal: Math.max(0, (monthlyGoal || 0) - totalPaidMonth),
-      
-      // Advanced Insights
-      insights: {
-        avgTimeToPay: (() => {
-          const paidWithTime = monthAgreements.filter(a => a.status === AgreementStatus.PAID && a.paidAt);
-          if (paidWithTime.length === 0) return 0;
-          const totalMs = paidWithTime.reduce((acc, a) => {
-            const created = new Date(a.createdAt).getTime();
-            const paid = new Date(a.paidAt!).getTime();
-            return acc + Math.max(0, paid - created);
-          }, 0);
-          return totalMs / paidWithTime.length / (1000 * 60 * 60); // In hours
-        })(),
-        projection7d: (() => {
-          const next7 = new Date(today);
-          next7.setDate(today.getDate() + 7);
-          return monthAgreements
-            .filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today && parseLocalDate(a.dueDate) <= next7)
-            .reduce((acc, curr) => acc + curr.value, 0);
-        })(),
-        performanceByOrigin: monthAgreements.reduce((acc, curr) => {
-          const origin = curr.origin;
-          if (!acc[origin]) acc[origin] = { total: 0, paid: 0 };
-          acc[origin].total += curr.value;
-          if (curr.status === AgreementStatus.PAID) acc[origin].paid += curr.value;
-          return acc;
-        }, {} as Record<string, { total: number; paid: number }>),
-        ticketByType: monthAgreements.reduce((acc, curr) => {
-          const type = curr.type;
-          if (!acc[type]) acc[type] = { total: 0, count: 0 };
-          acc[type].total += curr.value;
-          acc[type].count += 1;
-          return acc;
-        }, {} as Record<string, { total: number; count: number }>),
-        cycleEfficiency: {
-          morning: (() => {
-            const morning = monthAgreements.filter(a => new Date(a.createdAt).getHours() < 12);
-            if (morning.length === 0) return 0;
-            return (morning.filter(a => a.status === AgreementStatus.PAID).length / morning.length) * 100;
-          })(),
-          afternoon: (() => {
-            const afternoon = monthAgreements.filter(a => new Date(a.createdAt).getHours() >= 12);
-            if (afternoon.length === 0) return 0;
-            return (afternoon.filter(a => a.status === AgreementStatus.PAID).length / afternoon.length) * 100;
-          })()
-        },
-        earlyBreakRate: (() => {
-          const expiredWaiting = monthAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today);
-          if (expiredWaiting.length === 0) return 0;
-          const checked = expiredWaiting.filter(a => a.lastCheckedAt && new Date(a.lastCheckedAt).toLocaleDateString() === today.toLocaleDateString());
-          return (checked.length / expiredWaiting.length) * 100;
-        })()
-      },
-      projection: (() => {
-        if (!isCurrentMonth) return totalPaidMonth;
-        const now = new Date();
-        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const currentDay = now.getDate();
-        const dailyAvg = totalPaidMonth / currentDay;
-        return dailyAvg * daysInMonth;
-      })(),
-      hourlyDistribution: filteredAgreements.reduce((acc, a) => {
-        const hour = new Date(a.createdAt).getHours();
-        acc[hour] = (acc[hour] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>)
-    };
-  }, [timeFilteredAgreements, memberFilteredAgreements, monthlyGoal, selectedMonth, selectedYear]);
+  const stats = useDashboardStats({
+    monthAgreements: memberFilteredAgreements,
+    filteredAgreements: timeFilteredAgreements,
+    monthlyGoal,
+    selectedMonth,
+    selectedYear
+  });
   const statTrends = useMemo(() => {
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     const trendData: Record<number, { projected: number; paid: number; overdue: number }> = {};
@@ -798,11 +679,23 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const handleEfetivar = async (id: string) => {
     try {
       const agreementRef = doc(db, 'agreements', id);
+      const now = new Date().toISOString();
       await updateDoc(agreementRef, { 
         status: AgreementStatus.PAID,
-        paidAt: new Date().toISOString()
+        paidAt: now
       });
       showToast('Acordo efetivado com sucesso!', 'success');
+
+      if (webhookUrl) {
+        const found = agreements.find(a => a.id === id);
+        if (found) {
+          triggerWebhook(webhookUrl, 'agreement.paid', {
+            ...found,
+            status: AgreementStatus.PAID,
+            paidAt: now
+          }, profile.organizationId);
+        }
+      }
     } catch (error) {
       showToast('Erro ao efetivar acordo.', 'error');
     }
@@ -1149,12 +1042,19 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     try {
       if (editingAgreement) {
         const agreementRef = doc(db, 'agreements', editingAgreement.id);
-        await updateDoc(agreementRef, {
+        const updatedFields = {
           ...data,
           status: data.status || editingAgreement.status,
           organizationId: profile.organizationId
-        });
+        };
+        await updateDoc(agreementRef, updatedFields);
         showToast('Acordo atualizado com sucesso!', 'success');
+
+        if (webhookUrl) {
+          const fullAgreement = { ...editingAgreement, ...updatedFields };
+          const eventType = updatedFields.status === AgreementStatus.PAID ? 'agreement.paid' : 'agreement.updated';
+          triggerWebhook(webhookUrl, eventType, fullAgreement, profile.organizationId);
+        }
       } else {
         const id = doc(collection(db, 'agreements')).id;
         const now = new Date().toISOString();
@@ -1170,6 +1070,13 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         };
         await setDoc(doc(db, 'agreements', id), agreementData);
         showToast('Acordo registrado com sucesso!', 'success');
+
+        if (webhookUrl) {
+          triggerWebhook(webhookUrl, 'agreement.created', agreementData, profile.organizationId);
+          if (agreementData.status === AgreementStatus.PAID) {
+            triggerWebhook(webhookUrl, 'agreement.paid', agreementData, profile.organizationId);
+          }
+        }
       }
       setIsModalOpen(false);
       setEditingAgreement(null);
@@ -1234,7 +1141,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   return (
     <div className="min-h-screen font-sans pb-20">
       {!isPresentMode && (
-        <header className="glass-card sticky top-0 z-30 px-6 py-4">
+        <header className="glass-card sticky top-0 z-30 px-6 py-4 no-print">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="cursor-pointer transition-transform hover:scale-105 active:scale-95" onClick={onSettingsClick}>
@@ -1296,6 +1203,38 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             >
               <LogOut size={20} />
             </button>
+            {profile.role === 'manager' && (
+              <button 
+                onClick={() => setIsWebhookSettingsOpen(true)}
+                className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] group"
+                title="Configurações de Webhooks"
+              >
+                <Globe size={18} className="text-emerald-400 group-hover:rotate-12 transition-transform" />
+                <span className="hidden sm:inline">Webhooks</span>
+              </button>
+            )}
+
+            {(profile.role === 'manager' || profile.role === 'supervisor') && (
+              <button 
+                onClick={() => setIsImportCsvOpen(true)}
+                disabled={selectedTeamId === 'all'}
+                className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
+                title="Importar acordos via CSV"
+              >
+                <FileSpreadsheet size={18} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline">Importar CSV</span>
+              </button>
+            )}
+
+            <button 
+              onClick={() => window.print()}
+              className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] group"
+              title="Gerar Relatório PDF"
+            >
+              <FileText size={18} className="text-purple-400 group-hover:translate-y-[-2px] transition-transform" />
+              <span className="hidden sm:inline">Relatório PDF</span>
+            </button>
+
             <button 
               onClick={() => setIsReconciliationModalOpen(true)}
               disabled={selectedTeamId === 'all'}
@@ -1320,6 +1259,20 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       </header>
       )}
       <main className={`flex-1 transition-all duration-700 relative ${isPresentMode ? 'p-12 bg-slate-950 min-h-screen' : 'max-w-7xl mx-auto px-6 py-6 space-y-6'}`}>
+        {/* Cabeçalho de Impressão (Apenas PDF) */}
+        <div className="print-only mb-8 p-6 bg-slate-50 border border-slate-200 rounded-2xl">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">RNV GESTÃO - RELATÓRIO EXECUTIVO</h1>
+              <p className="text-slate-500 text-sm">Organização: {profile.organizationName || 'Noverde'}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-slate-500 text-xs">Gerado em: {new Date().toLocaleString('pt-BR')}</p>
+              <p className="text-slate-500 text-xs">Mês de Referência: {getMonthName(selectedMonth)}/{selectedYear}</p>
+            </div>
+          </div>
+        </div>
+
         {/* Header com Toggle de Visão (Apenas para Supervisores) */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
@@ -1843,7 +1796,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </AnimatePresence>
         </div>
         {!isPresentMode && (
-          <section className="mb-8 flex flex-col md:flex-row justify-between items-end gap-6">
+          <section className="mb-8 flex flex-col md:flex-row justify-between items-end gap-6 no-print">
             <div className="relative group flex-1 w-full">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-white/40 group-focus-within:text-sky-400 transition-colors">
                 <Search size={20} />
@@ -2247,7 +2200,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Tipo</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Vencimento</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Valor</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right">Ação</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right no-print">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -2407,7 +2360,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                           <td className="px-6 py-5 text-sm font-bold text-white tabular-nums">
                             {formatCurrency(agreement.value)}
                           </td>
-                          <td className="px-6 py-5 text-right">
+                          <td className="px-6 py-5 text-right no-print">
                             <div className="flex items-center justify-end gap-2">
                               {agreement.status === AgreementStatus.PAID ? (
                                 <div className="flex items-center gap-1.5 text-emerald-400 pr-2">
@@ -2472,7 +2425,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           </div>
 
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between bg-white/5">
+            <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between bg-white/5 no-print">
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
                 Página {currentPage} de {totalPages}
               </span>
@@ -2536,6 +2489,24 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       <TermsModal
         isOpen={isTermsModalOpen}
         onAccept={handleAcceptTerms}
+      />
+
+      <ImportCsvModal 
+        isOpen={isImportCsvOpen} 
+        onClose={() => setIsImportCsvOpen(false)} 
+        profile={profile} 
+        selectedTeamId={selectedTeamId} 
+        onImportSuccess={() => setIsImportCsvOpen(false)} 
+        showToast={showToast} 
+      />
+
+      <WebhookSettingsModal 
+        isOpen={isWebhookSettingsOpen} 
+        onClose={() => setIsWebhookSettingsOpen(false)} 
+        organizationId={profile.organizationId || ''} 
+        currentWebhookUrl={webhookUrl} 
+        onSaveSuccess={setWebhookUrl} 
+        showToast={showToast} 
       />
 
       {/* Modal de Remanejamento */}

@@ -23,7 +23,7 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
   - **Rastreabilidade e Logs de Auditoria**: Registro automático em banco de dados (`audit_logs`) das ações críticas de privacidade (aceite de termos, cópia e revelação de CPF, exportação completa e anonimização).
 - 📺 **Modo TV (Apresentação)**: Interface otimizada e em tela cheia para exibição de métricas em tempo real.
 - 🎯 **Gestão de Metas & Performance**: Acompanhamento de produtividade financeira e progresso em relação à meta mensal.
-- 🔍 **Conferência Diária**: Sistema de marcação de acordos conferidos para evitar retrabalho operacional.
+- 🔍 **Conferência Diária**: Sistema de marcação de acordos conferidos para evitar retrabalho operational.
 - 📊 **Dashboards Dinâmicos**: Visões personalizadas para operadores e supervisores com filtros avançados.
 - 📅 **Histórico Mensal**: Seletor para visualizar dados de meses anteriores com reset automático mensal.
 - 🧮 **Conciliação de Resultados, Efetividade & Histórico**: Ferramenta completa para alinhar o Dashboard com os dados oficiais do Microsoft Teams/Salesforce. Permite a conciliação do saldo com normalização automática, exclusão individual de ajustes através do histórico técnico do mês, **Conciliação da Taxa de Efetividade (%)** (exibindo a taxa do Tracker, o input oficial e a diferença reativa em pontos percentuais diretamente no card de Efetividade em uma elegante tag glassmorphic) e controle granular absoluto de exclusão (com botões dedicados para apagar isoladamente o saldo conciliado ou a efetividade oficial, além de inicialização inteligente com o saldo do tracker para evitar duplicações).
@@ -31,6 +31,14 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 - 📈 **Meta Diária Dinâmica**: Cálculo automático de meta diária recalibrado diariamente com base no valor já recuperado e nos dias úteis restantes.
 - ✅ **Lógica de Conferência Inteligente**: Acordos conferidos após a data de vencimento são automaticamente marcados como **Quebrados**, garantindo a integridade dos dados e foco nos pendentes.
 - ✨ **Melhorias de UX**: Fechamento automático de modais e transições suaves entre visões de dashboard.
+- 📤 **Melhorias de Produto & Integrações (Fase 5)**:
+  - **Importação de Acordos em Lote**: Upload de planilha CSV com parser automático inteligente de colunas, compatibilidade com formatos brasileiros e salvamento otimizado em batches no Firestore associados ao time/organização.
+  - **Webhooks de Integração**: Disparo automático de payloads JSON (com CPFs mascarados para conformidade com a LGPD) em eventos de criação (`agreement.created`) e liquidação (`agreement.paid`) configuráveis por Managers.
+  - **Relatórios PDF Premium**: Estilos de impressão CSS dedicados (`@media print` nativos) para exportar relatórios executivos estruturados em papel A4 com branding e dados organizacionais, omitindo botões de ação e campos de busca.
+- ⚙️ **Refatoração & Testes Avançados (Fase 6)**:
+  - **useDashboardStats Hook**: Migração de toda a lógica e fórmulas de agregação financeira e métricas matemáticas para um hook customizado React robusto e testável.
+  - **Testes Automatizados**: Scaffold configurado para testes unitários com Vitest (`npm run test`) e testes de ponta a ponta com Playwright (`npm run test:e2e`).
+  - **Firebase Env-Vars Initialization**: Inicialização flexível baseada em variáveis de ambiente com fallback dinâmico para a configuração local JSON.
 
 ## 📂 Estrutura do Projeto
 

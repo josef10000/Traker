@@ -166,3 +166,61 @@ option {
 .perspective-2000 {
   perspective: 2000px;
 }
+
+/* Print/PDF Layout */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  .glass-card {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    color: #000000 !important;
+    backdrop-filter: none !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6, p, span, div {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+  
+  /* Formatação de Tabelas */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    color: #000000 !important;
+  }
+  
+  th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    font-weight: 700 !important;
+  }
+  
+  td {
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #334155 !important;
+  }
+  
+  /* Removendo scrollbars e fundos dinâmicos */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+/* Esconde elementos exclusivos de impressão na tela */
+.print-only {
+  display: none;
+}
