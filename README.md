@@ -39,6 +39,9 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
   - **useDashboardStats Hook**: Migração de toda a lógica e fórmulas de agregação financeira e métricas matemáticas para um hook customizado React robusto e testável.
   - **Testes Automatizados**: Scaffold configurado para testes unitários com Vitest (`npm run test`) e testes de ponta a ponta com Playwright (`npm run test:e2e`).
   - **Firebase Env-Vars Initialization**: Inicialização flexível baseada em variáveis de ambiente com fallback dinâmico para a configuração local JSON.
+- 🧪 **Restrições de Cargos & Ambiente Sandbox (Fase 8)**:
+  - **Restrições de Gerente (`manager`)**: Proteção contra edições e conciliações individuais de acordos (ocultação de botões de escrita), exibindo apenas tags visuais de status. Permissão para visualização macro em cascata de equipes e importação em lote de CSV preservadas.
+  - **Ambiente de Testes Sandbox**: Recurso exclusivo para o Super Admin simular em tempo real os papéis de Gerente, Supervisor ou Operador dentro da organização isolada de testes `sandbox-test`, provisionando automaticamente dados fictícios de equipes, usuários e acordos no Firestore.
 
 ## 📂 Estrutura do Projeto
 

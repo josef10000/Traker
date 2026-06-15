@@ -23,6 +23,7 @@ export default function App() {
   const [view, setView] = useState<'dashboard' | 'profile' | 'create-team'>('dashboard');
   
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' } | null>(null);
 
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });
@@ -180,6 +181,63 @@ export default function App() {
   }
 
   if (profile?.role === 'super_admin') {
+    if (simulation?.active) {
+      const simulatedProfile: UserProfile = {
+        uid: simulation.role === 'manager' ? 'sandbox-user-manager' : (simulation.role === 'supervisor' ? 'sandbox-user-supervisor' : 'sandbox-user-operator'),
+        displayName: `${simulation.role === 'manager' ? 'Gerente' : simulation.role === 'supervisor' ? 'Supervisor' : 'Operador'} (Simulado)`,
+        email: profile.email,
+        role: simulation.role,
+        organizationId: 'sandbox-test',
+        teamId: simulation.role === 'manager' ? undefined : 'sandbox-team-alpha',
+        managedTeams: simulation.role === 'supervisor' ? ['sandbox-team-alpha'] : undefined,
+        termsAcceptedAt: new Date().toISOString(),
+        theme: profile.theme || 'sky',
+        createdAt: new Date().toISOString()
+      };
+
+      return (
+        <>
+          <AnimatePresence>
+            {toast && (
+              <Toast 
+                message={toast.message} 
+                type={toast.type} 
+                onClose={() => setToast(null)} 
+              />
+            )}
+          </AnimatePresence>
+
+          <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-950/90 to-indigo-950/90 backdrop-blur-md border-b border-purple-500/30 px-6 py-3 flex justify-between items-center no-print">
+            <div className="flex items-center gap-3">
+              <span className="flex h-3.5 w-3.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-purple-500"></span>
+              </span>
+              <p className="text-xs font-bold text-purple-200">
+                AMBIENTE DE TESTE ATIVO — Simulando <span className="uppercase text-white font-black">{simulation.role === 'manager' ? 'Gerente' : simulation.role === 'supervisor' ? 'Supervisor' : 'Operador'}</span> da Empresa Fictícia Sandbox
+              </p>
+            </div>
+            <button 
+              onClick={() => setSimulation(null)}
+              className="px-4 py-1.5 bg-purple-500 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-400 transition-colors shadow-md shadow-purple-500/20 active:scale-95"
+            >
+              Sair da Simulação
+            </button>
+          </div>
+
+          <div className="pt-12">
+            <DynamicBackground theme={simulatedProfile.theme} />
+            <Dashboard 
+              user={user} 
+              profile={simulatedProfile} 
+              onSettingsClick={() => showToast('Configurações de perfil desativadas no modo simulação.', 'warning')} 
+              showToast={showToast}
+            />
+          </div>
+        </>
+      );
+    }
+
     return (
       <>
         <AnimatePresence>
@@ -195,6 +253,7 @@ export default function App() {
           profile={profile}
           onLogoutSuccess={refreshProfile}
           showToast={showToast}
+          onStartSimulation={(role) => setSimulation({ active: true, role })}
         />
       </>
     );

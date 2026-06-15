@@ -132,7 +132,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
-  const [viewMode, setViewMode] = useState<'personal' | 'team'>(profile.role === 'supervisor' ? 'team' : 'personal');
+  const [viewMode, setViewMode] = useState<'personal' | 'team'>((profile.role === 'supervisor' || profile.role === 'manager') ? 'team' : 'personal');
   const [isChecklistMode, setIsChecklistMode] = useState(false);
   const [team, setTeam] = useState<Team | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -1151,7 +1151,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold tracking-tight text-white leading-none">Tracker</h1>
-              {profile.managedTeams && profile.managedTeams.length > 1 ? (
+              {(profile.role === 'manager' || (profile.managedTeams && profile.managedTeams.length > 1)) ? (
                 <button 
                   onClick={() => setIsTeamSelectorOpen(true)}
                   className="flex items-center gap-1.5 text-[10px] text-sky-400 uppercase tracking-widest font-bold mt-1.5 hover:text-sky-300 transition-colors group"
@@ -1237,25 +1237,29 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
               <span className="hidden sm:inline">Relatório PDF</span>
             </button>
 
-            <button 
-              onClick={() => setIsReconciliationModalOpen(true)}
-              disabled={selectedTeamId === 'all'}
-              className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
-              title="Conciliar com Sistema Oficial"
-            >
-              <Calculator size={18} className="text-sky-400 group-hover:rotate-12 transition-transform" />
-              <span className="hidden sm:inline">Conciliar</span>
-            </button>
+            {profile.role !== 'manager' && (
+              <button 
+                onClick={() => setIsReconciliationModalOpen(true)}
+                disabled={selectedTeamId === 'all'}
+                className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
+                title="Conciliar com Sistema Oficial"
+              >
+                <Calculator size={18} className="text-sky-400 group-hover:rotate-12 transition-transform" />
+                <span className="hidden sm:inline">Conciliar</span>
+              </button>
+            )}
 
-            <button 
-              id="new-agreement-btn"
-              onClick={() => setIsModalOpen(true)}
-              disabled={selectedTeamId === 'all'}
-              className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-sky-400 transition-all shadow-lg shadow-primary/10 active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
-            >
-              <Plus size={20} />
-              <span className="hidden sm:inline">Novo Acordo</span>
-            </button>
+            {profile.role !== 'manager' && (
+              <button 
+                id="new-agreement-btn"
+                onClick={() => setIsModalOpen(true)}
+                disabled={selectedTeamId === 'all'}
+                className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-sky-400 transition-all shadow-lg shadow-primary/10 active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+              >
+                <Plus size={20} />
+                <span className="hidden sm:inline">Novo Acordo</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -2369,6 +2373,18 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                    <CheckCircle2 size={16} />
                                    <span className="text-xs font-bold uppercase tracking-wide">Pago</span>
                                 </div>
+                              ) : profile.role === 'manager' ? (
+                                isOverdue || agreement.status === AgreementStatus.BROKEN ? (
+                                  <div className="flex items-center gap-1.5 text-rose-400 pr-2">
+                                     <AlertCircle size={16} />
+                                     <span className="text-xs font-bold uppercase tracking-wide">Quebrado</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 text-slate-400 pr-2">
+                                     <Clock size={16} />
+                                     <span className="text-xs font-bold uppercase tracking-wide">Aguardando</span>
+                                  </div>
+                                )
                               ) : (
                                 <>
                                   {isOverdue && (
@@ -2397,25 +2413,27 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                   </button>
                                 </>
                               )}
-                            <div className="flex items-center gap-1 border-l border-slate-800 pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
-                                onClick={() => {
-                                  setEditingAgreement(agreement);
-                                  setIsModalOpen(true);
-                                }}
-                                className="p-2 text-slate-500 hover:text-sky-400 hover:bg-primary/10 rounded-lg transition-all"
-                                title="Editar"
-                              >
-                                <Edit3 size={16} />
-                              </button>
-                              <button 
-                                onClick={() => handleDelete(agreement.id)}
-                                className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
-                                title="Excluir"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                            {profile.role !== 'manager' && (
+                              <div className="flex items-center gap-1 border-l border-slate-800 pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                  onClick={() => {
+                                    setEditingAgreement(agreement);
+                                    setIsModalOpen(true);
+                                  }}
+                                  className="p-2 text-slate-500 hover:text-sky-400 hover:bg-primary/10 rounded-lg transition-all"
+                                  title="Editar"
+                                >
+                                  <Edit3 size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDelete(agreement.id)}
+                                  className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                                  title="Excluir"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                         </motion.tr>

@@ -45,15 +45,17 @@ interface AdminDashboardProps {
   profile: UserProfile;
   onLogoutSuccess: () => void;
   showToast: (message: string, type?: ToastType) => void;
+  onStartSimulation: (role: 'manager' | 'supervisor' | 'member') => void;
 }
 
-export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDashboardProps) => {
+export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation }: AdminDashboardProps) => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [deletingProgress, setDeletingProgress] = useState('');
+  const [isProvisioningSandbox, setIsProvisioningSandbox] = useState(false);
   
   // Modais de edição
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
@@ -101,6 +103,145 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDas
       unsubscribeTeams();
     };
   }, []);
+
+  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member') => {
+    setIsProvisioningSandbox(true);
+    try {
+      const sandboxOrgId = 'sandbox-test';
+      const orgRef = doc(db, 'organizations', sandboxOrgId);
+      const orgSnap = await getDoc(orgRef);
+
+      if (!orgSnap.exists()) {
+        showToast('Provisionando ambiente Sandbox fictício...', 'info');
+        
+        // 1. Criar organização sandbox-test
+        await setDoc(orgRef, {
+          id: sandboxOrgId,
+          name: 'Empresa de Teste (Sandbox)',
+          status: 'active',
+          plan: 'enterprise',
+          maxUsers: 100,
+          maxTeams: 20,
+          createdAt: new Date().toISOString()
+        });
+
+        // 2. Criar duas equipes fictícias
+        const teamAlphaRef = doc(db, 'teams', 'sandbox-team-alpha');
+        await setDoc(teamAlphaRef, {
+          id: 'sandbox-team-alpha',
+          name: 'Equipe Alpha (Testes)',
+          supervisorId: 'sandbox-user-supervisor',
+          inviteToken: 'sandbox-token-alpha',
+          organizationId: sandboxOrgId,
+          monthlyGoal: 100000,
+          effectivenessGoal: 85,
+          createdAt: new Date().toISOString()
+        });
+
+        const teamBetaRef = doc(db, 'teams', 'sandbox-team-beta');
+        await setDoc(teamBetaRef, {
+          id: 'sandbox-team-beta',
+          name: 'Equipe Beta (Testes)',
+          supervisorId: 'sandbox-user-manager',
+          inviteToken: 'sandbox-token-beta',
+          organizationId: sandboxOrgId,
+          monthlyGoal: 150000,
+          effectivenessGoal: 90,
+          createdAt: new Date().toISOString()
+        });
+
+        // 3. Criar perfis de usuários simulados
+        const managerProfileRef = doc(db, 'users', 'sandbox-user-manager');
+        await setDoc(managerProfileRef, {
+          uid: 'sandbox-user-manager',
+          email: 'gerente@sandbox.local',
+          displayName: 'Gerente de Testes',
+          role: 'manager',
+          organizationId: sandboxOrgId,
+          createdAt: new Date().toISOString(),
+          acceptedTermsAt: new Date().toISOString(),
+          termsAccepted: true
+        });
+
+        const supervisorProfileRef = doc(db, 'users', 'sandbox-user-supervisor');
+        await setDoc(supervisorProfileRef, {
+          uid: 'sandbox-user-supervisor',
+          email: 'supervisor@sandbox.local',
+          displayName: 'Supervisor de Testes',
+          role: 'supervisor',
+          organizationId: sandboxOrgId,
+          teamId: 'sandbox-team-alpha',
+          managedTeams: ['sandbox-team-alpha'],
+          createdAt: new Date().toISOString(),
+          acceptedTermsAt: new Date().toISOString(),
+          termsAccepted: true
+        });
+
+        const operatorProfileRef = doc(db, 'users', 'sandbox-user-operator');
+        await setDoc(operatorProfileRef, {
+          uid: 'sandbox-user-operator',
+          email: 'operador@sandbox.local',
+          displayName: 'Operador de Testes',
+          role: 'member',
+          organizationId: sandboxOrgId,
+          teamId: 'sandbox-team-alpha',
+          createdAt: new Date().toISOString(),
+          acceptedTermsAt: new Date().toISOString(),
+          termsAccepted: true
+        });
+
+        // 4. Criar acordos fictícios iniciais para gráficos/tabelas funcionarem de imediato
+        const agreements = [
+          {
+            id: 'sandbox-agree-1',
+            clientName: 'José Silva (Fictício)',
+            clientCpf: '12345678900',
+            value: 1500,
+            status: 'pago',
+            createdAt: new Date().toISOString(),
+            createdBy: 'sandbox-user-operator',
+            teamId: 'sandbox-team-alpha',
+            organizationId: sandboxOrgId
+          },
+          {
+            id: 'sandbox-agree-2',
+            clientName: 'Maria Souza (Fictício)',
+            clientCpf: '98765432111',
+            value: 2500,
+            status: 'aguardando',
+            createdAt: new Date().toISOString(),
+            createdBy: 'sandbox-user-operator',
+            teamId: 'sandbox-team-alpha',
+            organizationId: sandboxOrgId
+          },
+          {
+            id: 'sandbox-agree-3',
+            clientName: 'Antônio Oliveira (Fictício)',
+            clientCpf: '45678912322',
+            value: 3000,
+            status: 'quebrado',
+            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+            createdBy: 'sandbox-user-operator',
+            teamId: 'sandbox-team-beta',
+            organizationId: sandboxOrgId
+          }
+        ];
+
+        for (const arg of agreements) {
+          await setDoc(doc(db, 'agreements', arg.id), arg);
+        }
+
+        showToast('Ambiente Sandbox provisionado com sucesso!', 'success');
+      }
+
+      onStartSimulation(role);
+    } catch (error: any) {
+      console.error(error);
+      showToast(`Erro ao iniciar simulação: ${error.message}`, 'error');
+    } finally {
+      setIsProvisioningSandbox(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -460,6 +601,48 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDas
                 <span>Pro: {stats.planCounts.pro || 0}</span>
                 <span>Ent.: {stats.planCounts.enterprise || 0}</span>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Ambiente de Teste Sandbox */}
+        <section className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/10 space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <UserCheck2 className="text-purple-400 animate-pulse" size={20} />
+                Ambiente de Teste Sandbox
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Simule diferentes cargos (Gerente, Supervisor, Operador) em uma empresa fictícia isolada de testes (`sandbox-test`).
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
+              <button
+                onClick={() => handleSimulateRole('manager')}
+                disabled={isProvisioningSandbox}
+                className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 font-bold hover:bg-purple-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+              >
+                {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
+                Simular Gerente
+              </button>
+              <button
+                onClick={() => handleSimulateRole('supervisor')}
+                disabled={isProvisioningSandbox}
+                className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-bold hover:bg-indigo-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+              >
+                {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
+                Simular Supervisor
+              </button>
+              <button
+                onClick={() => handleSimulateRole('member')}
+                disabled={isProvisioningSandbox}
+                className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 font-bold hover:bg-sky-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+              >
+                {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
+                Simular Operador
+              </button>
             </div>
           </div>
         </section>
