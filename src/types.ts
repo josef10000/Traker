@@ -149,3 +149,15 @@ export interface Reconciliation {
   differenceEffectiveness?: number;
   updatedAt: string;
 }
+
+export interface CollaborationNote {
+  id: string;
+  organizationId: string;
+  collaboratorId: string;
+  creatorId: string;
+  creatorName: string;
+  type: 'note' | 'attendance';
+  content: string;
+  attendanceStatus?: 'present' | 'late' | 'absent';
+  createdAt: string;
+}
