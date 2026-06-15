@@ -18,10 +18,15 @@ import {
   Loader2, 
   CalendarDays,
   Activity,
-  UserCheck2
+  UserCheck2,
+  Copy,
+  Plus,
+  Key,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
+import { regenerateManagerInviteToken, generateSecureToken } from '../../lib/teams';
 import { 
   collection, 
   onSnapshot, 
@@ -67,6 +72,14 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [isSaving, setIsSaving] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationLog, setMigrationLog] = useState<string[]>([]);
+
+  // Modal de criação de organização
+  const [isCreateOrgOpen, setIsCreateOrgOpen] = useState(false);
+  const [newOrgName, setNewOrgName] = useState('');
+  const [newOrgCnpj, setNewOrgCnpj] = useState('');
+  const [newOrgPlan, setNewOrgPlan] = useState<Organization['plan']>('free');
+  const [newOrgMaxUsers, setNewOrgMaxUsers] = useState(5);
+  const [newOrgMaxTeams, setNewOrgMaxTeams] = useState(1);
 
   useEffect(() => {
     // Carregar todas as organizações
@@ -287,6 +300,74 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     } catch (error) {
       console.error(error);
       showToast('Erro ao atualizar empresa.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePlanChange = (plan: Organization['plan']) => {
+    setNewOrgPlan(plan);
+    if (plan === 'free') {
+      setNewOrgMaxUsers(5);
+      setNewOrgMaxTeams(1);
+    } else if (plan === 'starter') {
+      setNewOrgMaxUsers(15);
+      setNewOrgMaxTeams(3);
+    } else if (plan === 'pro') {
+      setNewOrgMaxUsers(40);
+      setNewOrgMaxTeams(8);
+    } else if (plan === 'enterprise') {
+      setNewOrgMaxUsers(150);
+      setNewOrgMaxTeams(30);
+    }
+  };
+
+  const handleCreateOrganization = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOrgName.trim()) {
+      showToast('Nome da empresa é obrigatório.', 'error');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const orgId = `org-${generateSecureToken(6).toLowerCase()}`;
+      const managerToken = `MGR-${generateSecureToken(6).toUpperCase()}`;
+      const supervisorToken = `SUP-${generateSecureToken(6).toUpperCase()}`;
+      const now = new Date().toISOString();
+
+      const newOrg: Organization = {
+        id: orgId,
+        name: newOrgName.trim(),
+        cnpj: newOrgCnpj.trim() || undefined,
+        status: 'active',
+        plan: newOrgPlan,
+        maxUsers: Number(newOrgMaxUsers),
+        maxTeams: Number(newOrgMaxTeams),
+        managerInviteToken: managerToken,
+        supervisorInviteToken: supervisorToken,
+        createdAt: now
+      };
+
+      await setDoc(doc(db, 'organizations', orgId), newOrg);
+      
+      await logAudit('CREATE_ORGANIZATION', {
+        orgId,
+        name: newOrgName,
+        plan: newOrgPlan
+      }, profile.displayName);
+
+      showToast('Empresa criada com sucesso!', 'success');
+      
+      // Reset form & close
+      setNewOrgName('');
+      setNewOrgCnpj('');
+      setNewOrgPlan('free');
+      setNewOrgMaxUsers(5);
+      setNewOrgMaxTeams(1);
+      setIsCreateOrgOpen(false);
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao criar empresa.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -717,6 +798,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               <h2 className="text-lg font-bold text-white leading-tight">Organizações / Clientes Contratantes</h2>
               <p className="text-xs text-slate-400 mt-1">Gerencie licenças de cargos, expiração de planos e exclusão de dados.</p>
             </div>
+            <button 
+              onClick={() => setIsCreateOrgOpen(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-400 hover:to-teal-500 transition-colors shadow-lg shadow-emerald-500/10 active:scale-95 flex items-center gap-2 text-xs uppercase tracking-wider"
+            >
+              <Plus size={14} />
+              Nova Organização
+            </button>
           </div>
 
           {organizations.length > 0 ? (
@@ -729,6 +817,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Usuários Limite</th>
                     <th className="px-6 py-4">Equipes Limite</th>
+                    <th className="px-6 py-4">Convite Gerente</th>
                     <th className="px-6 py-4">Expiração</th>
                     <th className="px-8 py-4 text-right">Ações</th>
                   </tr>
@@ -764,6 +853,38 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       </td>
                       <td className="px-6 py-5 font-bold text-slate-300">
                         {teams.filter(t => t.organizationId === org.id).length} / {org.maxTeams || 1}
+                      </td>
+                      <td className="px-6 py-5 font-mono text-xs">
+                        {org.managerInviteToken ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{org.managerInviteToken}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(org.managerInviteToken || '');
+                                showToast('Token copiado!', 'success');
+                              }}
+                              className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
+                              title="Copiar Código de Convite de Gerente"
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const token = await regenerateManagerInviteToken(org.id);
+                                showToast('Novo token gerado: ' + token, 'success');
+                              } catch (e) {
+                                showToast('Erro ao gerar token', 'error');
+                              }
+                            }}
+                            className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1"
+                          >
+                            <RefreshCw size={10} />
+                            Gerar Código
+                          </button>
+                        )}
                       </td>
                       <td className="px-6 py-5 font-mono text-xs text-slate-400">
                         {org.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString('pt-BR') : 'Sem expiração'}
@@ -936,6 +1057,123 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   Salvar Ajustes
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Modal de Criação de Organização */}
+      <AnimatePresence>
+        {isCreateOrgOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCreateOrgOpen(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <form onSubmit={handleCreateOrganization} className="flex flex-col h-full">
+                <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Nova Organização</h3>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5 block">Cadastrar Empresa & Gerar Códigos</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setIsCreateOrgOpen(false)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Nome da Empresa</label>
+                    <input 
+                      type="text"
+                      required
+                      placeholder="Ex: Noverde Soluções"
+                      value={newOrgName}
+                      onChange={(e) => setNewOrgName(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">CNPJ (Opcional)</label>
+                    <input 
+                      type="text"
+                      placeholder="00.000.000/0000-00"
+                      value={newOrgCnpj}
+                      onChange={(e) => setNewOrgCnpj(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Plano SaaS</label>
+                    <select 
+                      value={newOrgPlan}
+                      onChange={(e) => handlePlanChange(e.target.value as Organization['plan'])}
+                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none appearance-none select-custom-arrow"
+                    >
+                      <option value="free">Plano Free</option>
+                      <option value="starter">Plano Starter</option>
+                      <option value="pro">Plano Pro</option>
+                      <option value="enterprise">Plano Enterprise</option>
+                      <option value="custom">Plano Customizado</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Limite Usuários</label>
+                      <input 
+                        type="number"
+                        min={1}
+                        value={newOrgMaxUsers}
+                        onChange={(e) => setNewOrgMaxUsers(Number(e.target.value))}
+                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Limite Equipes</label>
+                      <input 
+                        type="number"
+                        min={1}
+                        value={newOrgMaxTeams}
+                        onChange={(e) => setNewOrgMaxTeams(Number(e.target.value))}
+                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-8 pt-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex gap-4 shrink-0">
+                  <button 
+                    type="button"
+                    onClick={() => setIsCreateOrgOpen(false)}
+                    className="flex-1 px-5 py-4 rounded-xl border border-white/10 font-bold text-slate-400 hover:bg-white/5 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isSaving}
+                    className="flex-1 px-5 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold hover:from-emerald-400 hover:to-teal-500 transition-colors shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                    Criar Empresa
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

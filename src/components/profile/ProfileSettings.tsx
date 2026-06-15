@@ -10,12 +10,13 @@ import {
   Palette, 
   Check, 
   X,
-  ShieldCheck
+  ShieldCheck,
+  Copy
 } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { UserProfile, Team } from '../../types';
-import { getTeamData, deleteTeam, getTeamMembers, removeTeamMember } from '../../lib/teams';
+import { UserProfile, Team, Organization } from '../../types';
+import { getTeamData, deleteTeam, getTeamMembers, removeTeamMember, regenerateSupervisorInviteToken } from '../../lib/teams';
 import { ToastType } from '../ui/Toast';
 
 interface ProfileSettingsProps {
@@ -37,17 +38,58 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
   const [teamMembers, setTeamMembers] = useState<UserProfile[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
+  const [orgData, setOrgData] = useState<Organization | null>(null);
+  const [supervisorInviteToken, setSupervisorInviteToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadOrg = async () => {
+      if (profile.organizationId) {
+        try {
+          const orgSnap = await getDoc(doc(db, 'organizations', profile.organizationId));
+          if (orgSnap.exists()) {
+            const org = orgSnap.data() as Organization;
+            setOrgData(org);
+            setSupervisorInviteToken(org.supervisorInviteToken || null);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar organização:', error);
+        }
+      }
+    };
+    loadOrg();
+  }, [profile.organizationId]);
+
   useEffect(() => {
     const loadTeams = async () => {
-      if (profile.managedTeams && profile.managedTeams.length > 0) {
+      if (profile.role === 'manager' && profile.organizationId) {
+        try {
+          const teamsRef = collection(db, 'teams');
+          const q = query(teamsRef, where('organizationId', '==', profile.organizationId));
+          const querySnapshot = await getDocs(q);
+          const teams = querySnapshot.docs.map(doc => doc.data() as Team);
+          setManagedTeamsData(teams);
+        } catch (error) {
+          console.error('Erro ao carregar equipes da empresa:', error);
+        }
+      } else if (profile.managedTeams && profile.managedTeams.length > 0) {
         const teams = await Promise.all(
           profile.managedTeams.map(id => getTeamData(id))
         );
         setManagedTeamsData(teams.filter((t): t is Team => t !== null));
+      } else if (profile.role === 'supervisor') {
+        try {
+          const teamsRef = collection(db, 'teams');
+          const q = query(teamsRef, where('supervisorId', '==', profile.uid));
+          const querySnapshot = await getDocs(q);
+          const teams = querySnapshot.docs.map(doc => doc.data() as Team);
+          setManagedTeamsData(teams);
+        } catch (error) {
+          console.error('Erro ao carregar equipes do supervisor:', error);
+        }
       }
     };
     loadTeams();
-  }, [profile.managedTeams]);
+  }, [profile.managedTeams, profile.role, profile.organizationId, profile.uid]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -275,10 +317,17 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
         </div>
 
         {/* Gestão de Equipes */}
-        {profile.role === 'supervisor' && (
+        {(profile.role === 'supervisor' || profile.role === 'manager') && (
           <div className="glass-card rounded-3xl p-8 shadow-2xl">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-bold text-white">Minhas Equipes</h3>
+              <div>
+                <h3 className="text-xl font-bold text-white">
+                  {profile.role === 'manager' ? 'Equipes da Empresa' : 'Minhas Equipes'}
+                </h3>
+                {profile.role === 'manager' && (
+                  <p className="text-xs text-slate-400 mt-1">Todas as equipes cadastradas sob o tenant do gerente.</p>
+                )}
+              </div>
               <button 
                 onClick={onCreateTeam}
                 className="p-2 text-primary/80 hover:bg-primary/10 rounded-xl transition-all"
@@ -288,10 +337,53 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
               </button>
             </div>
 
+            {profile.role === 'manager' && (
+              <div className="mb-6 p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h4 className="text-sm font-bold text-white">Convite de Supervisor</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">Use este código para convidar um novo supervisor para gerenciar equipes.</p>
+                </div>
+                {supervisorInviteToken ? (
+                  <div className="flex items-center gap-1.5 self-stretch sm:self-auto justify-between bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
+                    <span className="text-sm text-primary font-bold font-mono">{supervisorInviteToken}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(supervisorInviteToken);
+                        showToast('Token de supervisor copiado!', 'success');
+                      }}
+                      className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
+                      title="Copiar Token"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      if (profile.organizationId) {
+                        try {
+                          const token = await regenerateSupervisorInviteToken(profile.organizationId);
+                          setSupervisorInviteToken(token);
+                          showToast('Código de Supervisor gerado com sucesso!', 'success');
+                        } catch (e) {
+                          showToast('Erro ao gerar código', 'error');
+                        }
+                      }
+                    }}
+                    className="px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary font-bold text-xs rounded-xl transition-all"
+                  >
+                    Gerar Convite de Supervisor
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="space-y-3">
               {managedTeamsData.length === 0 ? (
                 <div className="text-center py-8 border-2 border-dashed border-slate-800 rounded-2xl text-slate-500 text-sm">
-                  Você ainda não gerencia nenhuma equipe.
+                  {profile.role === 'manager' 
+                    ? 'Nenhuma equipe cadastrada para a empresa. Crie a primeira clicando no botão +'
+                    : 'Você ainda não gerencia nenhuma equipe.'}
                 </div>
               ) : (
                 managedTeamsData.map(team => (
@@ -302,7 +394,23 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
                       </div>
                       <div>
                         <h4 className="text-white font-bold">{team.name}</h4>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">ID: {team.id}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1 mt-1">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">ID: {team.id}</p>
+                          <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                            <span className="font-bold">Convite Operador:</span>
+                            <span className="text-emerald-400 font-bold font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">{team.inviteToken}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(team.inviteToken);
+                                showToast('Código de operador copiado!', 'success');
+                              }}
+                              className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
+                              title="Copiar Código de Operador"
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

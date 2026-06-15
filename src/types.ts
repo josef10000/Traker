@@ -38,6 +38,8 @@ export interface Organization {
   maxUsers: number;
   maxTeams: number;
   webhookUrl?: string;
+  managerInviteToken?: string | null;
+  supervisorInviteToken?: string | null;
   createdAt: string;
 }
 
@@ -62,12 +64,13 @@ export interface UserProfile {
 export interface Team {
   id: string;
   name: string;
-  supervisorId: string;
+  supervisorId: string | null;
   inviteToken: string;
   inviteTokenExpiresAt?: string; // Expiração do convite (LGPD/Segurança)
   organizationId: string;        // Vínculo com a empresa
   monthlyGoal?: number;
   effectivenessGoal?: number;
+  supervisorInviteToken?: string | null;
   createdAt: string;
 }
 

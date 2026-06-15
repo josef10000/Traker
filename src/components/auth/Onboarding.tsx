@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Users, UserPlus, ArrowRight, Loader2, Building, Shield } from 'lucide-react';
-import { createTeam, joinTeam, createOrganization } from '../../lib/teams';
+import { createTeam, joinTeam, createOrganization, joinOrganizationAsManager, joinOrganizationAsSupervisor } from '../../lib/teams';
 import { User } from 'firebase/auth';
-import { UserProfile, UserRole } from '../../types';
+import { UserProfile, UserRole, Organization } from '../../types';
 import { collection, query, where, getDocs, limit, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -28,6 +28,10 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSuperAdmin, setHasSuperAdmin] = useState<boolean>(true);
+
+  const [availableTeams, setAvailableTeams] = useState<Team[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [targetOrgName, setTargetOrgName] = useState('');
 
   useEffect(() => {
     const checkSuperAdmin = async () => {
@@ -111,13 +115,58 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteToken.trim()) return;
+    const token = inviteToken.trim();
+    if (!token) return;
 
     setIsLoading(true);
     setError(null);
     try {
-      await joinTeam(user.uid, user.email!, inviteToken);
-      if (showToast) showToast('Você entrou na equipe com sucesso!', 'success');
+      if (token.startsWith('MGR-')) {
+        const orgName = await joinOrganizationAsManager(user.uid, user.email!, token);
+        if (showToast) showToast(`Você ingressou como Gerente na empresa ${orgName}!`, 'success');
+        onComplete();
+      } else if (token.startsWith('SUP-')) {
+        // Buscar organização vinculada a este token de supervisor
+        const orgsRef = collection(db, 'organizations');
+        const qOrg = query(orgsRef, where('supervisorInviteToken', '==', token));
+        const orgSnap = await getDocs(qOrg);
+        
+        if (orgSnap.empty) {
+          throw new Error('Código de convite de Supervisor inválido ou expirado.');
+        }
+        
+        const orgDoc = orgSnap.docs[0];
+        const orgData = orgDoc.data() as Organization;
+        setTargetOrgName(orgData.name);
+        
+        // Buscar equipes desta organização
+        const teamsRef = collection(db, 'teams');
+        const qTeams = query(teamsRef, where('organizationId', '==', orgData.id));
+        const teamsSnap = await getDocs(qTeams);
+        const teams = teamsSnap.docs.map(doc => doc.data() as Team);
+        
+        setAvailableTeams(teams);
+        setSelectedTeams([]);
+        setMode('select-teams' as any); // Ir para etapa de seleção
+      } else {
+        // Código de time comum (operador)
+        await joinTeam(user.uid, user.email!, token);
+        if (showToast) showToast('Você entrou na equipe com sucesso!', 'success');
+        onComplete();
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmSupervisorJoin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const orgName = await joinOrganizationAsSupervisor(user.uid, user.email!, inviteToken.trim(), selectedTeams);
+      if (showToast) showToast(`Você ingressou como Supervisor na empresa ${orgName}!`, 'success');
       onComplete();
     } catch (err: any) {
       setError(err.message);
@@ -309,6 +358,77 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
                 </button>
               </div>
             </form>
+          )}
+
+          {mode === 'select-teams' as any && (
+            <div className="space-y-6">
+              <div>
+                <h4 className="font-bold text-white text-lg">Selecionar Equipes</h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Você foi convidado para a empresa <span className="text-emerald-400 font-bold">{targetOrgName}</span>. Escolha quais equipes deseja gerenciar:
+                </p>
+              </div>
+
+              {availableTeams.length === 0 ? (
+                <div className="p-6 bg-white/5 border border-white/5 rounded-2xl text-center text-sm text-slate-500 italic">
+                  Nenhuma equipe cadastrada nesta empresa ainda. Conclua o cadastro para gerenciar novas equipes que criar posteriormente.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {availableTeams.map((team) => {
+                    const isChecked = selectedTeams.includes(team.id);
+                    return (
+                      <label 
+                        key={team.id}
+                        onClick={(e) => {
+                          // Parar propagação para não duplicar cliques no checkbox/label
+                          e.stopPropagation();
+                        }}
+                        className={`flex items-center justify-between p-4 bg-slate-900 border rounded-2xl cursor-pointer transition-all ${
+                          isChecked ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              setSelectedTeams(prev => 
+                                isChecked 
+                                  ? prev.filter(id => id !== team.id) 
+                                  : [...prev, team.id]
+                              );
+                            }}
+                            className="w-4 h-4 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/20 bg-slate-800"
+                          />
+                          <div className="text-left">
+                            <p className="text-sm font-bold text-white">{team.name}</p>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">ID: {team.id}</p>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setMode('join')}
+                  className="flex-1 px-4 py-3 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-700 transition-all"
+                >
+                  Voltar
+                </button>
+                <button 
+                  onClick={handleConfirmSupervisorJoin}
+                  disabled={isLoading}
+                  className="flex-[2] bg-emerald-500 text-white px-4 py-3 rounded-xl font-semibold hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Concluir Vínculo'}
+                </button>
+              </div>
+            </div>
           )}
         </motion.div>
       </div>

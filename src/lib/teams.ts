@@ -14,7 +14,7 @@ import {
 import { db } from './firebase';
 import { Team, UserProfile, UserRole, Organization } from '../types';
 
-const generateSecureToken = (length: number): string => {
+export const generateSecureToken = (length: number): string => {
   const array = new Uint8Array(length);
   if (typeof window !== 'undefined' && window.crypto) {
     window.crypto.getRandomValues(array);
@@ -90,10 +90,11 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
   const teamData: Team = {
     id: teamId,
     name: teamName,
-    supervisorId: uid,
+    supervisorId: null,
     inviteToken,
     inviteTokenExpiresAt: expiresAt,
     organizationId,
+    supervisorInviteToken: null,
     createdAt: new Date().toISOString()
   };
 
@@ -103,13 +104,28 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
   const userSnap = await getDoc(userRef);
 
   if (userSnap.exists()) {
-    await updateDoc(userRef, {
-      role: 'supervisor' as UserRole,
-      managedTeams: arrayUnion(teamId),
-      teamId: userSnap.data().teamId || teamId,
-      organizationId
-    });
+    const userData = userSnap.data() as UserProfile;
+    if (userData.role === 'manager') {
+      // O Gerente não vira supervisor do time. A equipe é criada sem supervisorId
+      // e podemos deixar supervisorInviteToken nulo inicialmente ou criar um token
+      // Mas o supervisor se vincula pela organizacao inteira agora, o que é melhor!
+    } else {
+      // Criador é supervisor
+      await updateDoc(doc(db, 'teams', teamId), {
+        supervisorId: uid
+      });
+      await updateDoc(userRef, {
+        role: 'supervisor' as UserRole,
+        managedTeams: arrayUnion(teamId),
+        teamId: userSnap.data().teamId || teamId,
+        organizationId
+      });
+    }
   } else {
+    // Se não existir perfil (ex: onboarding), cria como supervisor
+    await updateDoc(doc(db, 'teams', teamId), {
+      supervisorId: uid
+    });
     const userProfile: UserProfile = {
       uid,
       email: userEmail,
@@ -226,4 +242,94 @@ export const removeTeamMember = async (uid: string): Promise<void> => {
     teamId: null,
     role: 'member'
   });
+};
+
+export const joinOrganizationAsManager = async (uid: string, userEmail: string, inviteToken: string): Promise<string> => {
+  const orgsRef = collection(db, 'organizations');
+  const q = query(orgsRef, where('managerInviteToken', '==', inviteToken));
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+    throw new Error('Código de convite de Gerente inválido.');
+  }
+
+  const orgDoc = querySnapshot.docs[0];
+  const orgData = orgDoc.data() as Organization;
+
+  if (orgData.status === 'inactive') {
+    throw new Error('Esta empresa está inativa.');
+  }
+
+  const now = new Date().toISOString();
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid,
+    email: userEmail,
+    displayName: userEmail.split('@')[0],
+    role: 'manager',
+    organizationId: orgData.id,
+    createdAt: now
+  }, { merge: true });
+
+  await updateDoc(orgDoc.ref, { managerInviteToken: null });
+
+  return orgData.name;
+};
+
+export const joinOrganizationAsSupervisor = async (uid: string, userEmail: string, inviteToken: string, selectedTeamIds: string[]): Promise<string> => {
+  const orgsRef = collection(db, 'organizations');
+  const q = query(orgsRef, where('supervisorInviteToken', '==', inviteToken));
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+    throw new Error('Código de convite de Supervisor inválido.');
+  }
+
+  const orgDoc = querySnapshot.docs[0];
+  const orgData = orgDoc.data() as Organization;
+
+  if (orgData.status === 'inactive') {
+    throw new Error('Esta empresa está inativa.');
+  }
+
+  const now = new Date().toISOString();
+  const userRef = doc(db, 'users', uid);
+  
+  await setDoc(userRef, {
+    uid,
+    email: userEmail,
+    displayName: userEmail.split('@')[0],
+    role: 'supervisor',
+    organizationId: orgData.id,
+    managedTeams: selectedTeamIds,
+    teamId: selectedTeamIds.length > 0 ? selectedTeamIds[0] : null,
+    createdAt: now
+  }, { merge: true });
+
+  for (const teamId of selectedTeamIds) {
+    const teamRef = doc(db, 'teams', teamId);
+    await updateDoc(teamRef, {
+      supervisorId: uid
+    });
+  }
+
+  await updateDoc(orgDoc.ref, { supervisorInviteToken: null });
+
+  return orgData.name;
+};
+
+export const regenerateManagerInviteToken = async (orgId: string): Promise<string> => {
+  const token = `MGR-${generateSecureToken(6)}`;
+  await updateDoc(doc(db, 'organizations', orgId), {
+    managerInviteToken: token
+  });
+  return token;
+};
+
+export const regenerateSupervisorInviteToken = async (orgId: string): Promise<string> => {
+  const token = `SUP-${generateSecureToken(6)}`;
+  await updateDoc(doc(db, 'organizations', orgId), {
+    supervisorInviteToken: token
+  });
+  return token;
 };
