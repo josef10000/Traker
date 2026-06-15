@@ -24,6 +24,8 @@ interface UseAgreementsProps {
   customStartDate?: string;
   customEndDate?: string;
   searchTerm: string;
+  isChecklistMode: boolean;
+  operatorId: string | 'all';
 }
 
 export const useAgreements = ({
@@ -35,7 +37,9 @@ export const useAgreements = ({
   dateFilter,
   customStartDate,
   customEndDate,
-  searchTerm
+  searchTerm,
+  isChecklistMode,
+  operatorId
 }: UseAgreementsProps) => {
   const [monthAgreements, setMonthAgreements] = useState<Agreement[]>([]);
   const [paginatedAgreements, setPaginatedAgreements] = useState<Agreement[]>([]);
@@ -147,7 +151,7 @@ export const useAgreements = ({
     setLastVisible(null);
     setFirstVisible(null);
     setPageHistory([null]);
-  }, [filterStatus, dateFilter, customStartDate, customEndDate, selectedMonth, selectedYear, searchTerm]);
+  }, [filterStatus, dateFilter, customStartDate, customEndDate, selectedMonth, selectedYear, searchTerm, isChecklistMode, operatorId]);
 
   // 2. QUERY DA TABELA PAGINADA
   useEffect(() => {
@@ -156,14 +160,78 @@ export const useAgreements = ({
       return;
     }
 
-    // Se houver busca por texto, filtramos localmente em cima do monthAgreements para dar suporte a buscas parciais de cliente e CPF
-    if (searchTerm.trim() !== '') {
-      const lowerSearch = searchTerm.toLowerCase();
-      const matched = monthAgreements.filter(a => 
-        a.clientName.toLowerCase().includes(lowerSearch) ||
-        a.clientCpf.includes(searchTerm)
-      );
-      
+    // Se houver busca por texto, ou modo de checklist, ou filtro de operador específico, filtramos localmente
+    if (searchTerm.trim() !== '' || isChecklistMode || operatorId !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let matched = monthAgreements.filter(a => !a.isAdjustment);
+
+      // 1. Filtro por Operador
+      if (operatorId !== 'all') {
+        matched = matched.filter(a => a.operatorId === operatorId);
+      }
+
+      // 2. Filtro por Modo Checklist (Conferência de CPF)
+      if (isChecklistMode) {
+        matched = matched.filter(a => {
+          const dueDate = parseLocalDate(a.dueDate);
+          const isPending = a.status === AgreementStatus.WAITING;
+          const wasCheckedToday = a.lastCheckedAt && 
+            new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
+          
+          const isOverdue = dueDate < today;
+          const isDueToday = dueDate.getTime() === today.getTime();
+          const wasCheckedAtAnyTime = !!a.lastCheckedAt;
+
+          if (isDueToday) {
+            return isPending && !wasCheckedToday;
+          } 
+          if (isOverdue) {
+            return isPending && !wasCheckedAtAnyTime;
+          }
+          return false;
+        });
+      } else {
+        // Filtro por Status
+        if (filterStatus !== 'all') {
+          if (filterStatus === AgreementStatus.BROKEN) {
+            matched = matched.filter(a => 
+              a.status === AgreementStatus.BROKEN || 
+              (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)
+            );
+          } else if (filterStatus === AgreementStatus.WAITING) {
+            matched = matched.filter(a => 
+              a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today
+            );
+          } else {
+            matched = matched.filter(a => a.status === filterStatus);
+          }
+        }
+
+        // Filtro por Data
+        if (dateFilter === 'today') {
+          const todayStr = today.toISOString().split('T')[0];
+          matched = matched.filter(a => a.dueDate === todayStr);
+        } else if (dateFilter === 'yesterday') {
+          const yesterday = new Date(today);
+          yesterday.setDate(today.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          matched = matched.filter(a => a.dueDate === yesterdayStr);
+        } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+          matched = matched.filter(a => a.dueDate >= customStartDate && a.dueDate <= customEndDate);
+        }
+      }
+
+      // 3. Filtro por Busca de Texto (Nome ou CPF)
+      if (searchTerm.trim() !== '') {
+        const lowerSearch = searchTerm.toLowerCase();
+        matched = matched.filter(a => 
+          a.clientName.toLowerCase().includes(lowerSearch) ||
+          a.clientCpf.includes(searchTerm)
+        );
+      }
+
       const startIdx = (currentPage - 1) * itemsPerPage;
       const endIdx = startIdx + itemsPerPage;
       setPaginatedAgreements(matched.slice(startIdx, endIdx));
@@ -171,7 +239,7 @@ export const useAgreements = ({
       return;
     }
 
-    // Caso padrão (Sem termo de busca): Paginação Real no Banco de Dados (Firestore)
+    // Caso padrão (Sem termo de busca/checklist/operador): Paginação Real no Banco de Dados (Firestore)
     const cursor = pageHistory[currentPage - 1];
     
     // Consulta da página atual (trazendo limit + 1 para checar se há próxima página)
@@ -202,7 +270,7 @@ export const useAgreements = ({
     });
 
     return () => unsubscribe();
-  }, [organizationId, teamsToWatch, currentPage, pageHistory, monthAgreements, searchTerm, buildFilteredQuery]);
+  }, [organizationId, teamsToWatch, currentPage, pageHistory, monthAgreements, searchTerm, isChecklistMode, operatorId, filterStatus, dateFilter, buildFilteredQuery]);
 
   // Navegação de Páginas
   const nextPage = useCallback(() => {
@@ -223,22 +291,81 @@ export const useAgreements = ({
   }, [currentPage]);
 
   const totalPages = useMemo(() => {
-    if (searchTerm.trim() !== '') {
-      const lowerSearch = searchTerm.toLowerCase();
-      const matched = monthAgreements.filter(a => 
-        a.clientName.toLowerCase().includes(lowerSearch) ||
-        a.clientCpf.includes(searchTerm)
-      );
+    if (searchTerm.trim() !== '' || isChecklistMode || operatorId !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let matched = monthAgreements.filter(a => !a.isAdjustment);
+
+      if (operatorId !== 'all') {
+        matched = matched.filter(a => a.operatorId === operatorId);
+      }
+
+      if (isChecklistMode) {
+        matched = matched.filter(a => {
+          const dueDate = parseLocalDate(a.dueDate);
+          const isPending = a.status === AgreementStatus.WAITING;
+          const wasCheckedToday = a.lastCheckedAt && 
+            new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
+          
+          const isOverdue = dueDate < today;
+          const isDueToday = dueDate.getTime() === today.getTime();
+          const wasCheckedAtAnyTime = !!a.lastCheckedAt;
+
+          if (isDueToday) {
+            return isPending && !wasCheckedToday;
+          } 
+          if (isOverdue) {
+            return isPending && !wasCheckedAtAnyTime;
+          }
+          return false;
+        });
+      } else {
+        if (filterStatus !== 'all') {
+          if (filterStatus === AgreementStatus.BROKEN) {
+            matched = matched.filter(a => 
+              a.status === AgreementStatus.BROKEN || 
+              (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)
+            );
+          } else if (filterStatus === AgreementStatus.WAITING) {
+            matched = matched.filter(a => 
+              a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today
+            );
+          } else {
+            matched = matched.filter(a => a.status === filterStatus);
+          }
+        }
+
+        if (dateFilter === 'today') {
+          const todayStr = today.toISOString().split('T')[0];
+          matched = matched.filter(a => a.dueDate === todayStr);
+        } else if (dateFilter === 'yesterday') {
+          const yesterday = new Date(today);
+          yesterday.setDate(today.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          matched = matched.filter(a => a.dueDate === yesterdayStr);
+        } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+          matched = matched.filter(a => a.dueDate >= customStartDate && a.dueDate <= customEndDate);
+        }
+      }
+
+      if (searchTerm.trim() !== '') {
+        const lowerSearch = searchTerm.toLowerCase();
+        matched = matched.filter(a => 
+          a.clientName.toLowerCase().includes(lowerSearch) ||
+          a.clientCpf.includes(searchTerm)
+        );
+      }
+
       return Math.ceil(matched.length / itemsPerPage);
     }
+    
     // Para paginação reativa do banco, calculamos com base no tamanho consolidado do mês filtrado
-    // Se o filtro de status estiver ativo, calculamos sobre os acordos do mês com o status correspondente
     let baseList = monthAgreements;
     if (filterStatus !== 'all') {
       baseList = baseList.filter(a => a.status === filterStatus);
     }
     return Math.ceil(baseList.length / itemsPerPage) || 1;
-  }, [monthAgreements, filterStatus, searchTerm]);
+  }, [monthAgreements, filterStatus, searchTerm, isChecklistMode, operatorId, dateFilter]);
 
   return {
     monthAgreements,

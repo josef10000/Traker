@@ -31,6 +31,7 @@ import { logAudit } from '../../lib/audit';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
+import { CheckSquare } from 'lucide-react';
 
 // Hooks customizados
 import { useAgreements } from '../../hooks/useAgreements';
@@ -96,6 +97,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Preferências Visuais
   const [localHiddenCards, setLocalHiddenCards] = useState<string[]>(profile.dashboardPreferences?.hiddenCards || []);
   const [isPresentMode, setIsPresentMode] = useState(false);
+  const [isChecklistMode, setIsChecklistMode] = useState(false);
 
   // Organização e Webhooks
   const [organizationName, setOrganizationName] = useState<string>('');
@@ -146,6 +148,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return [selectedTeamId];
   }, [selectedTeamId, managedTeamsData]);
 
+  const operatorIdForAgreements = viewMode === 'personal' ? profile.uid : selectedMemberId;
+
   // 2. CARREGAMENTO DOS ACORDOS DA PÁGINA ATUAL E ESTATÍSTICAS DO MÊS VIA CUSTOM HOOK
   const {
     monthAgreements,
@@ -164,7 +168,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     dateFilter,
     customStartDate,
     customEndDate,
-    searchTerm
+    searchTerm,
+    isChecklistMode,
+    operatorId: operatorIdForAgreements
   });
 
   const isLoading = teamLoading || agreementsLoading;
@@ -1217,6 +1223,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                   <div className="flex flex-wrap gap-2 items-center">
                     <button
+                      onClick={() => setIsChecklistMode(!isChecklistMode)}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 ${
+                        isChecklistMode 
+                          ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' 
+                          : 'bg-slate-800 text-slate-400 border-slate-700/50 hover:text-sky-400 hover:border-sky-500/30'
+                      }`}
+                      title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
+                    >
+                      <CheckSquare size={16} />
+                      <span>{isChecklistMode ? 'Conferindo' : 'Verificar'}</span>
+                      {stats.counts.checklist > 0 && !isChecklistMode && (
+                        <span className="bg-sky-500 text-white px-1.5 py-0.5 rounded-full text-[9px] font-bold animate-pulse">
+                          {stats.counts.checklist}
+                        </span>
+                      )}
+                    </button>
+                    <button
                       onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.PAID : 'all')}
                       className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
                         filterStatus === AgreementStatus.PAID 
@@ -1603,14 +1626,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         showToast={showToast} 
       />
 
-      <WebhookSettingsModal 
-        isOpen={isWebhookSettingsOpen} 
-        onClose={() => setIsWebhookSettingsOpen(false)} 
-        organizationId={profile.organizationId || ''} 
-        currentWebhookUrl={webhookUrl} 
-        onSaveSuccess={setWebhookUrl} 
-        showToast={showToast} 
-      />
+      {profile.role === 'super_admin' && (
+        <WebhookSettingsModal 
+          isOpen={isWebhookSettingsOpen} 
+          onClose={() => setIsWebhookSettingsOpen(false)} 
+          organizationId={profile.organizationId || ''} 
+          currentWebhookUrl={webhookUrl} 
+          onSaveSuccess={setWebhookUrl} 
+          showToast={showToast} 
+        />
+      )}
 
       <DashboardPreferencesModal
         isOpen={isPreferencesModalOpen}
