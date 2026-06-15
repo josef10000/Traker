@@ -1,85 +1,110 @@
+# Tracker SaaS — Plataforma Avançada de Gestão de Acordos e Recuperação de Crédito
 
+[![React](https://img.shields.io/badge/React-20272F?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 
-# RNV Gestão - Dashboard Operacional
+O **Tracker SaaS** é uma solução corporativa completa de alta performance (Multi-Tenant) voltada para a gestão de cobrança, conciliação financeira e monitoramento em tempo real de acordos. Projetado para operações escaláveis de assessorias de cobrança, fintechs e departamentos financeiros, o sistema une segurança de dados, privacidade (100% aderente à LGPD) e alta eficiência de engenharia.
 
-Este é um dashboard avançado para gestão de acordos, desenvolvido com React, Tailwind CSS e Firebase.
+---
 
-## 🚀 Novidades na Versão Atual
+## 💎 Diferenciais de Negócio (SaaS Value)
 
-- 🏢 **SaaS Multi-Tenant & Painel Super Admin Master (Fase 3)**:
-  - **Isolamento de Tenants**: Separação física e lógica de múltiplas empresas/organizações. Usuários comuns só enxergam dados (acordos, equipes, configurações, conciliações) de sua própria organização.
-  - **Hierarquia de Cargos (Roles) Expandida**: Controle rígido com 4 cargos: `super_admin` (acesso completo a tudo), `manager` (gerente da empresa, gerencia times e dados da org), `supervisor` (gestor de equipes), e `member` (operador).
-  - **Painel de Super Admin**: Interface de administração dedicada para cadastrar empresas, ativar/inativar organizações reativamente, validar planos (`free`, `starter`, `pro`, `enterprise`, `custom`), configurar limites de usuários/equipes e realizar exclusões em lote.
-  - **Ferramentas de Migração SaaS**: Script visual executável pelo Super Admin para portar com segurança dados legados de bancos antigos para a organização padrão 'rnv-gestao'.
-  - **Validação de Limites de Plano**: Controle rígido de usuários (`maxUsers`) e equipes (`maxTeams`) configurados pelo plano da organização ativa, impedindo adições que excedam os limites.
-- 🛡️ **Conformidade LGPD & Privacidade (Fase 1 & 2)**:
-  - **Mascaramento de CPF**: Proteção de dados pessoais sensíveis com CPF mascarado por padrão em toda a aplicação (tabela, modais e histórico) no formato `***.***.*89-01`.
-  - **Controle de Revelação**: Botão para revelar temporariamente (10s) o CPF completo com ícone de olho (👁️), reduzindo a exposição desnecessária de dados.
-  - **Clipboard Seguro**: Exigência de confirmação do operador para copiar CPFs completos para a área de transferência.
-  - **Exportação CSV Segura**: Relatórios exportados com CPFs mascarados por padrão. Opção de exportação de CPFs completos condicionada a aceite de termos de responsabilidade e log de auditoria.
-  - **Termos de Uso e Política de Privacidade**: Exibição obrigatória de modal com termos de uso e aceite registrado no primeiro login do usuário.
-  - **Direito ao Esquecimento (Art. 18)**: Funcionalidade para supervisores anonimizarem permanentemente dados de clientes (nome, CPF, telefone), mantendo apenas registros financeiros para fins estatísticos.
-  - **Tokens de Convite Seguros**: Geração de tokens de convite para equipes criptograficamente seguros, com expiração automática de 48 horas e invalidação por uso único (geração dinâmica de novo token após a entrada).
-  - **Rastreabilidade e Logs de Auditoria**: Registro automático em banco de dados (`audit_logs`) das ações críticas de privacidade (aceite de termos, cópia e revelação de CPF, exportação completa e anonimização).
-- 📺 **Modo TV (Apresentação)**: Interface otimizada e em tela cheia para exibição de métricas em tempo real.
-- 🎯 **Gestão de Metas & Performance**: Acompanhamento de produtividade financeira e progresso em relação à meta mensal.
-- 🔍 **Conferência Diária**: Sistema de marcação de acordos conferidos para evitar retrabalho operational.
-- 📊 **Dashboards Dinâmicos**: Visões personalizadas para operadores e supervisores com filtros avançados.
-- 📅 **Histórico Mensal**: Seletor para visualizar dados de meses anteriores com reset automático mensal.
-- 🧮 **Conciliação de Resultados, Efetividade & Histórico**: Ferramenta completa para alinhar o Dashboard com os dados oficiais do Microsoft Teams/Salesforce. Permite a conciliação do saldo com normalização automática, exclusão individual de ajustes através do histórico técnico do mês, **Conciliação da Taxa de Efetividade (%)** (exibindo a taxa do Tracker, o input oficial e a diferença reativa em pontos percentuais diretamente no card de Efetividade em uma elegante tag glassmorphic) e controle granular absoluto de exclusão (com botões dedicados para apagar isoladamente o saldo conciliado ou a efetividade oficial, além de inicialização inteligente com o saldo do tracker para evitar duplicações).
-- 🎨 **Temas Dinâmicos Premium**: Personalização de interface com temas (Dark, Sky, Purple) utilizando glassmorphism e cores otimizadas para contraste. **O tema padrão de fallback foi definido para o Modo Dark** para operadores, gerentes e supervisores.
-- 📈 **Meta Diária Dinâmica**: Cálculo automático de meta diária recalibrado diariamente com base no valor já recuperado e nos dias úteis restantes.
-- ✅ **Lógica de Conferência Inteligente**: Acordos conferidos após a data de vencimento são automaticamente marcados como **Quebrados**, garantindo a integridade dos dados e foco nos pendentes.
-- ✨ **Melhorias de UX**: Fechamento automático de modais e transições suaves entre visões de dashboard.
-- 📤 **Melhorias de Produto & Integrações (Fase 5)**:
-  - **Importação de Acordos em Lote**: Upload de planilha CSV com parser automático inteligente de colunas, compatibilidade com formatos brasileiros e salvamento otimizado em batches no Firestore associados ao time/organização.
-  - **Webhooks de Integração**: Disparo automático de payloads JSON (com CPFs mascarados para conformidade com a LGPD) em eventos de criação (`agreement.created`) e liquidação (`agreement.paid`) configuráveis por Managers.
-- **Relatórios PDF Premium (Fase 9)**: Layout executivo de impressão dedicado (`print-only`). Ao exportar o relatório (ou Ctrl+P), o sistema oculta a interface interativa e renderiza um documento administrativo A4 formal em fundo branco, com cabeçalho corporativo, dados de CNPJ, tabelas organizadas de KPIs, ranking dinâmico de equipes/operadores, demonstrativo analítico de acordos e bloco para parecer técnico/assinatura.
-- ⚙️ **Refatoração & Testes Avançados (Fase 6)**:
-  - **useDashboardStats Hook**: Migração de toda a lógica e fórmulas de agregação financeira e métricas matemáticas para um hook customizado React robusto e testável.
-  - **Testes Automatizados**: Scaffold configurado para testes unitários com Vitest (`npm run test`) e testes de ponta a ponta com Playwright (`npm run test:e2e`).
-  - **Firebase Env-Vars Initialization**: Inicialização flexível baseada em variáveis de ambiente com fallback dinâmico para a configuração local JSON.
-- 🧪 **Restrições de Cargos & Ambiente Sandbox (Fase 8)**:
-  - **Restrições de Gerente (`manager`)**: Proteção contra edições e conciliações individuais de acordos (ocultação de botões de escrita), exibindo apenas tags visuais de status. Permissão para visualização macro em cascata de equipes e importação em lote de CSV preservadas.
-  - **Ambiente de Testes Sandbox**: Recurso exclusivo para o Super Admin simular em tempo real os papéis de Gerente, Supervisor ou Operador dentro da organização isolada de testes `sandbox-test`, provisionando automaticamente dados fictícios de equipes, usuários e acordos no Firestore.
-- 🔗 **Convites Estruturados por Código & Autonomia de Times (Fase 10)**:
-  - **Convites por Prefixo**: Fluxo de convites estruturados utilizando os prefixos distintos `MGR-` (Gerente) e `SUP-` (Supervisor) inseridos de forma transparente no mesmo campo de convite no onboarding.
-  - **Onboarding Interativo do Supervisor**: O supervisor insere o token `SUP-` e visualiza reativamente a listagem de todas as equipes cadastradas na empresa, escolhendo interativamente quais equipes gerenciar.
-  - **Diário de Convites de Equipes**: Exibição dos tokens de convite de operador (`inviteToken`) para cada time e botões para geração de novos convites diretamente na aba de equipes no perfil do gestor.
-  - **Criação de Times Autônoma**: Gerentes e Supervisores têm autonomia para criar e excluir times no perfil (respeitando os limites do plano) sem alterar sua role no Firestore.
-- 👥 **Gestão de Colaboradores & Diário de Ocorrências Privado (Fase 11)**:
-  - **Alternador de Visão no Dashboard**: Botão exclusivo para gestores (Gerentes e Supervisores) alternarem a tela principal entre "Desempenho Financeiro" e "Gestão da Equipe".
-  - **Quadro de Ocorrências**: Listagem de todos os operadores da equipe (ou de toda a empresa se Gerente) com sua respectiva performance simplificada (total de acordos e total recuperado) no mês ativo.
-  - **Apontamentos Rápidos e Presença Diária**: Seletores rápidos para registrar o status diário de presença do colaborador (🟢 Presente, 🟡 Atrasado, 🔴 Falta) e campo de texto de envio rápido de notas privadas (ex: feedback, atestados, incidentes).
-  - **Histórico Privado de Agente**: Gaveta ou modal com a timeline cronológica de todas as notas comportamentais do operador (visível apenas por gestores).
-  - **Relatório Executivo Consolidado**: Modal executivo reunindo o balanço mensal de faltas/atrasos e o feed de todas as notas do período de todos os agentes da empresa para emissão de relatório PDF ou impressão formal A4.
-- ⚙️ **Refatoração Arquitetural & Excelência de Engenharia (Fase 12)**:
-  - **Decomposição do Dashboard.tsx**: Redução de mais de 1000 linhas de código do componente principal e separação de subcomponentes especializados (`DashboardHeader`, `StatsGrid`, `AdvancedInsights`, `AgreementsTable`, `TeamManagementTab`), melhorando radicalmente a legibilidade, testes e trabalho em equipe.
-  - **Custom Hooks do Firestore**: Criação dos hooks `useAgreements` e `useTeamMembers` que gerenciam de forma isolada os acessos ao Firebase.
-  - **Economia de Leituras do Firestore**: Adoção de paginação nativa no banco (Firestore cursors) e limites reativos na tabela de acordos do dashboard, diminuindo custos operacionais de banco de dados em mais de 70%.
-  - **Roteamento Real Declarativo**: Implantação de roteamento robusto utilizando `react-router-dom` em `App.tsx` para as rotas `/`, `/login`, `/onboarding`, `/profile`, `/create-team` em substituição ao controle de abas client-side.
-  - **Enxugamento de Bundle**: Remoção de pacotes desnecessários de backend legados (`express` e `@types/express`) do package.json.
+* **🏢 Arquitetura Multi-Tenant Isolada**: Permite a operação simultânea de múltiplas organizações (empresas) com separação física e lógica completa no banco de dados. Os dados de acordos, presenças, conciliações e logs de auditoria são completamente isolados.
+* **🛡️ Compliance LGPD Nativo (Segurança por Design)**: Protege dados pessoais sensíveis através de mascaramento de CPF no formato `***.***.*89-01`, controle rígido de revelação temporária (10 segundos), clipboard seguro com confirmação e exportação de CSV segura vinculada a logs de auditoria detalhados e termos de responsabilidade.
+* **🎯 Gestão de Metas e Performance Dinâmica**: Acompanhamento em tempo real das metas da organização e individuais com o cálculo automático de **Meta Diária Dinâmica** calibrada reativamente pelos dias úteis restantes no mês e valores já liquidados.
+* **📊 Inteligência & Insights Avançados**: Gráficos analíticos de produtividade por turnos, funil de atingimento, projeções matemáticas de fim de mês e distribuição horária do time para identificar picos de produtividade.
+* **👥 Gestão de Colaboradores & Clima comportamental**: Apontamento e monitoramento de presença diária (Presente, Atrasado, Falta) e controle de notas comportamentais privadas com histórico consolidado e relatórios executivos para RH/Supervisão.
+* **📄 Relatórios PDF Corporativos Premium**: Sistema com CSS de impressão otimizado que transforma o painel operacional em um relatório executivo minimalista de alto contraste pronto para reuniões com CNPJ, rankings de operadores e parecer técnico.
 
-## 📂 Estrutura do Projeto
+---
 
-- `src/components/auth`: Lógica e interface de login/cadastro e onboarding.
-- `src/components/dashboard`: Subcomponentes modulares do painel principal (Header, Tabela, Grid, Insights).
-- `src/components/modals`: Modais de cadastro de acordos, metas, histórico de CPFs e conciliação.
-- `src/hooks`: Custom hooks de integração com Firebase e agregação estatística (`useAgreements`, `useTeamMembers`, `useDashboardStats`).
-- `src/utils`: Funções utilitárias de formatação, máscaras e cálculos.
+## 🛠️ Funcionalidades por Nível de Acesso (Hierarquia de Cargos)
 
-## 🛠️ Como Executar Localmente
+A plataforma conta com 4 níveis de controle de permissões dinâmicos (Roles):
 
-**Pré-requisitos:** Node.js
+1. **👑 Super Admin (Dono da Infraestrutura)**:
+   - Gerenciamento reativo de todas as organizações e controle de planos (`free`, `starter`, `pro`, `enterprise`, `custom`).
+   - Simulação de cargos em ambiente de Testes Sandbox com provisionamento automático de dados de demonstração.
+   - Ferramenta de exclusão em lote (chunking reativo de 400 em 400 documentos no Firestore para evitar limites do SDK).
+2. **👔 Gerente (Manager - Gestor da Organização)**:
+   - Visualização macro de todas as equipes da empresa e do ranking consolidado de performance.
+   - Autonomia para criar e remover equipes dentro dos limites estabelecidos pelo plano.
+   - Acesso exclusivo a relatórios corporativos consolidados de operadores.
+   - Configurações avançadas e segurança administrativa (bloqueio automático de conciliações e alterações individuais de acordos).
+3. **👥 Supervisor (Gestor de Equipe)**:
+   - Acompanhamento de metas do seu time e conciliação de saldo (Tracker vs Salesforce/Teams).
+   - Gestão de presença diária de agentes, adição de notas privadas e visualização de históricos comportamentais da equipe.
+   - Criação, edição e exclusão de acordos da sua equipe.
+4. **👤 Operador (Colaborador que Atende)**:
+   - Registro e consulta de acordos individuais e visualização da meta diária pessoal.
+   - Modo de conferência rápida (Checklist / Botão "Verificar") para focar na checagem de CPFs de clientes pendentes de pagamento.
 
-1. Instale as dependências:
-   `npm install`
-2. Configure as variáveis de ambiente no arquivo `.env.local`.
-3. Inicie o servidor de desenvolvimento:
-   `npm run dev`
+---
 
-## 🛡️ CI/CD
+## 🚀 Arquitetura Técnica & Performance
 
-O projeto conta com GitHub Actions que valida automaticamente:
-- Verificação de tipos TypeScript (`tsc`).
-- Sucesso do Build de produção.
+* **Paginação Nativa no Banco (Firestore Cursors)**: A listagem de acordos adota paginação real em banco utilizando cursores de documentos (`limit`, `startAfter`), reduzindo em mais de **70% o custo operacional** de leitura e tráfego na API do Firebase.
+* **Roteamento Declarativo Seguro**: Gerenciamento de rotas e segurança de visualização de telas via URL real com `react-router-dom`, isolando o onboarding, login, configurações e visualizações operacionais.
+* **Outbound Webhooks Seguros**: Disparo de requisições POST HTTPS no modelo de integração silenciosa (`no-cors`) para sincronização em tempo real de novos acordos ou acordos efetivados. CPFs são automaticamente higienizados no payload do webhook.
+* **Modularidade e Componentização**: Lógica matemática e de comunicação externa encapsulada em hooks customizados React (`useAgreements`, `useTeamMembers`, `useDashboardStats`) e componentes com visual premium baseado em glassmorphism e micro-animações suaves.
+
+---
+
+## 📂 Organização do Código
+
+```bash
+├── src
+│   ├── components
+│   │   ├── auth          # Login, Cadastro e Onboarding
+│   │   ├── dashboard     # Subcomponentes decompostos do Painel (Header, Grid, Tabela, Insights)
+│   │   ├── modals        # Modais administrativos e operacionais (Acordo, Meta, Conciliação, CSV)
+│   │   └── ui            # Componentes visuais básicos reutilizáveis
+│   ├── hooks             # Custom Hooks (useAgreements, useTeamMembers, useDashboardStats)
+│   ├── lib               # Inicialização de bibliotecas externas (Firebase, Audit, Notes)
+│   ├── utils             # Utilitários, máscaras, datas e controle de tours
+│   ├── types.ts          # Definição de Tipos e Interfaces do TypeScript
+│   └── App.tsx           # Ponto de entrada com Roteador e tela de carregamento Premium
+```
+
+---
+
+## ⚡ Guia de Inicialização Rápida
+
+### Pré-requisitos
+- Node.js (v18+)
+- Conta no Firebase (Auth e Firestore)
+
+### Configuração
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/josef10000/Noverde-registro.git
+   cd Noverde-registro
+   ```
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
+3. Crie um arquivo `.env.local` na raiz e adicione suas credenciais do Firebase:
+   ```env
+   VITE_FIREBASE_API_KEY=sua_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=seu_auth_domain
+   VITE_FIREBASE_PROJECT_ID=seu_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=seu_storage_bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=seu_sender_id
+   VITE_FIREBASE_APP_ID=seu_app_id
+   ```
+4. Execute o servidor local de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🛡️ Pipelines & CI/CD
+
+O projeto conta com automação via GitHub Actions para assegurar a saúde do produto antes de cada deploy:
+- **TypeScript Checking**: Validação estática de tipos (`tsc --noEmit`).
+- **Production Build Testing**: Garante que o bundler do Vite compile o código para produção com 100% de sucesso.
+- **Auditoria LGPD**: Validação estática de chaves e vazamentos de chaves privadas.
