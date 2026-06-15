@@ -39,10 +39,12 @@ import { auth, db } from '../../lib/firebase';
 import { Organization, UserProfile } from '../../types';
 import { logAudit } from '../../lib/audit';
 
+import { ToastType } from '../ui/Toast';
+
 interface AdminDashboardProps {
   profile: UserProfile;
   onLogoutSuccess: () => void;
-  showToast: (message: string, type?: 'success' | 'error' | 'warning') => void;
+  showToast: (message: string, type?: ToastType) => void;
 }
 
 export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDashboardProps) => {
