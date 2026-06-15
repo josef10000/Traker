@@ -68,6 +68,7 @@ export const getRemainingWorkingDays = (month: number, year: number) => {
 };
 
 export const parseLocalDate = (dateStr: string) => {
+  if (!dateStr || typeof dateStr !== 'string') return new Date();
   const [year, month, day] = dateStr.split('-').map(Number);
   return new Date(year, month - 1, day);
 };

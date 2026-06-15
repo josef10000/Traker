@@ -104,15 +104,15 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     };
   }, []);
 
-  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member') => {
+  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member', forceProvision = false) => {
     setIsProvisioningSandbox(true);
     try {
       const sandboxOrgId = 'sandbox-test';
       const orgRef = doc(db, 'organizations', sandboxOrgId);
       const orgSnap = await getDoc(orgRef);
 
-      if (!orgSnap.exists()) {
-        showToast('Provisionando ambiente Sandbox fictício...', 'info');
+      if (!orgSnap.exists() || forceProvision) {
+        showToast(forceProvision ? 'Reiniciando ambiente Sandbox...' : 'Provisionando ambiente Sandbox fictício...', 'info');
         
         // 1. Criar organização sandbox-test
         await setDoc(orgRef, {
@@ -514,16 +514,21 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   };
 
   const stats = useMemo(() => {
-    const totalOrgs = organizations.length;
-    const activeOrgs = organizations.filter(o => o.status === 'active').length;
-    const totalUsers = users.length;
-    const planCounts = organizations.reduce((acc, curr) => {
+    const filteredOrgs = organizations.filter(o => o.id !== 'sandbox-test');
+    const filteredUsers = users.filter(u => u.organizationId !== 'sandbox-test');
+
+    const totalOrgs = filteredOrgs.length;
+    const activeOrgs = filteredOrgs.filter(o => o.status === 'active').length;
+    const totalUsers = filteredUsers.length;
+    const planCounts = filteredOrgs.reduce((acc, curr) => {
       acc[curr.plan] = (acc[curr.plan] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     return { totalOrgs, activeOrgs, totalUsers, planCounts };
   }, [organizations, users]);
+
+  const hasSandbox = useMemo(() => organizations.some(o => o.id === 'sandbox-test'), [organizations]);
 
   if (isLoading) {
     return (
@@ -607,42 +612,74 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
         {/* Ambiente de Teste Sandbox */}
         <section className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/10 space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex-1">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <UserCheck2 className="text-purple-400 animate-pulse" size={20} />
                 Ambiente de Teste Sandbox
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Simule diferentes cargos (Gerente, Supervisor, Operador) em uma empresa fictícia isolada de testes (`sandbox-test`).
+              <p className="text-xs text-slate-400 mt-1">
+                Simule cargos (Gerente, Supervisor, Operador) na empresa fictícia isolada de testes (`sandbox-test`). Os dados simulados não afetam as estatísticas master.
               </p>
+              {hasSandbox && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-md mt-2">
+                  <Check size={10} strokeWidth={3} /> Sandbox Inicializado no Firestore
+                </span>
+              )}
             </div>
             
-            <div className="flex flex-wrap gap-2 w-full md:w-auto">
-              <button
-                onClick={() => handleSimulateRole('manager')}
-                disabled={isProvisioningSandbox}
-                className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 font-bold hover:bg-purple-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
-              >
-                {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
-                Simular Gerente
-              </button>
-              <button
-                onClick={() => handleSimulateRole('supervisor')}
-                disabled={isProvisioningSandbox}
-                className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-bold hover:bg-indigo-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
-              >
-                {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
-                Simular Supervisor
-              </button>
-              <button
-                onClick={() => handleSimulateRole('member')}
-                disabled={isProvisioningSandbox}
-                className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 font-bold hover:bg-sky-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
-              >
-                {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
-                Simular Operador
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-stretch sm:items-center">
+              {hasSandbox ? (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleSimulateRole('manager', false)}
+                      disabled={isProvisioningSandbox}
+                      className="px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 font-bold hover:bg-purple-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      title="Entrar como Gerente (Modo Simulação)"
+                    >
+                      Entrar como Gerente
+                    </button>
+                    <button
+                      onClick={() => handleSimulateRole('supervisor', false)}
+                      disabled={isProvisioningSandbox}
+                      className="px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-bold hover:bg-indigo-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      title="Entrar como Supervisor (Modo Simulação)"
+                    >
+                      Entrar como Supervisor
+                    </button>
+                    <button
+                      onClick={() => handleSimulateRole('member', false)}
+                      disabled={isProvisioningSandbox}
+                      className="px-4 py-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 font-bold hover:bg-sky-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      title="Entrar como Operador (Modo Simulação)"
+                    >
+                      Entrar como Operador
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Isso apagará e recriará todos os dados (acordos, equipes, usuários) da empresa fictícia sandbox-test. Deseja continuar?")) {
+                        handleSimulateRole('manager', true);
+                      }
+                    }}
+                    disabled={isProvisioningSandbox}
+                    className="px-3 py-2.5 rounded-xl border border-rose-500/20 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 transition-all text-xs uppercase font-bold active:scale-95 disabled:opacity-50"
+                    title="Recriar Banco de Dados Fictício Sandbox"
+                  >
+                    Resetar Sandbox
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => handleSimulateRole('manager', true)}
+                  disabled={isProvisioningSandbox}
+                  className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-95"
+                >
+                  {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
+                  Inicializar Ambiente Sandbox
+                </button>
+              )}
             </div>
           </div>
         </section>
@@ -697,7 +734,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-sm">
-                  {organizations.map((org) => (
+                  {organizations.filter(org => org.id !== 'sandbox-test').map((org) => (
                     <tr key={org.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-8 py-5">
                         <div className="font-semibold text-slate-100">{org.name}</div>
