@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Users, UserPlus, ArrowRight, Loader2, Building } from 'lucide-react';
+import { Users, UserPlus, ArrowRight, Loader2, Building, Shield } from 'lucide-react';
 import { createTeam, joinTeam, createOrganization } from '../../lib/teams';
 import { User } from 'firebase/auth';
-import { UserProfile } from '../../types';
+import { UserProfile, UserRole } from '../../types';
+import { collection, query, where, getDocs, limit, doc, setDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 import { ToastType } from '../ui/Toast';
 
@@ -25,6 +27,49 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
   const [inviteToken, setInviteToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSuperAdmin, setHasSuperAdmin] = useState<boolean>(true);
+
+  useEffect(() => {
+    const checkSuperAdmin = async () => {
+      try {
+        const q = query(
+          collection(db, 'users'),
+          where('role', '==', 'super_admin'),
+          limit(1)
+        );
+        const snap = await getDocs(q);
+        setHasSuperAdmin(!snap.empty);
+      } catch (err) {
+        console.error('Erro ao verificar Super Admin:', err);
+        setHasSuperAdmin(true); // Segurança
+      }
+    };
+    if (!isAdditionalTeam) {
+      checkSuperAdmin();
+    }
+  }, [isAdditionalTeam]);
+
+  const handleSetupSuperAdmin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const userProfile: UserProfile = {
+        uid: user.uid,
+        email: user.email!,
+        displayName: user.email!.split('@')[0],
+        role: 'super_admin',
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(userRef, userProfile);
+      if (showToast) showToast('Acesso de Super Admin configurado com sucesso!', 'success');
+      onComplete();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +191,25 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
                 </div>
                 <ArrowRight size={20} className="text-slate-600 group-hover:text-emerald-400 transition-colors" />
               </button>
+
+              {!hasSuperAdmin && (
+                <button 
+                  onClick={handleSetupSuperAdmin}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-between p-6 bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/30 rounded-2xl transition-all group backdrop-blur-sm"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-500/20 text-purple-400 rounded-xl">
+                      <Shield size={24} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold text-white">Configurar Super Admin Master</p>
+                      <p className="text-xs text-slate-500">Nenhum administrador geral detectado. Configurar esta conta como admin master.</p>
+                    </div>
+                  </div>
+                  <ArrowRight size={20} className="text-slate-600 group-hover:text-purple-400 transition-colors" />
+                </button>
+              )}
             </div>
           )}
 
