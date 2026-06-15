@@ -6,13 +6,20 @@ Este é um dashboard avançado para gestão de acordos, desenvolvido com React, 
 
 ## 🚀 Novidades na Versão Atual
 
-- 🛡️ **Conformidade LGPD & Privacidade (Fase 1)**:
+- 🏢 **SaaS Multi-Tenant & Painel Super Admin Master (Fase 3)**:
+  - **Isolamento de Tenants**: Separação física e lógica de múltiplas empresas/organizações. Usuários comuns só enxergam dados (acordos, equipes, configurações, conciliações) de sua própria organização.
+  - **Hierarquia de Cargos (Roles) Expandida**: Controle rígido com 4 cargos: `super_admin` (acesso completo a tudo), `manager` (gerente da empresa, gerencia times e dados da org), `supervisor` (gestor de equipes), e `member` (operador).
+  - **Painel de Super Admin**: Interface de administração dedicada para cadastrar empresas, ativar/inativar organizações reativamente, validar planos (`free`, `starter`, `pro`, `enterprise`, `custom`), configurar limites de usuários/equipes e realizar exclusões em lote.
+  - **Ferramentas de Migração SaaS**: Script visual executável pelo Super Admin para portar com segurança dados legados de bancos antigos para a organização padrão 'rnv-gestao'.
+  - **Validação de Limites de Plano**: Controle rígido de usuários (`maxUsers`) e equipes (`maxTeams`) configurados pelo plano da organização ativa, impedindo adições que excedam os limites.
+- 🛡️ **Conformidade LGPD & Privacidade (Fase 1 & 2)**:
   - **Mascaramento de CPF**: Proteção de dados pessoais sensíveis com CPF mascarado por padrão em toda a aplicação (tabela, modais e histórico) no formato `***.***.*89-01`.
   - **Controle de Revelação**: Botão para revelar temporariamente (10s) o CPF completo com ícone de olho (👁️), reduzindo a exposição desnecessária de dados.
   - **Clipboard Seguro**: Exigência de confirmação do operador para copiar CPFs completos para a área de transferência.
   - **Exportação CSV Segura**: Relatórios exportados com CPFs mascarados por padrão. Opção de exportação de CPFs completos condicionada a aceite de termos de responsabilidade e log de auditoria.
   - **Termos de Uso e Política de Privacidade**: Exibição obrigatória de modal com termos de uso e aceite registrado no primeiro login do usuário.
   - **Direito ao Esquecimento (Art. 18)**: Funcionalidade para supervisores anonimizarem permanentemente dados de clientes (nome, CPF, telefone), mantendo apenas registros financeiros para fins estatísticos.
+  - **Tokens de Convite Seguros**: Geração de tokens de convite para equipes criptograficamente seguros, com expiração automática de 48 horas e invalidação por uso único (geração dinâmica de novo token após a entrada).
   - **Rastreabilidade e Logs de Auditoria**: Registro automático em banco de dados (`audit_logs`) das ações críticas de privacidade (aceite de termos, cópia e revelação de CPF, exportação completa e anonimização).
 - 📺 **Modo TV (Apresentação)**: Interface otimizada e em tela cheia para exibição de métricas em tempo real.
 - 🎯 **Gestão de Metas & Performance**: Acompanhamento de produtividade financeira e progresso em relação à meta mensal.

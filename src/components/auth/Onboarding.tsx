@@ -1,34 +1,61 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Users, UserPlus, ArrowRight, Loader2 } from 'lucide-react';
-import { createTeam, joinTeam } from '../../lib/teams';
+import { Users, UserPlus, ArrowRight, Loader2, Building } from 'lucide-react';
+import { createTeam, joinTeam, createOrganization } from '../../lib/teams';
 import { User } from 'firebase/auth';
+import { UserProfile } from '../../types';
 
 import { ToastType } from '../ui/Toast';
 
 interface OnboardingProps {
   user: User;
+  profile?: UserProfile | null;
   onComplete: () => void;
   isAdditionalTeam?: boolean;
   onBack?: () => void;
   showToast?: (message: string, type?: ToastType) => void;
 }
 
-export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToast }: OnboardingProps) => {
-  const [mode, setMode] = useState<'choice' | 'create' | 'join'>(isAdditionalTeam ? 'create' : 'choice');
+export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack, showToast }: OnboardingProps) => {
+  const [mode, setMode] = useState<'choice' | 'create-org' | 'create-team' | 'join'>(
+    isAdditionalTeam ? 'create-team' : 'choice'
+  );
+  const [orgName, setOrgName] = useState('');
   const [teamName, setTeamName] = useState('');
   const [inviteToken, setInviteToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teamName.trim()) return;
+    if (!orgName.trim()) return;
     
     setIsLoading(true);
     setError(null);
     try {
-      await createTeam(user.uid, user.email!, teamName);
+      await createOrganization(user.uid, user.email!, orgName);
+      if (showToast) showToast('Empresa criada com sucesso!', 'success');
+      onComplete();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamName.trim()) return;
+    if (!profile?.organizationId) {
+      setError("Organização não identificada.");
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      await createTeam(user.uid, user.email!, teamName, profile.organizationId);
+      if (showToast) showToast('Equipe criada com sucesso!', 'success');
       onComplete();
     } catch (err: any) {
       setError(err.message);
@@ -45,6 +72,7 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
     setError(null);
     try {
       await joinTeam(user.uid, user.email!, inviteToken);
+      if (showToast) showToast('Você entrou na equipe com sucesso!', 'success');
       onComplete();
     } catch (err: any) {
       setError(err.message);
@@ -71,7 +99,7 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
           <p className="mt-2 text-slate-400">
             {isAdditionalTeam 
               ? 'Dê um nome para sua nova equipe de gestão.' 
-              : 'Para começar, você precisa fazer parte de uma equipe.'}
+              : 'Para começar, crie sua organização SaaS ou entre em uma equipe existente.'}
           </p>
         </div>
 
@@ -88,16 +116,16 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
           {mode === 'choice' && (
             <div className="space-y-4">
               <button 
-                onClick={() => setMode('create')}
+                onClick={() => setMode('create-org')}
                 className="w-full flex items-center justify-between p-6 bg-white/5 hover:bg-sky-500/10 border border-white/10 hover:border-sky-500/30 rounded-2xl transition-all group backdrop-blur-sm"
               >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-sky-500/20 text-sky-400 rounded-xl">
-                    <Users size={24} />
+                    <Building size={24} />
                   </div>
                   <div className="text-left">
-                    <p className="font-bold text-white">Criar Nova Equipe</p>
-                    <p className="text-xs text-slate-500">Eu sou supervisor e quero gerenciar um time</p>
+                    <p className="font-bold text-white">Criar Nova Empresa</p>
+                    <p className="text-xs text-slate-500">Quero criar uma conta SaaS para gerenciar minha empresa</p>
                   </div>
                 </div>
                 <ArrowRight size={20} className="text-slate-600 group-hover:text-sky-400 transition-colors" />
@@ -113,7 +141,7 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-white">Entrar em uma Equipe</p>
-                    <p className="text-xs text-slate-500">Recebi um código de convite do meu supervisor</p>
+                    <p className="text-xs text-slate-500">Recebi um código de convite de um supervisor</p>
                   </div>
                 </div>
                 <ArrowRight size={20} className="text-slate-600 group-hover:text-emerald-400 transition-colors" />
@@ -121,8 +149,40 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
             </div>
           )}
 
-          {mode === 'create' && (
-            <form onSubmit={handleCreate} className="space-y-6">
+          {mode === 'create-org' && (
+            <form onSubmit={handleCreateOrg} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Nome da Empresa / Organização</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-sky-500/50 outline-none transition-all backdrop-blur-sm"
+                  placeholder="Ex: Minha Empresa Ltda"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setMode('choice')}
+                  className="flex-1 px-4 py-3 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-700 transition-all"
+                >
+                  Voltar
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-[2] bg-sky-500 text-white px-4 py-3 rounded-xl font-semibold hover:bg-sky-400 transition-all flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Criar Empresa'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {mode === 'create-team' && (
+            <form onSubmit={handleCreateTeam} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-2">Nome da Equipe</label>
                 <input 
@@ -135,13 +195,15 @@ export const Onboarding = ({ user, onComplete, isAdditionalTeam, onBack, showToa
                 />
               </div>
               <div className="flex gap-3">
-                <button 
-                  type="button"
-                  onClick={() => setMode('choice')}
-                  className="flex-1 px-4 py-3 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-700 transition-all"
-                >
-                  Voltar
-                </button>
+                {onBack && (
+                  <button 
+                    type="button"
+                    onClick={onBack}
+                    className="flex-1 px-4 py-3 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-700 transition-all"
+                  >
+                    Voltar
+                  </button>
+                )}
                 <button 
                   type="submit"
                   disabled={isLoading}

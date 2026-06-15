@@ -10,62 +10,75 @@ service cloud.firestore {
     function getUserTeamId() {
       return getProfile().teamId;
     }
+
+    function getUserOrganizationId() {
+      return getProfile().organizationId;
+    }
     
     function isSupervisor() {
       return getProfile().role == 'supervisor';
     }
+
+    function isManager() {
+      return getProfile().role == 'manager';
+    }
+
+    function isSuperAdmin() {
+      return getProfile().role == 'super_admin';
+    }
     
+    // Coleção de organizações (organizations)
+    match /organizations/{orgId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == orgId));
+    }
+
     // Coleção de usuários (users)
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.uid == userId || isSupervisor());
+      allow read: if request.auth != null && (isSuperAdmin() || getUserOrganizationId() == resource.data.organizationId);
+      allow write: if request.auth != null && (isSuperAdmin() || request.auth.uid == userId || (isManager() && getUserOrganizationId() == request.resource.data.organizationId));
     }
     
     // Coleção de times (teams)
     match /teams/{teamId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && isSupervisor();
+      allow read: if request.auth != null && (isSuperAdmin() || getUserOrganizationId() == resource.data.organizationId);
+      allow write: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == request.resource.data.organizationId) || (isSupervisor() && getUserOrganizationId() == request.resource.data.organizationId));
     }
     
     // Coleção de configurações (settings)
     match /settings/{teamId} {
-      allow read: if request.auth != null && getUserTeamId() == teamId;
-      allow write: if request.auth != null && isSupervisor() && getUserTeamId() == teamId;
+      allow read: if request.auth != null && (isSuperAdmin() || (getUserOrganizationId() == resource.data.organizationId && getUserTeamId() == teamId));
+      allow write: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == request.resource.data.organizationId) || (isSupervisor() && getUserOrganizationId() == request.resource.data.organizationId && getUserTeamId() == teamId));
     }
     
     // Coleção de acordos (agreements)
     match /agreements/{agreementId} {
       allow read: if request.auth != null 
-        && (resource == null || getUserTeamId() == resource.data.teamId);
+        && (isSuperAdmin() || (resource == null || getUserOrganizationId() == resource.data.organizationId));
         
       allow create: if request.auth != null 
-        && getUserTeamId() == request.resource.data.teamId;
+        && (isSuperAdmin() || getUserOrganizationId() == request.resource.data.organizationId);
         
-      allow update: if request.auth != null 
+      allow update, delete: if request.auth != null 
         && (
-             resource.data.operatorId == request.auth.uid 
-             || (isSupervisor() && getUserTeamId() == resource.data.teamId)
-           );
-           
-      allow delete: if request.auth != null 
-        && (
-             resource.data.operatorId == request.auth.uid 
-             || (isSupervisor() && getUserTeamId() == resource.data.teamId)
+             isSuperAdmin() 
+             || resource.data.operatorId == request.auth.uid 
+             || ((isSupervisor() || isManager()) && getUserOrganizationId() == resource.data.organizationId)
            );
     }
     
     // Coleção de conciliações (reconciliations)
     match /reconciliations/{reconId} {
       allow read: if request.auth != null 
-        && (resource == null || getUserTeamId() == resource.data.teamId);
+        && (isSuperAdmin() || (resource == null || getUserOrganizationId() == resource.data.organizationId));
       allow write: if request.auth != null 
-        && (request.resource == null || getUserTeamId() == request.resource.data.teamId);
+        && (isSuperAdmin() || ((isSupervisor() || isManager()) && getUserOrganizationId() == request.resource.data.organizationId));
     }
     
     // Coleção de logs de auditoria (audit_logs)
     match /audit_logs/{logId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && isSupervisor();
+      allow read: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == resource.data.organizationId));
       allow update, delete: if false; // Logs são imutáveis e perenes
     }
   }

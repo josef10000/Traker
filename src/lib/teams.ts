@@ -12,7 +12,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Team, UserProfile, UserRole } from '../types';
+import { Team, UserProfile, UserRole, Organization } from '../types';
 
 const generateSecureToken = (length: number): string => {
   const array = new Uint8Array(length);
@@ -34,7 +34,55 @@ const generateSecureToken = (length: number): string => {
   return result;
 };
 
-export const createTeam = async (uid: string, userEmail: string, teamName: string): Promise<string> => {
+export const createOrganization = async (uid: string, userEmail: string, orgName: string): Promise<string> => {
+  const orgId = generateSecureToken(9);
+  const now = new Date().toISOString();
+  
+  const orgData: Organization = {
+    id: orgId,
+    name: orgName,
+    status: 'active',
+    plan: 'free',
+    maxUsers: 5,
+    maxTeams: 1,
+    createdAt: now
+  };
+
+  await setDoc(doc(db, 'organizations', orgId), orgData);
+
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid,
+    email: userEmail,
+    displayName: userEmail.split('@')[0],
+    role: 'manager',
+    organizationId: orgId,
+    createdAt: now
+  }, { merge: true });
+
+  return orgId;
+};
+
+export const createTeam = async (uid: string, userEmail: string, teamName: string, organizationId: string): Promise<string> => {
+  // Obter organização e validar limites e status
+  const orgRef = doc(db, 'organizations', organizationId);
+  const orgSnap = await getDoc(orgRef);
+  if (!orgSnap.exists()) {
+    throw new Error('A organização não foi encontrada.');
+  }
+  const orgData = orgSnap.data() as Organization;
+  if (orgData.status === 'inactive') {
+    throw new Error('Esta empresa está suspensa. Não é possível criar novas equipes.');
+  }
+
+  // Contar equipes ativas na organização para validar o limite
+  const teamsRef = collection(db, 'teams');
+  const teamsCountQuery = query(teamsRef, where('organizationId', '==', organizationId));
+  const teamsCountSnap = await getDocs(teamsCountQuery);
+  if (teamsCountSnap.size >= orgData.maxTeams) {
+    throw new Error(`O limite de equipes do plano da empresa (${orgData.maxTeams}) foi atingido.`);
+  }
+
   const teamId = generateSecureToken(9);
   const inviteToken = generateSecureToken(12);
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // Expira em 48h
@@ -45,6 +93,7 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
     supervisorId: uid,
     inviteToken,
     inviteTokenExpiresAt: expiresAt,
+    organizationId,
     createdAt: new Date().toISOString()
   };
 
@@ -57,7 +106,8 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
     await updateDoc(userRef, {
       role: 'supervisor' as UserRole,
       managedTeams: arrayUnion(teamId),
-      teamId: userSnap.data().teamId || teamId
+      teamId: userSnap.data().teamId || teamId,
+      organizationId
     });
   } else {
     const userProfile: UserProfile = {
@@ -66,6 +116,7 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
       displayName: userEmail.split('@')[0],
       role: 'supervisor',
       teamId,
+      organizationId,
       managedTeams: [teamId],
       createdAt: new Date().toISOString()
     };
@@ -92,12 +143,32 @@ export const joinTeam = async (uid: string, userEmail: string, inviteToken: stri
     throw new Error('O token de convite expirou. Solicite um novo link ao supervisor.');
   }
 
+  // Obter organização e validar limites e status
+  const orgRef = doc(db, 'organizations', teamData.organizationId);
+  const orgSnap = await getDoc(orgRef);
+  if (!orgSnap.exists()) {
+    throw new Error('A organização vinculada a este time não foi encontrada.');
+  }
+  const orgData = orgSnap.data() as Organization;
+  if (orgData.status === 'inactive') {
+    throw new Error('Esta empresa está suspensa. Novos membros não podem ingressar.');
+  }
+
+  // Contar membros ativos na organização para validar o limite do plano
+  const usersRef = collection(db, 'users');
+  const userCountQuery = query(usersRef, where('organizationId', '==', teamData.organizationId));
+  const userCountSnap = await getDocs(userCountQuery);
+  if (userCountSnap.size >= orgData.maxUsers) {
+    throw new Error(`O limite de usuários do plano da empresa (${orgData.maxUsers}) foi atingido.`);
+  }
+
   const userProfile: UserProfile = {
     uid,
     email: userEmail,
     displayName: userEmail.split('@')[0],
     role: 'member',
     teamId: teamData.id,
+    organizationId: teamData.organizationId,
     createdAt: new Date().toISOString()
   };
 

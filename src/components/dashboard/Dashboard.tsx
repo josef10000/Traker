@@ -211,13 +211,35 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   }, [selectedTeamId]);
   // Load Managed Teams Info
   useEffect(() => {
-    if (!profile.managedTeams || profile.managedTeams.length === 0) return;
     const loadTeamsData = async () => {
-      const teams = await Promise.all(
-        profile.managedTeams.map(id => getTeamData(id))
-      );
-      const validTeams = teams.filter((t): t is Team => t !== null);
+      let validTeams: Team[] = [];
+      
+      try {
+        if (profile.role === 'manager' && profile.organizationId) {
+          // Manager carrega todas as equipes da organização
+          const teamsRef = collection(db, 'teams');
+          const q = query(teamsRef, where('organizationId', '==', profile.organizationId));
+          const snap = await getDocs(q);
+          validTeams = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+        } else if (profile.managedTeams && profile.managedTeams.length > 0) {
+          // Supervisor carrega as equipes gerenciadas
+          const teams = await Promise.all(
+            profile.managedTeams.map(id => getTeamData(id))
+          );
+          validTeams = teams.filter((t): t is Team => t !== null);
+        } else if (profile.teamId) {
+          // Member carrega apenas a própria equipe
+          const team = await getTeamData(profile.teamId);
+          if (team) {
+            validTeams = [team];
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao carregar equipes:", err);
+      }
+      
       setManagedTeamsData(validTeams);
+      
       // Atualiza metas baseado na seleção
       if (selectedTeamId === 'all') {
         const totalMonthly = validTeams.reduce((acc, t) => acc + (t.monthlyGoal || 0), 0);
@@ -235,17 +257,21 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       }
     };
     loadTeamsData();
-  }, [profile.managedTeams, selectedTeamId]);
+  }, [profile.managedTeams, profile.role, profile.organizationId, profile.teamId, selectedTeamId]);
+
   // Load Data based on selected team(s)
   useEffect(() => {
     const loadData = async () => {
       const teamsToWatch = selectedTeamId === 'all' 
-        ? (profile.managedTeams || []) 
+        ? managedTeamsData.map(t => t.id)
         : [selectedTeamId];
+        
       if (teamsToWatch.length === 0) {
         setIsLoading(false);
+        setAgreements([]);
         return;
       }
+      
       // Load Settings (if single team)
       let unsubscribeSettings = () => {};
       if (selectedTeamId !== 'all') {
@@ -258,9 +284,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           }
         });
       }
+      
       // Firestore Subscription for Agreements
       const q = query(
         collection(db, 'agreements'), 
+        where('organizationId', '==', profile.organizationId || ''),
         where('teamId', 'in', teamsToWatch),
         orderBy('createdAt', 'desc')
       );
@@ -269,7 +297,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
         setAgreements(data);
         setIsLoading(false);
+      }, (error) => {
+        console.error("Erro na escuta dos acordos:", error);
+        setIsLoading(false);
       });
+      
       return () => {
         unsubscribeSettings();
         unsubscribeAgreements();
@@ -277,7 +309,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     };
     
     loadData();
-  }, [selectedTeamId, profile.managedTeams]);
+  }, [selectedTeamId, managedTeamsData, profile.organizationId]);
   // Handle Tour
   useEffect(() => {
     if (profile && !profile.hasSeenTour) {
@@ -352,7 +384,11 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     try {
       setIsLoading(true);
       const agreementsRef = collection(db, 'agreements');
-      const q = query(agreementsRef, where('clientCpf', '==', cpf));
+      const q = query(
+        agreementsRef, 
+        where('organizationId', '==', profile.organizationId || ''),
+        where('clientCpf', '==', cpf)
+      );
       const querySnapshot = await getDocs(q);
       
       const batch = writeBatch(db);
@@ -825,6 +861,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     const reconData: any = {
       userId: profile.uid,
       teamId: targetTeamId,
+      organizationId: profile.organizationId,
       month: selectedMonth,
       year: selectedYear,
       updatedAt: new Date().toISOString()
@@ -935,6 +972,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         category: AgreementCategory.FIXA,
         operatorId: profile.uid,
         teamId: targetTeamId,
+        organizationId: profile.organizationId,
         createdAt: new Date().toISOString(),
         paidAt: new Date().toISOString(),
         isAdjustment: true // Flag interna
@@ -1035,6 +1073,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     
     const q = query(
       collection(db, 'agreements'), 
+      where('organizationId', '==', profile.organizationId || ''),
       where('clientCpf', '==', cpf),
       orderBy('createdAt', 'desc')
     );
@@ -1053,6 +1092,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       await setDoc(doc(db, 'settings', targetTeamId), { 
         monthlyGoal: newGoal,
         effectivenessGoal: newEffGoal,
+        organizationId: profile.organizationId,
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
@@ -1096,16 +1136,26 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   };
 
   const handleAddOrEditAgreement = async (data: any) => {
-    if (!profile.teamId) return;
+    const targetTeamId = profile.teamId || (selectedTeamId !== 'all' ? selectedTeamId : null);
+    if (!targetTeamId) {
+      showToast('Nenhuma equipe selecionada para registrar o acordo.', 'error');
+      return;
+    }
+    if (!profile.organizationId) {
+      showToast('Organização não identificada.', 'error');
+      return;
+    }
     
     try {
       if (editingAgreement) {
         const agreementRef = doc(db, 'agreements', editingAgreement.id);
         await updateDoc(agreementRef, {
           ...data,
-          status: data.status || editingAgreement.status
+          status: data.status || editingAgreement.status,
+          organizationId: profile.organizationId
         });
         showToast('Acordo atualizado com sucesso!', 'success');
+      } else {
         const id = doc(collection(db, 'agreements')).id;
         const now = new Date().toISOString();
         const agreementData = {
@@ -1113,7 +1163,8 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
           ...data,
           status: data.status || AgreementStatus.WAITING,
           operatorId: profile.uid,
-          teamId: profile.teamId,
+          teamId: targetTeamId,
+          organizationId: profile.organizationId,
           createdAt: now,
           paidAt: data.status === AgreementStatus.PAID ? now : null
         };

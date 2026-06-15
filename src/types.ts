@@ -26,7 +26,19 @@ export enum AgreementCategory {
   VARIAVEL = 'variavel'
 }
 
-export type UserRole = 'supervisor' | 'member';
+export type UserRole = 'super_admin' | 'manager' | 'supervisor' | 'member';
+
+export interface Organization {
+  id: string;
+  name: string;
+  cnpj?: string;
+  status: 'active' | 'inactive';
+  plan: 'free' | 'starter' | 'pro' | 'enterprise' | 'custom';
+  planExpiresAt?: string;
+  maxUsers: number;
+  maxTeams: number;
+  createdAt: string;
+}
 
 export interface UserProfile {
   uid: string;
@@ -34,6 +46,7 @@ export interface UserProfile {
   displayName: string;
   role: UserRole;
   teamId?: string;
+  organizationId?: string; // Tenant ID no SaaS
   managedTeams?: string[]; // Para supervisores que gerenciam múltiplos times
   jobTitle?: string;
   theme?: 'dark' | 'sky' | 'purple';
@@ -51,6 +64,7 @@ export interface Team {
   supervisorId: string;
   inviteToken: string;
   inviteTokenExpiresAt?: string; // Expiração do convite (LGPD/Segurança)
+  organizationId: string;        // Vínculo com a empresa
   monthlyGoal?: number;
   effectivenessGoal?: number;
   createdAt: string;
@@ -70,6 +84,7 @@ export interface Agreement {
 
   operatorId: string; // Quem registrou
   teamId: string;     // A qual equipe pertence
+  organizationId: string; // Vínculo com a empresa
   createdAt: string;
   paidAt?: string;
   lastCheckedAt?: string;
@@ -119,6 +134,7 @@ export interface Reconciliation {
   id: string;
   userId: string;
   teamId: string;
+  organizationId: string; // Vínculo com a empresa
   month: number;
   year: number;
   officialValue: number;

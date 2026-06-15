@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from './lib/firebase';
+import { Loader2, ShieldAlert } from 'lucide-react';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { auth, db } from './lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { LoginPage } from './components/auth/LoginPage';
 import { Dashboard } from './components/dashboard/Dashboard';
+import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { Onboarding } from './components/auth/Onboarding';
 import { ProfileSettings } from './components/profile/ProfileSettings';
 import { getUserProfile } from './lib/teams';
@@ -16,6 +18,7 @@ import { DynamicBackground } from './components/ui/DynamicBackground';
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'dashboard' | 'profile' | 'create-team'>('dashboard');
   
@@ -32,12 +35,25 @@ export default function App() {
         try {
           const userProfile = await getUserProfile(u.uid);
           setProfile(userProfile);
+          
+          if (userProfile && userProfile.organizationId && userProfile.role !== 'super_admin') {
+            const orgSnap = await getDoc(doc(db, 'organizations', userProfile.organizationId));
+            if (orgSnap.exists()) {
+              setIsOrgActive(orgSnap.data().status === 'active');
+            } else {
+              setIsOrgActive(false);
+            }
+          } else {
+            setIsOrgActive(true);
+          }
         } catch (error) {
           console.error("Erro ao buscar perfil:", error);
           setProfile(null);
+          setIsOrgActive(true);
         }
       } else {
         setProfile(null);
+        setIsOrgActive(true);
       }
       setLoading(false);
     });
@@ -54,8 +70,23 @@ export default function App() {
 
   const refreshProfile = async () => {
     if (user) {
-      const userProfile = await getUserProfile(user.uid);
-      setProfile(userProfile);
+      try {
+        const userProfile = await getUserProfile(user.uid);
+        setProfile(userProfile);
+        
+        if (userProfile && userProfile.organizationId && userProfile.role !== 'super_admin') {
+          const orgSnap = await getDoc(doc(db, 'organizations', userProfile.organizationId));
+          if (orgSnap.exists()) {
+            setIsOrgActive(orgSnap.data().status === 'active');
+          } else {
+            setIsOrgActive(false);
+          }
+        } else {
+          setIsOrgActive(true);
+        }
+      } catch (error) {
+        console.error("Erro ao atualizar perfil:", error);
+      }
       setView('dashboard');
     }
   };
@@ -85,10 +116,35 @@ export default function App() {
     );
   }
 
-  const hasNoTeam = !profile?.teamId;
-  const isSupervisorWithManagedTeams = profile?.role === 'supervisor' && (profile?.managedTeams?.length || 0) > 0;
+  if (!isOrgActive) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-center">
+        <div className="glass-card max-w-md p-8 rounded-3xl border border-white/5 bg-slate-900/20 space-y-6">
+          <ShieldAlert className="text-rose-500 mx-auto animate-pulse" size={48} />
+          <h2 className="text-2xl font-bold text-white">Acesso Suspenso</h2>
+          <p className="text-slate-400 text-sm leading-relaxed">
+            O acesso para a organização vinculada à sua conta foi temporariamente suspenso.
+          </p>
+          <p className="text-xs text-slate-500 font-medium">
+            Entre em contato com o suporte ou o administrador do sistema para mais informações.
+          </p>
+          <button 
+            onClick={async () => {
+              await signOut(auth);
+              setUser(null);
+              setProfile(null);
+              setIsOrgActive(true);
+            }} 
+            className="w-full py-4 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 transition-all active:scale-[0.98]"
+          >
+            Voltar ao Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  if (!profile || (hasNoTeam && !isSupervisorWithManagedTeams)) {
+  if (profile?.role === 'super_admin') {
     return (
       <>
         <AnimatePresence>
@@ -100,7 +156,32 @@ export default function App() {
             />
           )}
         </AnimatePresence>
-        <Onboarding user={user} onComplete={refreshProfile} showToast={showToast} />
+        <AdminDashboard 
+          profile={profile}
+          onLogoutSuccess={refreshProfile}
+          showToast={showToast}
+        />
+      </>
+    );
+  }
+
+  const hasNoTeam = !profile?.teamId;
+  const isSupervisorWithManagedTeams = profile?.role === 'supervisor' && (profile?.managedTeams?.length || 0) > 0;
+  const isManager = profile?.role === 'manager';
+
+  if (!profile || (!isManager && hasNoTeam && !isSupervisorWithManagedTeams)) {
+    return (
+      <>
+        <AnimatePresence>
+          {toast && (
+            <Toast 
+              message={toast.message} 
+              type={toast.type} 
+              onClose={() => setToast(null)} 
+            />
+          )}
+        </AnimatePresence>
+        <Onboarding user={user} profile={profile} onComplete={refreshProfile} showToast={showToast} />
       </>
     );
   }
@@ -129,6 +210,7 @@ export default function App() {
       ) : view === 'create-team' ? (
         <Onboarding 
           user={user} 
+          profile={profile}
           onComplete={refreshProfile} 
           isAdditionalTeam={true}
           onBack={() => setView('profile')}
