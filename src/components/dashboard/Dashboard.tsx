@@ -84,7 +84,8 @@ import {
   DashboardStats, 
   UserProfile, 
   Team,
-  Reconciliation
+  Reconciliation,
+  CollaborationNote
 } from '../../types';
 import { getTeamData, getTeamMembers, removeTeamMember } from '../../lib/teams';
 import { formatCurrency, maskCPF } from '../../utils/masks';
@@ -153,6 +154,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   const [webhookUrl, setWebhookUrl] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
   const [organizationCnpj, setOrganizationCnpj] = useState<string>('');
+  const [currentTeamMembers, setCurrentTeamMembers] = useState<UserProfile[]>([]);
 
   // Estados para Gestão de Colaboradores (Fase 11)
   const [dashboardTab, setDashboardTab] = useState<'financial' | 'people'>('financial');
@@ -274,7 +276,6 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
   }, [profile.organizationId]);
   
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>('all');
-  const [currentTeamMembers, setCurrentTeamMembers] = useState<UserProfile[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
