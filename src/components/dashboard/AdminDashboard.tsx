@@ -36,7 +36,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
-import { Organization, UserProfile } from '../../types';
+import { Organization, UserProfile, Team } from '../../types';
 import { logAudit } from '../../lib/audit';
 
 import { ToastType } from '../ui/Toast';
@@ -50,6 +50,7 @@ interface AdminDashboardProps {
 export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDashboardProps) => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [deletingProgress, setDeletingProgress] = useState('');
@@ -79,15 +80,25 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDas
     const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const data = snapshot.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile));
       setUsers(data);
-      setIsLoading(false);
     }, (error) => {
       console.error(error);
       showToast('Erro ao carregar usuários.', 'error');
     });
 
+    // Carregar todos os times do sistema
+    const unsubscribeTeams = onSnapshot(collection(db, 'teams'), (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Team));
+      setTeams(data);
+      setIsLoading(false);
+    }, (error) => {
+      console.error(error);
+      showToast('Erro ao carregar equipes.', 'error');
+    });
+
     return () => {
       unsubscribeOrgs();
       unsubscribeUsers();
+      unsubscribeTeams();
     };
   }, []);
 
@@ -152,59 +163,49 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDas
   };
 
   const handleDeleteOrganization = async (orgId: string, orgName: string) => {
-    if (!window.confirm(`ATENÇÃO MASTER: Você está prestes a excluir permanentemente a empresa "${orgName}".\n\nIsso apagará TODOS os acordos, equipes, usuários e logs vinculados a este tenant.\n\nEsta ação é irreversível. Deseja continuar?`)) {
+    if (!window.confirm(`ATENÇÃO MASTER: Você está prestes a excluir permanentemente a empresa "${orgName}".\n\nIsso apagará TODOS os acordos, equipes, usuários, configurações, conciliações e logs de auditoria vinculados a este tenant.\n\nEsta ação é irreversível. Deseja continuar?`)) {
       return;
     }
     
     setIsDeleting(orgId);
     try {
-      const batchLimit = 500;
-      
+      const deleteInBatches = async (collectionName: string, progressMessage: string) => {
+        setDeletingProgress(progressMessage);
+        const ref = collection(db, collectionName);
+        const q = query(ref, where('organizationId', '==', orgId));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) return;
+        
+        const docs = snap.docs;
+        const chunkSize = 400;
+        for (let i = 0; i < docs.length; i += chunkSize) {
+          const chunk = docs.slice(i, i + chunkSize);
+          const batch = writeBatch(db);
+          chunk.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+      };
+
       // 1. Apagar acordos (agreements)
-      setDeletingProgress('Apagando acordos da empresa...');
-      const agreementsRef = collection(db, 'agreements');
-      const qAgreements = query(agreementsRef, where('organizationId', '==', orgId));
-      const agreementsSnap = await getDocs(qAgreements);
-      if (!agreementsSnap.empty) {
-        const batch = writeBatch(db);
-        agreementsSnap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-      }
+      await deleteInBatches('agreements', 'Apagando acordos da empresa...');
 
       // 2. Apagar times (teams)
-      setDeletingProgress('Apagando equipes...');
-      const teamsRef = collection(db, 'teams');
-      const qTeams = query(teamsRef, where('organizationId', '==', orgId));
-      const teamsSnap = await getDocs(qTeams);
-      if (!teamsSnap.empty) {
-        const batch = writeBatch(db);
-        teamsSnap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-      }
+      await deleteInBatches('teams', 'Apagando equipes...');
 
       // 3. Apagar conciliações (reconciliations)
-      setDeletingProgress('Apagando conciliações...');
-      const reconRef = collection(db, 'reconciliations');
-      const qRecon = query(reconRef, where('organizationId', '==', orgId));
-      const reconSnap = await getDocs(qRecon);
-      if (!reconSnap.empty) {
-        const batch = writeBatch(db);
-        reconSnap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-      }
+      await deleteInBatches('reconciliations', 'Apagando conciliações...');
 
-      // 4. Desvincular / Apagar perfis de usuários
-      setDeletingProgress('Apagando perfis de usuários...');
-      const usersRef = collection(db, 'users');
-      const qUsers = query(usersRef, where('organizationId', '==', orgId));
-      const usersSnap = await getDocs(qUsers);
-      if (!usersSnap.empty) {
-        const batch = writeBatch(db);
-        usersSnap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-      }
+      // 4. Apagar configurações (settings)
+      await deleteInBatches('settings', 'Apagando configurações...');
 
-      // 5. Apagar a organização
+      // 5. Apagar logs de auditoria (audit_logs)
+      await deleteInBatches('audit_logs', 'Apagando logs de auditoria...');
+
+      // 6. Apagar perfis de usuários
+      await deleteInBatches('users', 'Apagando perfis de usuários...');
+
+      // 7. Apagar a organização
       setDeletingProgress('Finalizando exclusão da empresa...');
       await deleteDoc(doc(db, 'organizations', orgId));
 
@@ -507,7 +508,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDas
                     <th className="px-6 py-4">Plano</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Usuários Limite</th>
-                    <th className="px-6 py-4">Times Limite</th>
+                    <th className="px-6 py-4">Equipes Limite</th>
                     <th className="px-6 py-4">Expiração</th>
                     <th className="px-8 py-4 text-right">Ações</th>
                   </tr>
@@ -542,7 +543,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast }: AdminDas
                         {users.filter(u => u.organizationId === org.id).length} / {org.maxUsers || 5}
                       </td>
                       <td className="px-6 py-5 font-bold text-slate-300">
-                        {org.maxTeams || 1}
+                        {teams.filter(t => t.organizationId === org.id).length} / {org.maxTeams || 1}
                       </td>
                       <td className="px-6 py-5 font-mono text-xs text-slate-400">
                         {org.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString('pt-BR') : 'Sem expiração'}
