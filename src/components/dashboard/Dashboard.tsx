@@ -327,7 +327,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       await updateDoc(doc(db, 'users', profile.uid), {
         acceptedTermsAt: now
       });
-      await logAudit('ACCEPT_TERMS', {}, profile.name);
+      await logAudit('ACCEPT_TERMS', {}, profile.displayName);
       setIsTermsModalOpen(false);
       showToast('Termos de Uso aceitos com sucesso!', 'success');
     } catch (error) {
@@ -341,7 +341,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
       setRevealedCpfs(prev => ({ ...prev, [agreementId]: false }));
     } else {
       setRevealedCpfs(prev => ({ ...prev, [agreementId]: true }));
-      logAudit('REVEAL_CPF', { agreementId, cpf, context: 'AgreementsTable' }, profile.name);
+      logAudit('REVEAL_CPF', { agreementId, cpf, context: 'AgreementsTable' }, profile.displayName);
       setTimeout(() => {
         setRevealedCpfs(prev => ({ ...prev, [agreementId]: false }));
       }, 10000);
@@ -371,7 +371,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         setSelectedClientCpf(null);
       }
 
-      await logAudit('ANONIMIZE_CLIENT', { count: querySnapshot.size }, profile.name);
+      await logAudit('ANONIMIZE_CLIENT', { count: querySnapshot.size }, profile.displayName);
       showToast(`${querySnapshot.size} acordos anonimizados com sucesso.`, 'success');
       setIsLoading(false);
     } catch (error) {
@@ -1171,7 +1171,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
     await logAudit(
       complete ? 'EXPORT_CSV_COMPLETE' : 'EXPORT_CSV_MASKED', 
       { count: filteredAgreements.length }, 
-      profile.name
+      profile.displayName
     );
     showToast('Exportação concluída!', 'success');
   };
@@ -2260,7 +2260,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
                                     } else {
                                       if (window.confirm('Você tem certeza que deseja copiar o CPF completo? Essa ação envolve acesso a dados pessoais sob a LGPD.')) {
                                         navigator.clipboard.writeText(agreement.clientCpf.replace(/\D/g, ''));
-                                        logAudit('REVEAL_CPF', { agreementId: agreement.id, cpf: agreement.clientCpf, context: 'CopyToClipboard' }, profile.name);
+                                        logAudit('REVEAL_CPF', { agreementId: agreement.id, cpf: agreement.clientCpf, context: 'CopyToClipboard' }, profile.displayName);
                                         showToast('CPF copiado!', 'success');
                                       }
                                     }
@@ -2471,7 +2471,7 @@ export const Dashboard = ({ user, profile, onSettingsClick, showToast }: Dashboa
         clientCpf={selectedClientCpf}
         history={clientHistory}
         isLoading={isLoadingHistory}
-        userName={profile.name}
+        userName={profile.displayName}
         isSupervisor={profile.role === 'supervisor'}
         onAnonimize={handleAnonimizeClient}
       />
