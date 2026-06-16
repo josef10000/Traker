@@ -3,7 +3,6 @@ import {
   Building2, 
   Users, 
   Layers, 
-  ShieldAlert, 
   LogOut, 
   UserCheck, 
   Globe, 
@@ -470,8 +469,12 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       <header className="glass-card sticky top-0 z-30 px-6 py-4 bg-slate-900/40 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-tr from-sky-500/20 to-sky-400/10 rounded-2xl border border-sky-500/30">
-              <ShieldAlert className="text-sky-400" size={24} />
+            <div className="p-1.5 bg-white/5 backdrop-blur rounded-2xl border border-white/10">
+              <img 
+                src="https://i.imgur.com/JPJTsAQ.png" 
+                alt="Tracker Logo" 
+                className="w-8 h-8 drop-shadow-md object-contain" 
+              />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white leading-none">Painel SaaS Master</h1>

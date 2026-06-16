@@ -93,6 +93,7 @@ export interface Agreement {
   paidAt?: string;
   lastCheckedAt?: string;
   isAdjustment?: boolean;
+  notes?: string;
 }
 
 export interface DashboardStats {

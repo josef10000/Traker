@@ -60,7 +60,7 @@ export const AgreementModal = ({
       type: formData.get('type') as AgreementType,
       category: formData.get('category') as AgreementCategory,
       status: formData.get('initialStatus') as AgreementStatus,
-
+      notes: formData.get('notes') as string,
     };
 
     onSubmit(agreementData);
@@ -80,7 +80,7 @@ export const AgreementModal = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative glass-card w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative glass-card w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0">
           <div>
@@ -274,8 +274,20 @@ export const AgreementModal = ({
             </div>
 
           </div>
-          
-          <div className="p-8 pt-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex gap-4 shrink-0">
+
+          <div className="space-y-1.5 mt-4">
+            <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Observações do Acordo / Negociação</label>
+            <textarea 
+              name="notes"
+              rows={4}
+              defaultValue={editingAgreement?.notes}
+              placeholder="Ex: Cliente informou que pagará após as 14h; alegou atraso no salário..." 
+              className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white backdrop-blur-sm resize-none text-xs"
+            />
+          </div>
+        </div>
+        
+        <div className="p-8 pt-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex gap-4 shrink-0">
             <button 
               type="button"
               onClick={onClose}

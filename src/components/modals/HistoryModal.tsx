@@ -147,6 +147,12 @@ export const HistoryModal = ({
                       </div>
                     )}
                   </div>
+                  {item.notes && (
+                    <div className="mt-3 p-3 bg-white/5 rounded-xl border border-white/5 text-xs text-slate-300">
+                      <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider mb-1">Observação do Atendimento:</p>
+                      <p className="italic font-medium">"{item.notes}"</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

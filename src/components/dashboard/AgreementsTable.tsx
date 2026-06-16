@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { 
   Copy, Eye, EyeOff, History, Sun, Moon, Check, Zap, 
-  AlertTriangle, CheckCircle2, AlertCircle, Clock, Edit3, Trash2, Search, Loader2 
+  AlertTriangle, CheckCircle2, AlertCircle, Clock, Edit3, Trash2, Search, Loader2, MessageSquare
 } from 'lucide-react';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
@@ -110,8 +110,15 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                   >
                     <td className="px-6 py-5">
                       <div className="flex flex-col text-left">
-                        <span className={`font-semibold text-slate-100 ${isBroken ? 'text-slate-500' : ''}`}>
+                        <span className={`font-semibold text-slate-100 flex items-center gap-1.5 ${isBroken ? 'text-slate-500' : ''}`}>
                           {agreement.clientName}
+                          {agreement.notes && (
+                            <MessageSquare 
+                              size={12} 
+                              className="text-sky-400 cursor-help shrink-0" 
+                              title={agreement.notes}
+                            />
+                          )}
                         </span>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="text-xs text-slate-400 font-mono">
