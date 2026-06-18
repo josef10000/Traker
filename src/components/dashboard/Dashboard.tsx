@@ -89,7 +89,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   // Abas do Dashboard
-  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa'>('financial');
+  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi'>('financial');
   
   // Visualização e Seleção de Equipes
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
@@ -142,6 +142,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [qaEvaluations, setQaEvaluations] = useState<QaEvaluation[]>([]);
   const [isCollisionModalOpen, setIsCollisionModalOpen] = useState(false);
   const [collisionData, setCollisionData] = useState<any>(null);
+
+  // Seleção reativa de aba padrão para monitores
+  useEffect(() => {
+    if (profile?.role === 'monitor') {
+      setDashboardTab('qa');
+    }
+  }, [profile?.role]);
 
   // 1. CARREGAMENTO DOS DADOS DE EQUIPES E MEMBROS VIA CUSTOM HOOK
   const {
@@ -1237,17 +1244,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 
                 return (
                   <div className="flex flex-wrap bg-slate-950 p-1 rounded-2xl border border-white/5 gap-1">
-                    <button
-                      onClick={() => setDashboardTab('financial')}
-                      className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                        dashboardTab === 'financial' 
-                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Painel Financeiro
-                    </button>
-                    {isSuperUser && (
+                    {profile.role !== 'monitor' && (
+                      <button
+                        onClick={() => setDashboardTab('financial')}
+                        className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                          dashboardTab === 'financial' 
+                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Painel Financeiro
+                      </button>
+                    )}
+                    {isSuperUser && profile.role !== 'monitor' && (
                       <button
                         onClick={() => setDashboardTab('people')}
                         className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
@@ -1259,16 +1268,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         Gestão de Equipe
                       </button>
                     )}
-                    <button
-                      onClick={() => setDashboardTab('recovery')}
-                      className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                        dashboardTab === 'recovery' 
-                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Balcão de Recuperação
-                    </button>
+                    {profile.role !== 'monitor' && (
+                      <button
+                        onClick={() => setDashboardTab('recovery')}
+                        className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                          dashboardTab === 'recovery' 
+                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Balcão de Recuperação
+                      </button>
+                    )}
                     <button
                       onClick={() => setDashboardTab('qa')}
                       className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
@@ -1278,6 +1289,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       }`}
                     >
                       Qualidade (QA)
+                    </button>
+                    <button
+                      onClick={() => setDashboardTab('bi')}
+                      className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        dashboardTab === 'bi' 
+                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      BI & Analytics
                     </button>
                   </div>
                 );
@@ -1364,24 +1385,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 localHiddenCards={localHiddenCards}
                 formatCurrency={formatCurrency}
                 operatorQaScore={operatorQaScore}
-              />
-
-              <AdvancedInsights 
-                stats={stats}
-                monthlyGoal={monthlyGoal}
-                effectivenessGoal={effectivenessGoal}
-                workingDays={workingDays}
-                dailyGoal={dailyGoal}
-                viewMode={viewMode}
-                selectedTeamId={selectedTeamId}
-                currentTeamMembers={currentTeamMembers}
-                monthAgreements={monthAgreements}
-                profile={profile}
-                reconciliation={reconciliation}
-                setIsGoalModalOpen={setIsGoalModalOpen}
-                formatCurrency={formatCurrency}
-                getEffectivenessColor={getEffectivenessColor}
-                qaScores={qaScores}
               />
 
               {/* Tabela de Liderança de Equipes se estiver no modo Macro */}
@@ -1533,7 +1536,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             />
           )}
 
-          {/* CONTEÚDO DA ABA DE QUALIDADE QA & PDIs (Fase 4) */}
+          {/* CONTEÚDO DA ABA DE GESTÃO DE QUALIDADE (QA) */}
           {dashboardTab === 'qa' && (
             <QaDashboard
               profile={profile}
@@ -1541,6 +1544,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
               managedTeamsData={managedTeamsData}
               showToast={showToast}
             />
+          )}
+
+          {/* CONTEÚDO DA ABA DE BI & ANALYTICS (Fase 5 - Aba Separada) */}
+          {dashboardTab === 'bi' && (
+            <div className="glass-card p-6 rounded-[2rem] border border-white/5 bg-slate-900/10 space-y-6">
+              <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-white tracking-tight">BI & Analytics Avançado</h2>
+                  <p className="text-xs text-slate-400 mt-1">Estatísticas, Sazonalidades e Projeções de Cobrança</p>
+                </div>
+              </div>
+              <AdvancedInsights 
+                stats={stats}
+                monthlyGoal={monthlyGoal}
+                effectivenessGoal={effectivenessGoal}
+                workingDays={workingDays}
+                dailyGoal={dailyGoal}
+                viewMode={viewMode}
+                selectedTeamId={selectedTeamId}
+                currentTeamMembers={currentTeamMembers}
+                monthAgreements={monthAgreements}
+                profile={profile}
+                reconciliation={reconciliation}
+                setIsGoalModalOpen={setIsGoalModalOpen}
+                formatCurrency={formatCurrency}
+                getEffectivenessColor={getEffectivenessColor}
+                qaScores={qaScores}
+              />
+            </div>
           )}
         </main>
       </div>
