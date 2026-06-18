@@ -44,7 +44,6 @@ import { Organization, UserProfile, Team } from '../../types';
 import { logAudit } from '../../lib/audit';
 
 import { ToastType } from '../ui/Toast';
-import { Logo } from '../ui/Logo';
 
 interface AdminDashboardProps {
   profile: UserProfile;
@@ -484,7 +483,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-white/5 backdrop-blur rounded-2xl border border-white/10">
-              <Logo className="w-8 h-8 drop-shadow-md" />
+              <img 
+                src="https://i.imgur.com/OROXMkG.png" 
+                alt="Tracker Logo" 
+                className="w-8 h-8 drop-shadow-md object-contain" 
+              />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white leading-none">Painel SaaS Master</h1>

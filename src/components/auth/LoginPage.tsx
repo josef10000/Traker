@@ -11,7 +11,6 @@ import {
 import { auth } from '../../lib/firebase';
 
 import { ToastType } from '../ui/Toast';
-import { Logo } from '../ui/Logo';
 
 interface LoginPageProps {
   onAuthSuccess: () => void;
@@ -123,7 +122,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
           <div className="relative group">
             <div className="absolute -inset-4 bg-sky-500/20 rounded-full blur-2xl group-hover:bg-sky-500/30 transition-all duration-500"></div>
             <div className="relative">
-              <Logo className="w-20 h-20 drop-shadow-2xl" />
+              <img src="https://i.imgur.com/OROXMkG.png" alt="Tracker Logo" className="w-20 h-20 drop-shadow-2xl object-contain" />
             </div>
           </div>
           <div className="space-y-2">

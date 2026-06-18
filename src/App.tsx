@@ -14,7 +14,6 @@ import { UserProfile } from './types';
 import { Toast, ToastType } from './components/ui/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
-import { Logo } from './components/ui/Logo';
 
 export function AppContent() {
   const [user, setUser] = useState<User | null>(null);
@@ -121,7 +120,7 @@ export function AppContent() {
             }}
             className="relative"
           >
-            <Logo className="w-24 h-24" />
+            <img src="https://i.imgur.com/OROXMkG.png" alt="Tracker Logo" className="w-24 h-24 object-contain" />
           </motion.div>
 
           <div className="text-center space-y-2">

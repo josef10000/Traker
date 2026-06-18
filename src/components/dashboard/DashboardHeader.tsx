@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { UserProfile, Team } from '../../types';
 import { ToastType } from '../ui/Toast';
-import { Logo } from '../ui/Logo';
 
 interface DashboardHeaderProps {
   profile: UserProfile;
@@ -56,7 +55,11 @@ export const DashboardHeader = ({
             className="cursor-pointer transition-transform hover:scale-105 active:scale-95" 
             onClick={onSettingsClick}
           >
-            <Logo className="w-10 h-10 drop-shadow-lg" />
+            <img 
+              src="https://i.imgur.com/OROXMkG.png" 
+              alt="Tracker Logo" 
+              className="w-10 h-10 drop-shadow-lg object-contain" 
+            />
           </div>
           <div className="flex-1">
             <h1 className="text-xl font-bold tracking-tight text-white leading-none">Tracker</h1>
