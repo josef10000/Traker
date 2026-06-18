@@ -27,7 +27,7 @@ export const QaDashboard = ({
   managedTeamsData,
   showToast
 }: QaDashboardProps) => {
-  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin';
+  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin' || profile.role === 'monitor';
 
   // Estados principais
   const [competences, setCompetences] = useState<QaCompetence[]>([]);

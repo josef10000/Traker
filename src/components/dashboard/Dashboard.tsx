@@ -93,7 +93,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   // Visualização e Seleção de Equipes
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
-  const [viewMode, setViewMode] = useState<'personal' | 'team'>((profile.role === 'supervisor' || profile.role === 'manager') ? 'team' : 'personal');
+  const [viewMode, setViewMode] = useState<'personal' | 'team'>((profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'monitor') ? 'team' : 'personal');
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
   // Metas Gerais
@@ -1233,7 +1233,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* Abas e Meta Diária */}
             <div className="flex flex-wrap items-center gap-6">
               {(() => {
-                const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin';
+                const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin' || profile.role === 'monitor';
                 
                 return (
                   <div className="flex flex-wrap bg-slate-950 p-1 rounded-2xl border border-white/5 gap-1">
@@ -1560,7 +1560,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="text-right text-xs text-slate-600 space-y-1">
             <p><strong>Emissão:</strong> {new Date().toLocaleString('pt-BR')}</p>
             <p><strong>Período:</strong> {getMonthName(selectedMonth)} de {selectedYear}</p>
-            <p><strong>Emissor:</strong> {profile.displayName} ({profile.role === 'manager' ? 'Gerente' : profile.role === 'supervisor' ? 'Supervisor' : 'Operador'})</p>
+            <p><strong>Emissor:</strong> {profile.displayName} ({profile.role === 'manager' ? 'Gerente' : profile.role === 'supervisor' ? 'Supervisor' : profile.role === 'monitor' ? 'Monitor' : 'Operador'})</p>
           </div>
         </div>
 
@@ -1794,7 +1794,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="w-64 border-b border-slate-400 mb-2"></div>
             <p className="font-bold text-slate-800">{profile.displayName}</p>
             <p className="text-slate-600 text-[10px] uppercase tracking-wider">
-              {profile.role === 'manager' ? 'Gerente Geral' : profile.role === 'supervisor' ? 'Supervisor de Equipe' : 'Operador'}
+              {profile.role === 'manager' ? 'Gerente Geral' : profile.role === 'supervisor' ? 'Supervisor de Equipe' : profile.role === 'monitor' ? 'Monitor de Qualidade' : 'Operador'}
             </p>
           </div>
         </div>

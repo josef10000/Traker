@@ -14,6 +14,7 @@ import { UserProfile } from './types';
 import { Toast, ToastType } from './components/ui/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
+import { Logo } from './components/ui/Logo';
 
 export function AppContent() {
   const [user, setUser] = useState<User | null>(null);
@@ -21,7 +22,7 @@ export function AppContent() {
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-  const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' } | null>(null);
+  const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' } | null>(null);
 
   const navigate = useNavigate();
 
@@ -120,7 +121,7 @@ export function AppContent() {
             }}
             className="relative"
           >
-            <img src="https://i.imgur.com/JPJTsAQ.png" alt="Tracker Logo" className="w-24 h-24" />
+            <Logo className="w-24 h-24" />
           </motion.div>
 
           <div className="text-center space-y-2">
@@ -187,12 +188,24 @@ export function AppContent() {
   if (profile?.role === 'super_admin') {
     if (simulation?.active) {
       const simulatedProfile: UserProfile = {
-        uid: simulation.role === 'manager' ? 'sandbox-user-manager' : (simulation.role === 'supervisor' ? 'sandbox-user-supervisor' : 'sandbox-user-operator'),
-        displayName: `${simulation.role === 'manager' ? 'Gerente' : simulation.role === 'supervisor' ? 'Supervisor' : 'Operador'} (Simulado)`,
+        uid: simulation.role === 'manager'
+          ? 'sandbox-user-manager'
+          : (simulation.role === 'supervisor'
+            ? 'sandbox-user-supervisor'
+            : (simulation.role === 'monitor'
+              ? 'sandbox-user-monitor'
+              : 'sandbox-user-operator')),
+        displayName: `${simulation.role === 'manager'
+          ? 'Gerente'
+          : (simulation.role === 'supervisor'
+            ? 'Supervisor'
+            : (simulation.role === 'monitor'
+              ? 'Monitor'
+              : 'Operador'))} (Simulado)`,
         email: profile.email,
         role: simulation.role,
         organizationId: 'sandbox-test',
-        teamId: simulation.role === 'manager' ? undefined : 'sandbox-team-alpha',
+        teamId: (simulation.role === 'manager' || simulation.role === 'monitor') ? undefined : 'sandbox-team-alpha',
         managedTeams: simulation.role === 'supervisor' ? ['sandbox-team-alpha'] : undefined,
         acceptedTermsAt: new Date().toISOString(),
         theme: profile.theme || 'dark',
@@ -218,7 +231,15 @@ export function AppContent() {
                 <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-purple-500"></span>
               </span>
               <p className="text-xs font-bold text-purple-200">
-                AMBIENTE DE TESTE ATIVO — Simulando <span className="uppercase text-white font-black">{simulation.role === 'manager' ? 'Gerente' : simulation.role === 'supervisor' ? 'Supervisor' : 'Operador'}</span> da Empresa Fictícia Sandbox
+                AMBIENTE DE TESTE ATIVO — Simulando <span className="uppercase text-white font-black">
+                  {simulation.role === 'manager'
+                    ? 'Gerente'
+                    : (simulation.role === 'supervisor'
+                      ? 'Supervisor'
+                      : (simulation.role === 'monitor'
+                        ? 'Monitor'
+                        : 'Operador'))}
+                </span> da Empresa Fictícia Sandbox
               </p>
             </div>
             <button 

@@ -27,7 +27,7 @@ export enum AgreementCategory {
   VARIAVEL = 'variavel'
 }
 
-export type UserRole = 'super_admin' | 'manager' | 'supervisor' | 'member';
+export type UserRole = 'super_admin' | 'manager' | 'supervisor' | 'member' | 'monitor';
 
 export interface Organization {
   id: string;

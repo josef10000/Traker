@@ -44,12 +44,13 @@ import { Organization, UserProfile, Team } from '../../types';
 import { logAudit } from '../../lib/audit';
 
 import { ToastType } from '../ui/Toast';
+import { Logo } from '../ui/Logo';
 
 interface AdminDashboardProps {
   profile: UserProfile;
   onLogoutSuccess: () => void;
   showToast: (message: string, type?: ToastType) => void;
-  onStartSimulation: (role: 'manager' | 'supervisor' | 'member') => void;
+  onStartSimulation: (role: 'manager' | 'supervisor' | 'member' | 'monitor') => void;
 }
 
 export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation }: AdminDashboardProps) => {
@@ -114,7 +115,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     };
   }, []);
 
-  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member', forceProvision = false) => {
+  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member' | 'monitor', forceProvision = false) => {
     setIsProvisioningSandbox(true);
     try {
       const sandboxOrgId = 'sandbox-test';
@@ -195,6 +196,19 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           role: 'member',
           organizationId: sandboxOrgId,
           teamId: 'sandbox-team-alpha',
+          createdAt: new Date().toISOString(),
+          acceptedTermsAt: new Date().toISOString(),
+          termsAccepted: true
+        });
+
+        // 3.1. Criar perfil de monitor simulado para o QA
+        const monitorProfileRef = doc(db, 'users', 'sandbox-user-monitor');
+        await setDoc(monitorProfileRef, {
+          uid: 'sandbox-user-monitor',
+          email: 'monitor@sandbox.local',
+          displayName: 'Monitor de Testes',
+          role: 'monitor',
+          organizationId: sandboxOrgId,
           createdAt: new Date().toISOString(),
           acceptedTermsAt: new Date().toISOString(),
           termsAccepted: true
@@ -470,11 +484,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-white/5 backdrop-blur rounded-2xl border border-white/10">
-              <img 
-                src="https://i.imgur.com/JPJTsAQ.png" 
-                alt="Tracker Logo" 
-                className="w-8 h-8 drop-shadow-md object-contain" 
-              />
+              <Logo className="w-8 h-8 drop-shadow-md" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white leading-none">Painel SaaS Master</h1>
@@ -585,6 +595,14 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       title="Entrar como Operador (Modo Simulação)"
                     >
                       Entrar como Operador
+                    </button>
+                    <button
+                      onClick={() => handleSimulateRole('monitor', false)}
+                      disabled={isProvisioningSandbox}
+                      className="px-4 py-2.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-300 font-bold hover:bg-fuchsia-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      title="Entrar como Monitor (Modo Simulação)"
+                    >
+                      Entrar como Monitor
                     </button>
                   </div>
                   <button

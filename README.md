@@ -22,7 +22,7 @@ O **Tracker SaaS** é uma solução corporativa completa de alta performance (Mu
 
 ## 🛠️ Funcionalidades por Nível de Acesso (Hierarquia de Cargos)
 
-A plataforma conta com 4 níveis de controle de permissões dinâmicos (Roles):
+A plataforma conta com 5 níveis de controle de permissões dinâmicos (Roles):
 
 1. **👑 Super Admin (Dono da Infraestrutura)**:
    - Gerenciamento reativo de todas as organizações e controle de planos (`free`, `starter`, `pro`, `enterprise`, `custom`).
@@ -37,7 +37,11 @@ A plataforma conta com 4 níveis de controle de permissões dinâmicos (Roles):
    - Acompanhamento de metas do seu time e conciliação de saldo (Tracker vs Salesforce/Teams).
    - Gestão de presença diária de agentes, adição de notas privadas e visualização de históricos comportamentais da equipe.
    - Criação, edição e exclusão de acordos da sua equipe.
-4. **👤 Operador (Colaborador que Atende)**:
+4. **🎯 Monitor de Qualidade (Monitor - Auditoria de QA & PDI)**:
+   - Avaliação e auditoria de operadores com base em competências editáveis da empresa.
+   - Acesso exclusivo a painéis analíticos de radar de competências.
+   - Autonomia para criar, monitorar e concluir PDIs focados para desenvolvimento comportamental.
+5. **👤 Operador (Colaborador que Atende)**:
    - Registro e consulta de acordos individuais e visualização da meta diária pessoal.
    - Modo de conferência rápida (Checklist / Botão "Verificar") para focar na checagem de CPFs de clientes pendentes de pagamento.
 
