@@ -16,6 +16,7 @@ interface TeamManagementTabProps {
   agreements: Agreement[];
   selectedMonth: number;
   selectedYear: number;
+  qaScores?: Record<string, number>;
 }
 
 export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
@@ -30,7 +31,8 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
   setIsPeopleReportOpen,
   agreements,
   selectedMonth,
-  selectedYear
+  selectedYear,
+  qaScores = {}
 }) => {
   return (
     <div className="space-y-6 animate-fade-in no-print">
@@ -102,6 +104,13 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
                       <div>
                         <div className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Recuperado</div>
                         <div className="text-xs font-black text-emerald-400">{formatCurrency(totalPaid)}</div>
+                      </div>
+                      <div className="w-[1px] h-4 bg-slate-800" />
+                      <div>
+                        <div className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Qualidade QA</div>
+                        <div className="text-xs font-black text-sky-400">
+                          {qaScores[member.uid] !== undefined ? `${qaScores[member.uid].toFixed(1)}%` : 'N/A'}
+                        </div>
                       </div>
                     </div>
                   </div>

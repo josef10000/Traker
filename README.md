@@ -43,6 +43,39 @@ A plataforma conta com 4 níveis de controle de permissões dinâmicos (Roles):
 
 ---
 
+## 🌟 Funcionalidades Avançadas de Cobrança e Inteligência (Fases 1 a 5)
+
+Adicionamos recursos poderosos voltados para aumentar o índice de recuperação de crédito, monitoramento de qualidade e insights preditivos:
+
+1. **📅 CRM Ativo (Agenda de Retornos)**:
+   - Permite que operadores agendem contatos futuros com data/hora obrigatórias e anotações.
+   - Apresenta o painel dinâmico **Agenda do Dia** exibindo compromissos em ordem cronológica com sinalização de atrasos.
+   - Flexibilidade para os gestores configurarem no perfil quais equipes monitorar, visualizando agendas de múltiplos operadores.
+
+2. **🔍 Prevenção de Colisão e Visão 360°**:
+   - Barra de busca global no cabeçalho. Ao pesquisar um CPF, exibe instantaneamente a jornada completa daquele cliente (acordos quebrados, histórico de contatos e propostas).
+   - Detecção ativa de CPFs com negociação ativa em andamento no banco de dados para evitar contatos duplicados por diferentes operadores.
+   - Sistema de liberação supervisionada com log de auditoria no Firestore se o operador optar por forçar a criação de um novo acordo.
+
+3. **📥 Balcão de Recuperação de Leads**:
+   - Centraliza automaticamente em uma aba específica todos os acordos quebrados (`broken`) de todas as equipes.
+   - Permite que qualquer operador assuma leads individualmente ou em lote (write batch atômico no Firestore).
+   - Exportação em conformidade com a LGPD com logs de auditoria e termos de responsabilidade.
+
+4. **🎯 Qualidade & PDIs (QA Integrado)**:
+   - Formulário de avaliação de qualidade do operador baseado em competências configuráveis e editáveis da organização.
+   - Geração de gráficos de radar interativos (usando Recharts) exibindo a média de performance.
+   - Fluxo de criação de PDIs (Planos de Desenvolvimento Individual) focados em competências com vencimento automático.
+   - Notas médias injetadas reativamente na visão de equipes dos gestores e no dashboard dos próprios operadores.
+
+5. **📈 Inteligência Financeira & BI Avançado**:
+   - **Colchão MRR (Receita Recorrente Mensal)**: Projeção de recebíveis parcelados futuros e previsibilidade de caixa.
+   - **Curva de Dilação vs Quebra**: Gráfico de dispersão indicando o percentual de atraso nas promessas e taxa de inadimplência.
+   - **Matriz de Risco**: Classificação de CPFs em categorias de risco de quebra com base no histórico comportamental.
+   - **Calendário de Calor Macro de 31 dias**: Visão macro-sazonal exibindo os dias de maior arrecadação e probabilidade de pagamento.
+
+---
+
 ## 🚀 Arquitetura Técnica & Performance
 
 * **Paginação Nativa no Banco (Firestore Cursors)**: A listagem de acordos adota paginação real em banco utilizando cursores de documentos (`limit`, `startAfter`), reduzindo em mais de **70% o custo operacional** de leitura e tráfego na API do Firebase.

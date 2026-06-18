@@ -20,6 +20,7 @@ interface StatsGridProps {
   monthlyGoal: number;
   localHiddenCards: string[];
   formatCurrency: (v: number) => string;
+  operatorQaScore?: number;
 }
 
 export const StatsGrid = ({
@@ -27,7 +28,8 @@ export const StatsGrid = ({
   statTrends,
   monthlyGoal,
   localHiddenCards,
-  formatCurrency
+  formatCurrency,
+  operatorQaScore
 }: StatsGridProps) => {
   return (
     <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -108,6 +110,17 @@ export const StatsGrid = ({
           color="indigo"
           subtitle="Média por acordo registrado"
           chartData={statTrends.projected}
+          chartType="bar"
+        />
+      )}
+      {!localHiddenCards.includes('mediaQualidadeQa') && operatorQaScore !== undefined && (
+        <StatCard 
+          title="Média de Qualidade (QA)" 
+          value={`${operatorQaScore.toFixed(1)}%`} 
+          icon={CheckCircle2} 
+          color="sky"
+          subtitle="Nota média de avaliações de QA"
+          chartData={[]}
           chartType="bar"
         />
       )}

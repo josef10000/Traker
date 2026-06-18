@@ -8,13 +8,15 @@ interface TeamPerformanceProps {
   members: UserProfile[];
   dailyGoal?: number;
   showRanking?: boolean;
+  qaScores?: Record<string, number>;
 }
 
 export const TeamPerformance = ({ 
   agreements, 
   members, 
   dailyGoal = 0,
-  showRanking = true
+  showRanking = true,
+  qaScores = {}
 }: TeamPerformanceProps) => {
   if (members.length === 0) {
     return (
@@ -120,6 +122,12 @@ export const TeamPerformance = ({
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Total Pago</span>
                       <span className="text-sm font-bold text-emerald-400">{formatCurrency(item.paid)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="font-bold text-slate-500 uppercase">Qualidade QA</span>
+                      <span className="font-bold text-sky-455 text-sky-400">
+                        {qaScores[item.id] !== undefined ? `${qaScores[item.id].toFixed(1)}%` : 'N/A'}
+                      </span>
                     </div>
                     <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                       <div 

@@ -1,7 +1,8 @@
 export enum AgreementStatus {
   WAITING = 'waiting',
   PAID = 'paid',
-  BROKEN = 'broken'
+  BROKEN = 'broken',
+  SCHEDULED = 'scheduled'
 }
 
 export enum AgreementOrigin {
@@ -94,6 +95,8 @@ export interface Agreement {
   lastCheckedAt?: string;
   isAdjustment?: boolean;
   notes?: string;
+  scheduledAt?: string; // Data/Hora agendada para retorno
+  forcedCollision?: boolean; // Bypass manual de colisão de CPF
 }
 
 export interface DashboardStats {
@@ -106,6 +109,7 @@ export interface DashboardStats {
   ticketAverage: number;
   remainingToGoal: number;
   projection: number;
+  projectedMrr: number; // MRR futuro (colchão projetado)
   insights?: {
     avgTimeToPay: number;
     projection7d: number;
@@ -113,6 +117,10 @@ export interface DashboardStats {
     ticketByType: Record<string, { total: number; count: number }>;
     cycleEfficiency: { morning: number; afternoon: number };
     earlyBreakRate: number;
+    breakRatesByDilatedDays: Record<string, number>; // Dilação vs Quebra
+    breakRateByCategory: { fixa: number; variavel: number }; // Categoria vs Quebra
+    primeTimeDistribution: Record<number, number>; // Liquidez por hora
+    heatmap31Days: { day: number; generation: number; liquidity: number }[]; // 31 dias calor
   };
   counts: {
     month: {
@@ -160,5 +168,40 @@ export interface CollaborationNote {
   type: 'note' | 'attendance';
   content: string;
   attendanceStatus?: 'present' | 'late' | 'absent';
+  createdAt: string;
+}
+
+export interface QaCompetence {
+  id: string;
+  organizationId: string;
+  name: string;        // Nome da competência (Argumentação, LGPD, etc.)
+  weight: number;      // Peso (padrão 1)
+  description?: string;
+}
+
+export interface QaEvaluation {
+  id: string;
+  organizationId: string;
+  operatorId: string;
+  evaluatorId: string;
+  score: number;             // Nota final (0 a 100)
+  callId?: string;           // ID Ligação / Protocolo
+  protocol?: string;         // Protocolo adicional
+  callLink?: string;         // Link opcional
+  grades: Record<string, number>; // ID Competência -> Nota (0 a 100)
+  feedback: string;
+  createdAt: string;
+}
+
+export interface Pdi {
+  id: string;
+  organizationId: string;
+  operatorId: string;
+  evaluatorId: string;
+  competenceId: string;      // ID da competência do foco
+  competenceName: string;    // Nome da competência do foco
+  actionPlan: string;        // Plano de Ação
+  dueDate: string;           // Vencimento do PDI
+  status: 'pending' | 'completed' | 'expired';
   createdAt: string;
 }

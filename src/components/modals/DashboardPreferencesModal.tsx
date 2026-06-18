@@ -52,6 +52,18 @@ const CARDS_OPTIONS: CardOption[] = [
     title: 'Eficiência por Ciclo',
     description: 'Conversão comparativa entre os turnos da Manhã e Tarde.',
     icon: <LayoutDashboard size={18} className="text-sky-400" />
+  },
+  {
+    id: 'agendaDoDia',
+    title: 'Agenda do Dia (Retornos)',
+    description: 'Grade de compromissos e retornos de clientes agendados.',
+    icon: <LayoutDashboard size={18} className="text-amber-400" />
+  },
+  {
+    id: 'mediaQualidadeQa',
+    title: 'Média de Qualidade (QA)',
+    description: 'Nota média das avaliações de monitoria de qualidade.',
+    icon: <LayoutDashboard size={18} className="text-sky-400" />
   }
 ];
 

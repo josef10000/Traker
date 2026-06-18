@@ -48,6 +48,107 @@ export const useDashboardStats = ({
     
     const isCurrentMonth = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear();
 
+    // 1. Colchão Projetado (MRR futuro) de parcelamentos
+    const projectedMrr = realMonthAgreements
+      .filter(a => a.type === 'parcelamento' && a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today)
+      .reduce((acc, curr) => acc + curr.value, 0);
+
+    // 2. Dilação vs Quebra
+    const breakRatesByDilatedDays = (() => {
+      const bins: Record<string, { total: number; broken: number }> = {
+        '1-3 dias': { total: 0, broken: 0 },
+        '4-7 dias': { total: 0, broken: 0 },
+        '8-15 dias': { total: 0, broken: 0 },
+        '16+ dias': { total: 0, broken: 0 }
+      };
+
+      realMonthAgreements.forEach(a => {
+        const created = new Date(a.createdAt);
+        const due = parseLocalDate(a.dueDate);
+        const diffDays = Math.ceil((due.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let bin = '1-3 dias';
+        if (diffDays <= 3) bin = '1-3 dias';
+        else if (diffDays <= 7) bin = '4-7 dias';
+        else if (diffDays <= 15) bin = '8-15 dias';
+        else bin = '16+ dias';
+
+        bins[bin].total += 1;
+        if (a.status === AgreementStatus.BROKEN) {
+          bins[bin].broken += 1;
+        }
+      });
+
+      const rates: Record<string, number> = {};
+      Object.keys(bins).forEach(key => {
+        rates[key] = bins[key].total > 0 ? (bins[key].broken / bins[key].total) * 100 : 0;
+      });
+      return rates;
+    })();
+
+    // 3. Risco por Categoria
+    const breakRateByCategory = (() => {
+      const categories = {
+        fixa: { total: 0, broken: 0 },
+        variavel: { total: 0, broken: 0 }
+      };
+
+      realMonthAgreements.forEach(a => {
+        const cat = a.category;
+        if (cat === 'fixa' || cat === 'variavel') {
+          categories[cat].total += 1;
+          if (a.status === AgreementStatus.BROKEN) {
+            categories[cat].broken += 1;
+          }
+        }
+      });
+
+      return {
+        fixa: categories.fixa.total > 0 ? (categories.fixa.broken / categories.fixa.total) * 100 : 0,
+        variavel: categories.variavel.total > 0 ? (categories.variavel.broken / categories.variavel.total) * 100 : 0
+      };
+    })();
+
+    // 4. Horário Nobre (Liquidez por hora)
+    const primeTimeDistribution = realMonthAgreements
+      .filter(a => a.status === AgreementStatus.PAID)
+      .reduce((acc, a) => {
+        const hour = new Date(a.createdAt).getHours();
+        acc[hour] = (acc[hour] || 0) + a.value;
+        return acc;
+      }, {} as Record<number, number>);
+
+    // 5. Calendário de Calor Macro de 31 dias
+    const heatmap31Days = (() => {
+      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      const days = [];
+      for (let i = 1; i <= daysInMonth; i++) {
+        days.push({ day: i, generation: 0, liquidity: 0 });
+      }
+
+      realMonthAgreements.forEach(a => {
+        const createdDate = new Date(a.createdAt);
+        if (createdDate.getMonth() === selectedMonth && createdDate.getFullYear() === selectedYear) {
+          const day = createdDate.getDate();
+          if (day >= 1 && day <= daysInMonth) {
+            days[day - 1].generation += a.value;
+          }
+        }
+
+        if (a.status === AgreementStatus.PAID && a.paidAt) {
+          const paidDate = new Date(a.paidAt);
+          if (paidDate.getMonth() === selectedMonth && paidDate.getFullYear() === selectedYear) {
+            const day = paidDate.getDate();
+            if (day >= 1 && day <= daysInMonth) {
+              days[day - 1].liquidity += a.value;
+            }
+          }
+        }
+      });
+
+      return days;
+    })();
+
     return {
       totalProjected,
       totalPaid: totalPaidMonth,
@@ -91,6 +192,7 @@ export const useDashboardStats = ({
       },
       ticketAverage: realMonthAgreements.length > 0 ? totalProjected / realMonthAgreements.length : 0,
       remainingToGoal: Math.max(0, (monthlyGoal || 0) - totalPaidMonth),
+      projectedMrr,
       
       // Advanced Insights
       insights: {
@@ -142,7 +244,11 @@ export const useDashboardStats = ({
           if (expiredWaiting.length === 0) return 0;
           const checked = expiredWaiting.filter(a => a.lastCheckedAt && new Date(a.lastCheckedAt).toLocaleDateString() === today.toLocaleDateString());
           return (checked.length / expiredWaiting.length) * 100;
-        })()
+        })(),
+        breakRatesByDilatedDays,
+        breakRateByCategory,
+        primeTimeDistribution,
+        heatmap31Days
       },
       projection: (() => {
         if (!isCurrentMonth) return totalPaidMonth;

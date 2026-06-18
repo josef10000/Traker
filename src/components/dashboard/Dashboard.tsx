@@ -11,7 +11,9 @@ import {
   getDoc,
   onSnapshot,
   deleteField,
-  orderBy
+  orderBy,
+  getDocs,
+  writeBatch
 } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
 import { 
@@ -23,7 +25,8 @@ import {
   UserProfile, 
   Team,
   Reconciliation,
-  CollaborationNote
+  CollaborationNote,
+  QaEvaluation
 } from '../../types';
 import { removeTeamMember, getTeamMembers } from '../../lib/teams';
 import { formatCurrency, maskCPF } from '../../utils/masks';
@@ -44,6 +47,9 @@ import { StatsGrid } from './StatsGrid';
 import { AdvancedInsights } from './AdvancedInsights';
 import { AgreementsTable } from './AgreementsTable';
 import { TeamManagementTab } from './TeamManagementTab';
+import { DailyAgendaSection } from './DailyAgendaSection';
+import { RecoveryPoolTab } from './RecoveryPoolTab';
+import { QaDashboard } from './QaDashboard';
 
 // Modais do sistema
 import { AgreementModal } from '../modals/AgreementModal';
@@ -83,7 +89,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   // Abas do Dashboard
-  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people'>('financial');
+  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa'>('financial');
   
   // Visualização e Seleção de Equipes
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
@@ -130,6 +136,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
 
+  // Estados dos novos módulos (Fases 1, 2, 4)
+  const [scheduledAgreements, setScheduledAgreements] = useState<Agreement[]>([]);
+  const [isLoadingScheduled, setIsLoadingScheduled] = useState(true);
+  const [qaEvaluations, setQaEvaluations] = useState<QaEvaluation[]>([]);
+  const [isCollisionModalOpen, setIsCollisionModalOpen] = useState(false);
+  const [collisionData, setCollisionData] = useState<any>(null);
+
   // 1. CARREGAMENTO DOS DADOS DE EQUIPES E MEMBROS VIA CUSTOM HOOK
   const {
     currentTeamMembers,
@@ -147,6 +160,119 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
     return [selectedTeamId];
   }, [selectedTeamId, managedTeamsData]);
+
+  // Escuta o histórico do cliente selecionado (LGPD e histórico global)
+  useEffect(() => {
+    if (!selectedClientCpf || !profile.organizationId) {
+      setClientHistory([]);
+      setIsLoadingHistory(false);
+      return;
+    }
+
+    setIsLoadingHistory(true);
+    const q = query(
+      collection(db, 'agreements'), 
+      where('organizationId', '==', profile.organizationId),
+      where('clientCpf', '==', selectedClientCpf),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
+      setClientHistory(history);
+      setIsLoadingHistory(false);
+    }, (error) => {
+      console.error("Erro ao escutar histórico do cliente:", error);
+      setIsLoadingHistory(false);
+    });
+    return () => unsubscribe();
+  }, [selectedClientCpf, profile.organizationId]);
+
+  // Escuta agendamentos da organização
+  useEffect(() => {
+    if (!profile.organizationId || teamsToWatch.length === 0) {
+      setScheduledAgreements([]);
+      setIsLoadingScheduled(false);
+      return;
+    }
+
+    setIsLoadingScheduled(true);
+
+    const qScheduled = query(
+      collection(db, 'agreements'),
+      where('organizationId', '==', profile.organizationId),
+      where('teamId', 'in', teamsToWatch),
+      where('status', '==', AgreementStatus.SCHEDULED)
+    );
+
+    const unsubscribe = onSnapshot(qScheduled, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
+      
+      // Ordenação por data do retorno
+      data.sort((a, b) => {
+        const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+        const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+        return dateA - dateB;
+      });
+
+      setScheduledAgreements(data);
+      setIsLoadingScheduled(false);
+    }, (error) => {
+      console.error("Erro ao escutar agendamentos:", error);
+      setIsLoadingScheduled(false);
+    });
+
+    return () => unsubscribe();
+  }, [profile.organizationId, teamsToWatch]);
+
+  // Escuta avaliações de QA para calcular as médias reativas
+  useEffect(() => {
+    if (!profile.organizationId) return;
+
+    const qQa = query(
+      collection(db, 'qa_evaluations'),
+      where('organizationId', '==', profile.organizationId)
+    );
+
+    const unsubscribe = onSnapshot(qQa, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QaEvaluation));
+      setQaEvaluations(data);
+    });
+
+    return () => unsubscribe();
+  }, [profile.organizationId]);
+
+  // Filtragem local de agendamentos por operador
+  const filteredScheduledAgreements = useMemo(() => {
+    return scheduledAgreements.filter(a => {
+      if (viewMode === 'personal') {
+        return a.operatorId === profile.uid;
+      } else {
+        if (selectedMemberId === 'all') return true;
+        return a.operatorId === selectedMemberId;
+      }
+    });
+  }, [scheduledAgreements, viewMode, profile.uid, selectedMemberId]);
+
+  // Cálculo das notas médias de QA
+  const qaScores = useMemo(() => {
+    const scores: Record<string, { total: number; count: number }> = {};
+    qaEvaluations.forEach(e => {
+      if (!scores[e.operatorId]) {
+        scores[e.operatorId] = { total: 0, count: 0 };
+      }
+      scores[e.operatorId].total += e.score;
+      scores[e.operatorId].count += 1;
+    });
+    const result: Record<string, number> = {};
+    Object.entries(scores).forEach(([opId, stats]) => {
+      result[opId] = stats.total / stats.count;
+    });
+    return result;
+  }, [qaEvaluations]);
+
+  const operatorQaScore = useMemo(() => {
+    return qaScores[profile.uid];
+  }, [qaScores, profile.uid]);
 
   const operatorIdForAgreements = viewMode === 'personal' ? profile.uid : selectedMemberId;
 
@@ -620,20 +746,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const handleClientClick = (cpf: string) => {
     setSelectedClientCpf(cpf);
-    setIsLoadingHistory(true);
-    
-    const q = query(
-      collection(db, 'agreements'), 
-      where('organizationId', '==', profile.organizationId || ''),
-      where('clientCpf', '==', cpf),
-      orderBy('createdAt', 'desc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
-      setClientHistory(history);
-      setIsLoadingHistory(false);
-    });
-    return () => unsubscribe();
   };
 
   const handleUpdateGoal = async (newGoal: number, newEffGoal: number) => {
@@ -663,24 +775,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleAddOrEditAgreement = async (data: any) => {
-    const targetTeamId = profile.teamId || (selectedTeamId !== 'all' ? selectedTeamId : null);
-    if (!targetTeamId) {
-      showToast('Nenhuma equipe selecionada para registrar o acordo.', 'error');
-      return;
-    }
-    if (!profile.organizationId) {
-      showToast('Organização não identificada.', 'error');
-      return;
-    }
-    
+  const saveAgreement = async (data: any, targetTeamId: string, forced = false) => {
     try {
+      const payload = forced ? { ...data, forcedCollision: true } : data;
       if (editingAgreement) {
         const agreementRef = doc(db, 'agreements', editingAgreement.id);
         const updatedFields = {
-          ...data,
+          ...payload,
           status: data.status || editingAgreement.status,
-          organizationId: profile.organizationId
+          organizationId: profile.organizationId,
+          operatorId: profile.uid, // Assume posse do acordo ao editar/atender
+          teamId: targetTeamId
         };
         await updateDoc(agreementRef, updatedFields);
         showToast('Acordo atualizado com sucesso!', 'success');
@@ -695,7 +800,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         const now = new Date().toISOString();
         const agreementData = {
           id,
-          ...data,
+          ...payload,
           status: data.status || AgreementStatus.WAITING,
           operatorId: profile.uid,
           teamId: targetTeamId,
@@ -712,6 +817,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             triggerWebhook(webhookUrl, 'agreement.paid', agreementData, profile.organizationId);
           }
         }
+
+        if (forced) {
+          await logAudit('FORCE_COLLISION', { cpf: data.clientCpf, agreementId: id }, profile.displayName || '');
+        }
       }
       setIsModalOpen(false);
       setEditingAgreement(null);
@@ -719,6 +828,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
       console.error(error);
       showToast('Erro ao salvar acordo.', 'error');
     }
+  };
+
+  const handleAddOrEditAgreement = async (data: any) => {
+    const targetTeamId = profile.teamId || (selectedTeamId !== 'all' ? selectedTeamId : null);
+    if (!targetTeamId) {
+      showToast('Nenhuma equipe selecionada para registrar o acordo.', 'error');
+      return;
+    }
+    if (!profile.organizationId) {
+      showToast('Organização não identificada.', 'error');
+      return;
+    }
+
+    // Novos agendamentos e edições sem alteração de CPF passam direto
+    if (data.status === AgreementStatus.SCHEDULED || (editingAgreement && editingAgreement.clientCpf === data.clientCpf)) {
+      await saveAgreement(data, targetTeamId);
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, 'agreements'),
+        where('organizationId', '==', profile.organizationId),
+        where('clientCpf', '==', data.clientCpf)
+      );
+      const querySnap = await getDocs(q);
+      const activeCollision = querySnap.docs.find(docSnap => {
+        const status = docSnap.data().status;
+        return status === AgreementStatus.WAITING || status === AgreementStatus.SCHEDULED;
+      });
+
+      if (activeCollision) {
+        setCollisionData({ data, targetTeamId });
+        setIsCollisionModalOpen(true);
+        return;
+      }
+
+      await saveAgreement(data, targetTeamId);
+    } catch (err) {
+      console.error("Erro ao verificar colisão:", err);
+      await saveAgreement(data, targetTeamId);
+    }
+  };
+
+  const handleSearchCpf = (cpf: string) => {
+    handleClientClick(cpf);
   };
 
   const handleExportClick = () => {
@@ -1068,6 +1223,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             setIsReconciliationModalOpen={setIsReconciliationModalOpen}
             setIsModalOpen={setIsModalOpen}
             showToast={showToast}
+            onSearchCpf={handleSearchCpf}
           />
         )}
 
@@ -1076,30 +1232,56 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-slate-900/20 p-6 rounded-[2rem] border border-white/5">
             {/* Abas e Meta Diária */}
             <div className="flex flex-wrap items-center gap-6">
-              {(profile.role === 'supervisor' || profile.role === 'manager') && (
-                <div className="flex bg-slate-950 p-1 rounded-2xl border border-white/5">
-                  <button
-                    onClick={() => setDashboardTab('financial')}
-                    className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                      dashboardTab === 'financial' 
-                        ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Painel Financeiro
-                  </button>
-                  <button
-                    onClick={() => setDashboardTab('people')}
-                    className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                      dashboardTab === 'people' 
-                        ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Gestão de Equipe
-                  </button>
-                </div>
-              )}
+              {(() => {
+                const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin';
+                
+                return (
+                  <div className="flex flex-wrap bg-slate-950 p-1 rounded-2xl border border-white/5 gap-1">
+                    <button
+                      onClick={() => setDashboardTab('financial')}
+                      className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        dashboardTab === 'financial' 
+                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Painel Financeiro
+                    </button>
+                    {isSuperUser && (
+                      <button
+                        onClick={() => setDashboardTab('people')}
+                        className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                          dashboardTab === 'people' 
+                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Gestão de Equipe
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDashboardTab('recovery')}
+                      className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        dashboardTab === 'recovery' 
+                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Balcão de Recuperação
+                    </button>
+                    <button
+                      onClick={() => setDashboardTab('qa')}
+                      className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        dashboardTab === 'qa' 
+                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Qualidade (QA)
+                    </button>
+                  </div>
+                );
+              })()}
               
               {dashboardTab === 'financial' && (
                 <div className="flex items-center gap-3 bg-slate-950 px-5 py-3 rounded-2xl border border-white/5">
@@ -1156,6 +1338,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* CONTEÚDO DA ABA FINANCEIRA */}
           {dashboardTab === 'financial' && (
             <div className="space-y-8">
+              {/* Agenda do Dia */}
+              {!localHiddenCards.includes('agendaDoDia') && (
+                <DailyAgendaSection
+                  scheduledAgreements={filteredScheduledAgreements}
+                  isLoading={isLoadingScheduled}
+                  profile={profile}
+                  currentTeamMembers={currentTeamMembers}
+                  selectedMemberId={selectedMemberId}
+                  setSelectedMemberId={setSelectedMemberId}
+                  viewMode={viewMode}
+                  onAttend={(agreement) => {
+                    setEditingAgreement(agreement);
+                    setIsModalOpen(true);
+                  }}
+                  showToast={showToast}
+                />
+              )}
+
               {/* KPIs de Monitoramento */}
               <StatsGrid 
                 stats={stats}
@@ -1163,9 +1363,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 monthlyGoal={monthlyGoal}
                 localHiddenCards={localHiddenCards}
                 formatCurrency={formatCurrency}
+                operatorQaScore={operatorQaScore}
               />
 
-              {/* Insights Avançados (Gráficos, Turnos, Metas) */}
               <AdvancedInsights 
                 stats={stats}
                 monthlyGoal={monthlyGoal}
@@ -1181,6 +1381,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 setIsGoalModalOpen={setIsGoalModalOpen}
                 formatCurrency={formatCurrency}
                 getEffectivenessColor={getEffectivenessColor}
+                qaScores={qaScores}
               />
 
               {/* Tabela de Liderança de Equipes se estiver no modo Macro */}
@@ -1315,6 +1516,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
               agreements={monthAgreements}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
+              qaScores={qaScores}
+            />
+          )}
+
+          {/* CONTEÚDO DA ABA BALCÃO DE RECUPERAÇÃO (Fase 3) */}
+          {dashboardTab === 'recovery' && (
+            <RecoveryPoolTab
+              profile={profile}
+              managedTeamsData={managedTeamsData}
+              showToast={showToast}
+              onAttend={(agreement) => {
+                setEditingAgreement(agreement);
+                setIsModalOpen(true);
+              }}
+            />
+          )}
+
+          {/* CONTEÚDO DA ABA DE QUALIDADE QA & PDIs (Fase 4) */}
+          {dashboardTab === 'qa' && (
+            <QaDashboard
+              profile={profile}
+              currentTeamMembers={currentTeamMembers}
+              managedTeamsData={managedTeamsData}
+              showToast={showToast}
             />
           )}
         </main>
@@ -1642,6 +1867,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
         onClose={() => setIsPreferencesModalOpen(false)}
         hiddenCards={localHiddenCards}
         onToggleCard={handleToggleCard}
+      />
+
+      <ConfirmModal
+        isOpen={isCollisionModalOpen}
+        onClose={() => setIsCollisionModalOpen(false)}
+        onConfirm={async () => {
+          if (collisionData) {
+            await saveAgreement(collisionData.data, collisionData.targetTeamId, true);
+            setIsCollisionModalOpen(false);
+            setCollisionData(null);
+          }
+        }}
+        title="Colisão de CPF Detectada"
+        message="Este cliente possui outra negociação ativa (Pendente ou Retorno Agendado). Deseja forçar a criação deste acordo? Esta ação será registrada no histórico de auditoria."
+        variant="warning"
+        confirmText="Forçar Criação"
+        cancelText="Voltar"
       />
 
       <ConfirmModal
