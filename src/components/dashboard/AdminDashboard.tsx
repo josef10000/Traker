@@ -484,7 +484,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-white/5 backdrop-blur rounded-2xl border border-white/10">
               <img 
-                src="https://i.imgur.com/OROXMkG.png" 
+                src="/logo.png" 
                 alt="Tracker Logo" 
                 className="w-8 h-8 drop-shadow-md object-contain" 
               />

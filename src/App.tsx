@@ -120,7 +120,7 @@ export function AppContent() {
             }}
             className="relative"
           >
-            <img src="https://i.imgur.com/OROXMkG.png" alt="Tracker Logo" className="w-24 h-24 object-contain" />
+            <img src="/logo.png" alt="Tracker Logo" className="w-24 h-24 object-contain" />
           </motion.div>
 
           <div className="text-center space-y-2">

@@ -56,7 +56,7 @@ export const DashboardHeader = ({
             onClick={onSettingsClick}
           >
             <img 
-              src="https://i.imgur.com/OROXMkG.png" 
+              src="/logo.png" 
               alt="Tracker Logo" 
               className="w-10 h-10 drop-shadow-lg object-contain" 
             />
