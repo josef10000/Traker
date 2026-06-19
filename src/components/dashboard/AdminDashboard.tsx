@@ -482,7 +482,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       <header className="glass-card sticky top-0 z-30 px-6 py-4 bg-slate-900/40 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="p-1.5 bg-white/5 backdrop-blur rounded-2xl border border-white/10">
+            <div className="p-1.5">
               <img 
                 src="/logo.png" 
                 alt="Tracker Logo" 
