@@ -346,34 +346,10 @@ export const AdvancedInsights = ({
           </div>
         </div>
 
-        {/* Team Performance rankings */}
-        {viewMode === 'team' && selectedTeamId !== 'all' && currentTeamMembers.length > 0 && (
-          <div className="lg:col-span-2">
-            <TeamPerformance 
-              agreements={monthFilteredAgreements} 
-              members={currentTeamMembers} 
-              dailyGoal={dailyGoal} 
-              qaScores={qaScores}
-            />
-          </div>
-        )}
-
-        {viewMode === 'personal' && (
-          <div className="lg:col-span-2">
-            <TeamPerformance 
-              agreements={memberFilteredAgreements} 
-              members={[profile]} 
-              dailyGoal={dailyGoal} 
-              showRanking={false}
-              qaScores={qaScores}
-            />
-          </div>
-        )}
       </section>
 
       {/* SEÇÃO EXTRA DE BI & INSIGHTS DE EQUIPES (Fase 5) */}
-      {viewMode === 'team' && (
-        <section className="space-y-6 pt-6 border-t border-white/5 relative">
+      <section className="space-y-6 pt-6 border-t border-white/5 relative">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-sky-500/10 rounded-2xl border border-sky-500/20">
               <TrendingUp className="text-sky-400" size={20} />
@@ -558,7 +534,6 @@ export const AdvancedInsights = ({
             </div>
           </div>
         </section>
-      )}
     </>
   );
 };

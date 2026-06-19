@@ -50,6 +50,7 @@ import { TeamManagementTab } from './TeamManagementTab';
 import { DailyAgendaSection } from './DailyAgendaSection';
 import { RecoveryPoolTab } from './RecoveryPoolTab';
 import { QaDashboard } from './QaDashboard';
+import { TeamPerformance } from './TeamPerformance';
 
 // Modais do sistema
 import { AgreementModal } from '../modals/AgreementModal';
@@ -1411,6 +1412,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     ))}
                   </div>
                 </section>
+              )}
+
+              {/* Metas, Produtividade e Ranking Operacional */}
+              {viewMode === 'team' && selectedTeamId !== 'all' && currentTeamMembers.length > 0 && (
+                <TeamPerformance 
+                  agreements={monthFilteredAgreements.filter(a => a.teamId === selectedTeamId)}
+                  members={currentTeamMembers}
+                  dailyGoal={dailyGoal}
+                  qaScores={qaScores}
+                />
+              )}
+
+              {viewMode === 'personal' && (
+                <TeamPerformance 
+                  agreements={memberFilteredAgreements}
+                  members={[profile]}
+                  dailyGoal={dailyGoal}
+                  showRanking={false}
+                  qaScores={qaScores}
+                />
               )}
 
               {/* Tabela Analítica de Acordos com Filtro de Busca */}
