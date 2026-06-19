@@ -486,7 +486,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               <img 
                 src="/logo.png" 
                 alt="Tracker Logo" 
-                className="w-24 h-24 drop-shadow-md object-contain" 
+                className="w-[288px] h-[288px] drop-shadow-md object-contain" 
               />
             </div>
             <div>
