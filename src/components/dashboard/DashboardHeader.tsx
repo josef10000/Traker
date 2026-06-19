@@ -58,7 +58,7 @@ export const DashboardHeader = ({
             <img 
               src="/logo.png" 
               alt="Tracker Logo" 
-              className="w-[360px] h-[360px] drop-shadow-lg object-contain" 
+              className="w-14 h-14 drop-shadow-lg object-contain" 
             />
           </div>
           <div className="flex-1">
