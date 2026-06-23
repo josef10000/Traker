@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { TrendUp as TrendingUp, Icon as LucideIcon, Info } from '@phosphor-icons/react';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { useDesignMode } from '../../hooks/useDesignMode';
 
 interface StatCardProps {
   title: string;
@@ -26,6 +27,8 @@ export const StatCard = ({
   chartData = [],
   chartType = 'area'
 }: StatCardProps) => {
+  const [designMode] = useDesignMode();
+
   // Inicializa o estado a partir do localStorage para persistência entre F5
   const [isFlipped, setIsFlipped] = useState(() => {
     if (id) {
@@ -131,6 +134,67 @@ export const StatCard = ({
       </ResponsiveContainer>
     );
   };
+
+  if (designMode === 'premium') {
+    const premiumBgGradients = {
+      primary: 'var(--premium-card-blue)',
+      emerald: 'var(--premium-card-emerald)',
+      rose: 'var(--premium-card-rose)',
+      amber: 'var(--premium-card-amber)',
+      sky: 'var(--premium-card-sky)',
+      indigo: 'var(--premium-card-indigo)'
+    };
+
+    return (
+      <div 
+        className="premium-card h-40 w-full rounded-2xl p-5 flex flex-col justify-between shadow-xl relative overflow-hidden group border border-white/10"
+        style={{ background: premiumBgGradients[color] }}
+        id={id}
+      >
+        {/* Efeito de luz de fundo */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-current opacity-[0.02] -mr-8 -mt-8 rounded-full blur-3xl group-hover:opacity-[0.06] transition-all" />
+        
+        {/* Barra Superior: Ícone no contêiner metálico e Trend/Informações */}
+        <div className="flex justify-between items-start w-full z-10">
+          <div className="premium-icon-box w-11 h-11 text-white">
+            <Icon size={20} weight="duotone" />
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            {trend && (
+              <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-500/20 shadow-sm">
+                <TrendingUp size={10} />
+                {trend}
+              </span>
+            )}
+            {subtitle && (
+              <div 
+                className="text-white/30 hover:text-white/60 transition-colors cursor-help p-0.5"
+                title={subtitle}
+              >
+                <Info size={14} weight="duotone" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Barra Inferior: Título/Valor na Esquerda e Gráfico na Direita */}
+        <div className="flex justify-between items-end w-full mt-2 z-10">
+          <div className="flex-1 min-w-0 pr-2">
+            <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] truncate">{title}</p>
+            <h3 className="text-2xl font-black text-white mt-1 leading-none drop-shadow-md tracking-tight">{value}</h3>
+            {subtitle && (
+              <p className="text-[8px] font-bold text-white/20 mt-1.5 uppercase tracking-wider truncate">{subtitle}</p>
+            )}
+          </div>
+          
+          {/* Micro gráfico na direita inferior */}
+          <div className="w-[45%] h-14 opacity-80 group-hover:opacity-100 transition-opacity">
+            {renderChart()}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 

@@ -250,3 +250,101 @@ option {
 .print-only {
   display: none;
 }
+
+/* --- ESTILO PREMIUM (VISUAL ULTRA-PREMIUM) --- */
+
+[data-design-mode='premium'] {
+  --bg-color: #061224;
+  --surface-color: #0b1e36;
+  --text-main: #f8fafc;
+  --glass-surface: rgba(11, 30, 54, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --primary-color: #f59e0b; /* Destaque dourado/amber para o premium */
+  
+  /* Cores de Fundo dos Cards Premium com gradientes ricos semi-translúcidos */
+  --premium-card-blue: linear-gradient(135deg, rgba(13, 40, 71, 0.8) 0%, rgba(6, 18, 36, 0.95) 100%);
+  --premium-card-emerald: linear-gradient(135deg, rgba(6, 78, 59, 0.8) 0%, rgba(4, 30, 24, 0.95) 100%);
+  --premium-card-rose: linear-gradient(135deg, rgba(159, 18, 57, 0.8) 0%, rgba(76, 5, 25, 0.95) 100%);
+  --premium-card-sky: linear-gradient(135deg, rgba(3, 105, 161, 0.8) 0%, rgba(8, 47, 73, 0.95) 100%);
+  --premium-card-amber: linear-gradient(135deg, rgba(180, 83, 9, 0.8) 0%, rgba(120, 53, 4, 0.95) 100%);
+  --premium-card-indigo: linear-gradient(135deg, rgba(67, 56, 202, 0.8) 0%, rgba(49, 46, 129, 0.95) 100%);
+}
+
+/* Fundo do Body com gradiente e textura de pontos */
+[data-design-mode='premium'] body {
+  background-color: #061224;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(13, 148, 136, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 20px 20px;
+  background-attachment: fixed;
+}
+
+/* Card Premium (Glassmorphism + Filete de Luz Interno) */
+.premium-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.15), 
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  z-index: 1;
+}
+
+.premium-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 20px 40px -15px rgba(0, 0, 0, 0.7);
+}
+
+/* Caixa de Ícone Premium Relevo Metálico 3D */
+.premium-icon-box {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.3), 
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.4), 
+    0 4px 12px rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.premium-icon-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 13px;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.premium-icon-box:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    inset 0 2px 3px rgba(255, 255, 255, 0.4), 
+    inset 0 -2px 3px rgba(0, 0, 0, 0.5), 
+    0 6px 16px rgba(0, 0, 0, 0.45);
+}
+

@@ -11,7 +11,7 @@ import {
   Calculator,
   MagnifyingGlass as Search,
   Palette,
-  Sparkles
+  Sparkle
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 import { ToastType } from '../ui/Toast';
@@ -48,6 +48,8 @@ export const DashboardHeader = ({
   showToast,
   onSearchCpf
 }: DashboardHeaderProps) => {
+  const [designMode, setDesignMode] = useDesignMode();
+
   if (isPresentMode) return null;
 
   return (
@@ -118,6 +120,7 @@ export const DashboardHeader = ({
             </button>
           </form>
 
+
           <div 
             id="user-profile-menu"
             className="flex items-center gap-3 px-3 py-1.5 glass-card rounded-xl cursor-pointer transition-all group"
@@ -150,6 +153,20 @@ export const DashboardHeader = ({
               <UserPlus size={20} />
             </button>
           )}
+
+          {/* Alternador de Layout Clássico vs Premium */}
+          <button
+            onClick={() => setDesignMode(designMode === 'classic' ? 'premium' : 'classic')}
+            className={`p-2.5 rounded-xl transition-all border ${
+              designMode === 'premium'
+                ? 'text-amber-400 hover:text-amber-300 bg-amber-500/10 border-amber-500/20 shadow-lg shadow-amber-500/5'
+                : 'text-slate-500 hover:text-white hover:bg-white/5 border-transparent'
+            }`}
+            title={designMode === 'premium' ? "Mudar para Modo Clássico" : "Mudar para Modo Premium"}
+          >
+            {designMode === 'premium' ? <Sparkle size={20} weight="duotone" /> : <Palette size={20} weight="duotone" />}
+          </button>
+
           <button 
             onClick={() => setIsConfirmLogoutOpen(true)}
             className="p-2.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 rounded-xl transition-all"

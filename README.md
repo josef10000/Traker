@@ -17,6 +17,7 @@ O **Tracker SaaS** é uma solução corporativa completa de alta performance (Mu
 * **📊 Inteligência & Insights Avançados**: Gráficos analíticos de produtividade por turnos, funil de atingimento, projeções matemáticas de fim de mês e distribuição horária do time para identificar picos de produtividade.
 * **👥 Gestão de Colaboradores & Clima comportamental**: Apontamento e monitoramento de presença diária (Presente, Atrasado, Falta) e controle de notas comportamentais privadas com histórico consolidado e relatórios executivos para RH/Supervisão.
 * **📄 Relatórios PDF Corporativos Premium**: Sistema com CSS de impressão otimizado que transforma o painel operacional em um relatório executivo minimalista de alto contraste pronto para reuniões com CNPJ, rankings de operadores e parecer técnico.
+* **🎨 Modo Visual Premium Switchable**: Possibilidade de alternar instantaneamente entre o **Modo Clássico** e o **Modo Premium** (com base em um estilo visual ultra-premium, glassmorphism rico com filetes de brilho interno, ícones em relevo metálico 3D e micro-gráficos exibidos na face frontal dos cartões). A escolha é persistida de forma reativa localmente no navegador e está acessível em todos os perfis e inclusive no Sandbox.
 
 ---
 

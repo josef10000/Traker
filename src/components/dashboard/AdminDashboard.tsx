@@ -21,8 +21,11 @@ import {
   Copy,
   Plus,
   Key,
-  ArrowsCounterClockwise as RefreshCw
+  ArrowsCounterClockwise as RefreshCw,
+  Palette,
+  Sparkle
 } from '@phosphor-icons/react';
+import { useDesignMode } from '../../hooks/useDesignMode';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
 import { regenerateManagerInviteToken, generateSecureToken } from '../../lib/teams';
@@ -53,6 +56,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation }: AdminDashboardProps) => {
+  const [designMode, setDesignMode] = useDesignMode();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -494,13 +498,28 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5 block">Administrador: {profile.displayName}</span>
             </div>
           </div>
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white hover:bg-rose-500/10 hover:border-rose-500/30 transition-all active:scale-95"
-          >
-            <LogOut size={14} />
-            Sair do Painel
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Alternador de Layout Clássico vs Premium no Admin */}
+            <button
+              onClick={() => setDesignMode(designMode === 'classic' ? 'premium' : 'classic')}
+              className={`p-2 rounded-xl transition-all border flex items-center justify-center ${
+                designMode === 'premium'
+                  ? 'text-amber-400 hover:text-amber-300 bg-amber-500/10 border-amber-500/20 shadow-lg shadow-amber-500/5'
+                  : 'text-slate-500 hover:text-white hover:bg-white/5 border-transparent'
+              }`}
+              title={designMode === 'premium' ? "Mudar para Modo Clássico" : "Mudar para Modo Premium"}
+            >
+              {designMode === 'premium' ? <Sparkle size={16} weight="duotone" /> : <Palette size={16} weight="duotone" />}
+            </button>
+
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white hover:bg-rose-500/10 hover:border-rose-500/30 transition-all active:scale-95"
+            >
+              <LogOut size={14} />
+              Sair do Painel
+            </button>
+          </div>
         </div>
       </header>
 
