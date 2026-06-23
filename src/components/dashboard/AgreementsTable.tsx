@@ -133,7 +133,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                               } else {
                                 if (window.confirm('Você tem certeza que deseja copiar o CPF completo? Essa ação envolve acesso a dados pessoais sob a LGPD.')) {
                                   navigator.clipboard.writeText(agreement.clientCpf.replace(/\D/g, ''));
-                                  logAudit('REVEAL_CPF', { agreementId: agreement.id, cpf: agreement.clientCpf, context: 'CopyToClipboard' }, profile.displayName || '');
+                                  logAudit('REVEAL_CPF', { agreementId: agreement.id, cpf: agreement.clientCpf, context: 'CopyToClipboard' }, profile.displayName || '', profile.organizationId);
                                   showToast('CPF copiado!', 'success');
                                 }
                               }

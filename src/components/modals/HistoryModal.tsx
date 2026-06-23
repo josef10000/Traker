@@ -15,6 +15,7 @@ interface HistoryModalProps {
   userName?: string;
   isSupervisor?: boolean;
   onAnonimize?: (cpf: string) => void;
+  organizationId?: string;
 }
 
 export const HistoryModal = ({ 
@@ -25,7 +26,8 @@ export const HistoryModal = ({
   isLoading,
   userName = 'Operador',
   isSupervisor = false,
-  onAnonimize
+  onAnonimize,
+  organizationId
 }: HistoryModalProps) => {
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -38,7 +40,7 @@ export const HistoryModal = ({
 
   const handleReveal = () => {
     if (!isRevealed && clientCpf) {
-      logAudit('REVEAL_CPF', { cpf: clientCpf, context: 'HistoryModal' }, userName);
+      logAudit('REVEAL_CPF', { cpf: clientCpf, context: 'HistoryModal' }, userName, organizationId);
     }
     setIsRevealed(!isRevealed);
   };

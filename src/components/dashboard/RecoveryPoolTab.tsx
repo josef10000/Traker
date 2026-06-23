@@ -89,7 +89,7 @@ export const RecoveryPoolTab = ({
   const handleRevealCpf = (agreement: Agreement) => {
     const isRevealed = revealedCpfs[agreement.id];
     if (!isRevealed) {
-      logAudit('REVEAL_CPF', { cpf: agreement.clientCpf, context: 'RecoveryPool' }, profile.displayName || '');
+      logAudit('REVEAL_CPF', { cpf: agreement.clientCpf, context: 'RecoveryPool' }, profile.displayName || '', profile.organizationId);
     }
     setRevealedCpfs(prev => ({ ...prev, [agreement.id]: !isRevealed }));
   };
@@ -158,7 +158,7 @@ export const RecoveryPoolTab = ({
       link.click();
       document.body.removeChild(link);
 
-      logAudit('EXPORT_CSV', { count: targets.length, type: complete ? 'complete' : 'masked', context: 'RecoveryPool' }, profile.displayName || '');
+      logAudit('EXPORT_CSV', { count: targets.length, type: complete ? 'complete' : 'masked', context: 'RecoveryPool' }, profile.displayName || '', profile.organizationId);
       showToast('Relatório exportado com sucesso!', 'success');
     } catch (e) {
       console.error(e);

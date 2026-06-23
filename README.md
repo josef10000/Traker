@@ -12,7 +12,7 @@ O **Tracker SaaS** é uma solução corporativa completa de alta performance (Mu
 ## 💎 Diferenciais de Negócio (SaaS Value)
 
 * **🏢 Arquitetura Multi-Tenant Isolada**: Permite a operação simultânea de múltiplas organizações (empresas) com separação física e lógica completa no banco de dados. Os dados de acordos, presenças, conciliações e logs de auditoria são completamente isolados.
-* **🛡️ Compliance LGPD Nativo (Segurança por Design)**: Protege dados pessoais sensíveis através de mascaramento de CPF no formato `***.***.*89-01`, controle rígido de revelação temporária (10 segundos), clipboard seguro com confirmação e exportação de CSV segura vinculada a logs de auditoria detalhados e termos de responsabilidade.
+* **🛡️ Compliance LGPD Nativo (Audit Chain Criptográfica)**: Protege dados pessoais sensíveis através de mascaramento de CPF no formato `***.***.*89-01`, controle rígido de revelação temporária (10 segundos) e clipboard seguro. Toda ação crítica (visualização, exportação, exclusão) é registrada em uma **Cadeia de Auditoria Criptográfica** encadeada sequencialmente via hashes SHA-256 no Firestore (bloco anterior vinculado ao atual), garantindo a imutabilidade e rastreabilidade absoluta dos acessos para conformidade LGPD avançada (B2B/Enterprise).
 * **🎯 Gestão de Metas e Performance Dinâmica**: Acompanhamento em tempo real das metas da organização e individuais com o cálculo automático de **Meta Diária Dinâmica** calibrada reativamente pelos dias úteis restantes no mês e valores já liquidados.
 * **📊 Inteligência & Insights Avançados**: Gráficos analíticos de produtividade por turnos, funil de atingimento, projeções matemáticas de fim de mês e distribuição horária do time para identificar picos de produtividade.
 * **👥 Gestão de Colaboradores & Clima comportamental**: Apontamento e monitoramento de presença diária (Presente, Atrasado, Falta) e controle de notas comportamentais privadas com histórico consolidado e relatórios executivos para RH/Supervisão.
@@ -86,7 +86,7 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
 * **Paginação Nativa no Banco (Firestore Cursors)**: A listagem de acordos adota paginação real em banco utilizando cursores de documentos (`limit`, `startAfter`), reduzindo em mais de **70% o custo operacional** de leitura e tráfego na API do Firebase.
 * **Roteamento Declarativo Seguro**: Gerenciamento de rotas e segurança de visualização de telas via URL real com `react-router-dom`, isolando o onboarding, login, configurações e visualizações operacionais.
 * **Outbound Webhooks Seguros**: Disparo de requisições POST HTTPS no modelo de integração silenciosa (`no-cors`) para sincronização em tempo real de novos acordos ou acordos efetivados. CPFs são automaticamente higienizados no payload do webhook.
-* **Modularidade e Componentização**: Lógica matemática e de comunicação externa encapsulada em hooks customizados React (`useAgreements`, `useTeamMembers`, `useDashboardStats`) e componentes com visual premium baseado em glassmorphism e micro-animações suaves.
+* **Modularidade e Componentização**: Lógica matemática e de comunicação externa encapsulada em hooks customizados React (`useAgreements`, `useTeamMembers`, `useDashboardStats`) e componentes com visual premium. Modais complexos foram extraídos e isolados no componente unificado `DashboardModals.tsx` para reduzir o acoplamento do painel principal (`Dashboard.tsx`), otimizando a legibilidade e manutenibilidade do código.
 
 ---
 

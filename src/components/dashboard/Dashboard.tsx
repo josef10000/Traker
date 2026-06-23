@@ -54,18 +54,7 @@ import { TeamPerformance } from './TeamPerformance';
 import { FinancialPerformanceInsights } from './FinancialPerformanceInsights';
 
 // Modais do sistema
-import { AgreementModal } from '../modals/AgreementModal';
-import { GoalModal } from '../modals/GoalModal';
-import { HistoryModal } from '../modals/HistoryModal';
-import { ExportCpfModal } from '../modals/ExportCpfModal';
-import { TermsModal } from '../modals/TermsModal';
-import { ImportCsvModal } from '../modals/ImportCsvModal';
-import { WebhookSettingsModal } from '../modals/WebhookSettingsModal';
-import { DashboardPreferencesModal } from '../modals/DashboardPreferencesModal';
-import { ConfirmModal } from '../modals/ConfirmModal';
-import { CollaboratorHistoryModal } from '../modals/CollaboratorHistoryModal';
-import { PeopleReportModal } from '../modals/PeopleReportModal';
-import { ReconciliationModal } from '../modals/ReconciliationModal';
+import { DashboardModals } from './DashboardModals';
 import { startTour } from '../../utils/tour';
 
 interface DashboardProps {
@@ -598,7 +587,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     try {
       const now = new Date().toISOString();
       await updateDoc(doc(db, 'users', profile.uid), { acceptedTermsAt: now });
-      await logAudit('ACCEPT_TERMS', {}, profile.displayName || '');
+      await logAudit('ACCEPT_TERMS', {}, profile.displayName || '', profile.organizationId);
       setIsTermsModalOpen(false);
       showToast('Termos de Uso aceitos com sucesso!', 'success');
     } catch (error) {
@@ -828,7 +817,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
 
         if (forced) {
-          await logAudit('FORCE_COLLISION', { cpf: data.clientCpf, agreementId: id }, profile.displayName || '');
+          await logAudit('FORCE_COLLISION', { cpf: data.clientCpf, agreementId: id }, profile.displayName || '', profile.organizationId);
         }
       }
       setIsModalOpen(false);
@@ -930,7 +919,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     await logAudit(
       complete ? 'EXPORT_CSV_COMPLETE' : 'EXPORT_CSV_MASKED', 
       { count: filteredAgreements.length }, 
-      profile.displayName || ''
+      profile.displayName || '',
+      profile.organizationId
     );
     showToast('Exportação concluída!', 'success');
   };
@@ -1110,7 +1100,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           clientCpf: '000.000.000-00'
         });
       }
-      await logAudit('ANONIMIZE_CLIENT', { clientCpf: cpf }, profile.displayName || '');
+      await logAudit('ANONIMIZE_CLIENT', { clientCpf: cpf }, profile.displayName || '', profile.organizationId);
       setSelectedClientCpf(null);
       showToast('Direito ao esquecimento aplicado com sucesso!', 'success');
     } catch (error) {
@@ -1860,127 +1850,77 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Modais de Controle */}
-      <AgreementModal 
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingAgreement(null);
-        }}
-        onSubmit={handleAddOrEditAgreement}
-        editingAgreement={editingAgreement}
-        currentUserProfile={profile}
-      />
+      <DashboardModals
+        profile={profile}
+        selectedTeamId={selectedTeamId}
+        showToast={showToast}
 
-      <GoalModal 
-        isOpen={isGoalModalOpen}
-        onClose={() => setIsGoalModalOpen(false)}
-        onSubmit={handleUpdateGoal}
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+        editingAgreement={editingAgreement}
+        setEditingAgreement={setEditingAgreement}
+        handleAddOrEditAgreement={handleAddOrEditAgreement}
+
+        isGoalModalOpen={isGoalModalOpen}
+        setIsGoalModalOpen={setIsGoalModalOpen}
+        handleUpdateGoal={handleUpdateGoal}
         monthlyGoal={monthlyGoal}
         effectivenessGoal={effectivenessGoal}
-      />
 
-      <HistoryModal 
-        isOpen={!!selectedClientCpf}
-        onClose={() => setSelectedClientCpf(null)}
-        clientCpf={selectedClientCpf}
-        history={clientHistory}
-        isLoading={isLoadingHistory}
-        userName={profile.displayName}
-        isSupervisor={profile.role === 'supervisor'}
-        onAnonimize={handleAnonimizeClient}
-      />
+        selectedClientCpf={selectedClientCpf}
+        setSelectedClientCpf={setSelectedClientCpf}
+        clientHistory={clientHistory}
+        isLoadingHistory={isLoadingHistory}
+        handleAnonimizeClient={handleAnonimizeClient}
 
-      <ExportCpfModal
-        isOpen={isExportCpfModalOpen}
-        onClose={() => setIsExportCpfModalOpen(false)}
-        onExport={executeExport}
-      />
+        isExportCpfModalOpen={isExportCpfModalOpen}
+        setIsExportCpfModalOpen={setIsExportCpfModalOpen}
+        executeExport={executeExport}
 
-      <TermsModal
-        isOpen={isTermsModalOpen}
-        onAccept={handleAcceptTerms}
-      />
+        isTermsModalOpen={isTermsModalOpen}
+        handleAcceptTerms={handleAcceptTerms}
 
-      <ImportCsvModal 
-        isOpen={isImportCsvOpen} 
-        onClose={() => setIsImportCsvOpen(false)} 
-        profile={profile} 
-        selectedTeamId={selectedTeamId} 
-        onImportSuccess={() => setIsImportCsvOpen(false)} 
-        showToast={showToast} 
-      />
+        isImportCsvOpen={isImportCsvOpen}
+        setIsImportCsvOpen={setIsImportCsvOpen}
 
-      {profile.role === 'super_admin' && (
-        <WebhookSettingsModal 
-          isOpen={isWebhookSettingsOpen} 
-          onClose={() => setIsWebhookSettingsOpen(false)} 
-          organizationId={profile.organizationId || ''} 
-          currentWebhookUrl={webhookUrl} 
-          onSaveSuccess={setWebhookUrl} 
-          showToast={showToast} 
-        />
-      )}
+        isWebhookSettingsOpen={isWebhookSettingsOpen}
+        setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
+        webhookUrl={webhookUrl}
+        setWebhookUrl={setWebhookUrl}
 
-      <DashboardPreferencesModal
-        isOpen={isPreferencesModalOpen}
-        onClose={() => setIsPreferencesModalOpen(false)}
-        hiddenCards={localHiddenCards}
-        onToggleCard={handleToggleCard}
-      />
+        isPreferencesModalOpen={isPreferencesModalOpen}
+        setIsPreferencesModalOpen={setIsPreferencesModalOpen}
+        localHiddenCards={localHiddenCards}
+        handleToggleCard={handleToggleCard}
 
-      <ConfirmModal
-        isOpen={isCollisionModalOpen}
-        onClose={() => setIsCollisionModalOpen(false)}
-        onConfirm={async () => {
-          if (collisionData) {
-            await saveAgreement(collisionData.data, collisionData.targetTeamId, true);
-            setIsCollisionModalOpen(false);
-            setCollisionData(null);
-          }
-        }}
-        title="Colisão de CPF Detectada"
-        message="Este cliente possui outra negociação ativa (Pendente ou Retorno Agendado). Deseja forçar a criação deste acordo? Esta ação será registrada no histórico de auditoria."
-        variant="warning"
-        confirmText="Forçar Criação"
-        cancelText="Voltar"
-      />
+        isCollisionModalOpen={isCollisionModalOpen}
+        setIsCollisionModalOpen={setIsCollisionModalOpen}
+        collisionData={collisionData}
+        setCollisionData={setCollisionData}
+        saveAgreement={saveAgreement}
 
-      <ConfirmModal
-        isOpen={isConfirmLogoutOpen}
-        onClose={() => setIsConfirmLogoutOpen(false)}
-        onConfirm={handleLogout}
-        title="Encerrar Sessão"
-        message="Tem certeza que deseja sair do sistema? Suas alterações salvas não serão perdidas."
-        variant="danger"
-      />
+        isConfirmLogoutOpen={isConfirmLogoutOpen}
+        setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
+        handleLogout={handleLogout}
 
-      <ReconciliationModal 
-        isOpen={isReconciliationModalOpen}
-        onClose={() => setIsReconciliationModalOpen(false)}
-        trackerValue={stats.totalPaid}
-        trackerProjected={stats.totalProjected}
-        currentOfficialValue={reconciliation?.officialValue || 0}
-        currentOfficialEffectiveness={reconciliation?.officialEffectiveness || 0}
-        onSave={handleSaveReconciliation}
-        onNormalize={handleNormalizeSaldo}
-        onClear={handleDeleteReconciliation}
-        adjustments={monthAdjustments}
-        onDeleteAdjustment={handleDeleteAdjustment}
-      />
+        isReconciliationModalOpen={isReconciliationModalOpen}
+        setIsReconciliationModalOpen={setIsReconciliationModalOpen}
+        stats={stats}
+        reconciliation={reconciliation}
+        handleSaveReconciliation={handleSaveReconciliation}
+        handleNormalizeSaldo={handleNormalizeSaldo}
+        handleDeleteReconciliation={handleDeleteReconciliation}
+        monthAdjustments={monthAdjustments}
+        handleDeleteAdjustment={handleDeleteAdjustment}
 
-      <CollaboratorHistoryModal 
-        isOpen={selectedCollabForHistory !== null}
-        onClose={() => setSelectedCollabForHistory(null)}
-        collaboratorName={selectedCollabForHistory ? (selectedCollabForHistory.displayName || selectedCollabForHistory.email.split('@')[0]) : ''}
-        notes={collabNotesHistory}
-        isLoading={isLoadingCollabHistory}
-      />
+        selectedCollabForHistory={selectedCollabForHistory}
+        setSelectedCollabForHistory={setSelectedCollabForHistory}
+        collabNotesHistory={collabNotesHistory}
+        isLoadingCollabHistory={isLoadingCollabHistory}
 
-      <PeopleReportModal 
-        isOpen={isPeopleReportOpen}
-        onClose={() => setIsPeopleReportOpen(false)}
-        orgId={profile.organizationId || ''}
-        collaborators={currentTeamMembers}
+        isPeopleReportOpen={isPeopleReportOpen}
+        setIsPeopleReportOpen={setIsPeopleReportOpen}
+        currentTeamMembers={currentTeamMembers}
       />
     </div>
   );

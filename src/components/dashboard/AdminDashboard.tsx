@@ -307,7 +307,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         targetOrgId: selectedOrg.id,
         plan: editPlan,
         status: editStatus
-      }, profile.displayName);
+      }, profile.displayName, profile.organizationId);
 
       showToast('Empresa atualizada com sucesso!', 'success');
       setSelectedOrg(null);
@@ -368,7 +368,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         orgId,
         name: newOrgName,
         plan: newOrgPlan
-      }, profile.displayName);
+      }, profile.displayName, profile.organizationId);
 
       showToast('Empresa criada com sucesso!', 'success');
       
