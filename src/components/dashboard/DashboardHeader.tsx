@@ -9,10 +9,13 @@ import {
   FileCsv as FileSpreadsheet,
   FileText,
   Calculator,
-  MagnifyingGlass as Search
+  MagnifyingGlass as Search,
+  Palette,
+  Sparkles
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 import { ToastType } from '../ui/Toast';
+import { useDesignMode } from '../../hooks/useDesignMode';
 
 interface DashboardHeaderProps {
   profile: UserProfile;

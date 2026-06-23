@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { WarningCircle, IconContext } from '@phosphor-icons/react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { useDesignMode } from './hooks/useDesignMode';
 import { auth, db } from './lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { LoginPage } from './components/auth/LoginPage';
@@ -16,6 +17,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
 
 export function AppContent() {
+  const [designMode, setDesignMode] = useDesignMode();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isOrgActive, setIsOrgActive] = useState(true);
@@ -241,12 +243,38 @@ export function AppContent() {
                 </span> da Empresa Fictícia Sandbox
               </p>
             </div>
-            <button 
-              onClick={() => setSimulation(null)}
-              className="px-4 py-1.5 bg-purple-500 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-400 transition-colors shadow-md shadow-purple-500/20 active:scale-95"
-            >
-              Sair da Simulação
-            </button>
+            <div className="flex items-center gap-4">
+              {/* Botão de Toggle de Layout */}
+              <div className="flex items-center bg-black/30 rounded-lg p-0.5 border border-purple-500/20">
+                <button
+                  onClick={() => setDesignMode('classic')}
+                  className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
+                    designMode === 'classic' 
+                      ? 'bg-purple-500 text-white shadow-sm' 
+                      : 'text-purple-300 hover:text-white'
+                  }`}
+                >
+                  Clássico
+                </button>
+                <button
+                  onClick={() => setDesignMode('premium')}
+                  className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
+                    designMode === 'premium' 
+                      ? 'bg-purple-500 text-white shadow-sm' 
+                      : 'text-purple-300 hover:text-white'
+                  }`}
+                >
+                  Premium
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setSimulation(null)}
+                className="px-4 py-1.5 bg-purple-500 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-400 transition-colors shadow-md shadow-purple-500/20 active:scale-95"
+              >
+                Sair da Simulação
+              </button>
+            </div>
           </div>
 
           <div className="pt-12">
