@@ -21,7 +21,6 @@ import {
 } from 'recharts';
 import { DashboardStats, Reconciliation, UserProfile, Agreement } from '../../types';
 import { StatCard } from './StatCard';
-import { useDesignMode } from '../../hooks/useDesignMode';
 
 interface FinancialPerformanceInsightsProps {
   stats: DashboardStats;
@@ -56,8 +55,6 @@ export const FinancialPerformanceInsights = ({
   formatCurrency,
   getEffectivenessColor
 }: FinancialPerformanceInsightsProps) => {
-  const [designMode] = useDesignMode();
-  const isPremium = designMode === 'premium';
 
   const chartData = useMemo(() => [
     { name: 'Meta', value: monthlyGoal, color: 'url(#colorMeta)' },
@@ -117,7 +114,7 @@ export const FinancialPerformanceInsights = ({
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min((stats.totalPaid / (monthlyGoal || 1)) * 100, 100)}%` }}
-                  className={`h-full rounded-full bg-gradient-to-r ${isPremium ? 'from-amber-600 to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'from-sky-600 to-sky-400 shadow-[0_0_15px_rgba(14,165,233,0.4)]'}`}
+                  className="h-full rounded-full bg-gradient-to-r from-sky-600 to-sky-400 shadow-[0_0_15px_rgba(14,165,233,0.4)]"
                 />
               </div>
               <div className="flex justify-between items-center text-[10px] text-slate-500 font-medium">
@@ -126,22 +123,22 @@ export const FinancialPerformanceInsights = ({
               </div>
             </div>
           </motion.div>
- 
+
           {/* Card de Meta Diária */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className={`glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group flex flex-col justify-center border-l-4 ${isPremium ? 'border-l-amber-500' : 'border-l-sky-500'}`}
+            className="glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden group border-l-4 border-l-sky-500 flex flex-col justify-center"
           >
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Calculator size={40} className={isPremium ? 'text-amber-400' : 'text-sky-400'} />
+              <Calculator size={40} className="text-sky-400" />
             </div>
             
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Ritmo Necessário</p>
             <h4 className="text-sm font-bold text-white uppercase tracking-tight flex items-center gap-2 mb-4">
               Meta Diária
-              <span className={`px-2 py-0.5 rounded-md text-[9px] border ${isPremium ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-sky-500/10 text-sky-400 border-sky-500/20'}`}>
+              <span className="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 text-[9px] border border-sky-500/20">
                 {workingDays} dias úteis
               </span>
             </h4>
@@ -152,15 +149,15 @@ export const FinancialPerformanceInsights = ({
               </span>
               <p className="text-[9px] text-slate-500 font-bold uppercase mt-2 leading-relaxed">
                 Valor diário para atingir a meta de <br />
-                <span className={isPremium ? 'text-amber-400/70' : 'text-sky-400/70'}>{formatCurrency(monthlyGoal)}</span> no mês
+                <span className="text-sky-400/70">{formatCurrency(monthlyGoal)}</span> no mês
               </p>
             </div>
- 
+
             <div className="mt-6 flex items-center gap-2">
               <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
-                <div className={`h-full w-full animate-pulse ${isPremium ? 'bg-amber-500/50' : 'bg-sky-500/50'}`} />
+                <div className="h-full bg-sky-500/50 w-full animate-pulse" />
               </div>
-              <TrendingUp size={12} className={isPremium ? 'text-amber-500/50' : 'text-sky-500/50'} />
+              <TrendingUp size={12} className="text-sky-500/50" />
             </div>
           </motion.div>
         </div>
@@ -179,26 +176,26 @@ export const FinancialPerformanceInsights = ({
               <BarChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorMeta" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isPremium ? '#3d2e24' : '#334155'} stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor={isPremium ? '#1f1610' : '#1e293b'} stopOpacity={0.4}/>
+                    <stop offset="5%" stopColor="#334155" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#1e293b" stopOpacity={0.4}/>
                   </linearGradient>
                   <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isPremium ? '#fbbf24' : '#10b981'} stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor={isPremium ? '#d97706' : '#059669'} stopOpacity={0.4}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#059669" stopOpacity={0.4}/>
                   </linearGradient>
                   <linearGradient id="colorOverdue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isPremium ? '#ea580c' : '#f43f5e'} stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor={isPremium ? '#b45309' : '#e11d48'} stopOpacity={0.4}/>
+                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#e11d48" stopOpacity={0.4}/>
                   </linearGradient>
                   <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isPremium ? '#92400e' : '#f59e0b'} stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor={isPremium ? '#78350f' : '#d97706'} stopOpacity={0.4}/>
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#d97706" stopOpacity={0.4}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={isPremium ? 'rgba(255,255,255,0.05)' : '#1e293b'} vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis 
                   dataKey="name" 
-                  stroke={isPremium ? '#94a3b8' : '#64748b'} 
+                  stroke="#64748b" 
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
@@ -208,12 +205,11 @@ export const FinancialPerformanceInsights = ({
                 <Tooltip 
                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                   contentStyle={{ 
-                    backgroundColor: isPremium ? 'rgba(20, 16, 13, 0.95)' : '#0f172a', 
-                    border: isPremium ? '1px solid rgba(245, 158, 11, 0.25)' : '1px solid #1e293b', 
+                    backgroundColor: '#0f172a', 
+                    border: '1px solid #1e293b', 
                     borderRadius: '16px',
                     boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)',
-                    padding: '12px',
-                    backdropFilter: isPremium ? 'blur(10px)' : 'none'
+                    padding: '12px'
                   }}
                   itemStyle={{ color: '#f8fafc', fontWeight: 'bold', fontSize: '12px' }}
                   formatter={(value: number) => [formatCurrency(value), '']}

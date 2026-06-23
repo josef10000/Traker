@@ -45,21 +45,21 @@ export const StatCard = ({
   }, [isFlipped, id]);
 
   const colorClasses = {
-    primary: designMode === 'premium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-primary/10 text-primary border-primary/20',
+    primary: 'bg-primary/10 text-primary border-primary/20',
     emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    rose: designMode === 'premium' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
     amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    sky: designMode === 'premium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-    indigo: designMode === 'premium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+    sky: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+    indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
   };
 
   const chartColors = {
-    primary: designMode === 'premium' ? '#fbbf24' : '#0ea5e9',
+    primary: '#0ea5e9',
     emerald: '#10b981',
-    rose: designMode === 'premium' ? '#ea580c' : '#f43f5e',
+    rose: '#f43f5e',
     amber: '#f59e0b',
-    sky: designMode === 'premium' ? '#f59e0b' : '#0ea5e9',
-    indigo: designMode === 'premium' ? '#d97706' : '#6366f1'
+    sky: '#0ea5e9',
+    indigo: '#6366f1'
   };
 
   const renderChart = () => {
