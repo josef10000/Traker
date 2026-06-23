@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Loader2, CalendarDays, Clock, FileText, ClipboardList, Check, AlertTriangle, AlertCircle } from 'lucide-react';
+import { X, CircleNotch as Loader2, Calendar as CalendarDays, Clock, FileText, ClipboardText as ClipboardList, Check, Warning as AlertTriangle, WarningCircle as AlertCircle } from '@phosphor-icons/react';
 import { CollaborationNote } from '../../types';
 
 interface CollaboratorHistoryModalProps {

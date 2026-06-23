@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Trophy, Medal, TrendingUp, Users } from 'lucide-react';
+import { Trophy, Medal, TrendUp as TrendingUp, Users } from '@phosphor-icons/react';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency } from '../../utils/masks';
 

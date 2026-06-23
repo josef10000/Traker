@@ -1,16 +1,16 @@
 import React from 'react';
 import { 
-  LogOut, 
+  SignOut as LogOut, 
   Plus, 
   User as UserIcon,
   UserPlus,
-  ChevronDown,
+  CaretDown as ChevronDown,
   Globe,
-  FileSpreadsheet,
+  FileCsv as FileSpreadsheet,
   FileText,
   Calculator,
-  Search
-} from 'lucide-react';
+  MagnifyingGlass as Search
+} from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 import { ToastType } from '../ui/Toast';
 

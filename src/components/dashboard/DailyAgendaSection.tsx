@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Phone, Play, Copy, Calendar, Loader2 } from 'lucide-react';
+import { Clock, Phone, Play, Copy, Calendar, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { Agreement, UserProfile } from '../../types';
 
 interface DailyAgendaSectionProps {

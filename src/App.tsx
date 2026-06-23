@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { WarningCircle, IconContext } from '@phosphor-icons/react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth, db } from './lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -159,7 +159,7 @@ export function AppContent() {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-center">
         <div className="glass-card max-w-md p-8 rounded-3xl border border-white/5 bg-slate-900/20 space-y-6">
-          <ShieldAlert className="text-rose-500 mx-auto animate-pulse" size={48} />
+          <WarningCircle className="text-rose-500 mx-auto animate-pulse" size={48} />
           <h2 className="text-2xl font-bold text-white">Acesso Suspenso</h2>
           <p className="text-slate-400 text-sm leading-relaxed">
             O acesso para a organização vinculada à sua conta foi temporariamente suspenso.
@@ -366,8 +366,10 @@ export function AppContent() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <IconContext.Provider value={{ weight: 'duotone', size: 16 }}>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </IconContext.Provider>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertTriangle, X } from 'lucide-react';
+import { Warning as AlertTriangle, X } from '@phosphor-icons/react';
 
 interface ConfirmModalProps {
   isOpen: boolean;

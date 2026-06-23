@@ -3,11 +3,11 @@ import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, deleteDoc
 import { db } from '../../lib/firebase';
 import { UserProfile, QaCompetence, QaEvaluation, Pdi, Team } from '../../types';
 import { 
-  Award, ShieldAlert, Plus, Edit2, Trash2, Calendar, 
-  MessageSquare, Loader2, Sparkles, CheckSquare, XSquare, 
-  ChevronRight, ArrowUpRight, CheckCircle2, AlertTriangle, 
-  Clock, TrendingUp, Compass
-} from 'lucide-react';
+  Medal as Award, ShieldWarning as ShieldAlert, Plus, Pencil as Edit2, Trash as Trash2, Calendar, 
+  ChatText as MessageSquare, CircleNotch as Loader2, Sparkle as Sparkles, CheckSquare, XSquare, 
+  CaretRight as ChevronRight, ArrowUpRight, CheckCircle as CheckCircle2, Warning as AlertTriangle, 
+  Clock, TrendUp as TrendingUp, Compass
+} from '@phosphor-icons/react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Legend, RadarChart, PolarGrid, 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, LayoutDashboard, Eye, EyeOff } from 'lucide-react';
+import { X, Layout as LayoutDashboard, Eye, EyeClosed as EyeOff } from '@phosphor-icons/react';
 
 interface CardOption {
   id: string;

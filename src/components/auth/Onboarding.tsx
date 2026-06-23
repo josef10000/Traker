@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Users, UserPlus, ArrowRight, Loader2, Building, Shield } from 'lucide-react';
+import { UserPlus, ArrowRight, CircleNotch, Building, Shield } from '@phosphor-icons/react';
 import { createTeam, joinTeam, createOrganization, joinOrganizationAsManager, joinOrganizationAsSupervisor } from '../../lib/teams';
 import { User } from 'firebase/auth';
 import { UserProfile, UserRole, Organization, Team } from '../../types';
@@ -288,7 +288,7 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
                   disabled={isLoading}
                   className="flex-[2] bg-sky-500 text-white px-4 py-3 rounded-xl font-semibold hover:bg-sky-400 transition-all flex items-center justify-center gap-2"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Criar Empresa'}
+                  {isLoading ? <CircleNotch className="animate-spin" size={20} /> : 'Criar Empresa'}
                 </button>
               </div>
             </form>
@@ -322,7 +322,7 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
                   disabled={isLoading}
                   className="flex-[2] bg-sky-500 text-white px-4 py-3 rounded-xl font-semibold hover:bg-sky-400 transition-all flex items-center justify-center gap-2"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Criar Equipe'}
+                  {isLoading ? <CircleNotch className="animate-spin" size={20} /> : 'Criar Equipe'}
                 </button>
               </div>
             </form>
@@ -354,7 +354,7 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
                   disabled={isLoading}
                   className="flex-[2] bg-emerald-500 text-white px-4 py-3 rounded-xl font-semibold hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Entrar na Equipe'}
+                  {isLoading ? <CircleNotch className="animate-spin" size={20} /> : 'Entrar na Equipe'}
                 </button>
               </div>
             </form>
@@ -425,7 +425,7 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
                   disabled={isLoading}
                   className="flex-[2] bg-emerald-500 text-white px-4 py-3 rounded-xl font-semibold hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Concluir Vínculo'}
+                  {isLoading ? <CircleNotch className="animate-spin" size={20} /> : 'Concluir Vínculo'}
                 </button>
               </div>
             </div>

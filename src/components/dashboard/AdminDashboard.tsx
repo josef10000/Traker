@@ -1,28 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Building2, 
+  Buildings as Building2, 
   Users, 
-  Layers, 
-  LogOut, 
+  Stack as Layers, 
+  SignOut as LogOut, 
   UserCheck, 
   Globe, 
   Clock, 
-  Settings, 
-  Trash2, 
+  Gear as Settings, 
+  Trash as Trash2, 
   UserMinus, 
   Power, 
-  PowerOff, 
+  Power as PowerOff, 
   Check, 
   X, 
-  Loader2, 
-  CalendarDays,
-  Activity,
-  UserCheck2,
+  CircleNotch as Loader2, 
+  Calendar as CalendarDays,
+  Pulse as Activity,
+  UserCheck as UserCheck2,
   Copy,
   Plus,
   Key,
-  RefreshCw
-} from 'lucide-react';
+  ArrowsCounterClockwise as RefreshCw
+} from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
 import { regenerateManagerInviteToken, generateSecureToken } from '../../lib/teams';

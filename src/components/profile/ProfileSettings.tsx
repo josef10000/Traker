@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { 
   User as UserIcon, 
   Briefcase, 
-  Save, 
+  FloppyDisk as Save, 
   Plus, 
   ArrowLeft, 
-  Trash2, 
+  Trash as Trash2, 
   Users, 
   Palette, 
   Check, 
   X,
   ShieldCheck,
   Copy
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { doc, updateDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization } from '../../types';

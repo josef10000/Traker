@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Mail, Lock, LogIn, Loader2, Chrome, PieChart, Eye, EyeOff } from 'lucide-react';
+import { Envelope, Lock, SignIn, CircleNotch, GoogleLogo, Eye, EyeClosed } from '@phosphor-icons/react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -88,15 +88,15 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">E-mail de Trabalho</label>
               <div className="relative group">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
+                <Envelope className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
                 <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-slate-600" placeholder="seu@email.com" />
               </div>
             </div>
             <button disabled={loading} type="submit" className="w-full bg-sky-500 py-4 rounded-2xl font-black text-white hover:bg-sky-400 transition-all flex items-center justify-center gap-3 shadow-xl shadow-sky-500/20 active:scale-[0.98]">
-              {loading ? <Loader2 className="animate-spin" size={20} /> : (
+              {loading ? <CircleNotch className="animate-spin" size={20} /> : (
                 <>
                   <span>Enviar Link</span>
-                  <LogIn size={18} className="opacity-50" />
+                  <SignIn size={18} className="opacity-50" />
                 </>
               )}
             </button>
@@ -145,7 +145,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
             <div className="space-y-2">
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">E-mail</label>
               <div className="relative group">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
+                <Envelope className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={18} />
                 <input 
                   required 
                   type="email" 
@@ -176,17 +176,17 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
                   placeholder="••••••••" 
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeClosed size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
           </div>
 
           <button disabled={loading} type="submit" className="w-full bg-sky-500 py-5 rounded-2xl font-black text-white hover:bg-sky-400 transition-all shadow-2xl shadow-sky-500/30 flex items-center justify-center gap-3 active:scale-[0.98]">
-            {loading ? <Loader2 className="animate-spin" size={24} /> : (
+            {loading ? <CircleNotch className="animate-spin" size={24} /> : (
               <>
                 <span className="uppercase tracking-[0.2em] text-sm">{isLogin ? 'Entrar' : 'Registrar'}</span>
-                <LogIn size={20} className="opacity-50" />
+                <SignIn size={20} className="opacity-50" />
               </>
             )}
           </button>
@@ -203,7 +203,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
           </div>
 
           <button onClick={handleGoogleSignIn} className="w-full bg-white/5 border border-white/10 py-4 rounded-2xl font-black text-slate-200 hover:bg-white/10 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]">
-            <Chrome size={20} className="group-hover:text-sky-400 transition-colors" />
+            <GoogleLogo size={20} className="group-hover:text-sky-400 transition-colors" />
             <span className="uppercase tracking-[0.1em] text-xs">
               {isLogin ? 'Acessar com Google' : 'Cadastrar-se pelo Google'}
             </span>

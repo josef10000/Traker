@@ -34,7 +34,7 @@ import { logAudit } from '../../lib/audit';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
-import { CheckSquare } from 'lucide-react';
+import { CheckSquare } from '@phosphor-icons/react';
 
 // Hooks customizados
 import { useAgreements } from '../../hooks/useAgreements';

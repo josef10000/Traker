@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldAlert, X, FileSpreadsheet, Lock } from 'lucide-react';
+import { ShieldWarning as ShieldAlert, X, FileCsv as FileSpreadsheet, Lock } from '@phosphor-icons/react';
 
 interface ExportCpfModalProps {
   isOpen: boolean;

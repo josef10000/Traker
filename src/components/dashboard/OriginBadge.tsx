@@ -1,4 +1,4 @@
-import { Cloud, Cpu, Headset, MessageCircle, PhoneCall, Zap } from 'lucide-react';
+import { Cloud, Cpu, Headset, ChatText as MessageCircle, PhoneCall, Lightning as Zap } from '@phosphor-icons/react';
 import { AgreementOrigin } from '../../types';
 
 interface OriginBadgeProps {

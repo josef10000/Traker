@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, User as UserIcon } from 'lucide-react';
+import { Printer, User as UserIcon } from '@phosphor-icons/react';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency } from '../../utils/masks';
 

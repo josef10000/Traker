@@ -1,12 +1,12 @@
 import React from 'react';
 import { 
-  DollarSign, 
-  TrendingUp, 
+  CurrencyDollar as DollarSign, 
+  TrendUp as TrendingUp, 
   Target, 
-  AlertCircle, 
+  WarningCircle as AlertCircle, 
   Clock, 
-  CheckCircle2 
-} from 'lucide-react';
+  CheckCircle as CheckCircle2 
+} from '@phosphor-icons/react';
 import { StatCard } from './StatCard';
 import { DashboardStats } from '../../types';
 

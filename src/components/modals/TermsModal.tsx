@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ShieldCheck, ScrollText } from 'lucide-react';
+import { ShieldCheck, Scroll as ScrollText } from '@phosphor-icons/react';
 
 interface TermsModalProps {
   isOpen: boolean;

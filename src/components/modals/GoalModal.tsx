@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 
 interface GoalModalProps {
   isOpen: boolean;

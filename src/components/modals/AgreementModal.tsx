@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 import { Agreement, AgreementOrigin, AgreementStatus, AgreementType, AgreementCategory, UserProfile } from '../../types';
 import { formatCPF, maskCPF } from '../../utils/masks';
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Upload, CheckCircle2, AlertCircle, Loader2, FileSpreadsheet } from 'lucide-react';
+import { X, Upload, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, CircleNotch as Loader2, FileCsv as FileSpreadsheet } from '@phosphor-icons/react';
 import { db } from '../../lib/firebase';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 import { AgreementStatus, AgreementOrigin, AgreementType, AgreementCategory, UserProfile } from '../../types';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { X, Loader2, Clock, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { X, CircleNotch as Loader2, Clock, CheckCircle as CheckCircle2, Eye, EyeClosed as EyeOff } from '@phosphor-icons/react';
 import { Agreement, AgreementStatus, AgreementType } from '../../types';
 import { OriginBadge } from '../dashboard/OriginBadge';
 import { formatCurrency, maskCPF } from '../../utils/masks';

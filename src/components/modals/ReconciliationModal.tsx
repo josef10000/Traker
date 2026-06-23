@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Calculator, RefreshCw, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
+import { X, Calculator, ArrowsCounterClockwise as RefreshCw, WarningCircle as AlertCircle, CheckCircle as CheckCircle2, Trash as Trash2 } from '@phosphor-icons/react';
 import { formatCurrency } from '../../utils/masks';
 
 interface ReconciliationModalProps {

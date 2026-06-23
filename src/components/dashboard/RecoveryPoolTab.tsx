@@ -4,7 +4,7 @@ import { db } from '../../lib/firebase';
 import { Agreement, AgreementStatus, Team, UserProfile } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { OriginBadge } from './OriginBadge';
-import { ShieldAlert, Download, CheckSquare, Square, Eye, EyeOff, Play, Users, Calendar, HelpCircle, Loader2 } from 'lucide-react';
+import { ShieldWarning as ShieldAlert, Download, CheckSquare, Square, Eye, EyeClosed as EyeOff, Play, Users, Calendar, Question as HelpCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { ExportCpfModal } from '../modals/ExportCpfModal';
 import { logAudit } from '../../lib/audit';
 

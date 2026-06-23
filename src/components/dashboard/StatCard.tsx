@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, LucideIcon, Info } from 'lucide-react';
+import { TrendUp as TrendingUp, Icon as LucideIcon, Info } from '@phosphor-icons/react';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 interface StatCardProps {

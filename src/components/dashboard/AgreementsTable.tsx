@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { 
-  Copy, Eye, EyeOff, History, Sun, Moon, Check, Zap, 
-  AlertTriangle, CheckCircle2, AlertCircle, Clock, Edit3, Trash2, Search, Loader2, MessageSquare
-} from 'lucide-react';
+  Copy, Eye, EyeClosed as EyeOff, ClockCounterClockwise as History, Sun, Moon, Check, Lightning as Zap, 
+  Warning as AlertTriangle, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Clock, Pencil as Edit3, Trash as Trash2, MagnifyingGlass as Search, CircleNotch as Loader2, ChatText as MessageSquare
+} from '@phosphor-icons/react';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { parseLocalDate } from '../../utils/date';

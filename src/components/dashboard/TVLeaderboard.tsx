@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Trophy, Award, Crown, TrendingUp } from 'lucide-react';
+import { Trophy, Medal as Award, Crown, TrendUp as TrendingUp } from '@phosphor-icons/react';
 import { formatCurrency } from '../../utils/masks';
 
 interface LeaderboardItem {

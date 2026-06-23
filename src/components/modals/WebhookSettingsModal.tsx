@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Globe, Save, Loader2, Link2 } from 'lucide-react';
+import { X, Globe, FloppyDisk as Save, CircleNotch as Loader2, Link as Link2 } from '@phosphor-icons/react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 

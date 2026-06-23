@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import { 
   Trophy, 
-  TrendingUp, 
+  TrendUp as TrendingUp, 
   Target, 
   Calculator, 
-  Loader2, 
+  CircleNotch as Loader2, 
   X,
   Clock
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 import { 
   BarChart, 

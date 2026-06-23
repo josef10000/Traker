@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { X, Loader2, Printer, CalendarDays, Check, AlertTriangle, AlertCircle, FileText } from 'lucide-react';
+import { X, CircleNotch as Loader2, Printer, Calendar as CalendarDays, Check, Warning as AlertTriangle, WarningCircle as AlertCircle, FileText } from '@phosphor-icons/react';
 import { CollaborationNote, UserProfile } from '../../types';
 import { getOrganizationNotesReport } from '../../lib/notes';
 
