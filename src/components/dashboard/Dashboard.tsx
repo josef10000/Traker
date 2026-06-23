@@ -51,6 +51,7 @@ import { DailyAgendaSection } from './DailyAgendaSection';
 import { RecoveryPoolTab } from './RecoveryPoolTab';
 import { QaDashboard } from './QaDashboard';
 import { TeamPerformance } from './TeamPerformance';
+import { FinancialPerformanceInsights } from './FinancialPerformanceInsights';
 
 // Modais do sistema
 import { AgreementModal } from '../modals/AgreementModal';
@@ -1388,6 +1389,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 operatorQaScore={operatorQaScore}
               />
 
+              {/* Informações Financeiras, Metas e Ritmo da Organização */}
+              <FinancialPerformanceInsights
+                stats={stats}
+                monthlyGoal={monthlyGoal}
+                effectivenessGoal={effectivenessGoal}
+                workingDays={workingDays}
+                dailyGoal={dailyGoal}
+                viewMode={viewMode}
+                selectedTeamId={selectedTeamId}
+                currentTeamMembers={currentTeamMembers}
+                monthAgreements={monthAgreements}
+                profile={profile}
+                reconciliation={reconciliation}
+                setIsGoalModalOpen={setIsGoalModalOpen}
+                formatCurrency={formatCurrency}
+                getEffectivenessColor={getEffectivenessColor}
+              />
+
               {/* Tabela de Liderança de Equipes se estiver no modo Macro */}
               {viewMode === 'team' && selectedTeamId === 'all' && managedTeamsData.length > 0 && (
                 <section className="space-y-4">
@@ -1578,20 +1597,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <AdvancedInsights 
                 stats={stats}
-                monthlyGoal={monthlyGoal}
-                effectivenessGoal={effectivenessGoal}
-                workingDays={workingDays}
-                dailyGoal={dailyGoal}
-                viewMode={viewMode}
-                selectedTeamId={selectedTeamId}
-                currentTeamMembers={currentTeamMembers}
-                monthAgreements={monthAgreements}
-                profile={profile}
-                reconciliation={reconciliation}
-                setIsGoalModalOpen={setIsGoalModalOpen}
                 formatCurrency={formatCurrency}
-                getEffectivenessColor={getEffectivenessColor}
-                qaScores={qaScores}
               />
             </div>
           )}
