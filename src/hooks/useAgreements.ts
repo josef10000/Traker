@@ -6,13 +6,16 @@ import {
   orderBy, 
   limit, 
   startAfter, 
-  onSnapshot,
+  getDocs,
   DocumentData,
   QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Agreement, AgreementStatus } from '../types';
 import { parseLocalDate } from '../utils/date';
+
+/** Intervalo de auto-refresh silencioso em milissegundos (5 minutos) */
+const AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 interface UseAgreementsProps {
   organizationId: string;
@@ -44,6 +47,11 @@ export const useAgreements = ({
   const [monthAgreements, setMonthAgreements] = useState<Agreement[]>([]);
   const [paginatedAgreements, setPaginatedAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Controle de refresh manual e auto-refresh
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,8 +70,25 @@ export const useAgreements = ({
     };
   }, []);
 
+  /** Dispara uma nova busca manual dos dados do mês */
+  const refreshAgreements = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  /** Auto-refresh silencioso a cada 5 minutos */
+  useEffect(() => {
+    if (!organizationId || teamsToWatch.length === 0) return;
+    const interval = setInterval(() => {
+      if (isMounted.current) {
+        setRefreshTrigger(prev => prev + 1);
+      }
+    }, AUTO_REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [organizationId, teamsToWatch]);
+
   // 1. QUERY DE ESTATÍSTICAS (Tudo do Mês)
-  // Traz apenas os acordos criados no mês de faturamento selecionado para alimentar os KPIs e gráficos
+  // Usa getDocs (leitura única) em vez de onSnapshot (listener contínuo).
+  // Custo: 1 fetch por abertura de tela ou refresh manual, em vez de N leituras contínuas por operador.
   useEffect(() => {
     if (!organizationId || teamsToWatch.length === 0) {
       setMonthAgreements([]);
@@ -71,32 +96,46 @@ export const useAgreements = ({
       return;
     }
 
-    setLoading(true);
+    const fetchStats = async () => {
+      // Na primeira carga mostra loading completo; nos refreshes, apenas o indicador de refresh
+      if (refreshTrigger === 0) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
 
-    const startOfMonthIso = new Date(selectedYear, selectedMonth, 1, 0, 0, 0, 0).toISOString();
-    const endOfMonthIso = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999).toISOString();
+      const startOfMonthIso = new Date(selectedYear, selectedMonth, 1, 0, 0, 0, 0).toISOString();
+      const endOfMonthIso = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999).toISOString();
 
-    const qStats = query(
-      collection(db, 'agreements'),
-      where('organizationId', '==', organizationId),
-      where('teamId', 'in', teamsToWatch),
-      where('createdAt', '>=', startOfMonthIso),
-      where('createdAt', '<=', endOfMonthIso),
-      orderBy('createdAt', 'desc')
-    );
+      const qStats = query(
+        collection(db, 'agreements'),
+        where('organizationId', '==', organizationId),
+        where('teamId', 'in', teamsToWatch),
+        where('createdAt', '>=', startOfMonthIso),
+        where('createdAt', '<=', endOfMonthIso),
+        orderBy('createdAt', 'desc')
+      );
 
-    const unsubscribe = onSnapshot(qStats, (snapshot) => {
-      if (!isMounted.current) return;
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
-      setMonthAgreements(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("Erro na query de estatísticas:", error);
-      if (isMounted.current) setLoading(false);
-    });
+      try {
+        const snapshot = await getDocs(qStats);
+        if (!isMounted.current) return;
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
+        setMonthAgreements(data);
+        setLastRefreshed(new Date());
+      } catch (error) {
+        console.error('Erro na query de estatísticas:', error);
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+          setIsRefreshing(false);
+        }
+      }
+    };
 
-    return () => unsubscribe();
-  }, [organizationId, teamsToWatch, selectedMonth, selectedYear]);
+    fetchStats();
+  // refreshTrigger é incluído para que o refresh manual e o auto-refresh disparem nova busca
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, teamsToWatch, selectedMonth, selectedYear, refreshTrigger]);
 
   // Auxiliar para construir a query filtrada
   const buildFilteredQuery = useCallback((baseLimit?: number, startDoc?: QueryDocumentSnapshot<DocumentData> | null) => {
@@ -240,36 +279,44 @@ export const useAgreements = ({
     }
 
     // Caso padrão (Sem termo de busca/checklist/operador): Paginação Real no Banco de Dados (Firestore)
+    // Usa getDocs (leitura única por página) em vez de onSnapshot (listener contínuo).
+    // A tabela atualiza automaticamente quando o usuário usa o botão de refresh global.
     const cursor = pageHistory[currentPage - 1];
     
     // Consulta da página atual (trazendo limit + 1 para checar se há próxima página)
     const qPage = buildFilteredQuery(itemsPerPage + 1, cursor);
 
-    const unsubscribe = onSnapshot(qPage, (snapshot) => {
-      if (!isMounted.current) return;
-      
-      const docs = snapshot.docs;
-      const hasMore = docs.length > itemsPerPage;
-      setHasNextPage(hasMore);
+    let active = true;
+    const fetchPage = async () => {
+      try {
+        const snapshot = await getDocs(qPage);
+        if (!active || !isMounted.current) return;
 
-      // Corta para o tamanho da página
-      const pageDocs = hasMore ? docs.slice(0, itemsPerPage) : docs;
-      const data = pageDocs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
-      
-      setPaginatedAgreements(data);
+        const docs = snapshot.docs;
+        const hasMore = docs.length > itemsPerPage;
+        setHasNextPage(hasMore);
 
-      if (pageDocs.length > 0) {
-        setFirstVisible(pageDocs[0]);
-        setLastVisible(pageDocs[pageDocs.length - 1]);
-      } else {
-        setFirstVisible(null);
-        setLastVisible(null);
+        // Corta para o tamanho da página
+        const pageDocs = hasMore ? docs.slice(0, itemsPerPage) : docs;
+        const data = pageDocs.map(doc => ({ id: doc.id, ...(doc.data() as Record<string, unknown>) } as unknown as Agreement));
+        
+        setPaginatedAgreements(data);
+
+        if (pageDocs.length > 0) {
+          setFirstVisible(pageDocs[0]);
+          setLastVisible(pageDocs[pageDocs.length - 1]);
+        } else {
+          setFirstVisible(null);
+          setLastVisible(null);
+        }
+      } catch (error) {
+        console.error('Erro na query paginada do Firestore:', error);
       }
-    }, (error) => {
-      console.error("Erro na query paginada do Firestore:", error);
-    });
+    };
 
-    return () => unsubscribe();
+    fetchPage();
+    return () => { active = false; };
+  // monthAgreements é incluído para que a tabela recarregue após um refresh global dos dados
   }, [organizationId, teamsToWatch, currentPage, pageHistory, monthAgreements, searchTerm, isChecklistMode, operatorId, filterStatus, dateFilter, buildFilteredQuery]);
 
   // Navegação de Páginas
@@ -376,6 +423,10 @@ export const useAgreements = ({
     nextPage,
     prevPage,
     hasNextPage,
-    hasPrevPage: currentPage > 1
+    hasPrevPage: currentPage > 1,
+    // Controles de refresh para a UI
+    refreshAgreements,
+    lastRefreshed,
+    isRefreshing
   };
 };

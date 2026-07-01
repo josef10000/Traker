@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, Team } from '../types';
@@ -14,6 +14,20 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
   const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>('all');
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Estabiliza a referência do array managedTeams comparando por valor (JSON).
+   * Sem isso, se o componente pai recriar o array com o mesmo conteúdo a cada render,
+   * os useEffects abaixo seriam disparados desnecessariamente, gerando leituras extras no Firestore.
+   */
+  const managedTeamsKey = useMemo(
+    () => JSON.stringify([...(profile.managedTeams || [])].sort()),
+    [profile.managedTeams]
+  );
+  const stableManagedTeams = useRef<string[]>(profile.managedTeams || []);
+  useEffect(() => {
+    stableManagedTeams.current = profile.managedTeams || [];
+  }, [managedTeamsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 1. Carregar membros quando o time selecionado muda
   useEffect(() => {
@@ -77,7 +91,8 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
     return () => {
       active = false;
     };
-  }, [selectedTeamId, profile.role, profile.organizationId, profile.managedTeams]);
+  // managedTeamsKey garante estabilidade de referência: só re-executa se o conteúdo do array mudar
+  }, [selectedTeamId, profile.role, profile.organizationId, managedTeamsKey]);
 
   // 2. Carregar informações das equipes gerenciadas
   useEffect(() => {
@@ -112,7 +127,8 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
     return () => {
       active = false;
     };
-  }, [profile.role, profile.organizationId, profile.managedTeams, profile.teamId]);
+  // managedTeamsKey garante estabilidade de referência: só re-executa se o conteúdo do array mudar
+  }, [profile.role, profile.organizationId, managedTeamsKey, profile.teamId]);
 
   return {
     currentTeamMembers,

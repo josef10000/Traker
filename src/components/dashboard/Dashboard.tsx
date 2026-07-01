@@ -282,7 +282,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
     currentPage,
     totalPages,
     nextPage,
-    prevPage
+    prevPage,
+    refreshAgreements,
+    lastRefreshed,
+    isRefreshing
   } = useAgreements({
     organizationId: profile.organizationId || '',
     teamsToWatch,
@@ -1223,6 +1226,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             setIsModalOpen={setIsModalOpen}
             showToast={showToast}
             onSearchCpf={handleSearchCpf}
+            onRefreshData={refreshAgreements}
+            lastRefreshed={lastRefreshed}
+            isRefreshing={isRefreshing}
           />
         )}
 

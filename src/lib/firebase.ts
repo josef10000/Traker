@@ -7,7 +7,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import firebaseConfigJson from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -23,5 +23,18 @@ const firebaseConfig = {
 const databaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfigJson.firestoreDatabaseId;
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, databaseId);
+
+/**
+ * Firestore com cache local persistente (IndexedDB).
+ * Na segunda visita do usuário, os dados são lidos do disco local (custo = 0 leituras).
+ * O Firebase sincroniza apenas as diferenças desde a última vez que o usuário abriu o app.
+ * persistentMultipleTabManager garante que múltiplas abas do mesmo operador
+ * compartilhem o mesmo cache sem conflitos.
+ */
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+}, databaseId);
+
 export const auth = getAuth();

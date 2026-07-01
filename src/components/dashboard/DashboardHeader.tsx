@@ -11,7 +11,8 @@ import {
   Calculator,
   MagnifyingGlass as Search,
   Palette,
-  Sparkle
+  Sparkle,
+  ArrowsClockwise
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 import { ToastType } from '../ui/Toast';
@@ -31,6 +32,12 @@ interface DashboardHeaderProps {
   setIsModalOpen: (open: boolean) => void;
   showToast: (message: string, type?: ToastType) => void;
   onSearchCpf: (cpf: string) => void;
+  /** Dispara nova busca dos dados do mês no Firestore */
+  onRefreshData: () => void;
+  /** Data/hora da última atualização bem-sucedida dos dados */
+  lastRefreshed: Date | null;
+  /** Indica se uma busca está em andamento (para o spinner) */
+  isRefreshing: boolean;
 }
 
 export const DashboardHeader = ({
@@ -46,9 +53,24 @@ export const DashboardHeader = ({
   setIsReconciliationModalOpen,
   setIsModalOpen,
   showToast,
-  onSearchCpf
+  onSearchCpf,
+  onRefreshData,
+  lastRefreshed,
+  isRefreshing
 }: DashboardHeaderProps) => {
   const [designMode, setDesignMode] = useDesignMode();
+
+  /** Formata o timestamp da última atualização de forma relativa (ex: "há 3 min") */
+  const formatLastRefreshed = (date: Date | null): string => {
+    if (!date) return 'nunca';
+    const diffMs = Date.now() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 60) return 'agora mesmo';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `há ${diffMin} min`;
+    const diffH = Math.floor(diffMin / 60);
+    return `há ${diffH}h`;
+  };
 
   if (isPresentMode) return null;
 
@@ -120,6 +142,28 @@ export const DashboardHeader = ({
             </button>
           </form>
 
+          {/* Botão de Atualizar Dados */}
+          <div className="flex flex-col items-center gap-0.5">
+            <button
+              onClick={onRefreshData}
+              disabled={isRefreshing}
+              className={`p-2.5 rounded-xl transition-all border ${
+                isRefreshing
+                  ? 'text-sky-400 bg-sky-500/10 border-sky-500/20 cursor-wait'
+                  : 'text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 border-transparent'
+              }`}
+              title="Atualizar dados do mês"
+            >
+              <ArrowsClockwise
+                size={18}
+                weight="duotone"
+                className={isRefreshing ? 'animate-spin' : ''}
+              />
+            </button>
+            <span className="text-[8px] text-slate-600 font-medium whitespace-nowrap leading-none">
+              {formatLastRefreshed(lastRefreshed)}
+            </span>
+          </div>
 
           <div 
             id="user-profile-menu"
