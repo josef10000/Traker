@@ -7,6 +7,8 @@ import {
   limit, 
   startAfter, 
   getDocs,
+  getDocsFromCache,
+  getDocsFromServer,
   DocumentData,
   QueryDocumentSnapshot
 } from 'firebase/firestore';
@@ -14,8 +16,13 @@ import { db } from '../lib/firebase';
 import { Agreement, AgreementStatus } from '../types';
 import { parseLocalDate } from '../utils/date';
 
-/** Intervalo de auto-refresh silencioso em milissegundos (5 minutos) */
-const AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+/**
+ * Auto-refresh silencioso a cada 30 minutos.
+ * Reduz ~83% das leituras automáticas em comparação com 5 minutos,
+ * mantendo os dados razoavelmente frescos para gestores.
+ * O operador pode forçar atualização imediata pelo botão na UI.
+ */
+const AUTO_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
 interface UseAgreementsProps {
   organizationId: string;
@@ -289,7 +296,26 @@ export const useAgreements = ({
     let active = true;
     const fetchPage = async () => {
       try {
-        const snapshot = await getDocs(qPage);
+        /**
+         * Estratégia Cache-First para a query paginada:
+         * 1. Tenta servir do IndexedDB local (custo = 0 leituras no Firestore)
+         * 2. Se o cache estiver vazio (primeira vez ou cache expirado), vai ao servidor
+         * Isso significa que navegação entre páginas e filtros são gratuitos
+         * após a primeira carga. Só o refresh manual/auto vai ao servidor.
+         */
+        let snapshot;
+        try {
+          snapshot = await getDocsFromCache(qPage);
+          // Se o cache retornou vazio mas a query deveria ter resultados,
+          // fallback para o servidor para não mostrar tela em branco
+          if (snapshot.empty && refreshTrigger === 0) {
+            snapshot = await getDocsFromServer(qPage);
+          }
+        } catch {
+          // Cache indisponível (ex: primeira abertura) — vai direto ao servidor
+          snapshot = await getDocsFromServer(qPage);
+        }
+
         if (!active || !isMounted.current) return;
 
         const docs = snapshot.docs;
