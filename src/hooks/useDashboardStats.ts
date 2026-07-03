@@ -155,7 +155,9 @@ export const useDashboardStats = ({
       filteredPaidValue: totalPaidFiltered,
       totalOverdue: totalOverdueMonth,
       totalPendingToday: totalPendingTodayMonth,
-      effectivenessRate: (totalPaidMonth / (totalProjected || 1)) * 100,
+      effectivenessRate: realMonthAgreements.length > 0
+        ? (realMonthAgreements.filter(a => a.status === AgreementStatus.PAID).length / realMonthAgreements.length) * 100
+        : 0,
       counts: {
         month: {
           total: realMonthAgreements.length,

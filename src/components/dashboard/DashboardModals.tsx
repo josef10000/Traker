@@ -53,6 +53,7 @@ export interface DashboardModalsProps {
   // ImportCsvModal
   isImportCsvOpen: boolean;
   setIsImportCsvOpen: (open: boolean) => void;
+  onImportSuccess: () => void;
 
   // WebhookSettingsModal
   isWebhookSettingsOpen: boolean;
@@ -133,6 +134,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
 
   isImportCsvOpen,
   setIsImportCsvOpen,
+  onImportSuccess,
 
   isWebhookSettingsOpen,
   setIsWebhookSettingsOpen,
@@ -222,7 +224,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         onClose={() => setIsImportCsvOpen(false)} 
         profile={profile} 
         selectedTeamId={selectedTeamId} 
-        onImportSuccess={() => setIsImportCsvOpen(false)} 
+        onImportSuccess={onImportSuccess} 
         showToast={showToast} 
       />
 

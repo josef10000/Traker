@@ -81,5 +81,10 @@ service cloud.firestore {
       allow read: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == resource.data.organizationId));
       allow update, delete: if false; // Logs são imutáveis e perenes
     }
+
+    // Coleção de estatísticas mensais (monthlyStats)
+    match /monthlyStats/{statsId} {
+      allow read, write: if request.auth != null;
+    }
   }
 }

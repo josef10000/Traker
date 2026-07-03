@@ -13,13 +13,15 @@ interface RecoveryPoolTabProps {
   managedTeamsData: Team[];
   showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   onAttend: (agreement: Agreement) => void;
+  onTakeOverSuccess?: () => void;
 }
 
 export const RecoveryPoolTab = ({
   profile,
   managedTeamsData,
   showToast,
-  onAttend
+  onAttend,
+  onTakeOverSuccess
 }: RecoveryPoolTabProps) => {
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +119,9 @@ export const RecoveryPoolTab = ({
       await batch.commit();
       showToast(`${selectedIds.length} acordos assumidos com sucesso!`, 'success');
       setSelectedIds([]);
+      if (onTakeOverSuccess) {
+        onTakeOverSuccess();
+      }
     } catch (error) {
       console.error("Erro ao assumir lote:", error);
       showToast('Erro ao assumir acordos.', 'error');

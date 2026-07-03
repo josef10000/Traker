@@ -16,6 +16,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
+import { markStatsStale } from '../../lib/statsCache';
 import { 
   Agreement, 
   AgreementStatus, 
@@ -297,10 +298,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
     customEndDate,
     searchTerm,
     isChecklistMode,
-    operatorId: operatorIdForAgreements
+    operatorId: operatorIdForAgreements,
+    userId: profile.uid
   });
 
   const isLoading = teamLoading || agreementsLoading;
+
+  /**
+   * Marca o cache de stats como stale após qualquer escrita de acordo.
+   * Fire-and-forget: não bloqueia a operação principal.
+   */
+  const doMarkStale = React.useCallback(() => {
+    markStatsStale(
+      profile.organizationId || '', teamsToWatch, selectedMonth, selectedYear
+    ).catch(err => console.error('[Dashboard] Erro ao marcar cache stale:', err));
+  }, [profile.organizationId, teamsToWatch, selectedMonth, selectedYear]);
 
   // Atualiza metas reativamente com base na seleção de equipes gerenciadas do hook
   useEffect(() => {
@@ -687,6 +699,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         status: AgreementStatus.PAID,
         paidAt: now
       });
+      doMarkStale();
       showToast('Acordo efetivado com sucesso!', 'success');
 
       if (webhookUrl) {
@@ -721,11 +734,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           status: AgreementStatus.BROKEN,
           lastCheckedAt: new Date().toISOString()
         });
+        doMarkStale();
         showToast('Acordo marcado como quebrado (conferência após o vencimento).', 'info');
       } else {
         await updateDoc(doc(db, 'agreements', id), {
           lastCheckedAt: isCurrentlyChecked ? null : new Date().toISOString()
         });
+        doMarkStale();
         showToast(isCurrentlyChecked ? 'Marcação de conferência removida.' : 'Acordo marcado como conferido!', 'success');
       }
     } catch (error) {
@@ -738,6 +753,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!confirm('Deseja realmente excluir este acordo?')) return;
     try {
       await deleteDoc(doc(db, 'agreements', id));
+      doMarkStale();
       showToast('Acordo excluído com sucesso!', 'success');
     } catch (error) {
       console.error(error);
@@ -825,6 +841,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
       setIsModalOpen(false);
       setEditingAgreement(null);
+      doMarkStale();
     } catch (error) {
       console.error(error);
       showToast('Erro ao salvar acordo.', 'error');
@@ -987,6 +1004,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     try {
       await setDoc(reconRef, reconData, { merge: true });
+      doMarkStale();
       showToast('Dados de conciliação atualizados com sucesso!', 'success');
     } catch (error) {
       showToast('Erro ao atualizar conciliação.', 'error');
@@ -1014,6 +1032,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
 
       showToast('Conciliação e ajustes de saldo apagados com sucesso! O saldo voltou ao normal.', 'success');
+      doMarkStale();
     } catch (error) {
       console.error(error);
       showToast('Erro ao apagar conciliação.', 'error');
@@ -1023,6 +1042,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleDeleteAdjustment = async (agreementId: string) => {
     try {
       await deleteDoc(doc(db, 'agreements', agreementId));
+      doMarkStale();
       showToast('Ajuste de saldo apagado com sucesso! O saldo foi recalculado.', 'success');
     } catch (error) {
       console.error(error);
@@ -1069,6 +1089,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
 
       await updateDoc(doc(db, 'reconciliations', reconId), reconUpdate);
+      doMarkStale();
       showToast('Saldo normalizado com sucesso!', 'success');
     } catch (error) {
       console.error(error);
@@ -1569,6 +1590,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 setEditingAgreement(agreement);
                 setIsModalOpen(true);
               }}
+              onTakeOverSuccess={() => {
+                doMarkStale();
+                refreshAgreements();
+              }}
             />
           )}
 
@@ -1888,6 +1913,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         isImportCsvOpen={isImportCsvOpen}
         setIsImportCsvOpen={setIsImportCsvOpen}
+        onImportSuccess={() => {
+          doMarkStale();
+          refreshAgreements();
+          setIsImportCsvOpen(false);
+        }}
 
         isWebhookSettingsOpen={isWebhookSettingsOpen}
         setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
