@@ -489,7 +489,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
   return (
     <div className="min-h-screen font-sans pb-20 bg-slate-950 text-slate-100">
-      <header className="glass-card sticky top-0 z-30 px-6 py-4 bg-slate-900/40 backdrop-blur-xl border-b border-white/5">
+      <header className="glass-card sticky top-0 z-30 px-6 py-4 bg-slate-900/40 backdrop-blur-xl border-b border-white/5 !overflow-visible" style={{ overflow: 'visible' }}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="p-1.5">
