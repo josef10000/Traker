@@ -12,7 +12,8 @@ import {
   MagnifyingGlass as Search,
   Palette,
   Sparkle,
-  ArrowsClockwise
+  ArrowsClockwise,
+  Lifebuoy
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 import { ToastType } from '../ui/Toast';
@@ -38,6 +39,10 @@ interface DashboardHeaderProps {
   lastRefreshed: Date | null;
   /** Indica se uma busca está em andamento (para o spinner) */
   isRefreshing: boolean;
+  /** Nome personalizado da organização exibido no header como logo */
+  organizationName: string;
+  /** Callback para ativar a aba de suporte */
+  onSupportTabClick: () => void;
 }
 
 export const DashboardHeader = ({
@@ -56,7 +61,9 @@ export const DashboardHeader = ({
   onSearchCpf,
   onRefreshData,
   lastRefreshed,
-  isRefreshing
+  isRefreshing,
+  organizationName,
+  onSupportTabClick
 }: DashboardHeaderProps) => {
   const [designMode, setDesignMode] = useDesignMode();
 
@@ -89,22 +96,40 @@ export const DashboardHeader = ({
             />
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold tracking-tight text-white leading-none">Tracker</h1>
-            {(profile.role === 'manager' || (profile.managedTeams && profile.managedTeams.length > 1)) ? (
-              <button 
-                onClick={() => setIsTeamSelectorOpen(true)}
-                className="flex items-center gap-1.5 text-[10px] text-sky-400 uppercase tracking-widest font-bold mt-1.5 hover:text-sky-300 transition-colors group"
-              >
-                {selectedTeamId === 'all' 
-                  ? 'Visão Macro (Todas)' 
-                  : managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Selecionar Equipe'}
-                <ChevronDown size={12} className="transition-transform duration-300" />
-              </button>
-            ) : (
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">
-                {managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Dashboard Operacional'}
-              </p>
-            )}
+            <h1 className="text-xl font-black tracking-tight text-white leading-none italic uppercase">
+              {organizationName || 'Tracker'}
+            </h1>
+            
+            <div className="flex items-center gap-2 mt-1.5">
+              {(profile.role === 'manager' || (profile.managedTeams && profile.managedTeams.length > 1)) ? (
+                <button 
+                  onClick={() => setIsTeamSelectorOpen(true)}
+                  className="flex items-center gap-1.5 text-[10px] text-sky-400 uppercase tracking-widest font-bold hover:text-sky-300 transition-colors group"
+                >
+                  {selectedTeamId === 'all' 
+                    ? 'Visão Macro (Todas)' 
+                    : managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Selecionar Equipe'}
+                  <ChevronDown size={12} className="transition-transform duration-300" />
+                </button>
+              ) : (
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                  {managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Dashboard Operacional'}
+                </p>
+              )}
+
+              {(profile.role === 'manager' || profile.role === 'supervisor') && (
+                <>
+                  <span className="text-slate-700 text-xs leading-none">|</span>
+                  <button 
+                    onClick={onSupportTabClick}
+                    className="flex items-center gap-1 text-[10px] text-amber-500 hover:text-amber-400 uppercase tracking-widest font-bold transition-all group cursor-pointer"
+                  >
+                    <Lifebuoy size={12} className="text-amber-500 animate-pulse shrink-0" />
+                    Suporte & Chamados
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto justify-end">

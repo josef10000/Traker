@@ -44,6 +44,7 @@ import { useDashboardStats } from '../../hooks/useDashboardStats';
 
 // Componentes extraídos
 import { DashboardHeader } from './DashboardHeader';
+import { SupportTab } from './SupportTab';
 import { StatsGrid } from './StatsGrid';
 import { AdvancedInsights } from './AdvancedInsights';
 import { AgreementsTable } from './AgreementsTable';
@@ -81,7 +82,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   // Abas do Dashboard
-  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi'>('financial');
+  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support'>('financial');
   
   // Visualização e Seleção de Equipes
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
@@ -101,6 +102,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [organizationName, setOrganizationName] = useState<string>('');
   const [organizationCnpj, setOrganizationCnpj] = useState<string>('');
   const [webhookUrl, setWebhookUrl] = useState<string>('');
+  const [crmOrgId, setCrmOrgId] = useState<string>('');
+  const [crmClientId, setCrmClientId] = useState<string>('');
+  const [crmPublicToken, setCrmPublicToken] = useState<string>('');
 
   // Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -346,17 +350,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return () => unsubscribe();
   }, [selectedTeamId]);
 
-  // Carrega informações da organização
+  // Carrega informações da organização em tempo real
   useEffect(() => {
-    if (profile.organizationId) {
-      getDoc(doc(db, 'organizations', profile.organizationId)).then(snap => {
-        if (snap.exists()) {
-          setWebhookUrl(snap.data().webhookUrl || '');
-          setOrganizationName(snap.data().name || '');
-          setOrganizationCnpj(snap.data().cnpj || '');
-        }
-      });
-    }
+    if (!profile.organizationId) return;
+    const orgRef = doc(db, 'organizations', profile.organizationId);
+    const unsubscribe = onSnapshot(orgRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setWebhookUrl(data.webhookUrl || '');
+        setOrganizationName(data.name || '');
+        setOrganizationCnpj(data.cnpj || '');
+        setCrmOrgId(data.crmOrgId || '');
+        setCrmClientId(data.crmClientId || '');
+        setCrmPublicToken(data.crmPublicToken || '');
+      }
+    });
+    return () => unsubscribe();
   }, [profile.organizationId]);
 
   // Escuta presenças diárias na aba de colaboradores
@@ -1250,6 +1259,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onRefreshData={refreshAgreements}
             lastRefreshed={lastRefreshed}
             isRefreshing={isRefreshing}
+            organizationName={organizationName}
+            onSupportTabClick={() => setDashboardTab('support')}
           />
         )}
 
@@ -1319,6 +1330,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     >
                       BI & Analytics
                     </button>
+                    {(profile.role === 'manager' || profile.role === 'supervisor') && (
+                      <button
+                        onClick={() => setDashboardTab('support')}
+                        className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                          dashboardTab === 'support' 
+                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Suporte & Chamados
+                      </button>
+                    )}
                   </div>
                 );
               })()}
@@ -1621,6 +1644,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 formatCurrency={formatCurrency}
               />
             </div>
+          )}
+
+          {/* CONTEÚDO DA ABA DE SUPORTE & INTEGRACAO CRM */}
+          {dashboardTab === 'support' && (profile.role === 'manager' || profile.role === 'supervisor') && (
+            <SupportTab
+              profile={profile}
+              organizationId={profile.organizationId || ''}
+              organizationName={organizationName}
+              crmOrgId={crmOrgId}
+              crmClientId={crmClientId}
+              crmPublicToken={crmPublicToken}
+              showToast={showToast}
+            />
           )}
         </main>
       </div>

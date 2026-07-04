@@ -39,6 +39,9 @@ export interface Organization {
   maxUsers: number;
   maxTeams: number;
   webhookUrl?: string;
+  crmOrgId?: string;
+  crmClientId?: string;
+  crmPublicToken?: string;
   managerInviteToken?: string | null;
   supervisorInviteToken?: string | null;
   createdAt: string;

@@ -79,6 +79,13 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
    - **Matriz de Risco**: Classificação de CPFs em categorias de risco de quebra com base no histórico comportamental.
    - **Calendário de Calor Macro de 31 dias**: Visão macro-sazonal exibindo os dias de maior arrecadação e probabilidade de pagamento.
 
+6. **📞 Suporte, Central de Chamados & Cancelamento Bilateral (Fase 6 - HubCRM)**:
+   - **Integração Automática Bilateral**: Fluxo de webhook em `/api/crm-webhook` que recebe e sincroniza de forma atômica os tokens do HubCRM (`crmOrgId`, `crmClientId`, `crmPublicToken`) ao vincular o SaaS de Cobrança ao card do cliente no CRM.
+   - **Central de Ajuda**: Aba exclusiva de suporte com formulários de chamados técnicos e comerciais segmentados por categoria e prioridade.
+   - **Travamento de Conversas**: Chat de réplicas interativo integrado diretamente à API do CRM que é travado permanentemente quando o chamado assume o status `concluido` (Resolvido).
+   - **Permissões Administrativas**: O acesso à central de ajuda e à abertura de chamados é permitido apenas a Gerentes e Supervisores (Operadores e Monitores não visualizam a opção).
+   - **Cancelamento de Assinatura Automático**: Gerentes podem cancelar a assinatura diretamente pela central do SaaS. O sistema faz a chamada correspondente ao HubCRM, obtém a data limite de acesso e configura o bloqueio de acesso 100% automatizado da organização para o dia seguinte da expiração.
+
 ---
 
 ## 🚀 Arquitetura Técnica & Performance

@@ -72,6 +72,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [editMaxUsers, setEditMaxUsers] = useState(5);
   const [editMaxTeams, setEditMaxTeams] = useState(1);
   const [editExpiresAt, setEditExpiresAt] = useState('');
+  const [editCrmOrgId, setEditCrmOrgId] = useState('');
+  const [editCrmClientId, setEditCrmClientId] = useState('');
+  const [editCrmPublicToken, setEditCrmPublicToken] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // Modal de criação de organização
@@ -81,6 +84,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [newOrgPlan, setNewOrgPlan] = useState<Organization['plan']>('free');
   const [newOrgMaxUsers, setNewOrgMaxUsers] = useState(5);
   const [newOrgMaxTeams, setNewOrgMaxTeams] = useState(1);
+  const [newOrgCrmOrgId, setNewOrgCrmOrgId] = useState('');
+  const [newOrgCrmClientId, setNewOrgCrmClientId] = useState('');
+  const [newOrgCrmPublicToken, setNewOrgCrmPublicToken] = useState('');
 
   useEffect(() => {
     // Carregar todas as organizações
@@ -286,6 +292,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     setEditMaxUsers(org.maxUsers || 5);
     setEditMaxTeams(org.maxTeams || 1);
     setEditExpiresAt(org.planExpiresAt || '');
+    setEditCrmOrgId(org.crmOrgId || '');
+    setEditCrmClientId(org.crmClientId || '');
+    setEditCrmPublicToken(org.crmPublicToken || '');
   };
 
   const handleSaveLimits = async () => {
@@ -298,7 +307,10 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         status: editStatus,
         maxUsers: Number(editMaxUsers),
         maxTeams: Number(editMaxTeams),
-        planExpiresAt: editExpiresAt || undefined
+        planExpiresAt: editExpiresAt || undefined,
+        crmOrgId: editCrmOrgId.trim() || undefined,
+        crmClientId: editCrmClientId.trim() || undefined,
+        crmPublicToken: editCrmPublicToken.trim() || undefined
       };
       await updateDoc(orgRef, updateData);
       
@@ -359,6 +371,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         maxTeams: Number(newOrgMaxTeams),
         managerInviteToken: managerToken,
         supervisorInviteToken: supervisorToken,
+        crmOrgId: newOrgCrmOrgId.trim() || undefined,
+        crmClientId: newOrgCrmClientId.trim() || undefined,
+        crmPublicToken: newOrgCrmPublicToken.trim() || undefined,
         createdAt: now
       };
 
@@ -378,6 +393,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       setNewOrgPlan('free');
       setNewOrgMaxUsers(5);
       setNewOrgMaxTeams(1);
+      setNewOrgCrmOrgId('');
+      setNewOrgCrmClientId('');
+      setNewOrgCrmPublicToken('');
       setIsCreateOrgOpen(false);
     } catch (error) {
       console.error(error);
@@ -903,6 +921,44 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <option value="inactive">Empresa Suspensa/Inativa</option>
                   </select>
                 </div>
+
+                <div className="border-t border-white/5 pt-4 space-y-4">
+                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider block">Integração HubCRM (Suporte/Cancelamento)</span>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">ID Organização CRM</label>
+                    <input 
+                      type="text"
+                      placeholder="Ex: crm-org-123"
+                      value={editCrmOrgId}
+                      onChange={(e) => setEditCrmOrgId(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">ID Cliente CRM</label>
+                      <input 
+                        type="text"
+                        placeholder="Ex: cli_abc123"
+                        value={editCrmClientId}
+                        onChange={(e) => setEditCrmClientId(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Token Público CRM</label>
+                      <input 
+                        type="text"
+                        placeholder="Ex: token_xyz"
+                        value={editCrmPublicToken}
+                        onChange={(e) => setEditCrmPublicToken(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="p-8 pt-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex gap-4 shrink-0">
@@ -1016,6 +1072,44 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                         onChange={(e) => setNewOrgMaxTeams(Number(e.target.value))}
                         className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
                       />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-white/5 pt-4 space-y-4">
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider block">Integração HubCRM (Opcional)</span>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">ID Organização CRM</label>
+                      <input 
+                        type="text"
+                        placeholder="Ex: crm-org-123"
+                        value={newOrgCrmOrgId}
+                        onChange={(e) => setNewOrgCrmOrgId(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">ID Cliente CRM</label>
+                        <input 
+                          type="text"
+                          placeholder="Ex: cli_abc123"
+                          value={newOrgCrmClientId}
+                          onChange={(e) => setNewOrgCrmClientId(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Token Público CRM</label>
+                        <input 
+                          type="text"
+                          placeholder="Ex: token_xyz"
+                          value={newOrgCrmPublicToken}
+                          onChange={(e) => setNewOrgCrmPublicToken(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

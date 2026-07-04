@@ -42,7 +42,16 @@ export function AppContent() {
           if (userProfile && userProfile.organizationId && userProfile.role !== 'super_admin') {
             const orgSnap = await getDoc(doc(db, 'organizations', userProfile.organizationId));
             if (orgSnap.exists()) {
-              setIsOrgActive(orgSnap.data().status === 'active');
+              const orgData = orgSnap.data();
+              let active = orgData.status === 'active';
+              if (active && orgData.planExpiresAt) {
+                const expiresDate = new Date(orgData.planExpiresAt + 'T23:59:59');
+                const today = new Date();
+                if (today > expiresDate) {
+                  active = false;
+                }
+              }
+              setIsOrgActive(active);
             } else {
               setIsOrgActive(false);
             }
@@ -83,7 +92,16 @@ export function AppContent() {
         if (userProfile && userProfile.organizationId && userProfile.role !== 'super_admin') {
           const orgSnap = await getDoc(doc(db, 'organizations', userProfile.organizationId));
           if (orgSnap.exists()) {
-            setIsOrgActive(orgSnap.data().status === 'active');
+            const orgData = orgSnap.data();
+            let active = orgData.status === 'active';
+            if (active && orgData.planExpiresAt) {
+              const expiresDate = new Date(orgData.planExpiresAt + 'T23:59:59');
+              const today = new Date();
+              if (today > expiresDate) {
+                active = false;
+              }
+            }
+            setIsOrgActive(active);
           } else {
             setIsOrgActive(false);
           }
