@@ -84,9 +84,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [newOrgPlan, setNewOrgPlan] = useState<Organization['plan']>('free');
   const [newOrgMaxUsers, setNewOrgMaxUsers] = useState(5);
   const [newOrgMaxTeams, setNewOrgMaxTeams] = useState(1);
-  const [newOrgCrmOrgId, setNewOrgCrmOrgId] = useState('');
-  const [newOrgCrmClientId, setNewOrgCrmClientId] = useState('');
-  const [newOrgCrmPublicToken, setNewOrgCrmPublicToken] = useState('');
 
   useEffect(() => {
     // Carregar todas as organizações
@@ -371,9 +368,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         maxTeams: Number(newOrgMaxTeams),
         managerInviteToken: managerToken,
         supervisorInviteToken: supervisorToken,
-        crmOrgId: newOrgCrmOrgId.trim() || undefined,
-        crmClientId: newOrgCrmClientId.trim() || undefined,
-        crmPublicToken: newOrgCrmPublicToken.trim() || undefined,
         createdAt: now
       };
 
@@ -393,9 +387,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       setNewOrgPlan('free');
       setNewOrgMaxUsers(5);
       setNewOrgMaxTeams(1);
-      setNewOrgCrmOrgId('');
-      setNewOrgCrmClientId('');
-      setNewOrgCrmPublicToken('');
       setIsCreateOrgOpen(false);
     } catch (error) {
       console.error(error);
@@ -1072,44 +1063,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                         onChange={(e) => setNewOrgMaxTeams(Number(e.target.value))}
                         className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
                       />
-                    </div>
-                  </div>
-
-                  <div className="border-t border-white/5 pt-4 space-y-4">
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider block">Integração HubCRM (Opcional)</span>
-                    
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">ID Organização CRM</label>
-                      <input 
-                        type="text"
-                        placeholder="Ex: crm-org-123"
-                        value={newOrgCrmOrgId}
-                        onChange={(e) => setNewOrgCrmOrgId(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">ID Cliente CRM</label>
-                        <input 
-                          type="text"
-                          placeholder="Ex: cli_abc123"
-                          value={newOrgCrmClientId}
-                          onChange={(e) => setNewOrgCrmClientId(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Token Público CRM</label>
-                        <input 
-                          type="text"
-                          placeholder="Ex: token_xyz"
-                          value={newOrgCrmPublicToken}
-                          onChange={(e) => setNewOrgCrmPublicToken(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
-                        />
-                      </div>
                     </div>
                   </div>
                 </div>

@@ -270,38 +270,14 @@ export const SupportTab = ({
 
   if (!isIntegrated) {
     return (
-      <div className="glass-card p-8 rounded-[2rem] border border-white/5 bg-slate-900/10 max-w-2xl mx-auto space-y-6">
-        <div className="text-center space-y-3">
-          <Lifebuoy className="text-sky-500 mx-auto" size={48} weight="duotone" />
-          <h2 className="text-2xl font-bold text-white tracking-tight">Ativar Integração de Suporte</h2>
+      <div className="glass-card p-8 rounded-[2rem] border border-white/5 bg-slate-900/10 max-w-2xl mx-auto space-y-6 text-center">
+        <div className="py-12 space-y-4">
+          <CircleNotch className="animate-spin text-amber-500 mx-auto" size={48} />
+          <h2 className="text-xl font-bold text-white tracking-tight">Configurando Central de Suporte</h2>
           <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
-            Sua organização ainda não está integrada ao sistema de chamados. Cole o Código de Integração no seu painel do **HubCRM** para sincronizar automaticamente.
+            A central de atendimento está sendo ativada pela nossa equipe. 
+            Por favor, aguarde alguns instantes. Este painel será liberado automaticamente.
           </p>
-        </div>
-
-        <div className="bg-slate-950/50 p-6 rounded-2xl border border-white/5 space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Código de Integração do SaaS</label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                readOnly
-                value={organizationId}
-                className="flex-1 bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none text-white text-xs font-mono select-all outline-none"
-              />
-              <button
-                onClick={handleCopyCode}
-                className="px-4 bg-sky-500 text-white rounded-xl hover:bg-sky-400 transition-colors flex items-center gap-1.5 font-bold text-xs active:scale-95 shadow-md shadow-sky-500/10"
-              >
-                {copiedCode ? <Check size={16} /> : <ClipboardText size={16} />}
-                {copiedCode ? 'Copiado!' : 'Copiar'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-xs text-slate-500 text-center leading-relaxed">
-          Após colar este código no CRM do cliente, os tokens de suporte (`crmOrgId`, `crmClientId`, `crmPublicToken`) serão injetados de forma automática em tempo real.
         </div>
       </div>
     );

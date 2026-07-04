@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   SignOut as LogOut, 
   Plus, 
@@ -66,6 +67,18 @@ export const DashboardHeader = ({
   onSupportTabClick
 }: DashboardHeaderProps) => {
   const [designMode, setDesignMode] = useDesignMode();
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
+        setIsToolsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   /** Formata o timestamp da última atualização de forma relativa (ex: "há 3 min") */
   const formatLastRefreshed = (date: Date | null): string => {
@@ -132,7 +145,7 @@ export const DashboardHeader = ({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
           {/* Busca Global de CPF (LGPD) */}
           <form 
             onSubmit={(e) => {
@@ -146,7 +159,7 @@ export const DashboardHeader = ({
                 showToast('Digite um CPF com 11 dígitos.', 'error');
               }
             }}
-            className="relative flex items-center bg-slate-950 px-3 py-1.5 rounded-xl border border-white/5 focus-within:border-sky-500/50 transition-all shrink-0 max-w-[200px]"
+            className="relative flex items-center bg-slate-950 px-3 py-1.5 rounded-xl border border-white/5 focus-within:border-sky-500/50 transition-all shrink-0 max-w-[160px]"
           >
             <input 
               name="searchCpf"
@@ -162,140 +175,192 @@ export const DashboardHeader = ({
               }}
               className="bg-transparent text-xs font-bold text-slate-200 outline-none border-none placeholder-slate-600 w-full"
             />
-            <button type="submit" className="text-slate-500 hover:text-sky-400 transition-colors p-0.5">
+            <button type="submit" className="text-slate-500 hover:text-sky-400 transition-colors p-0.5 cursor-pointer">
               <Search size={14} />
             </button>
           </form>
 
           {/* Botão de Atualizar Dados */}
-          <div className="flex flex-col items-center gap-0.5">
+          <button
+            onClick={onRefreshData}
+            disabled={isRefreshing}
+            className={`p-2 rounded-xl transition-all border shrink-0 cursor-pointer ${
+              isRefreshing
+                ? 'text-sky-400 bg-sky-500/10 border-sky-500/20 cursor-wait'
+                : 'text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 border-transparent'
+            }`}
+            title={`Atualizar dados do mês (Atualizado: ${formatLastRefreshed(lastRefreshed)})`}
+          >
+            <ArrowsClockwise
+              size={16}
+              weight="duotone"
+              className={isRefreshing ? 'animate-spin' : ''}
+            />
+          </button>
+
+          {/* Dropdown de Ferramentas / Ações */}
+          <div className="relative shrink-0" ref={toolsMenuRef}>
             <button
-              onClick={onRefreshData}
-              disabled={isRefreshing}
-              className={`p-2.5 rounded-xl transition-all border ${
-                isRefreshing
-                  ? 'text-sky-400 bg-sky-500/10 border-sky-500/20 cursor-wait'
-                  : 'text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 border-transparent'
+              onClick={() => setIsToolsOpen(!isToolsOpen)}
+              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                isToolsOpen
+                  ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
+                  : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
               }`}
-              title="Atualizar dados do mês"
+              title="Ações e Ferramentas SaaS"
             >
-              <ArrowsClockwise
-                size={18}
-                weight="duotone"
-                className={isRefreshing ? 'animate-spin' : ''}
-              />
+              <Palette size={18} weight="duotone" />
             </button>
-            <span className="text-[8px] text-slate-600 font-medium whitespace-nowrap leading-none">
-              {formatLastRefreshed(lastRefreshed)}
-            </span>
+
+            {/* Menu Suspenso */}
+            <AnimatePresence>
+              {isToolsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-56 bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 shadow-2xl z-50 space-y-1"
+                >
+                  <div className="px-3 py-1.5 text-[9px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 mb-1">
+                    Ferramentas & Ações
+                  </div>
+
+                  {/* Importar CSV */}
+                  {(profile.role === 'manager' || profile.role === 'supervisor') && (
+                    <button
+                      onClick={() => {
+                        setIsToolsOpen(false);
+                        setIsImportCsvOpen(true);
+                      }}
+                      disabled={selectedTeamId === 'all'}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <FileSpreadsheet size={16} className="text-amber-400" />
+                      <span>Importar CSV</span>
+                    </button>
+                  )}
+
+                  {/* Conciliar */}
+                  {profile.role !== 'manager' && (
+                    <button
+                      onClick={() => {
+                        setIsToolsOpen(false);
+                        setIsReconciliationModalOpen(true);
+                      }}
+                      disabled={selectedTeamId === 'all'}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <Calculator size={16} className="text-sky-400" />
+                      <span>Conciliar Acordos</span>
+                    </button>
+                  )}
+
+                  {/* Webhooks */}
+                  {profile.role === 'super_admin' && (
+                    <button
+                      onClick={() => {
+                        setIsToolsOpen(false);
+                        setIsWebhookSettingsOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <Globe size={16} className="text-emerald-400" />
+                      <span>Configurar Webhooks</span>
+                    </button>
+                  )}
+
+                  {/* Convidar membro */}
+                  {profile.role === 'supervisor' && selectedTeamId !== 'all' && (
+                    <button
+                      onClick={() => {
+                        setIsToolsOpen(false);
+                        const currentTeam = managedTeamsData.find(t => t.id === selectedTeamId);
+                        if (currentTeam) {
+                          navigator.clipboard.writeText(currentTeam.inviteToken);
+                          showToast(`Código de convite para ${currentTeam.name} copiado!`, 'success');
+                        }
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <UserPlus size={16} className="text-emerald-400" />
+                      <span>Copiar Token Convite</span>
+                    </button>
+                  )}
+
+                  {/* Alternador de Layout */}
+                  <button
+                    onClick={() => {
+                      setDesignMode(designMode === 'classic' ? 'premium' : 'classic');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {designMode === 'premium' ? (
+                      <>
+                        <Sparkle size={16} className="text-amber-400 animate-pulse" />
+                        <span>Usar Modo Clássico</span>
+                      </>
+                    ) : (
+                      <>
+                        <Palette size={16} className="text-slate-400" />
+                        <span>Usar Modo Premium</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Relatório PDF */}
+                  <button
+                    onClick={() => {
+                      setIsToolsOpen(false);
+                      window.print();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-white transition-colors cursor-pointer border-t border-white/5 pt-2 mt-1"
+                  >
+                    <FileText size={16} className="text-purple-400" />
+                    <span>Gerar Relatório PDF</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
+          {/* Perfil Menu */}
           <div 
             id="user-profile-menu"
-            className="flex items-center gap-3 px-3 py-1.5 glass-card rounded-xl cursor-pointer transition-all group"
+            className="flex items-center gap-2.5 px-3 py-1.5 glass-card rounded-xl cursor-pointer transition-all hover:bg-white/5 group shrink-0"
             onClick={onSettingsClick}
           >
             <div className="flex flex-col items-end">
-              <span className="text-xs font-bold text-white group-hover:text-sky-400 transition-colors">
-                {profile.displayName}
+              <span className="text-xs font-bold text-white group-hover:text-sky-400 transition-colors leading-none">
+                {profile.displayName.split(' ')[0]}
               </span>
-              <span className="text-[9px] text-slate-500 font-medium uppercase tracking-tighter">
+              <span className="text-[8px] text-slate-500 font-medium uppercase tracking-tighter mt-0.5 leading-none">
                 {profile.jobTitle || 'Operador'}
               </span>
             </div>
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-              <UserIcon size={16} />
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
+              <UserIcon size={14} />
             </div>
           </div>
-          {profile.role === 'supervisor' && selectedTeamId !== 'all' && (
-            <button 
-              onClick={() => {
-                const currentTeam = managedTeamsData.find(t => t.id === selectedTeamId);
-                if (currentTeam) {
-                  navigator.clipboard.writeText(currentTeam.inviteToken);
-                  showToast(`Código de convite para ${currentTeam.name} copiado!`, 'success');
-                }
-              }}
-              className="p-2.5 text-slate-500 hover:bg-emerald-500/10 hover:text-emerald-400 rounded-xl transition-all border border-transparent"
-              title="Copiar Convite"
-            >
-              <UserPlus size={20} />
-            </button>
-          )}
 
-          {/* Alternador de Layout Clássico vs Premium */}
-          <button
-            onClick={() => setDesignMode(designMode === 'classic' ? 'premium' : 'classic')}
-            className={`p-2.5 rounded-xl transition-all border ${
-              designMode === 'premium'
-                ? 'text-amber-400 hover:text-amber-300 bg-amber-500/10 border-amber-500/20 shadow-lg shadow-amber-500/5'
-                : 'text-slate-500 hover:text-white hover:bg-white/5 border-transparent'
-            }`}
-            title={designMode === 'premium' ? "Mudar para Modo Clássico" : "Mudar para Modo Premium"}
-          >
-            {designMode === 'premium' ? <Sparkle size={20} weight="duotone" /> : <Palette size={20} weight="duotone" />}
-          </button>
-
+          {/* Sair */}
           <button 
             onClick={() => setIsConfirmLogoutOpen(true)}
-            className="p-2.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 rounded-xl transition-all"
-            title="Sair"
+            className="p-2.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 rounded-xl transition-all shrink-0 cursor-pointer"
+            title="Sair do Sistema"
           >
-            <LogOut size={20} />
-          </button>
-          {profile.role === 'super_admin' && (
-            <button 
-              onClick={() => setIsWebhookSettingsOpen(true)}
-              className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] group"
-              title="Configurações de Webhooks"
-            >
-              <Globe size={18} className="text-emerald-400 group-hover:rotate-12 transition-transform" />
-              <span className="hidden sm:inline">Webhooks</span>
-            </button>
-          )}
-
-          {(profile.role === 'manager' || profile.role === 'supervisor') && (
-            <button 
-              onClick={() => setIsImportCsvOpen(true)}
-              disabled={selectedTeamId === 'all'}
-              className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
-              title="Importar acordos via CSV"
-            >
-              <FileSpreadsheet size={18} className="text-amber-400 group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">Importar CSV</span>
-            </button>
-          )}
-
-          <button 
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] group"
-            title="Gerar Relatório PDF"
-          >
-            <FileText size={18} className="text-purple-400 group-hover:translate-y-[-2px] transition-transform" />
-            <span className="hidden sm:inline">Relatório PDF</span>
+            <LogOut size={18} />
           </button>
 
-          {profile.role !== 'manager' && (
-            <button 
-              onClick={() => setIsReconciliationModalOpen(true)}
-              disabled={selectedTeamId === 'all'}
-              className="flex items-center gap-2 bg-white/5 border border-white/10 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
-              title="Conciliar com Sistema Oficial"
-            >
-              <Calculator size={18} className="text-sky-400 group-hover:rotate-12 transition-transform" />
-              <span className="hidden sm:inline">Conciliar</span>
-            </button>
-          )}
-
+          {/* Novo Acordo */}
           {profile.role !== 'manager' && (
             <button 
               id="new-agreement-btn"
               onClick={() => setIsModalOpen(true)}
               disabled={selectedTeamId === 'all'}
-              className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-sky-400 transition-all shadow-lg shadow-primary/10 active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-sky-500/20 active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed shrink-0 text-xs cursor-pointer"
             >
-              <Plus size={20} />
-              <span className="hidden sm:inline">Novo Acordo</span>
+              <Plus size={16} />
+              <span>Novo Acordo</span>
             </button>
           )}
         </div>
