@@ -18,6 +18,8 @@ O **Tracker SaaS** é uma solução corporativa completa de alta performance (Mu
 * **👥 Gestão de Colaboradores & Clima comportamental**: Apontamento e monitoramento de presença diária (Presente, Atrasado, Falta) e controle de notas comportamentais privadas com histórico consolidado e relatórios executivos para RH/Supervisão.
 * **📄 Relatórios PDF Corporativos Premium**: Sistema com CSS de impressão otimizado que transforma o painel operacional em um relatório executivo minimalista de alto contraste pronto para reuniões com CNPJ, rankings de operadores e parecer técnico.
 * **🎨 Modo Visual Premium Switchable**: Possibilidade de alternar instantaneamente entre o **Modo Clássico** e o **Modo Premium** (com base em um estilo visual ultra-premium, glassmorphism rico com filetes de brilho interno, ícones em relevo metálico 3D e micro-gráficos exibidos na face frontal dos cartões). A escolha é persistida de forma reativa localmente no navegador e está acessível em todos os perfis e inclusive no Sandbox.
+* **🌓 Tema Claro Sólido (Estilo Salesforce) & Tema Escuro Profundo**: Design corporativo limpo baseado em tokens dinâmicos HSL para alternância suave de temas. O tema claro oferece uma interface de alto contraste (branco sólido com escrita preta) projetada para longas sessões de trabalho, enquanto o tema escuro mantém a estética clássica e futurista do painel original.
+* **📌 Sidebar Lateral Colapsável e Drawer de Ajuda**: Novo menu de navegação retrátil à esquerda contendo links de abas operacionais do painel (Financeiro, Recuperação, QA, BI), alternador de tema e perfil. Integração de drawer deslizante com Central de Ajuda reativa contendo dicionário de KPIs e respostas sobre o CRM.
 
 ---
 

@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Sidebar } from './Sidebar';
 import { signOut, User } from 'firebase/auth';
 import { 
   doc, 
@@ -57,6 +59,7 @@ import { FinancialPerformanceInsights } from './FinancialPerformanceInsights';
 
 // Modais do sistema
 import { DashboardModals } from './DashboardModals';
+import { HelpDrawer } from './HelpDrawer';
 import { startTour } from '../../utils/tour';
 
 interface DashboardProps {
@@ -72,6 +75,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onSettingsClick, 
   showToast 
 }) => {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('tracker-theme');
+    return (saved === 'dark' || saved === 'light') ? saved : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('tracker-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
   // Configurações e Filtros de Data/Status/Busca
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -117,6 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isImportCsvOpen, setIsImportCsvOpen] = useState(false);
   const [isWebhookSettingsOpen, setIsWebhookSettingsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   
   // Dados de Colaboradores e Ocorrências
   const [isPeopleReportOpen, setIsPeopleReportOpen] = useState(false);
@@ -1239,414 +1257,421 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen font-sans pb-20">
-      <div className="no-print">
-        {!isPresentMode && (
-          <DashboardHeader 
-            profile={profile}
-            selectedTeamId={selectedTeamId}
-            managedTeamsData={managedTeamsData}
-            isPresentMode={isPresentMode}
-            onSettingsClick={onSettingsClick}
-            setIsTeamSelectorOpen={setIsTeamSelectorOpen}
-            setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
-            setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
-            setIsImportCsvOpen={setIsImportCsvOpen}
-            setIsReconciliationModalOpen={setIsReconciliationModalOpen}
-            setIsModalOpen={setIsModalOpen}
-            showToast={showToast}
-            onSearchCpf={handleSearchCpf}
-            onRefreshData={refreshAgreements}
-            lastRefreshed={lastRefreshed}
-            isRefreshing={isRefreshing}
-            organizationName={organizationName}
-            onSupportTabClick={() => setDashboardTab('support')}
-          />
-        )}
+    <div className={`flex min-h-screen font-sans ${
+      theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'
+    }`}>
+      {/* Sidebar de Navegação */}
+      {!isPresentMode && (
+        <Sidebar
+          profile={profile}
+          activeTab={dashboardTab}
+          setActiveTab={(tab: any) => setDashboardTab(tab)}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          organizationName={organizationName}
+          onLogoutClick={() => setIsConfirmLogoutOpen(true)}
+        />
+      )}
 
-        <main className="max-w-7xl mx-auto px-6 mt-8 space-y-8 no-print">
-          {/* Barra Superior Executiva (Abas, Meta, Filtros, Seletores) */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-slate-900/20 p-6 rounded-[2rem] border border-white/5">
-            {/* Abas e Meta Diária */}
-            <div className="flex flex-wrap items-center gap-6">
-              {(() => {
-                const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin' || profile.role === 'monitor';
-                
-                return (
-                  <div className="flex flex-wrap bg-slate-950 p-1 rounded-2xl border border-white/5 gap-1">
-                    {profile.role !== 'monitor' && (
-                      <button
-                        onClick={() => setDashboardTab('financial')}
-                        className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                          dashboardTab === 'financial' 
-                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Painel Financeiro
-                      </button>
-                    )}
-                    {isSuperUser && profile.role !== 'monitor' && (
-                      <button
-                        onClick={() => setDashboardTab('people')}
-                        className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                          dashboardTab === 'people' 
-                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Gestão de Equipe
-                      </button>
-                    )}
-                    {profile.role !== 'monitor' && (
-                      <button
-                        onClick={() => setDashboardTab('recovery')}
-                        className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                          dashboardTab === 'recovery' 
-                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Balcão de Recuperação
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setDashboardTab('qa')}
-                      className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                        dashboardTab === 'qa' 
-                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Qualidade (QA)
-                    </button>
-                    <button
-                      onClick={() => setDashboardTab('bi')}
-                      className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                        dashboardTab === 'bi' 
-                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      BI & Analytics
-                    </button>
+      {/* Área de Conteúdo Principal (Direita) */}
+      <div className="flex-1 flex flex-col h-screen overflow-y-auto custom-scrollbar relative">
+        <div className="no-print">
+          {!isPresentMode && (
+            <DashboardHeader 
+              profile={profile}
+              selectedTeamId={selectedTeamId}
+              managedTeamsData={managedTeamsData}
+              isPresentMode={isPresentMode}
+              onSettingsClick={onSettingsClick}
+              setIsTeamSelectorOpen={setIsTeamSelectorOpen}
+              setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
+              setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
+              setIsImportCsvOpen={setIsImportCsvOpen}
+              setIsReconciliationModalOpen={setIsReconciliationModalOpen}
+              setIsModalOpen={setIsModalOpen}
+              showToast={showToast}
+              onSearchCpf={handleSearchCpf}
+              onRefreshData={refreshAgreements}
+              lastRefreshed={lastRefreshed}
+              isRefreshing={isRefreshing}
+              organizationName={organizationName}
+              onSupportTabClick={() => setDashboardTab('support')}
+            />
+          )}
+
+          <main className="max-w-7xl w-full mx-auto px-6 py-8 space-y-8 no-print">
+            {/* Barra Superior Executiva (Meta, Filtros, Seletores) */}
+            <div className={`flex flex-col xl:flex-row xl:items-center justify-between gap-6 p-6 rounded-[2rem] border ${
+              theme === 'dark' ? 'bg-slate-900/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+            }`}>
+              {/* Meta Diária */}
+              <div className="flex flex-wrap items-center gap-6">
+                {dashboardTab === 'financial' && (
+                  <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl border ${
+                    theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta do Dia</span>
+                    <span className="text-base font-black text-emerald-500 tabular-nums">{formatCurrency(dailyGoal)}</span>
                   </div>
-                );
-              })()}
-              
-              {dashboardTab === 'financial' && (
-                <div className="flex items-center gap-3 bg-slate-950 px-5 py-3 rounded-2xl border border-white/5">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta do Dia</span>
-                  <span className="text-base font-black text-emerald-400 tabular-nums">{formatCurrency(dailyGoal)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Controles do Painel Financeiro e Seletores de Data */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Seletores de Mês e Ano */}
-              <div className="flex bg-slate-950 p-1 rounded-xl border border-white/5 shadow-2xl mr-2">
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
-                >
-                  {MONTHS.map((month, index) => (
-                    <option key={month} value={index} className="bg-slate-900 text-white">{month}</option>
-                  ))}
-                </select>
-                <div className="w-[1px] h-4 bg-slate-800 my-auto" />
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none border-none cursor-pointer px-3 py-2 hover:text-white transition-colors"
-                >
-                  {getYearRange().map(year => (
-                    <option key={year} value={year} className="bg-slate-900 text-white">{year}</option>
-                  ))}
-                </select>
+                )}
               </div>
 
-              {dashboardTab === 'financial' && (
-                <>
-                  <button
-                    onClick={() => setIsPreferencesModalOpen(true)}
-                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
+              {/* Controles do Painel Financeiro e Seletores de Data */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Seletores de Mês e Ano */}
+                <div className={`flex p-1 rounded-xl border shadow-sm mr-2 ${
+                  theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-2 transition-colors ${
+                      theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
+                    }`}
                   >
-                    Personalizar
-                  </button>
-                  <button
-                    onClick={togglePresentMode}
-                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
+                    {MONTHS.map((month, index) => (
+                      <option key={month} value={index} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{month}</option>
+                    ))}
+                  </select>
+                  <div className={`w-[1px] h-4 my-auto ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-2 transition-colors ${
+                      theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
+                    }`}
                   >
-                    {isPresentMode ? 'Sair do Modo TV' : 'Modo TV'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+                    {getYearRange().map(year => (
+                      <option key={year} value={year} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{year}</option>
+                    ))}
+                  </select>
+                </div>
 
-          {/* CONTEÚDO DA ABA FINANCEIRA */}
-          {dashboardTab === 'financial' && (
-            <div className="space-y-8">
-              {/* Agenda do Dia */}
-              {!localHiddenCards.includes('agendaDoDia') && (
-                <DailyAgendaSection
-                  scheduledAgreements={filteredScheduledAgreements}
-                  isLoading={isLoadingScheduled}
+                {dashboardTab === 'financial' && (
+                  <>
+                    <button
+                      onClick={() => setIsPreferencesModalOpen(true)}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                        theme === 'dark'
+                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      Personalizar
+                    </button>
+                    <button
+                      onClick={togglePresentMode}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                        theme === 'dark'
+                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      {isPresentMode ? 'Sair do Modo TV' : 'Modo TV'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={dashboardTab}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-8"
+            >
+              {/* CONTEÚDO DA ABA FINANCEIRA */}
+              {dashboardTab === 'financial' && (
+                <div className="space-y-8">
+                  {/* Agenda do Dia */}
+                  {!localHiddenCards.includes('agendaDoDia') && (
+                    <DailyAgendaSection
+                      scheduledAgreements={filteredScheduledAgreements}
+                      isLoading={isLoadingScheduled}
+                      profile={profile}
+                      currentTeamMembers={currentTeamMembers}
+                      selectedMemberId={selectedMemberId}
+                      setSelectedMemberId={setSelectedMemberId}
+                      viewMode={viewMode}
+                      onAttend={(agreement) => {
+                        setEditingAgreement(agreement);
+                        setIsModalOpen(true);
+                      }}
+                      showToast={showToast}
+                    />
+                  )}
+
+                  {/* KPIs de Monitoramento */}
+                  <StatsGrid 
+                    stats={stats}
+                    statTrends={statTrends}
+                    monthlyGoal={monthlyGoal}
+                    localHiddenCards={localHiddenCards}
+                    formatCurrency={formatCurrency}
+                    operatorQaScore={operatorQaScore}
+                    onHelpClick={() => setIsHelpOpen(true)}
+                  />
+
+                  {/* Informações Financeiras, Metas e Ritmo da Organização */}
+                  <FinancialPerformanceInsights
+                    stats={stats}
+                    monthlyGoal={monthlyGoal}
+                    effectivenessGoal={effectivenessGoal}
+                    workingDays={workingDays}
+                    dailyGoal={dailyGoal}
+                    viewMode={viewMode}
+                    selectedTeamId={selectedTeamId}
+                    currentTeamMembers={currentTeamMembers}
+                    monthAgreements={monthAgreements}
+                    profile={profile}
+                    reconciliation={reconciliation}
+                    setIsGoalModalOpen={setIsGoalModalOpen}
+                    formatCurrency={formatCurrency}
+                    getEffectivenessColor={getEffectivenessColor}
+                  />
+
+                  {/* Tabela de Liderança de Equipes se estiver no modo Macro */}
+                  {viewMode === 'team' && selectedTeamId === 'all' && managedTeamsData.length > 0 && (
+                    <section className="space-y-4">
+                      <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest pl-2">Performance Geral de Equipes</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {printTeamPerformance.map((teamData) => (
+                          <div key={teamData.id} className={`glass-card p-6 rounded-3xl border ${
+                            theme === 'dark' ? 'border-white/5 bg-slate-900/10' : 'border-slate-200 bg-white'
+                          } space-y-4`}>
+                            <div className="flex justify-between items-center">
+                              <h4 className={`font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{teamData.name}</h4>
+                              <span className="text-xs text-sky-500 font-bold">{teamData.effectiveness.toFixed(1)}% Efetividade</span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-xs text-slate-400">
+                                <span>Recuperado: {formatCurrency(teamData.totalPaid)}</span>
+                                <span>Meta: {formatCurrency(teamData.monthlyGoal)}</span>
+                              </div>
+                              <div className={`h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-100'}`}>
+                                <div className="h-full bg-sky-500" style={{ width: `${Math.min(100, teamData.pctGoal)}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Metas, Produtividade e Ranking Operacional */}
+                  {viewMode === 'team' && selectedTeamId !== 'all' && currentTeamMembers.length > 0 && (
+                    <TeamPerformance 
+                      agreements={monthFilteredAgreements.filter(a => a.teamId === selectedTeamId)}
+                      members={currentTeamMembers}
+                      dailyGoal={dailyGoal}
+                      qaScores={qaScores}
+                    />
+                  )}
+
+                  {viewMode === 'personal' && (
+                    <TeamPerformance 
+                      agreements={memberFilteredAgreements}
+                      members={[profile]}
+                      dailyGoal={dailyGoal}
+                      showRanking={false}
+                      qaScores={qaScores}
+                    />
+                  )}
+
+                  {/* Tabela Analítica de Acordos com Filtro de Busca */}
+                  <section className="space-y-4">
+                    <div className={`flex flex-col sm:flex-row justify-between sm:items-center gap-4 p-6 rounded-3xl border ${
+                      theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                    }`}>
+                      <div className={`flex border px-4 py-3 rounded-2xl w-full sm:max-w-md ${
+                        theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                      }`}>
+                        <input 
+                          type="text" 
+                          placeholder="Pesquisar por cliente ou CPF..." 
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className={`bg-transparent text-sm outline-none border-none w-full ${
+                            theme === 'dark' ? 'text-white placeholder-slate-600' : 'text-slate-900 placeholder-slate-400'
+                          }`}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <button
+                          onClick={() => setIsChecklistMode(!isChecklistMode)}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${
+                            isChecklistMode 
+                              ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' 
+                              : theme === 'dark'
+                                ? 'bg-slate-800 text-slate-400 border-slate-700/50 hover:text-sky-400 hover:border-sky-500/30'
+                                : 'bg-slate-100 text-slate-600 border-slate-200 hover:text-sky-600 hover:border-sky-500/30'
+                          }`}
+                          title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
+                        >
+                          <CheckSquare size={16} />
+                          <span>{isChecklistMode ? 'Conferindo' : 'Verificar'}</span>
+                          {stats.counts.checklist > 0 && !isChecklistMode && (
+                            <span className="bg-sky-500 text-white px-1.5 py-0.5 rounded-full text-[9px] font-bold animate-pulse">
+                              {stats.counts.checklist}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.PAID : 'all')}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                            filterStatus === AgreementStatus.PAID 
+                              ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/20' 
+                              : theme === 'dark'
+                                ? 'bg-slate-800 text-slate-400 border-slate-700/50'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          Pagos
+                        </button>
+                        <button
+                          onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.WAITING : 'all')}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                            filterStatus === AgreementStatus.WAITING 
+                              ? 'bg-amber-500/20 text-amber-500 border-amber-500/20' 
+                              : theme === 'dark'
+                                ? 'bg-slate-800 text-slate-400 border-slate-700/50'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          Aguardando
+                        </button>
+                        <button
+                          onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.BROKEN : 'all')}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                            filterStatus === AgreementStatus.BROKEN 
+                              ? 'bg-rose-500/20 text-rose-500 border-rose-500/20' 
+                              : theme === 'dark'
+                                ? 'bg-slate-800 text-slate-400 border-slate-700/50'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          Quebrados
+                        </button>
+                        <button
+                          onClick={handleExportClick}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                            theme === 'dark'
+                              ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          Exportar CSV
+                        </button>
+                      </div>
+                    </div>
+
+                    <AgreementsTable 
+                      paginatedAgreements={paginatedAgreements}
+                      isLoading={isLoading}
+                      revealedCpfs={revealedCpfs}
+                      toggleRevealCpf={toggleRevealCpf}
+                      handleClientClick={handleClientClick}
+                      handleEfetivar={handleEfetivar}
+                      handleToggleChecked={handleToggleChecked}
+                      setEditingAgreement={setEditingAgreement}
+                      setIsModalOpen={setIsModalOpen}
+                      handleDelete={handleDelete}
+                      profile={profile}
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      nextPage={nextPage}
+                      prevPage={prevPage}
+                      showToast={showToast}
+                    />
+                  </section>
+                </div>
+              )}
+
+              {/* CONTEÚDO DA ABA DE GESTÃO DE EQUIPE */}
+              {dashboardTab === 'people' && (
+                <TeamManagementTab 
                   profile={profile}
                   currentTeamMembers={currentTeamMembers}
-                  selectedMemberId={selectedMemberId}
-                  setSelectedMemberId={setSelectedMemberId}
-                  viewMode={viewMode}
+                  attendanceStatuses={attendanceStatuses}
+                  quickNotesText={quickNotesText}
+                  setQuickNotesText={setQuickNotesText}
+                  handleAddNote={handleAddNote}
+                  handleAttendanceChange={handleAttendanceChange}
+                  handleOpenHistory={handleOpenHistory}
+                  setIsPeopleReportOpen={setIsPeopleReportOpen}
+                  agreements={monthAgreements}
+                  selectedMonth={selectedMonth}
+                  selectedYear={selectedYear}
+                  qaScores={qaScores}
+                />
+              )}
+
+              {/* CONTEÚDO DA ABA BALCÃO DE RECUPERAÇÃO */}
+              {dashboardTab === 'recovery' && (
+                <RecoveryPoolTab
+                  profile={profile}
+                  managedTeamsData={managedTeamsData}
+                  showToast={showToast}
                   onAttend={(agreement) => {
                     setEditingAgreement(agreement);
                     setIsModalOpen(true);
                   }}
-                  showToast={showToast}
+                  onTakeOverSuccess={() => {
+                    doMarkStale();
+                    refreshAgreements();
+                  }}
                 />
               )}
 
-              {/* KPIs de Monitoramento */}
-              <StatsGrid 
-                stats={stats}
-                statTrends={statTrends}
-                monthlyGoal={monthlyGoal}
-                localHiddenCards={localHiddenCards}
-                formatCurrency={formatCurrency}
-                operatorQaScore={operatorQaScore}
-              />
-
-              {/* Informações Financeiras, Metas e Ritmo da Organização */}
-              <FinancialPerformanceInsights
-                stats={stats}
-                monthlyGoal={monthlyGoal}
-                effectivenessGoal={effectivenessGoal}
-                workingDays={workingDays}
-                dailyGoal={dailyGoal}
-                viewMode={viewMode}
-                selectedTeamId={selectedTeamId}
-                currentTeamMembers={currentTeamMembers}
-                monthAgreements={monthAgreements}
-                profile={profile}
-                reconciliation={reconciliation}
-                setIsGoalModalOpen={setIsGoalModalOpen}
-                formatCurrency={formatCurrency}
-                getEffectivenessColor={getEffectivenessColor}
-              />
-
-              {/* Tabela de Liderança de Equipes se estiver no modo Macro */}
-              {viewMode === 'team' && selectedTeamId === 'all' && managedTeamsData.length > 0 && (
-                <section className="space-y-4">
-                  <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest pl-2">Performance Geral de Equipes</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {printTeamPerformance.map((teamData) => (
-                      <div key={teamData.id} className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/10 space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h4 className="font-bold text-white text-base">{teamData.name}</h4>
-                          <span className="text-xs text-sky-400 font-bold">{teamData.effectiveness.toFixed(1)}% Efetividade</span>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs text-slate-400">
-                            <span>Recuperado: {formatCurrency(teamData.totalPaid)}</span>
-                            <span>Meta: {formatCurrency(teamData.monthlyGoal)}</span>
-                          </div>
-                          <div className="h-2 bg-slate-950 rounded-full overflow-hidden">
-                            <div className="h-full bg-sky-500" style={{ width: `${Math.min(100, teamData.pctGoal)}%` }} />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Metas, Produtividade e Ranking Operacional */}
-              {viewMode === 'team' && selectedTeamId !== 'all' && currentTeamMembers.length > 0 && (
-                <TeamPerformance 
-                  agreements={monthFilteredAgreements.filter(a => a.teamId === selectedTeamId)}
-                  members={currentTeamMembers}
-                  dailyGoal={dailyGoal}
-                  qaScores={qaScores}
-                />
-              )}
-
-              {viewMode === 'personal' && (
-                <TeamPerformance 
-                  agreements={memberFilteredAgreements}
-                  members={[profile]}
-                  dailyGoal={dailyGoal}
-                  showRanking={false}
-                  qaScores={qaScores}
-                />
-              )}
-
-              {/* Tabela Analítica de Acordos com Filtro de Busca */}
-              <section className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-slate-900/40 p-6 rounded-3xl border border-white/5">
-                  <div className="flex items-center bg-slate-950 border border-slate-800 px-4 py-3 rounded-2xl w-full sm:max-w-md">
-                    <input 
-                      type="text" 
-                      placeholder="Pesquisar por cliente ou CPF..." 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="bg-transparent text-sm text-white outline-none border-none w-full placeholder-slate-600"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <button
-                      onClick={() => setIsChecklistMode(!isChecklistMode)}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 ${
-                        isChecklistMode 
-                          ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' 
-                          : 'bg-slate-800 text-slate-400 border-slate-700/50 hover:text-sky-400 hover:border-sky-500/30'
-                      }`}
-                      title="Modo Conferência: Mostra apenas acordos vencendo hoje ou atrasados que ainda não foram conferidos."
-                    >
-                      <CheckSquare size={16} />
-                      <span>{isChecklistMode ? 'Conferindo' : 'Verificar'}</span>
-                      {stats.counts.checklist > 0 && !isChecklistMode && (
-                        <span className="bg-sky-500 text-white px-1.5 py-0.5 rounded-full text-[9px] font-bold animate-pulse">
-                          {stats.counts.checklist}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.PAID : 'all')}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                        filterStatus === AgreementStatus.PAID 
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' 
-                          : 'bg-slate-800 text-slate-400 border-slate-700/50'
-                      }`}
-                    >
-                      Pagos
-                    </button>
-                    <button
-                      onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.WAITING : 'all')}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                        filterStatus === AgreementStatus.WAITING 
-                          ? 'bg-amber-500/20 text-amber-400 border-amber-500/20' 
-                          : 'bg-slate-800 text-slate-400 border-slate-700/50'
-                      }`}
-                    >
-                      Aguardando
-                    </button>
-                    <button
-                      onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.BROKEN : 'all')}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                        filterStatus === AgreementStatus.BROKEN 
-                          ? 'bg-rose-500/20 text-rose-400 border-rose-500/20' 
-                          : 'bg-slate-800 text-slate-400 border-slate-700/50'
-                      }`}
-                    >
-                      Quebrados
-                    </button>
-                    <button
-                      onClick={handleExportClick}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700/50"
-                    >
-                      Exportar CSV
-                    </button>
-                  </div>
-                </div>
-
-                <AgreementsTable 
-                  paginatedAgreements={paginatedAgreements}
-                  isLoading={isLoading}
-                  revealedCpfs={revealedCpfs}
-                  toggleRevealCpf={toggleRevealCpf}
-                  handleClientClick={handleClientClick}
-                  handleEfetivar={handleEfetivar}
-                  handleToggleChecked={handleToggleChecked}
-                  setEditingAgreement={setEditingAgreement}
-                  setIsModalOpen={setIsModalOpen}
-                  handleDelete={handleDelete}
+              {/* CONTEÚDO DA ABA DE GESTÃO DE QUALIDADE (QA) */}
+              {dashboardTab === 'qa' && (
+                <QaDashboard
                   profile={profile}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  nextPage={nextPage}
-                  prevPage={prevPage}
+                  currentTeamMembers={currentTeamMembers}
+                  managedTeamsData={managedTeamsData}
                   showToast={showToast}
                 />
-              </section>
-            </div>
-          )}
+              )}
 
-          {/* CONTEÚDO DA ABA DE GESTÃO DE EQUIPE */}
-          {dashboardTab === 'people' && (
-            <TeamManagementTab 
-              profile={profile}
-              currentTeamMembers={currentTeamMembers}
-              attendanceStatuses={attendanceStatuses}
-              quickNotesText={quickNotesText}
-              setQuickNotesText={setQuickNotesText}
-              handleAddNote={handleAddNote}
-              handleAttendanceChange={handleAttendanceChange}
-              handleOpenHistory={handleOpenHistory}
-              setIsPeopleReportOpen={setIsPeopleReportOpen}
-              agreements={monthAgreements}
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              qaScores={qaScores}
-            />
-          )}
-
-          {/* CONTEÚDO DA ABA BALCÃO DE RECUPERAÇÃO (Fase 3) */}
-          {dashboardTab === 'recovery' && (
-            <RecoveryPoolTab
-              profile={profile}
-              managedTeamsData={managedTeamsData}
-              showToast={showToast}
-              onAttend={(agreement) => {
-                setEditingAgreement(agreement);
-                setIsModalOpen(true);
-              }}
-              onTakeOverSuccess={() => {
-                doMarkStale();
-                refreshAgreements();
-              }}
-            />
-          )}
-
-          {/* CONTEÚDO DA ABA DE GESTÃO DE QUALIDADE (QA) */}
-          {dashboardTab === 'qa' && (
-            <QaDashboard
-              profile={profile}
-              currentTeamMembers={currentTeamMembers}
-              managedTeamsData={managedTeamsData}
-              showToast={showToast}
-            />
-          )}
-
-          {/* CONTEÚDO DA ABA DE BI & ANALYTICS (Fase 5 - Aba Separada) */}
-          {dashboardTab === 'bi' && (
-            <div className="glass-card p-6 rounded-[2rem] border border-white/5 bg-slate-900/10 space-y-6">
-              <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">BI & Analytics Avançado</h2>
-                  <p className="text-xs text-slate-400 mt-1">Estatísticas, Sazonalidades e Projeções de Cobrança</p>
+              {/* CONTEÚDO DA ABA DE BI & ANALYTICS */}
+              {dashboardTab === 'bi' && (
+                <div className={`glass-card p-6 rounded-[2rem] border ${
+                  theme === 'dark' ? 'border-white/5 bg-slate-900/10' : 'border-slate-200 bg-white shadow-sm'
+                } space-y-6`}>
+                  <div className={`flex justify-between items-center border-b pb-4 ${
+                    theme === 'dark' ? 'border-white/5' : 'border-slate-100'
+                  }`}>
+                    <div>
+                      <h2 className={`text-xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>BI & Analytics Avançado</h2>
+                      <p className="text-xs text-slate-400 mt-1">Estatísticas, Sazonalidades e Projeções de Cobrança</p>
+                    </div>
+                  </div>
+                  <AdvancedInsights 
+                    stats={stats}
+                    formatCurrency={formatCurrency}
+                  />
                 </div>
-              </div>
-              <AdvancedInsights 
-                stats={stats}
-                formatCurrency={formatCurrency}
-              />
-            </div>
-          )}
+              )}
 
-          {/* CONTEÚDO DA ABA DE SUPORTE & INTEGRACAO CRM */}
-          {dashboardTab === 'support' && (profile.role === 'manager' || profile.role === 'supervisor') && (
-            <SupportTab
-              profile={profile}
-              organizationId={profile.organizationId || ''}
-              organizationName={organizationName}
-              crmOrgId={crmOrgId}
-              crmClientId={crmClientId}
-              crmPublicToken={crmPublicToken}
-              showToast={showToast}
-            />
-          )}
+              {/* CONTEÚDO DA ABA DE SUPORTE */}
+              {dashboardTab === 'support' && (profile.role === 'manager' || profile.role === 'supervisor') && (
+                <SupportTab
+                  profile={profile}
+                  organizationId={profile.organizationId || ''}
+                  organizationName={organizationName}
+                  crmOrgId={crmOrgId}
+                  crmClientId={crmClientId}
+                  crmPublicToken={crmPublicToken}
+                  showToast={showToast}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
+      </div>
       </div>
 
       {/* DEDICATED PRINT-ONLY LAYOUT (RELATÓRIO PDF EXECUTIVO) */}
@@ -1986,6 +2011,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
         setIsTeamSelectorOpen={setIsTeamSelectorOpen}
         managedTeamsData={managedTeamsData}
         setSelectedTeamId={setSelectedTeamId}
+      />
+
+      <HelpDrawer 
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        theme={theme}
       />
     </div>
   );

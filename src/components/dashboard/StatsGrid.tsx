@@ -21,6 +21,7 @@ interface StatsGridProps {
   localHiddenCards: string[];
   formatCurrency: (v: number) => string;
   operatorQaScore?: number;
+  onHelpClick?: () => void;
 }
 
 export const StatsGrid = ({
@@ -29,10 +30,23 @@ export const StatsGrid = ({
   monthlyGoal,
   localHiddenCards,
   formatCurrency,
-  operatorQaScore
+  operatorQaScore,
+  onHelpClick
 }: StatsGridProps) => {
   return (
-    <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center px-2">
+        <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Painel de Indicadores</h3>
+        {onHelpClick && (
+          <button
+            onClick={onHelpClick}
+            className="flex items-center gap-1 text-[9px] text-sky-500 dark:text-sky-400 uppercase tracking-widest font-black hover:underline cursor-pointer"
+          >
+            <span>Dúvidas sobre os KPIs? Abrir Central de Ajuda</span>
+          </button>
+        )}
+      </div>
+      <section id="stats-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard 
         title="Total Projetado" 
         value={formatCurrency(stats.totalProjected)} 
@@ -125,5 +139,6 @@ export const StatsGrid = ({
         />
       )}
     </section>
+  </div>
   );
 };

@@ -5,52 +5,38 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Custom "Technical Dark" Colors - Themeable */
-  --color-primary: var(--primary-color, #38bdf8);
-  --color-dashboard-bg: var(--bg-color, #020617);
-  --color-dashboard-surface: var(--surface-color, #0f172a);
-  --color-dashboard-border: rgba(255, 255, 255, 0.1);
-  --color-main-text: var(--text-main, #f1f5f9);
-  --color-glass-surface: var(--glass-surface, rgba(15, 23, 42, 0.6));
-  --color-glass-border: var(--glass-border, rgba(255, 255, 255, 0.1));
+  /* Custom Colors - Themeable */
+  --color-primary: var(--primary-color, #0ea5e9);
+  --color-dashboard-bg: var(--bg-color, #f8fafc);
+  --color-dashboard-surface: var(--surface-color, #ffffff);
+  --color-dashboard-border: var(--border-color, #e2e8f0);
+  --color-main-text: var(--text-main, #0f172a);
+  --color-glass-surface: var(--glass-surface, rgba(255, 255, 255, 0.85));
+  --color-glass-border: var(--glass-border, rgba(226, 232, 240, 0.8));
 }
 
 :root {
-  --surface-color: #0f172a;
-  --card-bg: rgba(15, 23, 42, 0.5);
-  --text-main: #f1f5f9;
-  --glass-surface: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --primary-color: #0ea5e9;
+  --bg-color: #f8fafc;
+  --surface-color: #ffffff;
+  --border-color: #e2e8f0;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --glass-surface: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(226, 232, 240, 0.8);
 }
 
 [data-theme='dark'] {
   --primary-color: #38bdf8;
   --bg-color: #020617;
   --surface-color: #0f172a;
+  --border-color: rgba(255, 255, 255, 0.08);
   --card-bg: rgba(15, 23, 42, 0.5);
   --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
   --glass-surface: rgba(15, 23, 42, 0.6);
   --glass-border: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme='purple'] {
-  --primary-color: #a855f7;
-  --bg-color: #0c0a09;
-  --surface-color: #1c1917;
-  --card-bg: rgba(28, 25, 23, 0.6);
-  --text-main: #f5f5f4;
-  --glass-surface: rgba(28, 25, 23, 0.7);
-  --glass-border: rgba(168, 85, 247, 0.2);
-}
-
-[data-theme='sky'] {
-  --primary-color: #0ea5e9;
-  --bg-color: #082f49; /* Azul meia-noite profundo para melhor legibilidade */
-  --surface-color: rgba(15, 23, 42, 0.3);
-  --card-bg: rgba(255, 255, 255, 0.03);
-  --text-main: #ffffff;
-  --glass-surface: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 @layer base {

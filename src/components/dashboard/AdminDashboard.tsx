@@ -23,7 +23,9 @@ import {
   Key,
   ArrowsCounterClockwise as RefreshCw,
   Palette,
-  Sparkle
+  Sparkle,
+  Sun,
+  Moon
 } from '@phosphor-icons/react';
 import { useDesignMode } from '../../hooks/useDesignMode';
 import { motion, AnimatePresence } from 'motion/react';
@@ -56,6 +58,20 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation }: AdminDashboardProps) => {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('tracker-theme');
+    return (saved === 'dark' || saved === 'light') ? saved : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('tracker-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
   const [designMode, setDesignMode] = useDesignMode();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -481,15 +497,19 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'}`}>
         <Loader2 className="animate-spin text-sky-500" size={48} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen font-sans pb-20 bg-slate-950 text-slate-100">
-      <header className="glass-card sticky top-0 z-30 px-6 py-4 bg-slate-900/40 backdrop-blur-xl border-b border-white/5 !overflow-visible" style={{ overflow: 'visible' }}>
+    <div className={`min-h-screen font-sans pb-20 ${
+      theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'
+    }`}>
+      <header className={`sticky top-0 z-30 px-6 py-4 border-b !overflow-visible ${
+        theme === 'dark' ? 'bg-slate-900/40 backdrop-blur-xl border-white/5 text-white' : 'bg-white border-slate-200 shadow-sm text-slate-800'
+      }`} style={{ overflow: 'visible' }}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="p-1.5">
@@ -500,18 +520,35 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white leading-none">Painel SaaS Master</h1>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5 block">Administrador: {profile.displayName}</span>
+              <h1 className={`text-xl font-bold tracking-tight leading-none ${
+                theme === 'dark' ? 'text-white' : 'text-slate-900'
+              }`}>Painel SaaS Master</h1>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5 block">Administrador: {profile.displayName}</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Alternador de Tema */}
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                theme === 'dark'
+                  ? 'border-white/10 hover:bg-white/5 text-amber-400 hover:text-amber-300'
+                  : 'border-slate-200 hover:bg-slate-100 text-indigo-600 hover:text-indigo-700'
+              }`}
+              title={theme === 'dark' ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'}
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
             {/* Alternador de Layout Clássico vs Premium no Admin */}
             <button
               onClick={() => setDesignMode(designMode === 'classic' ? 'premium' : 'classic')}
-              className={`p-2 rounded-xl transition-all border flex items-center justify-center ${
+              className={`p-2 rounded-xl transition-all border flex items-center justify-center cursor-pointer ${
                 designMode === 'premium'
                   ? 'text-amber-400 hover:text-amber-300 bg-amber-500/10 border-amber-500/20 shadow-lg shadow-amber-500/5'
-                  : 'text-slate-500 hover:text-white hover:bg-white/5 border-transparent'
+                  : theme === 'dark'
+                    ? 'text-slate-500 hover:text-white hover:bg-white/5 border-transparent'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 border-transparent'
               }`}
               title={designMode === 'premium' ? "Mudar para Modo Clássico" : "Mudar para Modo Premium"}
             >
@@ -520,7 +557,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
             <button 
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white hover:bg-rose-500/10 hover:border-rose-500/30 transition-all active:scale-95"
+              className={`flex items-center gap-2 border px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${
+                theme === 'dark'
+                  ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-rose-500/10 hover:border-rose-500/30'
+                  : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-rose-600 hover:bg-rose-500/5 hover:border-rose-500/20'
+              }`}
             >
               <LogOut size={14} />
               Sair do Painel
@@ -532,43 +573,51 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Indicadores Globais */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/20 relative overflow-hidden flex items-center gap-4">
-            <div className="p-4 bg-sky-500/10 text-sky-400 rounded-2xl">
+          <div className={`glass-card p-6 rounded-3xl border relative overflow-hidden flex items-center gap-4 ${
+            theme === 'dark' ? 'border-white/5 bg-slate-900/20' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className="p-4 bg-sky-500/10 text-sky-500 dark:text-sky-400 rounded-2xl">
               <Building2 size={24} />
             </div>
             <div>
-              <span className="text-xs text-slate-400 block font-semibold">Total de Empresas</span>
-              <span className="text-3xl font-black text-white">{stats.totalOrgs}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 block font-semibold">Total de Empresas</span>
+              <span className={`text-3xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{stats.totalOrgs}</span>
             </div>
           </div>
 
-          <div className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/20 relative overflow-hidden flex items-center gap-4">
-            <div className="p-4 bg-emerald-500/10 text-emerald-400 rounded-2xl">
+          <div className={`glass-card p-6 rounded-3xl border relative overflow-hidden flex items-center gap-4 ${
+            theme === 'dark' ? 'border-white/5 bg-slate-900/20' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className="p-4 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 rounded-2xl">
               <Activity size={24} />
             </div>
             <div>
-              <span className="text-xs text-slate-400 block font-semibold">Empresas Ativas</span>
-              <span className="text-3xl font-black text-white">{stats.activeOrgs}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 block font-semibold">Empresas Ativas</span>
+              <span className={`text-3xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{stats.activeOrgs}</span>
             </div>
           </div>
 
-          <div className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/20 relative overflow-hidden flex items-center gap-4">
-            <div className="p-4 bg-purple-500/10 text-purple-400 rounded-2xl">
+          <div className={`glass-card p-6 rounded-3xl border relative overflow-hidden flex items-center gap-4 ${
+            theme === 'dark' ? 'border-white/5 bg-slate-900/20' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className="p-4 bg-purple-500/10 text-purple-500 dark:text-purple-400 rounded-2xl">
               <Users size={24} />
             </div>
             <div>
-              <span className="text-xs text-slate-400 block font-semibold">Total de Usuários</span>
-              <span className="text-3xl font-black text-white">{stats.totalUsers}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 block font-semibold">Total de Usuários</span>
+              <span className={`text-3xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{stats.totalUsers}</span>
             </div>
           </div>
 
-          <div className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/20 relative overflow-hidden flex items-center gap-4">
-            <div className="p-4 bg-amber-500/10 text-amber-400 rounded-2xl">
+          <div className={`glass-card p-6 rounded-3xl border relative overflow-hidden flex items-center gap-4 ${
+            theme === 'dark' ? 'border-white/5 bg-slate-900/20' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className="p-4 bg-amber-500/10 text-amber-500 dark:text-amber-400 rounded-2xl">
               <Layers size={24} />
             </div>
             <div>
-              <span className="text-xs text-slate-400 block font-semibold">Planos Ativos</span>
-              <div className="text-[10px] text-slate-300 font-medium flex gap-2 flex-wrap mt-0.5">
+              <span className="text-xs text-slate-400 dark:text-slate-500 block font-semibold">Planos Ativos</span>
+              <div className={`text-[10px] font-medium flex gap-2 flex-wrap mt-0.5 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
                 <span>Free: {stats.planCounts.free || 0}</span>
                 <span>Starter: {stats.planCounts.starter || 0}</span>
                 <span>Pro: {stats.planCounts.pro || 0}</span>
@@ -579,18 +628,20 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         </section>
 
         {/* Ambiente de Teste Sandbox */}
-        <section className="glass-card p-6 rounded-3xl border border-white/5 bg-slate-900/10 space-y-6">
+        <section className={`glass-card p-6 rounded-3xl border ${
+          theme === 'dark' ? 'border-white/5 bg-slate-900/10' : 'border-slate-200 bg-white shadow-sm'
+        } space-y-6`}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <UserCheck2 className="text-purple-400 animate-pulse" size={20} />
+              <h2 className={`text-lg font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                <UserCheck2 className="text-purple-500 dark:text-purple-400 animate-pulse" size={20} />
                 Ambiente de Teste Sandbox
               </h2>
               <p className="text-xs text-slate-400 mt-1">
                 Simule cargos (Gerente, Supervisor, Operador) na empresa fictícia isolada de testes (`sandbox-test`). Os dados simulados não afetam as estatísticas master.
               </p>
               {hasSandbox && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-md mt-2">
+                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-md mt-2">
                   <Check size={10} strokeWidth={3} /> Sandbox Inicializado no Firestore
                 </span>
               )}
@@ -603,7 +654,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <button
                       onClick={() => handleSimulateRole('manager', false)}
                       disabled={isProvisioningSandbox}
-                      className="px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 font-bold hover:bg-purple-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                        theme === 'dark'
+                          ? 'bg-purple-500/10 border-purple-500/20 text-purple-300 hover:bg-purple-500/20'
+                          : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                      }`}
                       title="Entrar como Gerente (Modo Simulação)"
                     >
                       Entrar como Gerente
@@ -611,7 +666,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <button
                       onClick={() => handleSimulateRole('supervisor', false)}
                       disabled={isProvisioningSandbox}
-                      className="px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-bold hover:bg-indigo-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                        theme === 'dark'
+                          ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20'
+                          : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                      }`}
                       title="Entrar como Supervisor (Modo Simulação)"
                     >
                       Entrar como Supervisor
@@ -619,7 +678,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <button
                       onClick={() => handleSimulateRole('member', false)}
                       disabled={isProvisioningSandbox}
-                      className="px-4 py-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 font-bold hover:bg-sky-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                        theme === 'dark'
+                          ? 'bg-sky-500/10 border-sky-500/20 text-sky-300 hover:bg-sky-500/20'
+                          : 'bg-sky-50 border-sky-200 text-sky-700 hover:bg-sky-100'
+                      }`}
                       title="Entrar como Operador (Modo Simulação)"
                     >
                       Entrar como Operador
@@ -627,7 +690,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <button
                       onClick={() => handleSimulateRole('monitor', false)}
                       disabled={isProvisioningSandbox}
-                      className="px-4 py-2.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-300 font-bold hover:bg-fuchsia-500/20 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                        theme === 'dark'
+                          ? 'bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-300 hover:bg-fuchsia-500/20'
+                          : 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-100'
+                      }`}
                       title="Entrar como Monitor (Modo Simulação)"
                     >
                       Entrar como Monitor
@@ -640,7 +707,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       }
                     }}
                     disabled={isProvisioningSandbox}
-                    className="px-3 py-2.5 rounded-xl border border-rose-500/20 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 transition-all text-xs uppercase font-bold active:scale-95 disabled:opacity-50"
+                    className={`px-3 py-2.5 rounded-xl border transition-all text-xs uppercase font-bold active:scale-95 disabled:opacity-50 cursor-pointer ${
+                      theme === 'dark'
+                        ? 'border-rose-500/20 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300'
+                        : 'border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700'
+                    }`}
                     title="Recriar Banco de Dados Fictício Sandbox"
                   >
                     Resetar Sandbox
@@ -650,7 +721,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <button
                   onClick={() => handleSimulateRole('manager', true)}
                   disabled={isProvisioningSandbox}
-                  className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-95"
+                  className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-95 cursor-pointer"
                 >
                   {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
                   Inicializar Ambiente Sandbox
@@ -662,15 +733,19 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
 
         {/* Lista de Empresas */}
-        <section className="glass-card rounded-3xl border border-white/5 bg-slate-900/10 overflow-hidden shadow-xl">
-          <div className="px-8 py-6 border-b border-white/5 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <section className={`glass-card rounded-3xl border overflow-hidden shadow-sm ${
+          theme === 'dark' ? 'border-white/5 bg-slate-900/10' : 'border-slate-200 bg-white'
+        }`}>
+          <div className={`px-8 py-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
+            theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50'
+          }`}>
             <div>
-              <h2 className="text-lg font-bold text-white leading-tight">Organizações / Clientes Contratantes</h2>
+              <h2 className={`text-lg font-bold leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Organizações / Clientes Contratantes</h2>
               <p className="text-xs text-slate-400 mt-1">Gerencie licenças de cargos, expiração de planos e exclusão de dados.</p>
             </div>
             <button 
               onClick={() => setIsCreateOrgOpen(true)}
-              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-400 hover:to-teal-500 transition-colors shadow-lg shadow-emerald-500/10 active:scale-95 flex items-center gap-2 text-xs uppercase tracking-wider"
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-400 hover:to-teal-500 transition-colors shadow-lg shadow-emerald-500/10 active:scale-95 flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
             >
               <Plus size={14} />
               Nova Organização
@@ -681,7 +756,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-white/5 text-[10px] text-slate-500 uppercase tracking-widest font-black">
+                  <tr className={`border-b text-[10px] text-slate-500 uppercase tracking-widest font-black ${
+                    theme === 'dark' ? 'border-white/5' : 'border-slate-100'
+                  }`}>
                     <th className="px-8 py-4">Nome da Empresa / CNPJ</th>
                     <th className="px-6 py-4">Plano</th>
                     <th className="px-6 py-4">Status</th>
@@ -692,12 +769,12 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <th className="px-8 py-4 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 text-sm">
+                <tbody className={`divide-y text-sm ${theme === 'dark' ? 'divide-white/5' : 'divide-slate-100'}`}>
                   {organizations.filter(org => org.id !== 'sandbox-test').map((org) => (
-                    <tr key={org.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={org.id} className={`transition-colors ${theme === 'dark' ? 'hover:bg-white/[0.02]' : 'hover:bg-slate-50'}`}>
                       <td className="px-8 py-5">
-                        <div className="font-semibold text-slate-100">{org.name}</div>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">{org.cnpj || 'Sem CNPJ informado'}</div>
+                        <div className={`font-semibold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>{org.name}</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5">{org.cnpj || 'Sem CNPJ informado'}</div>
                       </td>
                       <td className="px-6 py-5">
                         <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
@@ -710,7 +787,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       </td>
                       <td className="px-6 py-5">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${
-                          org.status === 'active' ? 'text-emerald-400' : 'text-slate-500'
+                          org.status === 'active' ? 'text-emerald-500' : 'text-slate-500'
                         }`}>
                           <span className={`w-2 h-2 rounded-full ${
                             org.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'
@@ -718,22 +795,24 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                           {org.status === 'active' ? 'Ativa' : 'Inativa'}
                         </span>
                       </td>
-                      <td className="px-6 py-5 font-bold text-slate-300">
+                      <td className={`px-6 py-5 font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                         {users.filter(u => u.organizationId === org.id).length} / {org.maxUsers || 5}
                       </td>
-                      <td className="px-6 py-5 font-bold text-slate-300">
+                      <td className={`px-6 py-5 font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                         {teams.filter(t => t.organizationId === org.id).length} / {org.maxTeams || 1}
                       </td>
                       <td className="px-6 py-5 font-mono text-xs">
                         {org.managerInviteToken ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{org.managerInviteToken}</span>
+                            <span className="text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{org.managerInviteToken}</span>
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(org.managerInviteToken || '');
                                 showToast('Token copiado!', 'success');
                               }}
-                              className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
+                              className={`p-1 rounded cursor-pointer ${
+                                theme === 'dark' ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800'
+                              }`}
                               title="Copiar Código de Convite de Gerente"
                             >
                               <Copy size={12} />
@@ -749,30 +828,32 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                                 showToast('Erro ao gerar token', 'error');
                               }
                             }}
-                            className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1"
+                            className="text-[10px] text-emerald-500 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
                           >
                             <RefreshCw size={10} />
                             Gerar Código
                           </button>
                         )}
                       </td>
-                      <td className="px-6 py-5 font-mono text-xs text-slate-400">
+                      <td className="px-6 py-5 font-mono text-xs text-slate-400 dark:text-slate-500">
                         {org.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString('pt-BR') : 'Sem expiração'}
                       </td>
                       <td className="px-8 py-5 text-right flex justify-end gap-2">
                         <button
                           onClick={() => openEditModal(org)}
-                          className="p-2 hover:bg-white/10 rounded-xl transition-all text-slate-400 hover:text-white"
+                          className={`p-2 rounded-xl transition-all cursor-pointer ${
+                            theme === 'dark' ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+                          }`}
                           title="Editar limites da empresa"
                         >
                           <Settings size={16} />
                         </button>
                         <button
                           onClick={() => handleToggleStatus(org)}
-                          className={`p-2 rounded-xl transition-all ${
+                          className={`p-2 rounded-xl transition-all cursor-pointer ${
                             org.status === 'active' 
-                              ? 'hover:bg-rose-500/10 text-rose-400 hover:text-rose-300' 
-                              : 'hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-300'
+                              ? 'hover:bg-rose-500/10 text-rose-500 dark:text-rose-400 hover:text-rose-600' 
+                              : 'hover:bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 hover:text-emerald-600'
                           }`}
                           title={org.status === 'active' ? 'Bloquear Empresa' : 'Liberar Empresa'}
                         >
@@ -834,16 +915,22 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
+              className={`relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border ${
+                theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+              }`}
             >
-              <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0">
+              <div className={`px-8 py-5 border-b flex justify-between items-center shrink-0 ${
+                theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50'
+              }`}>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Editar Plano & Limites</h3>
+                  <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Editar Plano & Limites</h3>
                   <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5 block">{selectedOrg.name}</span>
                 </div>
                 <button 
                   onClick={() => setSelectedOrg(null)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
+                  className={`p-2 rounded-full transition-colors ${
+                    theme === 'dark' ? 'hover:bg-white/10 text-slate-500 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
+                  }`}
                 >
                   <X size={20} />
                 </button>
@@ -855,7 +942,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <select 
                     value={editPlan}
                     onChange={(e) => setEditPlan(e.target.value as Organization['plan'])}
-                    className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none appearance-none select-custom-arrow"
+                    className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none appearance-none select-custom-arrow ${
+                      theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                   >
                     <option value="free">Plano Free</option>
                     <option value="starter">Plano Starter</option>
@@ -873,7 +962,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       min={1}
                       value={editMaxUsers}
                       onChange={(e) => setEditMaxUsers(Number(e.target.value))}
-                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none"
+                      className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none ${
+                        theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -883,7 +974,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       min={1}
                       value={editMaxTeams}
                       onChange={(e) => setEditMaxTeams(Number(e.target.value))}
-                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none"
+                      className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none ${
+                        theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
                     />
                   </div>
                 </div>
@@ -894,7 +987,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     type="date"
                     value={editExpiresAt}
                     onChange={(e) => setEditExpiresAt(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none color-scheme-dark"
+                    className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none ${
+                      theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                   />
                 </div>
 
@@ -903,14 +998,16 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <select 
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as Organization['status'])}
-                    className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none appearance-none select-custom-arrow"
+                    className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none appearance-none select-custom-arrow ${
+                      theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                   >
                     <option value="active">Empresa Ativa</option>
                     <option value="inactive">Empresa Suspensa/Inativa</option>
                   </select>
                 </div>
 
-                <div className="border-t border-white/5 pt-4 space-y-4">
+                <div className={`border-t pt-4 space-y-4 ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
                   <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider block">Integração HubCRM (Suporte/Cancelamento)</span>
                   
                   <div className="space-y-1.5">
@@ -920,7 +1017,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       placeholder="Ex: crm-org-123"
                       value={editCrmOrgId}
                       onChange={(e) => setEditCrmOrgId(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none"
+                      className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none ${
+                        theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
                     />
                   </div>
 
@@ -932,7 +1031,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                         placeholder="Ex: cli_abc123"
                         value={editCrmClientId}
                         onChange={(e) => setEditCrmClientId(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none"
+                        className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none ${
+                          theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -942,24 +1043,30 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                         placeholder="Ex: token_xyz"
                         value={editCrmPublicToken}
                         onChange={(e) => setEditCrmPublicToken(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none"
+                        className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none ${
+                          theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="p-8 pt-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex gap-4 shrink-0">
+              <div className={`p-8 pt-4 border-t flex gap-4 shrink-0 ${
+                theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50'
+              }`}>
                 <button 
                   onClick={() => setSelectedOrg(null)}
-                  className="flex-1 px-5 py-4 rounded-xl border border-white/10 font-bold text-slate-400 hover:bg-white/5 transition-colors"
+                  className={`flex-1 px-5 py-4 rounded-xl border font-bold transition-all cursor-pointer ${
+                    theme === 'dark' ? 'border-white/10 text-slate-400 hover:bg-white/5' : 'border-slate-200 text-slate-500 hover:bg-slate-100'
+                  }`}
                 >
                   Cancelar
                 </button>
                 <button 
                   onClick={handleSaveLimits}
                   disabled={isSaving}
-                  className="flex-1 px-5 py-4 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-400 transition-colors shadow-lg shadow-sky-500/20 active:scale-95 flex items-center justify-center gap-2"
+                  className="flex-1 px-5 py-4 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-400 transition-colors shadow-lg shadow-sky-500/20 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
                   Salvar Ajustes
@@ -984,18 +1091,24 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
+              className={`relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border ${
+                theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+              }`}
             >
               <form onSubmit={handleCreateOrganization} className="flex flex-col h-full">
-                <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0">
+                <div className={`px-8 py-5 border-b flex justify-between items-center shrink-0 ${
+                  theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50'
+                }`}>
                   <div>
-                    <h3 className="text-lg font-bold text-white">Nova Organização</h3>
+                    <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Nova Organização</h3>
                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5 block">Cadastrar Empresa & Gerar Códigos</span>
                   </div>
                   <button 
                     type="button"
                     onClick={() => setIsCreateOrgOpen(false)}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
+                    className={`p-2 rounded-full transition-colors ${
+                      theme === 'dark' ? 'hover:bg-white/10 text-slate-500 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
+                    }`}
                   >
                     <X size={20} />
                   </button>
@@ -1010,7 +1123,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       placeholder="Ex: Noverde Soluções"
                       value={newOrgName}
                       onChange={(e) => setNewOrgName(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                      className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none ${
+                        theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
                     />
                   </div>
 
@@ -1021,7 +1136,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       placeholder="00.000.000/0000-00"
                       value={newOrgCnpj}
                       onChange={(e) => setNewOrgCnpj(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                      className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none ${
+                        theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
                     />
                   </div>
 
@@ -1030,7 +1147,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <select 
                       value={newOrgPlan}
                       onChange={(e) => handlePlanChange(e.target.value as Organization['plan'])}
-                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none appearance-none select-custom-arrow"
+                      className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none appearance-none select-custom-arrow ${
+                        theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
                     >
                       <option value="free">Plano Free</option>
                       <option value="starter">Plano Starter</option>
@@ -1048,7 +1167,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                         min={1}
                         value={newOrgMaxUsers}
                         onChange={(e) => setNewOrgMaxUsers(Number(e.target.value))}
-                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                        className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none ${
+                          theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -1058,24 +1179,30 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                         min={1}
                         value={newOrgMaxTeams}
                         onChange={(e) => setNewOrgMaxTeams(Number(e.target.value))}
-                        className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-white outline-none"
+                        className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none ${
+                          theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="p-8 pt-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex gap-4 shrink-0">
+                <div className={`p-8 pt-4 border-t flex gap-4 shrink-0 ${
+                  theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50'
+                }`}>
                   <button 
                     type="button"
                     onClick={() => setIsCreateOrgOpen(false)}
-                    className="flex-1 px-5 py-4 rounded-xl border border-white/10 font-bold text-slate-400 hover:bg-white/5 transition-colors"
+                    className={`flex-1 px-5 py-4 rounded-xl border font-bold transition-colors cursor-pointer ${
+                      theme === 'dark' ? 'border-white/10 text-slate-400 hover:bg-white/5' : 'border-slate-200 text-slate-500 hover:bg-slate-100'
+                    }`}
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit"
                     disabled={isSaving}
-                    className="flex-1 px-5 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold hover:from-emerald-400 hover:to-teal-500 transition-colors shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
+                    className="flex-1 px-5 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold hover:from-emerald-400 hover:to-teal-500 transition-colors shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
                     Criar Empresa
@@ -1102,30 +1229,38 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative glass-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-rose-500/20"
+              className={`relative w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border ${
+                theme === 'dark' ? 'bg-slate-900 border-rose-500/20 text-white' : 'bg-white border-rose-200 text-slate-800'
+              }`}
             >
-              <div className="px-8 py-5 border-b border-rose-500/10 flex justify-between items-center bg-rose-500/5 backdrop-blur-xl">
+              <div className={`px-8 py-5 border-b flex justify-between items-center ${
+                theme === 'dark' ? 'border-rose-500/10 bg-rose-500/5' : 'border-rose-100 bg-rose-50/50'
+              }`}>
                 <div>
                   <h2 className="text-lg font-black text-rose-500 tracking-tight uppercase">Aviso de Exclusão</h2>
                   <p className="text-[10px] text-slate-400">Ação irreversível de administrador master</p>
                 </div>
                 <button 
                   onClick={() => setOrgToDelete(null)}
-                  className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
+                  className={`p-2 rounded-full transition-colors ${
+                    theme === 'dark' ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
+                  }`}
                 >
                   <X size={20} />
                 </button>
               </div>
 
               <div className="p-8 space-y-6">
-                <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-5 space-y-3">
-                  <p className="text-sm font-bold text-slate-200">
-                    Você está prestes a excluir permanentemente a empresa <span className="text-rose-400 font-extrabold">"{orgToDelete.name}"</span>.
+                <div className={`border rounded-2xl p-5 space-y-3 ${
+                  theme === 'dark' ? 'bg-rose-500/5 border-rose-500/10' : 'bg-rose-50/50 border-rose-100'
+                }`}>
+                  <p className={`text-sm font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                    Você está prestes a excluir permanentemente a empresa <span className="text-rose-500 font-extrabold">"{orgToDelete.name}"</span>.
                   </p>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                     Isso apagará definitivamente todos os acordos, equipes, usuários, conciliações, configurações e logs de auditoria vinculados a esta organização.
                   </p>
-                  <div className="text-[10px] text-rose-400 font-bold bg-rose-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5 uppercase tracking-wider">
+                  <div className="text-[10px] text-rose-500 dark:text-rose-400 font-bold bg-rose-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5 uppercase tracking-wider">
                     ⚠️ Atenção: Esta ação não poderá ser desfeita!
                   </div>
                 </div>
@@ -1133,7 +1268,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <div className="flex gap-4">
                   <button
                     onClick={() => setOrgToDelete(null)}
-                    className="flex-1 px-5 py-4 rounded-xl border border-white/10 font-bold text-slate-300 hover:bg-white/5 transition-all text-xs"
+                    className={`flex-1 px-5 py-4 rounded-xl border font-bold transition-all text-xs cursor-pointer ${
+                      theme === 'dark' ? 'border-white/10 text-slate-300 hover:bg-white/5' : 'border-slate-200 text-slate-500 hover:bg-slate-100'
+                    }`}
                   >
                     Manter Empresa
                   </button>
@@ -1143,7 +1280,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       setOrgToDelete(null);
                       await handleDeleteOrganization(id, name);
                     }}
-                    className="flex-1 px-5 py-4 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-extrabold hover:from-rose-400 hover:to-red-500 transition-all shadow-lg shadow-rose-500/20 active:scale-95 text-xs uppercase tracking-wider"
+                    className="flex-1 px-5 py-4 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-extrabold hover:from-rose-400 hover:to-red-500 transition-all shadow-lg shadow-rose-500/20 active:scale-95 text-xs uppercase tracking-wider cursor-pointer"
                   >
                     Confirmar & Excluir
                   </button>
