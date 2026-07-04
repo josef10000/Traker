@@ -33,7 +33,7 @@ export interface Organization {
   id: string;
   name: string;
   cnpj?: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending';
   plan: 'free' | 'starter' | 'pro' | 'enterprise' | 'custom';
   planExpiresAt?: string;
   maxUsers: number;

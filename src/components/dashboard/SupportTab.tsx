@@ -50,7 +50,33 @@ export const SupportTab = ({
   crmPublicToken,
   showToast
 }: SupportTabProps) => {
-  const isIntegrated = crmOrgId && crmClientId && crmPublicToken;
+  const isIntegrated = (crmOrgId && crmClientId && crmPublicToken) || organizationId === 'sandbox-test';
+
+  // Chamados fictícios do Sandbox
+  const SANDBOX_TICKETS: CRMRequest[] = [
+    {
+      id: 'req-sb1',
+      category: 'Financeiro',
+      priority: 'alta',
+      status: 'concluido',
+      subject: 'Fatura Asaas pendente após pagamento',
+      message: 'Olá suporte! O pagamento do ciclo de Junho já foi debitado no meu cartão, mas a central continua me mostrando aviso de pendência no painel. Podem verificar por favor?',
+      reply: 'Olá! Identificamos um atraso na compensação bancária do gateway do Asaas, mas já confirmamos o recebimento e seu acesso foi restabelecido normalmente. Agradecemos o contato!',
+      repliedAt: new Date(Date.now() - 86400000).toISOString(),
+      createdAt: new Date(Date.now() - 90000000).toISOString()
+    },
+    {
+      id: 'req-sb2',
+      category: 'Erro',
+      priority: 'media',
+      status: 'em_analise',
+      subject: 'Problema no carregamento do gráfico de dilação',
+      message: 'O gráfico de dilação vs quebra na aba de BI está demorando muito para carregar ou às vezes dá erro em tela branca no Safari. Podem analisar?',
+      reply: null,
+      repliedAt: null,
+      createdAt: new Date(Date.now() - 3600000).toISOString()
+    }
+  ];
 
   // Estados dos chamados
   const [requests, setRequests] = useState<CRMRequest[]>([]);
@@ -76,6 +102,12 @@ export const SupportTab = ({
   // 1. Carregar chamados do CRM
   const loadTickets = async () => {
     if (!isIntegrated) return;
+    if (organizationId === 'sandbox-test') {
+      if (requests.length === 0) {
+        setRequests(SANDBOX_TICKETS);
+      }
+      return;
+    }
     setIsLoading(true);
     try {
       const url = `${CRM_API_URL}?action=support_list&orgId=${crmOrgId}&clientId=${crmClientId}&token=${crmPublicToken}`;
@@ -108,6 +140,28 @@ export const SupportTab = ({
     }
 
     setIsSubmitting(true);
+    if (organizationId === 'sandbox-test') {
+      setTimeout(() => {
+        const newTicket: CRMRequest = {
+          id: `req-sb${Date.now()}`,
+          category,
+          priority,
+          status: 'aberto',
+          subject,
+          message,
+          reply: null,
+          repliedAt: null,
+          createdAt: new Date().toISOString()
+        };
+        setRequests(prev => [newTicket, ...prev]);
+        showToast('Chamado de simulação aberto com sucesso!', 'success');
+        setSubject('');
+        setMessage('');
+        setIsSubmitting(false);
+      }, 500);
+      return;
+    }
+
     try {
       const response = await fetch(CRM_API_URL, {
         method: 'POST',
@@ -146,6 +200,43 @@ export const SupportTab = ({
     if (!selectedRequest || !replyMessage.trim()) return;
 
     setIsSendingReply(true);
+    if (organizationId === 'sandbox-test') {
+      setTimeout(() => {
+        const userText = replyMessage;
+        const currentReply = selectedRequest.reply 
+          ? `${selectedRequest.reply}\n\n[Sua réplica]: ${userText}`
+          : `[Sua réplica]: ${userText}`;
+
+        const updatedRequest: CRMRequest = {
+          ...selectedRequest,
+          reply: currentReply,
+          repliedAt: new Date().toISOString()
+        };
+
+        setRequests(prev => prev.map(r => r.id === selectedRequest.id ? updatedRequest : r));
+        setSelectedRequest(updatedRequest);
+        setReplyMessage('');
+        setIsSendingReply(false);
+        showToast('Mensagem enviada com sucesso (Simulação)!', 'success');
+
+        // Resposta do bot simulando o atendente real em 1.5s
+        setTimeout(() => {
+          const botText = `Olá! Recebemos sua réplica no Sandbox ("${userText}"). Nossos simuladores estão testando esta interação. Fique à vontade para fazer novos testes!`;
+          const finalReply = `${currentReply}\n\n[Suporte HubCRM]: ${botText}`;
+          const finalRequest: CRMRequest = {
+            ...updatedRequest,
+            reply: finalReply,
+            repliedAt: new Date().toISOString()
+          };
+          setRequests(prev => prev.map(r => r.id === selectedRequest.id ? finalRequest : r));
+          setSelectedRequest(prev => prev && prev.id === selectedRequest.id ? finalRequest : prev);
+          showToast('O Suporte do HubCRM respondeu seu chamado!', 'info');
+        }, 1500);
+
+      }, 500);
+      return;
+    }
+
     try {
       const response = await fetch(CRM_API_URL, {
         method: 'POST',
@@ -187,6 +278,25 @@ export const SupportTab = ({
   // 4. Cancelar Assinatura no CRM (Asaas)
   const handleCancelSubscription = async () => {
     setIsCanceling(true);
+    if (organizationId === 'sandbox-test') {
+      setTimeout(async () => {
+        showToast('Assinatura cancelada com sucesso (Simulação Sandbox)!', 'success');
+        // Define data limite local D+30
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        const limitDate = d.toISOString().split('T')[0];
+
+        const orgRef = doc(db, 'organizations', organizationId);
+        await updateDoc(orgRef, {
+          planExpiresAt: limitDate
+        });
+
+        setIsConfirmCancelOpen(false);
+        setIsCanceling(false);
+      }, 800);
+      return;
+    }
+
     try {
       const response = await fetch(CRM_API_URL, {
         method: 'POST',

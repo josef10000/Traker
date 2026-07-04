@@ -14,7 +14,8 @@ import {
   Palette,
   Sparkle,
   ArrowsClockwise,
-  Lifebuoy
+  Lifebuoy,
+  Gear
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 import { ToastType } from '../ui/Toast';
@@ -201,7 +202,13 @@ export const DashboardHeader = ({
           {/* Dropdown de Ferramentas / Ações */}
           <div className="relative shrink-0" ref={toolsMenuRef}>
             <button
-              onClick={() => setIsToolsOpen(!isToolsOpen)}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsToolsOpen(!isToolsOpen);
+              }}
               className={`p-2 rounded-xl border transition-all cursor-pointer ${
                 isToolsOpen
                   ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
@@ -209,7 +216,7 @@ export const DashboardHeader = ({
               }`}
               title="Ações e Ferramentas SaaS"
             >
-              <Palette size={18} weight="duotone" />
+              <Gear size={18} weight="duotone" />
             </button>
 
             {/* Menu Suspenso */}

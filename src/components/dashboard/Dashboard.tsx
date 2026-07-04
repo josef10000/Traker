@@ -1330,18 +1330,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     >
                       BI & Analytics
                     </button>
-                    {(profile.role === 'manager' || profile.role === 'supervisor') && (
-                      <button
-                        onClick={() => setDashboardTab('support')}
-                        className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                          dashboardTab === 'support' 
-                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' 
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Suporte & Chamados
-                      </button>
-                    )}
                   </div>
                 );
               })()}
@@ -1993,6 +1981,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         isPeopleReportOpen={isPeopleReportOpen}
         setIsPeopleReportOpen={setIsPeopleReportOpen}
         currentTeamMembers={currentTeamMembers}
+
+        isTeamSelectorOpen={isTeamSelectorOpen}
+        setIsTeamSelectorOpen={setIsTeamSelectorOpen}
+        managedTeamsData={managedTeamsData}
+        setSelectedTeamId={setSelectedTeamId}
       />
     </div>
   );

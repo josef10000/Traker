@@ -84,6 +84,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [newOrgPlan, setNewOrgPlan] = useState<Organization['plan']>('free');
   const [newOrgMaxUsers, setNewOrgMaxUsers] = useState(5);
   const [newOrgMaxTeams, setNewOrgMaxTeams] = useState(1);
+  const [orgToDelete, setOrgToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     // Carregar todas as organizações
@@ -362,7 +363,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         id: orgId,
         name: newOrgName.trim(),
         cnpj: newOrgCnpj.trim() || undefined,
-        status: 'active',
+        status: 'pending',
         plan: newOrgPlan,
         maxUsers: Number(newOrgMaxUsers),
         maxTeams: Number(newOrgMaxTeams),
@@ -408,10 +409,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   };
 
   const handleDeleteOrganization = async (orgId: string, orgName: string) => {
-    if (!window.confirm(`ATENÇÃO MASTER: Você está prestes a excluir permanentemente a empresa "${orgName}".\n\nIsso apagará TODOS os acordos, equipes, usuários, configurações, conciliações e logs de auditoria vinculados a este tenant.\n\nEsta ação é irreversível. Deseja continuar?`)) {
-      return;
-    }
-    
     setIsDeleting(orgId);
     try {
       const deleteInBatches = async (collectionName: string, progressMessage: string) => {
@@ -782,8 +779,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                           {org.status === 'active' ? <PowerOff size={16} /> : <Power size={16} />}
                         </button>
                         <button
-                          onClick={() => handleDeleteOrganization(org.id, org.name)}
-                          disabled={isDeleting !== null}
+                          onClick={() => setOrgToDelete({ id: org.id, name: org.name })}
+                          disabled={org.id === 'sandbox-test' || isDeleting !== null}
                           className="p-2 hover:bg-rose-500/10 rounded-xl transition-all text-rose-500 hover:text-rose-400 disabled:opacity-30"
                           title="Excluir Empresa (Exclusão Total)"
                         >
@@ -1085,6 +1082,73 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Exclusão Customizado */}
+      <AnimatePresence>
+        {orgToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setOrgToDelete(null)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative glass-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-rose-500/20"
+            >
+              <div className="px-8 py-5 border-b border-rose-500/10 flex justify-between items-center bg-rose-500/5 backdrop-blur-xl">
+                <div>
+                  <h2 className="text-lg font-black text-rose-500 tracking-tight uppercase">Aviso de Exclusão</h2>
+                  <p className="text-[10px] text-slate-400">Ação irreversível de administrador master</p>
+                </div>
+                <button 
+                  onClick={() => setOrgToDelete(null)}
+                  className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-5 space-y-3">
+                  <p className="text-sm font-bold text-slate-200">
+                    Você está prestes a excluir permanentemente a empresa <span className="text-rose-400 font-extrabold">"{orgToDelete.name}"</span>.
+                  </p>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Isso apagará definitivamente todos os acordos, equipes, usuários, conciliações, configurações e logs de auditoria vinculados a esta organização.
+                  </p>
+                  <div className="text-[10px] text-rose-400 font-bold bg-rose-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5 uppercase tracking-wider">
+                    ⚠️ Atenção: Esta ação não poderá ser desfeita!
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setOrgToDelete(null)}
+                    className="flex-1 px-5 py-4 rounded-xl border border-white/10 font-bold text-slate-300 hover:bg-white/5 transition-all text-xs"
+                  >
+                    Manter Empresa
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const { id, name } = orgToDelete;
+                      setOrgToDelete(null);
+                      await handleDeleteOrganization(id, name);
+                    }}
+                    className="flex-1 px-5 py-4 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-extrabold hover:from-rose-400 hover:to-red-500 transition-all shadow-lg shadow-rose-500/20 active:scale-95 text-xs uppercase tracking-wider"
+                  >
+                    Confirmar & Excluir
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

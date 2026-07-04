@@ -1,5 +1,5 @@
 import React from 'react';
-import { Agreement, UserProfile, Reconciliation, CollaborationNote } from '../../types';
+import { Agreement, UserProfile, Reconciliation, CollaborationNote, Team } from '../../types';
 
 // Modais do sistema
 import { AgreementModal } from '../modals/AgreementModal';
@@ -14,6 +14,7 @@ import { ConfirmModal } from '../modals/ConfirmModal';
 import { ReconciliationModal } from '../modals/ReconciliationModal';
 import { CollaboratorHistoryModal } from '../modals/CollaboratorHistoryModal';
 import { PeopleReportModal } from '../modals/PeopleReportModal';
+import { TeamSelectorModal } from '../modals/TeamSelectorModal';
 
 export interface DashboardModalsProps {
   profile: UserProfile;
@@ -100,6 +101,12 @@ export interface DashboardModalsProps {
   isPeopleReportOpen: boolean;
   setIsPeopleReportOpen: (open: boolean) => void;
   currentTeamMembers: any[];
+
+  // TeamSelectorModal
+  isTeamSelectorOpen: boolean;
+  setIsTeamSelectorOpen: (open: boolean) => void;
+  managedTeamsData: Team[];
+  setSelectedTeamId: (teamId: string) => void;
 }
 
 export const DashboardModals: React.FC<DashboardModalsProps> = ({
@@ -173,7 +180,12 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
 
   isPeopleReportOpen,
   setIsPeopleReportOpen,
-  currentTeamMembers
+  currentTeamMembers,
+
+  isTeamSelectorOpen,
+  setIsTeamSelectorOpen,
+  managedTeamsData,
+  setSelectedTeamId,
 }) => {
   return (
     <>
@@ -299,6 +311,14 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         onClose={() => setIsPeopleReportOpen(false)}
         orgId={profile.organizationId || ''}
         collaborators={currentTeamMembers}
+      />
+
+      <TeamSelectorModal 
+        isOpen={isTeamSelectorOpen}
+        onClose={() => setIsTeamSelectorOpen(false)}
+        teams={managedTeamsData}
+        selectedTeamId={selectedTeamId}
+        onSelectTeam={setSelectedTeamId}
       />
     </>
   );

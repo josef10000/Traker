@@ -64,6 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       crmOrgId,
       crmClientId,
       crmPublicToken,
+      status: 'active',
       // Se houver alguma data limite de expiração do plano de um cancelamento anterior, limpamos
       // para que a empresa volte a ter acesso ativo ao ser integrada/reintegrada
       planExpiresAt: admin.firestore.FieldValue.delete()
