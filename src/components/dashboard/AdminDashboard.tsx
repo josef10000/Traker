@@ -612,116 +612,120 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         {/* Ambiente de Teste Sandbox */}
         <section className={`glass-card p-6 rounded-3xl border ${
           theme === 'dark' ? 'border-white/5 bg-slate-900/10' : 'border-slate-200 bg-white shadow-sm'
-        } space-y-6`}>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="flex-1">
-              <h2 className={`text-lg font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                <UserCheck2 className="text-purple-500 dark:text-purple-400 animate-pulse" size={20} />
+        } space-y-4`}>
+          {/* Header do Sandbox (Título e Descrição) */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-white/[0.04]">
+            <div>
+              <h2 className={`text-base font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                <UserCheck2 className="text-purple-500 dark:text-purple-400" size={18} />
                 Ambiente de Teste Sandbox
               </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Simule cargos (Gerente, Supervisor, Operador) na empresa fictícia isolada de testes (`sandbox-test`). Os dados simulados não afetam as estatísticas master.
+              <p className="text-xs text-slate-400 mt-0.5">
+                Simule cargos fictícios de teste de forma isolada sem alterar as estatísticas reais.
               </p>
-              {hasSandbox && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-md mt-2">
-                  <Check size={10} strokeWidth={3} /> Sandbox Inicializado no Firestore
+            </div>
+            {hasSandbox && (
+              <div className="shrink-0 flex items-center">
+                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-md">
+                  <Check size={10} strokeWidth={3} /> Sandbox Ativo no Firestore
                 </span>
-              )}
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-stretch sm:items-center">
-              {hasSandbox ? (
-                <>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleSimulateRole('manager', false)}
-                      disabled={isProvisioningSandbox}
-                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-purple-500/10 border-purple-500/20 text-purple-300 hover:bg-purple-500/20'
-                          : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
-                      }`}
-                      title="Entrar como Gerente (Modo Simulação)"
-                    >
-                      Entrar como Gerente
-                    </button>
-                    <button
-                      onClick={() => handleSimulateRole('supervisor', false)}
-                      disabled={isProvisioningSandbox}
-                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20'
-                          : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
-                      }`}
-                      title="Entrar como Supervisor (Modo Simulação)"
-                    >
-                      Entrar como Supervisor
-                    </button>
-                    <button
-                      onClick={() => handleSimulateRole('member', false)}
-                      disabled={isProvisioningSandbox}
-                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-sky-500/10 border-sky-500/20 text-sky-300 hover:bg-sky-500/20'
-                          : 'bg-sky-50 border-sky-200 text-sky-700 hover:bg-sky-100'
-                      }`}
-                      title="Entrar como Operador (Modo Simulação)"
-                    >
-                      Entrar como Operador
-                    </button>
-                    <button
-                      onClick={() => handleSimulateRole('monitor', false)}
-                      disabled={isProvisioningSandbox}
-                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-300 hover:bg-fuchsia-500/20'
-                          : 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-100'
-                      }`}
-                      title="Entrar como Monitor (Modo Simulação)"
-                    >
-                      Entrar como Monitor
-                    </button>
-                    <button
-                      onClick={() => handleSimulateRole('backoffice', false)}
-                      disabled={isProvisioningSandbox}
-                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20'
-                          : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
-                      }`}
-                      title="Entrar como Back Office (Modo Simulação)"
-                    >
-                      Entrar como Back Office
-                    </button>
-                  </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Controles de Simulação */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            {hasSandbox ? (
+              <>
+                <div className="flex flex-wrap gap-2 flex-1">
                   <button
-                    onClick={() => {
-                      if (window.confirm("Isso apagará e recriará todos os dados (acordos, equipes, usuários) da empresa fictícia sandbox-test. Deseja continuar?")) {
-                        handleSimulateRole('manager', true);
-                      }
-                    }}
+                    onClick={() => handleSimulateRole('manager', false)}
                     disabled={isProvisioningSandbox}
-                    className={`px-3 py-2.5 rounded-xl border transition-all text-xs uppercase font-bold active:scale-95 disabled:opacity-50 cursor-pointer ${
+                    className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
                       theme === 'dark'
-                        ? 'border-rose-500/20 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300'
-                        : 'border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700'
+                        ? 'bg-purple-500/10 border-purple-500/20 text-purple-300 hover:bg-purple-500/20'
+                        : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
                     }`}
-                    title="Recriar Banco de Dados Fictício Sandbox"
+                    title="Entrar como Gerente (Modo Simulação)"
                   >
-                    Resetar Sandbox
+                    Entrar como Gerente
                   </button>
-                </>
-              ) : (
+                  <button
+                    onClick={() => handleSimulateRole('supervisor', false)}
+                    disabled={isProvisioningSandbox}
+                    className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20'
+                        : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                    }`}
+                    title="Entrar como Supervisor (Modo Simulação)"
+                  >
+                    Entrar como Supervisor
+                  </button>
+                  <button
+                    onClick={() => handleSimulateRole('member', false)}
+                    disabled={isProvisioningSandbox}
+                    className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-sky-500/10 border-sky-500/20 text-sky-300 hover:bg-sky-500/20'
+                        : 'bg-sky-50 border-sky-200 text-sky-700 hover:bg-sky-100'
+                    }`}
+                    title="Entrar como Operador (Modo Simulação)"
+                  >
+                    Entrar como Operador
+                  </button>
+                  <button
+                    onClick={() => handleSimulateRole('monitor', false)}
+                    disabled={isProvisioningSandbox}
+                    className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-300 hover:bg-fuchsia-500/20'
+                        : 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-100'
+                    }`}
+                    title="Entrar como Monitor (Modo Simulação)"
+                  >
+                    Entrar como Monitor
+                  </button>
+                  <button
+                    onClick={() => handleSimulateRole('backoffice', false)}
+                    disabled={isProvisioningSandbox}
+                    className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20'
+                        : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                    }`}
+                    title="Entrar como Back Office (Modo Simulação)"
+                  >
+                    Entrar como Back Office
+                  </button>
+                </div>
                 <button
-                  onClick={() => handleSimulateRole('manager', true)}
+                  onClick={() => {
+                    if (window.confirm("Isso apagará e recriará todos os dados (acordos, equipes, usuários) da empresa fictícia sandbox-test. Deseja continuar?")) {
+                      handleSimulateRole('manager', true);
+                    }
+                  }}
                   disabled={isProvisioningSandbox}
-                  className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-95 cursor-pointer"
+                  className={`px-4 py-2 rounded-xl border transition-all text-xs uppercase font-bold active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 ${
+                    theme === 'dark'
+                      ? 'border-rose-500/20 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300'
+                      : 'border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700'
+                  }`}
+                  title="Recriar Banco de Dados Fictício Sandbox"
                 >
-                  {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
-                  Inicializar Ambiente Sandbox
+                  Resetar Sandbox
                 </button>
-              )}
-            </div>
+              </>
+            ) : (
+              <button
+                onClick={() => handleSimulateRole('manager', true)}
+                disabled={isProvisioningSandbox}
+                className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-95 cursor-pointer"
+              >
+                {isProvisioningSandbox ? <Loader2 className="animate-spin" size={14} /> : <UserCheck size={14} />}
+                Inicializar Ambiente Sandbox
+              </button>
+            )}
           </div>
         </section>
 
