@@ -45,6 +45,7 @@ interface DashboardHeaderProps {
   organizationName: string;
   /** Callback para ativar a aba de suporte */
   onSupportTabClick: () => void;
+  theme?: 'light' | 'dark';
 }
 
 export const DashboardHeader = ({
@@ -65,7 +66,8 @@ export const DashboardHeader = ({
   lastRefreshed,
   isRefreshing,
   organizationName,
-  onSupportTabClick
+  onSupportTabClick,
+  theme = 'dark'
 }: DashboardHeaderProps) => {
   const [designMode, setDesignMode] = useDesignMode();
   const [isToolsOpen, setIsToolsOpen] = useState(false);
@@ -96,7 +98,9 @@ export const DashboardHeader = ({
   if (isPresentMode) return null;
 
   return (
-    <header className="sticky top-0 z-50 px-6 py-4 no-print bg-dashboard-surface border-b border-dashboard-border shadow-sm !overflow-visible" style={{ overflow: 'visible' }}>
+    <header className={`sticky top-0 z-50 px-6 py-4 no-print border-b shadow-sm !overflow-visible ${
+      theme === 'dark' ? 'bg-[#0f172a] border-white/5' : 'bg-white border-slate-200'
+    }`} style={{ overflow: 'visible' }}>
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div 
@@ -110,7 +114,9 @@ export const DashboardHeader = ({
             />
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-none italic uppercase">
+            <h1 className={`text-xl font-black tracking-tight leading-none italic uppercase ${
+              theme === 'dark' ? 'text-white' : 'text-slate-900'
+            }`}>
               {organizationName || 'Tracker'}
             </h1>
             
@@ -126,7 +132,9 @@ export const DashboardHeader = ({
                   <ChevronDown size={12} className="transition-transform duration-300" />
                 </button>
               ) : (
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
+                <p className={`text-[10px] uppercase tracking-widest font-bold ${
+                  theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                }`}>
                   {managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Dashboard Operacional'}
                 </p>
               )}
@@ -147,7 +155,9 @@ export const DashboardHeader = ({
                 showToast('Digite um CPF com 11 dígitos.', 'error');
               }
             }}
-            className="relative flex items-center bg-slate-100 dark:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/5 focus-within:border-sky-500/50 transition-all shrink-0 max-w-[160px]"
+            className={`relative flex items-center px-3 py-1.5 rounded-xl border focus-within:border-sky-500/50 transition-all shrink-0 max-w-[160px] ${
+              theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
+            }`}
           >
             <input 
               name="searchCpf"
@@ -161,7 +171,9 @@ export const DashboardHeader = ({
                 if (v.length > 11) v = v.substring(0, 11) + '-' + v.substring(11, 13);
                 e.target.value = v;
               }}
-              className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 outline-none border-none placeholder-slate-400 dark:placeholder-slate-600 w-full"
+              className={`bg-transparent text-xs font-bold outline-none border-none w-full ${
+                theme === 'dark' ? 'text-slate-200 placeholder-slate-600' : 'text-slate-900 placeholder-slate-400'
+              }`}
             />
             <button type="submit" className="text-slate-400 dark:text-slate-500 hover:text-sky-500 dark:hover:text-sky-400 transition-colors p-0.5 cursor-pointer">
               <Search size={14} />
@@ -174,8 +186,8 @@ export const DashboardHeader = ({
             disabled={isRefreshing}
             className={`p-2 rounded-xl transition-all border shrink-0 cursor-pointer ${
               isRefreshing
-                ? 'text-sky-500 dark:text-sky-400 bg-sky-500/10 border-sky-500/20 cursor-wait'
-                : 'text-slate-400 dark:text-slate-500 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-500/10 border-transparent'
+                ? 'text-sky-500 bg-sky-500/10 border-sky-500/20 cursor-wait'
+                : `border-transparent ${theme === 'dark' ? 'text-slate-500 hover:text-sky-400 hover:bg-sky-500/10' : 'text-slate-400 hover:text-sky-600 hover:bg-sky-50'}`
             }`}
             title={`Atualizar dados do mês (Atualizado: ${formatLastRefreshed(lastRefreshed)})`}
           >
@@ -199,7 +211,7 @@ export const DashboardHeader = ({
               className={`p-2 rounded-xl border transition-all cursor-pointer ${
                 isToolsOpen
                   ? 'bg-sky-500/15 border-sky-500/30 text-sky-500'
-                  : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10'
+                  : `${theme === 'dark' ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-slate-100 border-slate-200 text-slate-655 hover:text-slate-900 hover:bg-slate-200'}`
               }`}
               title="Ações e Ferramentas SaaS"
             >
@@ -213,9 +225,13 @@ export const DashboardHeader = ({
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-2xl p-2 shadow-2xl z-50 space-y-1"
+                  className={`absolute right-0 mt-2 w-56 backdrop-blur-2xl border rounded-2xl p-2 shadow-2xl z-50 space-y-1 ${
+                    theme === 'dark' ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
+                  }`}
                 >
-                  <div className="px-3 py-1.5 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/5 mb-1">
+                  <div className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-widest border-b mb-1 ${
+                    theme === 'dark' ? 'text-slate-500 border-white/5' : 'text-slate-400 border-slate-100'
+                  }`}>
                     Ferramentas & Ações
                   </div>
 
@@ -227,7 +243,9 @@ export const DashboardHeader = ({
                         setIsImportCsvOpen(true);
                       }}
                       disabled={selectedTeamId === 'all'}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
+                        theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                      }`}
                     >
                       <FileSpreadsheet size={16} className="text-amber-500" />
                       <span>Importar CSV</span>
@@ -242,7 +260,9 @@ export const DashboardHeader = ({
                         setIsReconciliationModalOpen(true);
                       }}
                       disabled={selectedTeamId === 'all'}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
+                        theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-955'
+                      }`}
                     >
                       <Calculator size={16} className="text-sky-500" />
                       <span>Conciliar Acordos</span>
@@ -256,7 +276,9 @@ export const DashboardHeader = ({
                         setIsToolsOpen(false);
                         setIsWebhookSettingsOpen(true);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors cursor-pointer ${
+                        theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                      }`}
                     >
                       <Globe size={16} className="text-emerald-500" />
                       <span>Configurar Webhooks</span>
@@ -274,7 +296,9 @@ export const DashboardHeader = ({
                           showToast(`Código de convite para ${currentTeam.name} copiado!`, 'success');
                         }
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors cursor-pointer ${
+                        theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                      }`}
                     >
                       <UserPlus size={16} className="text-emerald-500" />
                       <span>Copiar Token Convite</span>
@@ -286,7 +310,9 @@ export const DashboardHeader = ({
                     onClick={() => {
                       setDesignMode(designMode === 'classic' ? 'premium' : 'classic');
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors cursor-pointer ${
+                      theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                    }`}
                   >
                     {designMode === 'premium' ? (
                       <>
@@ -307,7 +333,9 @@ export const DashboardHeader = ({
                       setIsToolsOpen(false);
                       window.print();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-t border-slate-100 dark:border-white/5 pt-2 mt-1"
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors cursor-pointer border-t pt-2 mt-1 ${
+                      theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white border-white/5' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950 border-slate-100'
+                    }`}
                   >
                     <FileText size={16} className="text-purple-500" />
                     <span>Gerar Relatório PDF</span>
@@ -320,14 +348,20 @@ export const DashboardHeader = ({
           {/* Perfil Menu */}
           <div 
             id="user-profile-menu"
-            className="flex items-center gap-2.5 px-3 py-1.5 border border-slate-200 dark:border-white/10 bg-slate-100/50 dark:bg-white/5 rounded-xl cursor-pointer transition-all hover:bg-slate-200/50 dark:hover:bg-white/10 group shrink-0"
+            className={`flex items-center gap-2.5 px-3 py-1.5 border rounded-xl cursor-pointer transition-all group shrink-0 ${
+              theme === 'dark' ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+            }`}
             onClick={onSettingsClick}
           >
             <div className="flex flex-col items-end">
-              <span className="text-xs font-bold text-slate-800 dark:text-white group-hover:text-sky-500 transition-colors leading-none">
+              <span className={`text-xs font-bold group-hover:text-sky-500 transition-colors leading-none ${
+                theme === 'dark' ? 'text-white' : 'text-slate-800'
+              }`}>
                 {profile.displayName.split(' ')[0]}
               </span>
-              <span className="text-[8px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-tighter mt-0.5 leading-none">
+              <span className={`text-[8px] font-medium uppercase tracking-tighter mt-0.5 leading-none ${
+                theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+              }`}>
                 {profile.jobTitle || 'Operador'}
               </span>
             </div>
@@ -339,19 +373,23 @@ export const DashboardHeader = ({
           {/* Sair */}
           <button 
             onClick={() => setIsConfirmLogoutOpen(true)}
-            className="p-2.5 text-slate-400 dark:text-slate-500 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 rounded-xl transition-all shrink-0 cursor-pointer"
+            className={`p-2.5 rounded-xl transition-all shrink-0 cursor-pointer hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 ${
+              theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+            }`}
             title="Sair do Sistema"
           >
             <LogOut size={18} />
           </button>
-
-          {/* Novo Acordo */}
           {profile.role !== 'manager' && (
             <button 
               id="new-agreement-btn"
               onClick={() => setIsModalOpen(true)}
               disabled={selectedTeamId === 'all'}
-              className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-sky-500/20 active:scale-95 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed shrink-0 text-xs cursor-pointer"
+              className={`flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 disabled:cursor-not-allowed shrink-0 text-xs cursor-pointer ${
+                theme === 'dark' 
+                  ? 'shadow-lg shadow-sky-500/20 disabled:bg-slate-800 disabled:text-slate-500' 
+                  : 'shadow-md shadow-sky-550/10 disabled:bg-slate-100 disabled:text-slate-400'
+              }`}
             >
               <Plus size={16} />
               <span>Novo Acordo</span>

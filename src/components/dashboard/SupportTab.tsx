@@ -27,6 +27,7 @@ interface SupportTabProps {
   crmClientId: string;
   crmPublicToken: string;
   showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
+  theme?: 'light' | 'dark';
 }
 
 interface CRMRequest {
@@ -48,7 +49,8 @@ export const SupportTab = ({
   crmOrgId,
   crmClientId,
   crmPublicToken,
-  showToast
+  showToast,
+  theme = 'dark'
 }: SupportTabProps) => {
   const isIntegrated = (crmOrgId && crmClientId && crmPublicToken) || organizationId === 'sandbox-test';
 
@@ -342,21 +344,33 @@ export const SupportTab = ({
     switch (status) {
       case 'aberto':
         return (
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+            theme === 'dark' 
+              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
+              : 'bg-amber-50 text-amber-700 border-amber-200'
+          }`}>
             <Clock size={12} />
             Aguardando Atendimento
           </span>
         );
       case 'em_analise':
         return (
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+          <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+            theme === 'dark' 
+              ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
+              : 'bg-sky-50 text-sky-700 border-sky-200'
+          }`}>
             <CircleNotch className="animate-spin" size={12} />
             Em Atendimento
           </span>
         );
       case 'concluido':
         return (
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+            theme === 'dark' 
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          }`}>
             <CheckCircle size={12} />
             Resolvido
           </span>
@@ -370,21 +384,23 @@ export const SupportTab = ({
   const getPriorityBadge = (priority: string) => {
     const p = priority.toLowerCase();
     if (p === 'critica' || p === 'high' || p === 'alta') {
-      return <span className="text-rose-400 text-xs font-semibold">Alta</span>;
+      return <span className={theme === 'dark' ? 'text-rose-400 text-xs font-semibold' : 'text-rose-600 text-xs font-semibold'}>Alta</span>;
     }
     if (p === 'media' || p === 'medium') {
-      return <span className="text-amber-400 text-xs font-semibold">Média</span>;
+      return <span className={theme === 'dark' ? 'text-amber-400 text-xs font-semibold' : 'text-amber-600 text-xs font-semibold'}>Média</span>;
     }
-    return <span className="text-slate-400 text-xs font-semibold">Baixa</span>;
+    return <span className={theme === 'dark' ? 'text-slate-400 text-xs font-semibold' : 'text-slate-500 text-xs font-semibold'}>Baixa</span>;
   };
 
   if (!isIntegrated) {
     return (
-      <div className="glass-card p-8 rounded-[2rem] border border-white/5 bg-slate-900/10 max-w-2xl mx-auto space-y-6 text-center">
+      <div className={`p-8 rounded-[2rem] border max-w-2xl mx-auto space-y-6 text-center ${
+        theme === 'dark' ? 'bg-slate-900/10 border-white/5 shadow-none' : 'bg-white border-slate-200 shadow-sm'
+      }`}>
         <div className="py-12 space-y-4">
           <CircleNotch className="animate-spin text-amber-500 mx-auto" size={48} />
-          <h2 className="text-xl font-bold text-white tracking-tight">Configurando Central de Suporte</h2>
-          <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+          <h2 className={`text-xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Configurando Central de Suporte</h2>
+          <p className={`text-sm max-w-md mx-auto leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
             A central de atendimento está sendo ativada pela nossa equipe. 
             Por favor, aguarde alguns instantes. Este painel será liberado automaticamente.
           </p>
@@ -399,10 +415,12 @@ export const SupportTab = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Formulário Novo Chamado (Esquerda) */}
-        <div className="lg:col-span-4 glass-card p-6 rounded-[2rem] border border-white/5 bg-slate-900/10 h-fit space-y-5">
+        <div className={`p-6 rounded-[2rem] border h-fit space-y-5 ${
+          theme === 'dark' ? 'bg-slate-900/10 border-white/5 shadow-none' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
           <div>
-            <h3 className="text-lg font-bold text-white">Abrir Chamado</h3>
-            <p className="text-xs text-slate-400 mt-1">Envie sua dúvida ou solicitação técnica para os donos do SaaS</p>
+            <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Abrir Chamado</h3>
+            <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Envie sua dúvida ou solicitação técnica para os donos do SaaS</p>
           </div>
 
           <form onSubmit={handleCreateTicket} className="space-y-4">
@@ -414,7 +432,9 @@ export const SupportTab = ({
                 placeholder="Ex: Erro ao importar planilha CSV"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none text-xs"
+                className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none text-xs ${
+                  theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                }`}
               />
             </div>
 
@@ -424,13 +444,15 @@ export const SupportTab = ({
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none text-xs appearance-none select-custom-arrow"
+                  className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-555 transition-all outline-none text-xs appearance-none select-custom-arrow cursor-pointer ${
+                    theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
                 >
-                  <option value="Financeiro">Financeiro</option>
-                  <option value="Dúvida">Dúvida</option>
-                  <option value="Erro">Erro / Bug</option>
-                  <option value="Sugestão">Sugestão</option>
-                  <option value="Outros">Outros</option>
+                  <option value="Financeiro" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Financeiro</option>
+                  <option value="Dúvida" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Dúvida</option>
+                  <option value="Erro" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Erro / Bug</option>
+                  <option value="Sugestão" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Sugestão</option>
+                  <option value="Outros" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Outros</option>
                 </select>
               </div>
               <div className="space-y-1.5">
@@ -438,11 +460,13 @@ export const SupportTab = ({
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none text-xs appearance-none select-custom-arrow"
+                  className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-555 transition-all outline-none text-xs appearance-none select-custom-arrow cursor-pointer ${
+                    theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
                 >
-                  <option value="baixa">Baixa</option>
-                  <option value="media">Média</option>
-                  <option value="alta">Alta</option>
+                  <option value="baixa" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Baixa</option>
+                  <option value="media" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Média</option>
+                  <option value="alta" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Alta</option>
                 </select>
               </div>
             </div>
@@ -455,14 +479,16 @@ export const SupportTab = ({
                 placeholder="Descreva detalhadamente sua dúvida ou problema técnico..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white outline-none text-xs resize-none"
+                className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none text-xs resize-none ${
+                  theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                }`}
               />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 bg-sky-500 text-white rounded-xl hover:bg-sky-400 transition-all font-bold text-xs active:scale-95 shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2"
+              className="w-full py-4 bg-sky-500 text-white rounded-xl hover:bg-sky-400 transition-all font-bold text-xs active:scale-95 shadow-lg shadow-sky-555/10 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isSubmitting ? <CircleNotch className="animate-spin" size={16} /> : <PaperPlane size={16} />}
               {isSubmitting ? 'Enviando chamado...' : 'Abrir chamado suporte'}
@@ -474,15 +500,21 @@ export const SupportTab = ({
         <div className="lg:col-span-8 space-y-6">
           
           {/* Tabela de chamados */}
-          <div className="glass-card p-6 rounded-[2rem] border border-white/5 bg-slate-900/10">
-            <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-4">
+          <div className={`p-6 rounded-[2rem] border ${
+            theme === 'dark' ? 'bg-slate-900/10 border-white/5 shadow-none' : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <div className={`flex justify-between items-center border-b pb-4 mb-4 ${
+              theme === 'dark' ? 'border-white/5' : 'border-slate-100'
+            }`}>
               <div>
-                <h3 className="text-lg font-bold text-white">Seus Chamados</h3>
-                <p className="text-xs text-slate-400 mt-1">Histórico completo de interações com o suporte</p>
+                <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Seus Chamados</h3>
+                <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Histórico completo de interações com o suporte</p>
               </div>
               <button 
                 onClick={loadTickets}
-                className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                  theme === 'dark' ? 'text-slate-500 hover:text-white hover:bg-white/5' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                }`}
                 title="Sincronizar chamados"
               >
                 <CircleNotch className={isLoading ? 'animate-spin' : ''} size={16} />
@@ -503,7 +535,9 @@ export const SupportTab = ({
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-white/5 text-slate-500 font-black uppercase tracking-wider">
+                    <tr className={`border-b text-slate-500 dark:text-slate-400 font-black uppercase tracking-wider ${
+                      theme === 'dark' ? 'border-white/5' : 'border-slate-200 bg-slate-50/50'
+                    }`}>
                       <th className="pb-3 pl-2">Assunto</th>
                       <th className="pb-3">Categoria</th>
                       <th className="pb-3">Prioridade</th>
@@ -511,15 +545,23 @@ export const SupportTab = ({
                       <th className="pb-3 text-right pr-2">Ações</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className={`divide-y ${
+                    theme === 'dark' ? 'divide-white/[0.02]' : 'divide-slate-100'
+                  }`}>
                     {requests.map((req) => (
                       <tr 
                         key={req.id} 
-                        className={`border-b border-white/5 hover:bg-white/5 transition-all cursor-pointer ${selectedRequest?.id === req.id ? 'bg-white/5' : ''}`}
+                        className={`border-b transition-all cursor-pointer ${
+                          theme === 'dark' 
+                            ? `border-white/5 hover:bg-white/5 ${selectedRequest?.id === req.id ? 'bg-white/5' : ''}` 
+                            : `border-slate-100 hover:bg-slate-50 ${selectedRequest?.id === req.id ? 'bg-slate-50' : ''}`
+                        }`}
                         onClick={() => setSelectedRequest(req)}
                       >
-                        <td className="py-3.5 pl-2 font-bold text-white max-w-[200px] truncate">{req.subject}</td>
-                        <td className="py-3.5 text-slate-300">{req.category}</td>
+                        <td className={`py-3.5 pl-2 font-bold max-w-[200px] truncate ${
+                          theme === 'dark' ? 'text-white' : 'text-slate-900'
+                        }`}>{req.subject}</td>
+                        <td className={`py-3.5 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>{req.category}</td>
                         <td className="py-3.5">{getPriorityBadge(req.priority)}</td>
                         <td className="py-3.5">{getStatusBadge(req.status)}</td>
                         <td className="py-3.5 text-right pr-2">
@@ -528,7 +570,11 @@ export const SupportTab = ({
                               e.stopPropagation();
                               setSelectedRequest(req);
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-sky-500 hover:text-white transition-colors text-[10px] font-bold uppercase tracking-wider"
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                              theme === 'dark' 
+                                ? 'bg-white/5 hover:bg-sky-500 hover:text-white' 
+                                : 'bg-slate-100 hover:bg-sky-500 hover:text-white text-slate-700'
+                            }`}
                           >
                             Ver Conversa
                           </button>
@@ -548,21 +594,27 @@ export const SupportTab = ({
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                className="glass-card p-6 rounded-[2rem] border border-white/5 bg-slate-900/10 space-y-6"
+                className={`p-6 rounded-[2rem] border space-y-6 ${
+                  theme === 'dark' ? 'bg-slate-900/10 border-white/5 shadow-none' : 'bg-white border-slate-200 shadow-sm'
+                }`}
               >
-                <div className="flex justify-between items-start border-b border-white/5 pb-4">
+                <div className={`flex justify-between items-start border-b pb-4 ${
+                  theme === 'dark' ? 'border-white/5' : 'border-slate-100'
+                }`}>
                   <div>
                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Visualizando Chamado</span>
-                    <h4 className="text-md font-bold text-white mt-1">{selectedRequest.subject}</h4>
+                    <h4 className={`text-md font-bold mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{selectedRequest.subject}</h4>
                     <div className="flex items-center gap-3 mt-2">
-                      <span className="text-[10px] text-slate-400">ID: {selectedRequest.id}</span>
-                      <span className="text-slate-700 text-xs">•</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">ID: {selectedRequest.id}</span>
+                      <span className="text-slate-350 dark:text-slate-700 text-xs">•</span>
                       {getStatusBadge(selectedRequest.status)}
                     </div>
                   </div>
                   <button 
                     onClick={() => setSelectedRequest(null)}
-                    className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
+                    className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                      theme === 'dark' ? 'hover:bg-white/10 text-slate-500 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
+                    }`}
                   >
                     <X size={18} />
                   </button>
@@ -572,8 +624,10 @@ export const SupportTab = ({
                 <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                   {/* Pergunta Original */}
                   <div className="flex flex-col items-start gap-1 max-w-[85%]">
-                    <span className="text-[9px] text-slate-500 font-bold ml-3">{organizationName} (Você)</span>
-                    <div className="bg-slate-950 p-4 rounded-3xl rounded-tl-none border border-white/5 text-xs text-slate-200 leading-relaxed shadow-sm">
+                    <span className="text-[9px] text-slate-550 dark:text-slate-500 font-bold ml-3">{organizationName} (Você)</span>
+                    <div className={`p-4 rounded-3xl rounded-tl-none border text-xs leading-relaxed shadow-sm ${
+                      theme === 'dark' ? 'bg-slate-950 border-white/5 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-800'
+                    }`}>
                       {selectedRequest.message}
                     </div>
                   </div>
@@ -581,8 +635,10 @@ export const SupportTab = ({
                   {/* Resposta do Suporte */}
                   {selectedRequest.reply ? (
                     <div className="flex flex-col items-end gap-1 ml-auto max-w-[85%]">
-                      <span className="text-[9px] text-slate-500 font-bold mr-3">Suporte HubCRM</span>
-                      <div className="bg-sky-500/10 p-4 rounded-3xl rounded-tr-none border border-sky-500/20 text-xs text-sky-200 leading-relaxed shadow-sm whitespace-pre-wrap">
+                      <span className="text-[9px] text-slate-550 dark:text-slate-500 font-bold mr-3">Suporte HubCRM</span>
+                      <div className={`p-4 rounded-3xl rounded-tr-none border text-xs leading-relaxed shadow-sm whitespace-pre-wrap ${
+                        theme === 'dark' ? 'bg-sky-500/10 border-sky-500/20 text-sky-200' : 'bg-sky-50 border-sky-200 text-sky-850'
+                      }`}>
                         {selectedRequest.reply}
                       </div>
                       {selectedRequest.repliedAt && (
@@ -592,7 +648,9 @@ export const SupportTab = ({
                       )}
                     </div>
                   ) : (
-                    <div className="p-4 rounded-2xl bg-slate-950/30 text-center border border-dashed border-white/5 text-xs text-slate-500">
+                    <div className={`p-4 rounded-2xl text-center border border-dashed text-xs ${
+                      theme === 'dark' ? 'bg-slate-950/30 border-white/5 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-500'
+                    }`}>
                       Nenhum atendente respondeu este chamado ainda. Aguarde.
                     </div>
                   )}
@@ -600,26 +658,32 @@ export const SupportTab = ({
 
                 {/* Form de Envio da Réplica */}
                 {selectedRequest.status !== 'concluido' ? (
-                  <form onSubmit={handleSendReply} className="border-t border-white/5 pt-4 flex gap-3">
+                  <form onSubmit={handleSendReply} className={`flex gap-3 border-t pt-4 ${
+                    theme === 'dark' ? 'border-white/5' : 'border-slate-100'
+                  }`}>
                     <input
                       type="text"
                       required
                       placeholder="Escrever uma réplica / responder ao chamado..."
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
-                      className="flex-1 bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white text-xs outline-none"
+                      className={`flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-xs outline-none ${
+                        theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                      }`}
                     />
                     <button
                       type="submit"
                       disabled={isSendingReply}
-                      className="px-5 bg-sky-500 text-white rounded-xl hover:bg-sky-400 transition-colors font-bold text-xs active:scale-95 flex items-center justify-center gap-1.5 shadow-md shadow-sky-500/10"
+                      className="px-5 bg-sky-500 text-white rounded-xl hover:bg-sky-655 transition-colors font-bold text-xs active:scale-95 flex items-center justify-center gap-1.5 shadow-md shadow-sky-500/10 cursor-pointer"
                     >
                       {isSendingReply ? <CircleNotch className="animate-spin" size={14} /> : <PaperPlane size={14} />}
                       Enviar
                     </button>
                   </form>
                 ) : (
-                  <div className="p-4 rounded-2xl bg-emerald-500/5 text-center border border-emerald-500/10 text-xs text-emerald-400 font-semibold flex items-center justify-center gap-2">
+                  <div className={`p-4 rounded-2xl text-center border text-xs font-semibold flex items-center justify-center gap-2 ${
+                    theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  }`}>
                     <Lock size={14} />
                     Chamado encerrado. Não é possível enviar novas réplicas.
                   </div>
@@ -632,23 +696,27 @@ export const SupportTab = ({
 
       {/* Seção Perigosa: Cancelar Assinatura (Apenas Gerentes) */}
       {profile.role === 'manager' && (
-        <div className="glass-card p-6 rounded-[2rem] border border-rose-500/20 bg-rose-950/5 space-y-4">
+        <div className={`p-6 rounded-[2rem] border space-y-4 ${
+          theme === 'dark' ? 'bg-rose-955/5 border-rose-500/20' : 'bg-white border-rose-200 shadow-sm'
+        }`}>
           <div className="flex items-start gap-4">
             <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl mt-0.5">
               <Warning size={24} weight="duotone" />
             </div>
             <div>
-              <h3 className="text-md font-bold text-white">Cancelar Assinatura do SaaS</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+              <h3 className={`text-md font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Cancelar Assinatura do SaaS</h3>
+              <p className={`text-xs mt-1 max-w-xl leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                 Ao cancelar a assinatura, o faturamento automático será desativado no Asaas e seu acesso pago ficará ativo somente até o final do período vigente concedido pela central.
               </p>
             </div>
           </div>
 
-          <div className="flex justify-end pt-2 border-t border-rose-500/10">
+          <div className={`flex justify-end pt-2 border-t ${
+            theme === 'dark' ? 'border-rose-500/10' : 'border-rose-100'
+          }`}>
             <button
               onClick={() => setIsConfirmCancelOpen(true)}
-              className="px-5 py-3 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-400 transition-colors shadow-lg shadow-rose-500/10 text-xs active:scale-95"
+              className="px-5 py-3 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-655 transition-colors shadow-lg shadow-rose-500/10 text-xs active:scale-95 cursor-pointer"
             >
               Cancelar Assinatura
             </button>
@@ -665,20 +733,24 @@ export const SupportTab = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsConfirmCancelOpen(false)}
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+              className="absolute inset-0 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm"
             />
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-800 p-8 space-y-6"
+              className={`relative w-full max-w-md rounded-3xl shadow-2xl border p-8 space-y-6 ${
+                theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+              }`}
             >
               <div className="text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto animate-bounce">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto animate-bounce border ${
+                  theme === 'dark' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-rose-50 border-rose-250 text-rose-600'
+                }`}>
                   <Warning size={20} />
                 </div>
-                <h4 className="text-lg font-bold text-white">Confirmar Cancelamento</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h4 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Confirmar Cancelamento</h4>
+                <p className={`text-xs leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                   Tem certeza de que deseja cancelar sua assinatura? O faturamento será cancelado no Asaas e seu acesso será expirado automaticamente após o fim do ciclo mensal vigente.
                 </p>
               </div>
@@ -687,14 +759,18 @@ export const SupportTab = ({
                 <button
                   onClick={() => setIsConfirmCancelOpen(false)}
                   disabled={isCanceling}
-                  className="flex-1 py-3.5 rounded-xl border border-white/10 font-bold text-slate-400 hover:bg-white/5 transition-colors text-xs"
+                  className={`flex-1 py-3.5 rounded-xl border font-bold transition-colors text-xs cursor-pointer ${
+                    theme === 'dark' 
+                      ? 'border-white/10 text-slate-400 hover:bg-white/5' 
+                      : 'border-slate-200 text-slate-655 hover:bg-slate-50'
+                  }`}
                 >
                   Manter Assinatura
                 </button>
                 <button
                   onClick={handleCancelSubscription}
                   disabled={isCanceling}
-                  className="flex-1 py-3.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold transition-all text-xs active:scale-95 shadow-md shadow-rose-500/15 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold transition-all text-xs active:scale-95 shadow-md shadow-rose-500/15 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {isCanceling ? <CircleNotch className="animate-spin" size={14} /> : null}
                   {isCanceling ? 'Cancelando...' : 'Confirmar e Cancelar'}

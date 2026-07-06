@@ -1296,83 +1296,80 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isRefreshing={isRefreshing}
               organizationName={organizationName}
               onSupportTabClick={() => setDashboardTab('support')}
+              theme={theme}
             />
           )}
 
           <main className="max-w-7xl w-full mx-auto px-6 py-8 space-y-8 no-print">
             {/* Barra Superior Executiva (Meta, Filtros, Seletores) */}
-            <div className={`flex flex-col xl:flex-row xl:items-center justify-between gap-6 p-6 rounded-[2rem] border ${
-              theme === 'dark' ? 'bg-slate-900/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'
-            }`}>
-              {/* Meta Diária */}
-              <div className="flex flex-wrap items-center gap-6">
-                {dashboardTab === 'financial' && (
+            {dashboardTab === 'financial' && (
+              <div className={`flex flex-col xl:flex-row xl:items-center justify-between gap-6 p-6 rounded-[2rem] border ${
+                theme === 'dark' ? 'bg-slate-900/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                {/* Meta Diária */}
+                <div className="flex flex-wrap items-center gap-6">
                   <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl border ${
                     theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
                   }`}>
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta do Dia</span>
                     <span className="text-base font-black text-emerald-500 tabular-nums">{formatCurrency(dailyGoal)}</span>
                   </div>
-                )}
-              </div>
-
-              {/* Controles do Painel Financeiro e Seletores de Data */}
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Seletores de Mês e Ano */}
-                <div className={`flex p-1 rounded-xl border shadow-sm mr-2 ${
-                  theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
-                }`}>
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                    className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-2 transition-colors ${
-                      theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
-                    }`}
-                  >
-                    {MONTHS.map((month, index) => (
-                      <option key={month} value={index} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{month}</option>
-                    ))}
-                  </select>
-                  <div className={`w-[1px] h-4 my-auto ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-2 transition-colors ${
-                      theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
-                    }`}
-                  >
-                    {getYearRange().map(year => (
-                      <option key={year} value={year} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{year}</option>
-                    ))}
-                  </select>
                 </div>
 
-                {dashboardTab === 'financial' && (
-                  <>
-                    <button
-                      onClick={() => setIsPreferencesModalOpen(true)}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                        theme === 'dark'
-                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                {/* Controles do Painel Financeiro e Seletores de Data */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Seletores de Mês e Ano */}
+                  <div className={`flex p-1 rounded-xl border shadow-sm mr-2 ${
+                    theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-2 transition-colors ${
+                        theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
                       }`}
                     >
-                      Personalizar
-                    </button>
-                    <button
-                      onClick={togglePresentMode}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                        theme === 'dark'
-                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                      {MONTHS.map((month, index) => (
+                        <option key={month} value={index} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{month}</option>
+                      ))}
+                    </select>
+                    <div className={`w-[1px] h-4 my-auto ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-2 transition-colors ${
+                        theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
                       }`}
                     >
-                      {isPresentMode ? 'Sair do Modo TV' : 'Modo TV'}
-                    </button>
-                  </>
-                )}
+                      {getYearRange().map(year => (
+                        <option key={year} value={year} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => setIsPreferencesModalOpen(true)}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                      theme === 'dark'
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    Personalizar
+                  </button>
+                  <button
+                    onClick={togglePresentMode}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                      theme === 'dark'
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    {isPresentMode ? 'Sair do Modo TV' : 'Modo TV'}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -1401,6 +1398,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         setIsModalOpen(true);
                       }}
                       showToast={showToast}
+                      theme={theme}
                     />
                   )}
 
@@ -1585,6 +1583,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       nextPage={nextPage}
                       prevPage={prevPage}
                       showToast={showToast}
+                      theme={theme}
                     />
                   </section>
                 </div>
@@ -1605,7 +1604,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   agreements={monthAgreements}
                   selectedMonth={selectedMonth}
                   selectedYear={selectedYear}
+                  setSelectedMonth={setSelectedMonth}
+                  setSelectedYear={setSelectedYear}
+                  MONTHS={MONTHS}
+                  getYearRange={getYearRange}
                   qaScores={qaScores}
+                  theme={theme}
                 />
               )}
 
@@ -1623,6 +1627,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     doMarkStale();
                     refreshAgreements();
                   }}
+                  theme={theme}
                 />
               )}
 
@@ -1633,6 +1638,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   currentTeamMembers={currentTeamMembers}
                   managedTeamsData={managedTeamsData}
                   showToast={showToast}
+                  theme={theme}
                 />
               )}
 
@@ -1641,12 +1647,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div className={`glass-card p-6 rounded-[2rem] border ${
                   theme === 'dark' ? 'border-white/5 bg-slate-900/10' : 'border-slate-200 bg-white shadow-sm'
                 } space-y-6`}>
-                  <div className={`flex justify-between items-center border-b pb-4 ${
+                  <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4 ${
                     theme === 'dark' ? 'border-white/5' : 'border-slate-100'
                   }`}>
                     <div>
                       <h2 className={`text-xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>BI & Analytics Avançado</h2>
                       <p className="text-xs text-slate-400 mt-1">Estatísticas, Sazonalidades e Projeções de Cobrança</p>
+                    </div>
+                    {/* Filtro Compacto de Período */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Período:</span>
+                      <div className={`flex p-1 rounded-xl border shadow-sm ${
+                        theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
+                      }`}>
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                          className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-1 transition-colors ${
+                            theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
+                          }`}
+                        >
+                          {MONTHS.map((month, index) => (
+                            <option key={month} value={index} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{month}</option>
+                          ))}
+                        </select>
+                        <div className={`w-[1px] h-3 my-auto ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
+                        <select
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                          className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-1 transition-colors ${
+                            theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
+                          }`}
+                        >
+                          {getYearRange().map(year => (
+                            <option key={year} value={year} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{year}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
                   <AdvancedInsights 
@@ -1666,6 +1703,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   crmClientId={crmClientId}
                   crmPublicToken={crmPublicToken}
                   showToast={showToast}
+                  theme={theme}
                 />
               )}
             </motion.div>

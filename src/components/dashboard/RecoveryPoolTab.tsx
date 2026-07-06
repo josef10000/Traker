@@ -14,6 +14,7 @@ interface RecoveryPoolTabProps {
   showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   onAttend: (agreement: Agreement) => void;
   onTakeOverSuccess?: () => void;
+  theme?: 'light' | 'dark';
 }
 
 export const RecoveryPoolTab = ({
@@ -21,7 +22,8 @@ export const RecoveryPoolTab = ({
   managedTeamsData,
   showToast,
   onAttend,
-  onTakeOverSuccess
+  onTakeOverSuccess,
+  theme = 'dark'
 }: RecoveryPoolTabProps) => {
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,52 +177,64 @@ export const RecoveryPoolTab = ({
     <div className="space-y-6 animate-fade-in no-print">
       {/* Quadro de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="glass-card p-6 rounded-3xl border border-white/5 flex items-center justify-between">
+        <div className={`p-6 rounded-3xl border flex items-center justify-between ${
+          theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total em Recuperação</p>
-            <h3 className="text-2xl font-black text-white mt-1">{filteredAgreements.length} leads</h3>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total em Recuperação</p>
+            <h3 className={`text-2xl font-black mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{filteredAgreements.length} leads</h3>
           </div>
-          <div className="p-3.5 bg-rose-500/10 text-rose-500 rounded-2xl border border-rose-500/20">
+          <div className="p-3.5 bg-rose-500/10 text-rose-600 dark:text-rose-455 rounded-2xl border border-rose-500/20">
             <ShieldAlert size={22} />
           </div>
         </div>
 
-        <div className="glass-card p-6 rounded-3xl border border-white/5 flex items-center justify-between">
+        <div className={`p-6 rounded-3xl border flex items-center justify-between ${
+          theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Volume Financeiro</p>
-            <h3 className="text-2xl font-black text-emerald-400 mt-1">
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Volume Financeiro</p>
+            <h3 className={`text-2xl font-black mt-1 ${
+              theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
+            }`}>
               {formatCurrency(filteredAgreements.reduce((acc, curr) => acc + curr.value, 0))}
             </h3>
           </div>
-          <div className="p-3.5 bg-emerald-500/10 text-emerald-500 rounded-2xl border border-emerald-500/20">
+          <div className="p-3.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-455 rounded-2xl border border-emerald-500/20">
             <Calendar size={22} />
           </div>
         </div>
 
-        <div className="glass-card p-6 rounded-3xl border border-white/5 flex items-center justify-between">
+        <div className={`p-6 rounded-3xl border flex items-center justify-between ${
+          theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Selecionados</p>
-            <h3 className="text-2xl font-black text-sky-400 mt-1">{selectedIds.length} leads</h3>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Selecionados</p>
+            <h3 className={`text-2xl font-black mt-1 ${theme === 'dark' ? 'text-sky-400' : 'text-sky-600'}`}>{selectedIds.length} leads</h3>
           </div>
-          <div className="p-3.5 bg-sky-500/10 text-sky-500 rounded-2xl border border-sky-500/20">
+          <div className="p-3.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-2xl border border-sky-500/20">
             <Users size={22} />
           </div>
         </div>
       </div>
 
       {/* Ações e Filtros */}
-      <div className="glass-card p-6 rounded-3xl border border-white/5 space-y-4">
+      <div className={`p-6 rounded-3xl border space-y-4 ${
+        theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+      }`}>
         <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
           <div className="flex flex-wrap gap-3">
             {/* Equipe */}
             <select
               value={filterTeam}
               onChange={(e) => setFilterTeam(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl outline-none"
+              className={`border text-xs font-bold px-4 py-2.5 rounded-xl outline-none cursor-pointer ${
+                theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'
+              }`}
             >
-              <option value="all">Todas as Equipes</option>
+              <option value="all" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Todas as Equipes</option>
               {managedTeamsData.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+                <option key={t.id} value={t.id} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{t.name}</option>
               ))}
             </select>
 
@@ -228,31 +242,39 @@ export const RecoveryPoolTab = ({
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl outline-none"
+              className={`border text-xs font-bold px-4 py-2.5 rounded-xl outline-none cursor-pointer ${
+                theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'
+              }`}
             >
-              <option value="all">Todos os Tipos</option>
-              <option value="quitacao">Quitação</option>
-              <option value="parcelamento">Parcelamento</option>
-              <option value="parcela_atrasada">Parcela Atrasada</option>
-              <option value="antecipacao">Antecipação</option>
+              <option value="all" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Todos os Tipos</option>
+              <option value="quitacao" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Quitação</option>
+              <option value="parcelamento" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Parcelamento</option>
+              <option value="parcela_atrasada" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Parcela Atrasada</option>
+              <option value="antecipacao" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Antecipação</option>
             </select>
 
             {/* Categoria */}
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl outline-none"
+              className={`border text-xs font-bold px-4 py-2.5 rounded-xl outline-none cursor-pointer ${
+                theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'
+              }`}
             >
-              <option value="all">Todas as Categorias</option>
-              <option value="fixa">Fixa</option>
-              <option value="variavel">Variável</option>
+              <option value="all" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Todas as Categorias</option>
+              <option value="fixa" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Fixa</option>
+              <option value="variavel" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Variável</option>
             </select>
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => setIsExportModalOpen(true)}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider border border-slate-700/50 flex items-center justify-center gap-2"
+              className={`px-4 py-2.5 font-bold rounded-xl text-xs uppercase tracking-wider border flex items-center justify-center gap-2 cursor-pointer ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50' 
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-250 shadow-sm'
+              }`}
             >
               <Download size={14} />
               Exportar
@@ -261,7 +283,7 @@ export const RecoveryPoolTab = ({
             <button
               onClick={handleTakeOver}
               disabled={selectedIds.length === 0}
-              className="px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-500/20 active:scale-95"
+              className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-555/10 active:scale-95 cursor-pointer"
             >
               <Users size={14} />
               Assumir Lote
@@ -271,7 +293,9 @@ export const RecoveryPoolTab = ({
       </div>
 
       {/* Tabela de Leads */}
-      <div className="glass-card rounded-[2rem] border border-white/5 overflow-hidden shadow-2xl">
+      <div className={`rounded-[2rem] border overflow-hidden ${
+        theme === 'dark' ? 'bg-slate-900/10 border-white/5 shadow-2xl' : 'bg-white border-slate-200 shadow-sm'
+      }`}>
         {loading ? (
           <div className="flex flex-col items-center py-20 gap-3">
             <Loader2 className="animate-spin text-sky-500" size={28} />
@@ -285,9 +309,13 @@ export const RecoveryPoolTab = ({
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-950/40">
+                <tr className={`border-b text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ${
+                  theme === 'dark' ? 'border-white/5 bg-slate-950/40' : 'border-slate-200 bg-slate-50'
+                }`}>
                   <th className="px-6 py-4 w-12 text-center">
-                    <button onClick={handleSelectAll} className="text-slate-500 hover:text-white transition-colors">
+                    <button onClick={handleSelectAll} className={`transition-colors cursor-pointer ${
+                      theme === 'dark' ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-700'
+                    }`}>
                       {selectedIds.length === filteredAgreements.length ? (
                         <CheckSquare size={16} className="text-sky-500" />
                       ) : (
@@ -304,7 +332,9 @@ export const RecoveryPoolTab = ({
                   <th className="px-6 py-4 text-right">Ação</th>
                 </tr>
               </thead>
-              <tbody className="text-xs text-slate-300 divide-y divide-white/[0.02]">
+              <tbody className={`text-xs divide-y ${
+                theme === 'dark' ? 'text-slate-300 divide-white/[0.02]' : 'text-slate-700 divide-slate-100'
+              }`}>
                 {filteredAgreements.map(a => {
                   const isSelected = selectedIds.includes(a.id);
                   const isRevealed = !!revealedCpfs[a.id];
@@ -312,12 +342,18 @@ export const RecoveryPoolTab = ({
                   return (
                     <tr 
                       key={a.id} 
-                      className={`hover:bg-white/5 transition-colors border-b border-white/5 ${
-                        isSelected ? 'bg-sky-500/5 hover:bg-sky-500/10' : ''
+                      className={`transition-colors border-b ${
+                        theme === 'dark' ? 'border-white/5 hover:bg-white/5' : 'border-slate-100 hover:bg-slate-50'
+                      } ${
+                        isSelected 
+                          ? theme === 'dark' ? 'bg-sky-500/5 hover:bg-sky-500/10' : 'bg-sky-50/50 hover:bg-sky-50' 
+                          : ''
                       }`}
                     >
                       <td className="px-6 py-4 text-center">
-                        <button onClick={() => handleSelectOne(a.id)} className="text-slate-500 hover:text-white transition-colors">
+                        <button onClick={() => handleSelectOne(a.id)} className={`transition-colors cursor-pointer ${
+                          theme === 'dark' ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-700'
+                        }`}>
                           {isSelected ? (
                             <CheckSquare size={16} className="text-sky-500" />
                           ) : (
@@ -325,7 +361,9 @@ export const RecoveryPoolTab = ({
                           )}
                         </button>
                       </td>
-                      <td className="px-6 py-4 font-bold text-white max-w-[180px] truncate" title={a.clientName}>
+                      <td className={`px-6 py-4 font-bold max-w-[180px] truncate ${
+                        theme === 'dark' ? 'text-white' : 'text-slate-900'
+                      }`} title={a.clientName}>
                         {a.clientName || 'Sem nome'}
                       </td>
                       <td className="px-6 py-4 font-mono">
@@ -333,29 +371,29 @@ export const RecoveryPoolTab = ({
                           <span>{isRevealed ? a.clientCpf : maskCPF(a.clientCpf)}</span>
                           <button
                             onClick={() => handleRevealCpf(a)}
-                            className="text-slate-500 hover:text-sky-400 p-0.5 rounded transition-colors"
+                            className="text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 p-0.5 rounded transition-colors cursor-pointer"
                           >
                             {isRevealed ? <EyeOff size={11} /> : <Eye size={11} />}
                           </button>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-black text-rose-400">
+                      <td className={`px-6 py-4 font-black ${theme === 'dark' ? 'text-rose-400' : 'text-rose-600'}`}>
                         {formatCurrency(a.value)}
                       </td>
                       <td className="px-6 py-4">
                         <OriginBadge origin={a.origin} />
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-bold text-slate-400 capitalize">{a.type.replace('_', ' ')}</span>
-                        <span className="text-[10px] text-slate-500 block uppercase font-mono mt-0.5">{a.category}</span>
+                        <span className={`font-bold capitalize ${theme === 'dark' ? 'text-slate-400' : 'text-slate-655'}`}>{a.type.replace('_', ' ')}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono mt-0.5">{a.category}</span>
                       </td>
-                      <td className="px-6 py-4 text-slate-400 font-medium">
+                      <td className="px-6 py-4 text-slate-400 dark:text-slate-500 font-medium">
                         {a.dueDate.split('-').reverse().join('/')}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => onAttend(a)}
-                          className="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-sky-500/10 inline-flex items-center gap-1 active:scale-95"
+                          className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-sky-555/10 inline-flex items-center gap-1 active:scale-95 cursor-pointer"
                         >
                           <Play size={10} fill="currentColor" />
                           Atender

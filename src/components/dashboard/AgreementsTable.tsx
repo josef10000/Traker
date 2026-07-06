@@ -27,6 +27,7 @@ interface AgreementsTableProps {
   nextPage: () => void;
   prevPage: () => void;
   showToast: (message: string, type: 'success' | 'error') => void;
+  theme?: 'light' | 'dark';
 }
 
 export const AgreementsTable: React.FC<AgreementsTableProps> = ({
@@ -45,14 +46,19 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
   totalPages,
   nextPage,
   prevPage,
-  showToast
+  showToast,
+  theme = 'dark'
 }) => {
   return (
-    <section className="glass-card rounded-2xl overflow-hidden shadow-2xl">
+    <section className={`rounded-2xl overflow-hidden border ${
+      theme === 'dark' ? 'bg-slate-900/10 border-white/5 shadow-none' : 'bg-white border-slate-200 shadow-sm'
+    }`}>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-white/5 border-b border-white/10 text-white/40">
+            <tr className={`border-b ${
+              theme === 'dark' ? 'bg-white/5 border-white/10 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-500 font-bold'
+            }`}>
               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Cliente</th>
               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Origem</th>
               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Tipo</th>
@@ -61,7 +67,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right no-print">Ação</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className={`divide-y ${theme === 'dark' ? 'divide-white/5' : 'divide-slate-100'}`}>
             {isLoading ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">
@@ -91,26 +97,38 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                 // Lógica de Prioridade (Qualquer acordo criado antes de hoje que ainda esteja aguardando)
                 const isPriorityOntem = regDate < today && agreement.status === AgreementStatus.WAITING;
                 
+                const getRowBgClass = () => {
+                  if (agreement.status === AgreementStatus.PAID) {
+                    return theme === 'dark' ? 'bg-emerald-500/5 border-l-emerald-500/50' : 'bg-emerald-50/50 border-l-emerald-500';
+                  }
+                  if (isBroken) {
+                    return theme === 'dark' ? 'bg-rose-500/5 border-l-rose-500/50' : 'bg-rose-50/50 border-l-rose-500';
+                  }
+                  if (isCheckedToday) {
+                    return theme === 'dark' ? 'bg-sky-500/5 border-l-sky-500/50' : 'bg-sky-50/50 border-l-sky-500';
+                  }
+                  if (isMorning) {
+                    return theme === 'dark' 
+                      ? 'hover:bg-sky-500/5 border-l-sky-500/40 bg-slate-900/20' 
+                      : 'hover:bg-slate-50 border-l-sky-500/40 bg-slate-50/30';
+                  }
+                  return theme === 'dark' 
+                    ? 'hover:bg-amber-500/5 border-l-amber-500/30 bg-slate-900/40' 
+                    : 'hover:bg-slate-50 border-l-amber-500/30 bg-slate-50/60';
+                };
+
                 return (
                   <motion.tr 
                     key={agreement.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className={`group transition-colors relative border-l-4 ${
-                      agreement.status === AgreementStatus.PAID 
-                        ? 'bg-emerald-500/5 border-l-emerald-500/50' 
-                        : isBroken
-                          ? 'bg-rose-500/5 border-l-rose-500/50' 
-                          : isCheckedToday
-                            ? 'bg-sky-500/5 border-l-sky-500/50'
-                            : isMorning 
-                              ? 'hover:bg-sky-500/5 border-l-sky-500/40 bg-slate-900/20' 
-                              : 'hover:bg-amber-500/5 border-l-amber-500/30 bg-slate-900/40'
-                    }`}
+                    className={`group transition-colors relative border-l-4 ${getRowBgClass()}`}
                   >
                     <td className="px-6 py-5">
                       <div className="flex flex-col text-left">
-                        <span className={`font-semibold text-slate-100 flex items-center gap-1.5 ${isBroken ? 'text-slate-500' : ''}`}>
+                        <span className={`font-semibold flex items-center gap-1.5 ${
+                          isBroken ? 'text-slate-500' : theme === 'dark' ? 'text-slate-100' : 'text-slate-900'
+                        }`}>
                           {agreement.clientName}
                           {agreement.notes && (
                             <MessageSquare 
@@ -121,7 +139,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                           )}
                         </span>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-xs text-slate-400 font-mono">
+                          <span className={`text-xs font-mono ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                             {revealedCpfs[agreement.id] ? agreement.clientCpf : maskCPF(agreement.clientCpf)}
                           </span>
                           <button
@@ -138,21 +156,33 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 }
                               }
                             }}
-                            className="p-1 text-slate-500 hover:text-sky-400 hover:bg-sky-400/10 rounded transition-all"
+                            className={`p-1 rounded transition-all cursor-pointer ${
+                              theme === 'dark' 
+                                ? 'text-slate-500 hover:text-sky-400 hover:bg-sky-400/10' 
+                                : 'text-slate-400 hover:text-sky-500 hover:bg-sky-50'
+                            }`}
                             title="Copiar CPF completo"
                           >
                             <Copy size={11} />
                           </button>
                           <button 
                             onClick={() => toggleRevealCpf(agreement.id, agreement.clientCpf)}
-                            className="p-1 text-slate-500 hover:text-sky-400 hover:bg-sky-400/10 rounded transition-all"
+                            className={`p-1 rounded transition-all cursor-pointer ${
+                              theme === 'dark' 
+                                ? 'text-slate-500 hover:text-sky-400 hover:bg-sky-400/10' 
+                                : 'text-slate-400 hover:text-sky-500 hover:bg-sky-50'
+                            }`}
                             title={revealedCpfs[agreement.id] ? "Ocultar CPF" : "Revelar CPF completo"}
                           >
                             {revealedCpfs[agreement.id] ? <EyeOff size={12} /> : <Eye size={12} />}
                           </button>
                           <button 
                             onClick={() => handleClientClick(agreement.clientCpf)}
-                            className="p-1 text-slate-500 hover:text-sky-400 hover:bg-sky-400/10 rounded transition-all"
+                            className={`p-1 rounded transition-all cursor-pointer ${
+                              theme === 'dark' 
+                                ? 'text-slate-500 hover:text-sky-400 hover:bg-sky-400/10' 
+                                : 'text-slate-400 hover:text-sky-500 hover:bg-sky-50'
+                            }`}
                             title="Ver Histórico"
                           >
                             <History size={12} />
@@ -162,8 +192,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             <div 
                               className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
                                 isMorning 
-                                  ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
-                                  : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                  ? theme === 'dark' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'bg-sky-50 text-sky-600 border-sky-200'
+                                  : theme === 'dark' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-amber-50 text-amber-600 border-amber-200'
                               }`}
                               title={isMorning ? 'Registrado no ciclo da manhã (Verificação Hoje)' : 'Registrado no ciclo da tarde (Verificação Amanhã)'}
                             >
@@ -203,7 +233,9 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
-                        <span className="text-xs text-slate-300 font-medium px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 w-fit">
+                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border w-fit ${
+                          theme === 'dark' ? 'text-slate-300 bg-slate-900 border-slate-800' : 'text-slate-700 bg-slate-50 border-slate-200'
+                        }`}>
                           {agreement.type === 'quitacao' ? 'Quitação' : 
                            agreement.type === 'parcelamento' ? 'Parcelamento' :
                            agreement.type === 'parcela_atrasada' ? 'Pcl Atrasada' : 
@@ -218,7 +250,11 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
-                        <span className={`text-sm font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                        <span className={`text-sm font-medium ${
+                          isOverdue 
+                            ? theme === 'dark' ? 'text-rose-400' : 'text-rose-600' 
+                            : theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
+                        }`}>
                           {(agreement.dueDate || '').split('-').reverse().join('/')}
                         </span>
                         {isOverdue && (
@@ -226,7 +262,9 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-sm font-bold text-white tabular-nums">
+                    <td className={`px-6 py-5 text-sm font-bold tabular-nums ${
+                      theme === 'dark' ? 'text-white' : 'text-slate-900'
+                    }`}>
                       {formatCurrency(agreement.value)}
                     </td>
                     <td className="px-6 py-5 text-right no-print">
@@ -243,7 +281,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                               <span className="text-xs font-bold uppercase tracking-wide">Quebrado</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1.5 text-slate-400 pr-2">
+                            <div className={`flex items-center gap-1.5 pr-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                               <Clock size={16} />
                               <span className="text-xs font-bold uppercase tracking-wide">Aguardando</span>
                             </div>
@@ -257,7 +295,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             )}
                             <button 
                               onClick={() => handleEfetivar(agreement.id)}
-                              className="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
+                              className="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 cursor-pointer"
                               title="Efetivar Pagamento"
                             >
                               <Check size={18} />
@@ -265,10 +303,12 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             
                             <button 
                               onClick={() => handleToggleChecked(agreement.id, agreement.lastCheckedAt)}
-                              className={`p-2 rounded-lg transition-all border ${
+                              className={`p-2 rounded-lg transition-all border cursor-pointer ${
                                 isCheckedToday 
-                                  ? 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-500/20' 
-                                  : 'bg-slate-800 text-slate-400 hover:text-sky-400 hover:border-sky-500/50'
+                                  ? 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-550/20' 
+                                  : theme === 'dark' 
+                                    ? 'bg-slate-800 border-transparent text-slate-400 hover:text-sky-400 hover:border-sky-500/50' 
+                                    : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-sky-500 hover:bg-slate-200'
                               }`}
                               title={isCheckedToday ? 'Remover marcação de conferido' : 'Marcar como conferido hoje'}
                             >
@@ -277,20 +317,26 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                           </>
                         )}
                         {profile.role !== 'manager' && (
-                          <div className="flex items-center gap-1 border-l border-slate-800 pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className={`flex items-center gap-1 border-l pl-2 opacity-0 group-hover:opacity-100 transition-opacity ${
+                            theme === 'dark' ? 'border-slate-800' : 'border-slate-200'
+                          }`}>
                             <button 
                               onClick={() => {
                                 setEditingAgreement(agreement);
                                 setIsModalOpen(true);
                               }}
-                              className="p-2 text-slate-500 hover:text-sky-400 hover:bg-primary/10 rounded-lg transition-all"
+                              className={`p-2 rounded-lg transition-all cursor-pointer ${
+                                theme === 'dark' ? 'text-slate-500 hover:text-sky-400 hover:bg-white/5' : 'text-slate-400 hover:text-sky-500 hover:bg-sky-50'
+                              }`}
                               title="Editar"
                             >
                               <Edit3 size={16} />
                             </button>
                             <button 
                               onClick={() => handleDelete(agreement.id)}
-                              className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                              className={`p-2 rounded-lg transition-all cursor-pointer ${
+                                theme === 'dark' ? 'text-slate-500 hover:text-rose-400 hover:bg-white/5' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'
+                              }`}
                               title="Excluir"
                             >
                               <Trash2 size={16} />
@@ -308,22 +354,34 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
       </div>
 
       {totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between bg-white/5 no-print">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+        <div className={`px-6 py-4 border-t flex items-center justify-between no-print ${
+          theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-200 bg-slate-50/50'
+        }`}>
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${
+            theme === 'dark' ? 'text-slate-500' : 'text-slate-500'
+          }`}>
             Página {currentPage} de {totalPages}
           </span>
           <div className="flex gap-2">
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
-              className="p-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className={`p-2 rounded-lg border text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+                theme === 'dark' 
+                  ? 'bg-white/5 border-white/5 text-slate-400 hover:text-white hover:bg-white/10' 
+                  : 'bg-white border-slate-200 text-slate-655 hover:bg-slate-100 hover:text-slate-900'
+              }`}
             >
               Anterior
             </button>
             <button
               onClick={nextPage}
               disabled={currentPage === totalPages}
-              className="p-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className={`p-2 rounded-lg border text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+                theme === 'dark' 
+                  ? 'bg-white/5 border-white/5 text-slate-400 hover:text-white hover:bg-white/10' 
+                  : 'bg-white border-slate-200 text-slate-655 hover:bg-slate-100 hover:text-slate-900'
+              }`}
             >
               Próximo
             </button>
