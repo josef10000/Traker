@@ -25,6 +25,8 @@ export const AgreementModal = ({
     editingAgreement?.status === AgreementStatus.SCHEDULED ? 'schedule' : 'agreement'
   );
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const canEditCpf = !editingAgreement || 
     editingAgreement.operatorId === currentUserProfile?.uid || 
     currentUserProfile?.role === 'supervisor';
@@ -56,11 +58,11 @@ export const AgreementModal = ({
     if (mode === 'schedule') {
       const scheduledAt = formData.get('scheduledAt') as string;
       if (!scheduledAt) {
-        alert('Por favor, informe a data e hora do agendamento.');
+        setFormError('Por favor, informe a data e hora do agendamento.');
         return;
       }
       if (!notes || !notes.trim()) {
-        alert('Por favor, insira uma observação justificando o motivo do agendamento.');
+        setFormError('Por favor, insira uma observação justificando o motivo do agendamento.');
         return;
       }
 
@@ -78,6 +80,7 @@ export const AgreementModal = ({
         scheduledAt: scheduledAt,
         backOfficeClientIdRef: (editingAgreement as any)?.backOfficeClientIdRef || undefined
       };
+      setFormError(null);
       onSubmit(agreementData);
     } else {
       const rawValue = formData.get('value') as string;
@@ -95,6 +98,7 @@ export const AgreementModal = ({
         notes: notes,
         backOfficeClientIdRef: (editingAgreement as any)?.backOfficeClientIdRef || undefined
       };
+      setFormError(null);
       onSubmit(agreementData);
     }
   };
@@ -370,6 +374,11 @@ export const AgreementModal = ({
               className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white backdrop-blur-sm resize-none text-xs"
             />
           </div>
+          {formError && (
+            <div className="mx-8 mt-2 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold rounded-xl flex items-center gap-2">
+              <span>{formError}</span>
+            </div>
+          )}
         </div>
         
         <div className="p-8 pt-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex gap-4 shrink-0">

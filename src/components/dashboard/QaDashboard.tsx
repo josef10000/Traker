@@ -269,7 +269,7 @@ export const QaDashboard = ({
   const handleSaveEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!evalOperatorId) {
-      alert('Selecione um operador.');
+      showToast('Selecione um operador.', 'warning');
       return;
     }
 
@@ -282,7 +282,7 @@ export const QaDashboard = ({
     });
 
     if (!gradesFilled) {
-      alert('Por favor, defina notas (0 a 100) para todas as competências.');
+      showToast('Por favor, defina notas (0 a 100) para todas as competências.', 'warning');
       return;
     }
 

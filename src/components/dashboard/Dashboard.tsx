@@ -37,7 +37,7 @@ import { logAudit } from '../../lib/audit';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
-import { CheckSquare } from '@phosphor-icons/react';
+import { CheckSquare, ShieldWarning, Trash } from '@phosphor-icons/react';
 
 // Hooks customizados
 import { useAgreements } from '../../hooks/useAgreements';
@@ -153,6 +153,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [qaEvaluations, setQaEvaluations] = useState<QaEvaluation[]>([]);
   const [isCollisionModalOpen, setIsCollisionModalOpen] = useState(false);
   const [collisionData, setCollisionData] = useState<any>(null);
+
+  // Controle de Revelação/Cópia de CPF (LGPD) e Confirmação de Exclusão Customizados
+  const [revealedCpfs, setRevealedCpfs] = useState<Record<string, boolean>>({});
+  const [cpfToConfirm, setCpfToConfirm] = useState<{ id: string; cpf: string; actionType: 'reveal' | 'copy' } | null>(null);
+  const [agreementIdToDelete, setAgreementIdToDelete] = useState<string | null>(null);
 
   // Seleção reativa de aba padrão para monitores
   useEffect(() => {
@@ -770,15 +775,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este acordo?')) return;
+  const handleDeleteRequest = (id: string) => {
+    setAgreementIdToDelete(id);
+  };
+
+  const executeDeleteAgreement = async () => {
+    if (!agreementIdToDelete) return;
     try {
-      await deleteDoc(doc(db, 'agreements', id));
+      await deleteDoc(doc(db, 'agreements', agreementIdToDelete));
       doMarkStale();
       showToast('Acordo excluído com sucesso!', 'success');
+      setAgreementIdToDelete(null);
     } catch (error) {
       console.error(error);
       showToast('Erro ao excluir acordo.', 'error');
+    }
+  };
+
+  const handleCopyCpfRequest = (id: string, cpf: string) => {
+    setCpfToConfirm({ id, cpf, actionType: 'copy' });
+  };
+
+  const executeConfirmCpf = async () => {
+    if (!cpfToConfirm) return;
+    const { id, cpf, actionType } = cpfToConfirm;
+    
+    try {
+      if (actionType === 'copy') {
+        await navigator.clipboard.writeText(cpf.replace(/\D/g, ''));
+        showToast('CPF copiado para a área de transferência!', 'success');
+        setRevealedCpfs(prev => ({ ...prev, [id]: true }));
+        logAudit('REVEAL_CPF', { agreementId: id, cpf, context: 'CopyToClipboard' }, profile.displayName || '', profile.organizationId);
+      } else {
+        setRevealedCpfs(prev => ({ ...prev, [id]: true }));
+        logAudit('REVEAL_CPF', { agreementId: id, cpf, context: 'RevealOnScreen' }, profile.displayName || '', profile.organizationId);
+        showToast('CPF revelado!', 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao acessar a área de transferência.', 'error');
+    } finally {
+      setCpfToConfirm(null);
     }
   };
 
@@ -1254,9 +1291,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [selectedTeamId, viewMode, profile, currentTeamMembers, monthFilteredAgreements]);
 
   // 6. RENDERIZAÇÃO PRINCIPAL DO LAYOUT
-  const revealedCpfs: Record<string, boolean> = {}; // Gerenciado localmente se necessário ou herdado por props
   const toggleRevealCpf = (id: string, cpf: string) => {
-    // Implementação mock simples para re-uso na AgreementsTable
+    const isRevealed = !!revealedCpfs[id];
+    if (isRevealed) {
+      setRevealedCpfs(prev => ({ ...prev, [id]: false }));
+    } else {
+      setCpfToConfirm({ id, cpf, actionType: 'reveal' });
+    }
   };
 
   return (
@@ -1581,12 +1622,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       isLoading={isLoading}
                       revealedCpfs={revealedCpfs}
                       toggleRevealCpf={toggleRevealCpf}
+                      onCopyCpf={handleCopyCpfRequest}
                       handleClientClick={handleClientClick}
                       handleEfetivar={handleEfetivar}
                       handleToggleChecked={handleToggleChecked}
                       setEditingAgreement={setEditingAgreement}
                       setIsModalOpen={setIsModalOpen}
-                      handleDelete={handleDelete}
+                      handleDelete={handleDeleteRequest}
                       profile={profile}
                       currentPage={currentPage}
                       totalPages={totalPages}
@@ -2074,6 +2116,79 @@ export const Dashboard: React.FC<DashboardProps> = ({
         managedTeamsData={managedTeamsData}
         setSelectedTeamId={setSelectedTeamId}
       />
+
+      {/* Modal Personalizado de Confirmação de Exclusão de Acordo */}
+      {agreementIdToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md" onClick={() => setAgreementIdToDelete(null)} />
+          <div className={`relative glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl border text-center space-y-4 ${
+            theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
+          }`}>
+            <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto border border-rose-500/20">
+              <Trash size={24} />
+            </div>
+            <div>
+              <h3 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Excluir Acordo</h3>
+              <p className={`text-xs mt-1.5 leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                Você tem certeza que deseja excluir permanentemente este acordo? Esta ação não poderá ser desfeita.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setAgreementIdToDelete(null)}
+                className={`flex-1 py-3 text-xs font-bold rounded-xl border transition-colors cursor-pointer ${
+                  theme === 'dark' ? 'border-white/10 text-slate-300 hover:bg-white/5' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeDeleteAgreement}
+                className="flex-1 py-3 text-xs font-bold rounded-xl bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20 cursor-pointer"
+              >
+                Confirmar Exclusão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Personalizado de Consentimento LGPD para Revelação/Cópia de CPF */}
+      {cpfToConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md" onClick={() => setCpfToConfirm(null)} />
+          <div className={`relative glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl border text-center space-y-4 ${
+            theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
+          }`}>
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/20">
+              <ShieldWarning size={24} />
+            </div>
+            <div>
+              <h3 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Acesso a Dados Pessoais (LGPD)</h3>
+              <p className={`text-xs mt-1.5 leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                Você está prestes a {cpfToConfirm.actionType === 'copy' ? 'copiar' : 'revelar'} o CPF completo do cliente. 
+                Esta operação de acesso a informações sensíveis é rastreada e auditada no sistema para fins de conformidade jurídica.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setCpfToConfirm(null)}
+                className={`flex-1 py-3 text-xs font-bold rounded-xl border transition-colors cursor-pointer ${
+                  theme === 'dark' ? 'border-white/10 text-slate-300 hover:bg-white/5' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeConfirmCpf}
+                className="flex-1 py-3 text-xs font-bold rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 cursor-pointer"
+              >
+                Confirmar Acesso
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <HelpDrawer 
         isOpen={isHelpOpen}

@@ -28,6 +28,7 @@ interface AgreementsTableProps {
   prevPage: () => void;
   showToast: (message: string, type: 'success' | 'error') => void;
   theme?: 'light' | 'dark';
+  onCopyCpf?: (id: string, cpf: string) => void;
 }
 
 export const AgreementsTable: React.FC<AgreementsTableProps> = ({
@@ -47,7 +48,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
   nextPage,
   prevPage,
   showToast,
-  theme = 'dark'
+  theme = 'dark',
+  onCopyCpf
 }) => {
   return (
     <section className={`rounded-2xl overflow-hidden border ${
@@ -149,10 +151,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 navigator.clipboard.writeText(agreement.clientCpf.replace(/\D/g, ''));
                                 showToast('CPF copiado!', 'success');
                               } else {
-                                if (window.confirm('Você tem certeza que deseja copiar o CPF completo? Essa ação envolve acesso a dados pessoais sob a LGPD.')) {
-                                  navigator.clipboard.writeText(agreement.clientCpf.replace(/\D/g, ''));
-                                  logAudit('REVEAL_CPF', { agreementId: agreement.id, cpf: agreement.clientCpf, context: 'CopyToClipboard' }, profile.displayName || '', profile.organizationId);
-                                  showToast('CPF copiado!', 'success');
+                                if (onCopyCpf) {
+                                  onCopyCpf(agreement.id, agreement.clientCpf);
                                 }
                               }
                             }}
