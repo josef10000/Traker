@@ -97,12 +97,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support' | 'backoffice'>(() => {
     return profile.role === 'backoffice' ? 'backoffice' : 'financial';
   });
-
-  useEffect(() => {
-    if (profile.role === 'backoffice' && dashboardTab !== 'backoffice') {
-      setDashboardTab('backoffice');
-    }
-  }, [profile.role, dashboardTab]);
   
   // Visualização e Seleção de Equipes
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
@@ -854,6 +848,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
         };
         await setDoc(doc(db, 'agreements', id), agreementData);
         showToast('Acordo registrado com sucesso!', 'success');
+
+        // Se este acordo veio do Back Office, atualiza o status correspondente do cliente da planilha
+        if (payload.backOfficeClientIdRef) {
+          const clientRef = doc(db, 'backoffice_clients', payload.backOfficeClientIdRef);
+          await updateDoc(clientRef, {
+            status: 'treated',
+            updatedAt: now
+          });
+        }
 
         if (webhookUrl) {
           triggerWebhook(webhookUrl, 'agreement.created', agreementData, profile.organizationId);
@@ -1721,6 +1724,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   showToast={showToast}
                   theme={theme}
                   selectedTeamId={selectedTeamId}
+                  onAttend={(agreement) => {
+                    setEditingAgreement(agreement);
+                    setIsModalOpen(true);
+                  }}
                 />
               )}
             </motion.div>

@@ -64,13 +64,13 @@ export const Sidebar = ({
       id: 'financial',
       label: 'Painel Financeiro',
       icon: ChartLine,
-      show: profile.role !== 'monitor' && profile.role !== 'backoffice'
+      show: profile.role !== 'monitor'
     },
     {
       id: 'recovery',
       label: 'Recuperação',
       icon: RecoveryIcon,
-      show: profile.role !== 'monitor' && profile.role !== 'backoffice'
+      show: profile.role !== 'monitor'
     },
     {
       id: 'qa',

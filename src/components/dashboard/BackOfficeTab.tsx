@@ -11,7 +11,9 @@ import {
   MagnifyingGlass,
   Spinner,
   CaretLeft,
-  CaretRight
+  CaretRight,
+  Handshake,
+  PencilSimple
 } from '@phosphor-icons/react';
 import { 
   collection, 
@@ -35,18 +37,25 @@ interface BackOfficeTabProps {
   showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   theme?: 'light' | 'dark';
   selectedTeamId?: string;
+  onAttend?: (agreement: any) => void;
 }
 
 export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   profile,
   showToast,
   theme = 'dark',
-  selectedTeamId = 'all'
+  selectedTeamId = 'all',
+  onAttend
 }) => {
   // Estados para Importações
   const [imports, setImports] = useState<BackOfficeImport[]>([]);
   const [selectedImportId, setSelectedImportId] = useState<string>('all');
   const [isLoadingImports, setIsLoadingImports] = useState(true);
+
+  // Estados para edição dinâmica de cabeçalhos de coluna
+  const [editingHeader, setEditingHeader] = useState<string | null>(null);
+  const [newHeaderName, setNewHeaderName] = useState('');
+  const [isSavingHeader, setIsSavingHeader] = useState(false);
 
   // Estados para Clientes da Importação Selecionada
   const [clients, setClients] = useState<BackOfficeClient[]>([]);
@@ -140,6 +149,84 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
 
     return () => unsubscribe();
   }, [selectedImportId, profile.organizationId]);
+
+  // Renomear cabeçalho de coluna customizada dinamicamente
+  const handleRenameHeader = async (oldHeader: string) => {
+    const trimmed = newHeaderName.trim();
+    if (!trimmed) {
+      showToast('O nome da coluna não pode ser vazio.', 'warning');
+      return;
+    }
+    if (trimmed === oldHeader || !selectedImportId) {
+      setEditingHeader(null);
+      return;
+    }
+
+    setIsSavingHeader(true);
+    try {
+      const importRef = doc(db, 'backoffice_imports', selectedImportId);
+      const activeImportObj = imports.find(i => i.id === selectedImportId);
+      if (!activeImportObj) return;
+
+      // 1. Atualiza os headers na importação
+      const updatedHeaders = activeImportObj.headers.map(h => h === oldHeader ? trimmed : h);
+      
+      // Atualiza o mapping caso estivesse mapeado
+      const updatedMapping = { ...activeImportObj.columnMapping };
+      Object.keys(updatedMapping).forEach(key => {
+        if (updatedMapping[key as keyof typeof updatedMapping] === oldHeader) {
+          (updatedMapping as any)[key] = trimmed;
+        }
+      });
+
+      await updateDoc(importRef, {
+        headers: updatedHeaders,
+        columnMapping: updatedMapping
+      });
+
+      // 2. Atualiza todos os clientes vinculados a essa importação para trocar a chave no customFields
+      const q = query(
+        collection(db, 'backoffice_clients'),
+        where('importId', '==', selectedImportId)
+      );
+      const snap = await getDocs(q);
+
+      // Usando batch para atualizar de 500 em 500
+      const batchSize = 500;
+      const docsArray = snap.docs;
+
+      for (let i = 0; i < docsArray.length; i += batchSize) {
+        const batch = writeBatch(db);
+        const chunk = docsArray.slice(i, i + batchSize);
+
+        chunk.forEach(d => {
+          const cli = d.data() as BackOfficeClient;
+          const customFields = { ...cli.customFields };
+          
+          if (oldHeader in customFields) {
+            customFields[trimmed] = customFields[oldHeader];
+            delete customFields[oldHeader];
+          }
+
+          batch.update(d.ref, {
+            customFields,
+            updatedAt: new Date().toISOString()
+          });
+        });
+
+        await batch.commit();
+      }
+
+      showToast(`Coluna renomeada para '${trimmed}' com sucesso!`, 'success');
+      setEditingHeader(null);
+      setNewHeaderName('');
+    } catch (error) {
+      console.error('[BackOfficeTab] Erro ao renomear coluna:', error);
+      showToast('Erro ao renomear a coluna.', 'error');
+    } finally {
+      setIsSavingHeader(false);
+    }
+  };
 
   // Atualizar gaveta lateral se o cliente selecionado tiver alterações reativas
   useEffect(() => {
@@ -701,7 +788,54 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                         .filter(h => !Object.values(activeImport.columnMapping).includes(h))
                         .slice(0, 2)
                         .map(h => (
-                          <th key={h} className="p-4 font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                          <th key={h} className="p-4 font-bold text-slate-400 uppercase tracking-wider relative group">
+                            {editingHeader === h ? (
+                              <div className="flex items-center gap-1.5 normal-case">
+                                <input
+                                  type="text"
+                                  value={newHeaderName}
+                                  onChange={(e) => setNewHeaderName(e.target.value)}
+                                  className={`px-2 py-0.5 rounded text-[10px] outline-none border ${
+                                    theme === 'dark' ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                                  }`}
+                                  placeholder="Novo nome"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRenameHeader(h);
+                                    if (e.key === 'Escape') setEditingHeader(null);
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleRenameHeader(h)}
+                                  disabled={isSavingHeader}
+                                  className="p-0.5 text-emerald-400 hover:text-emerald-300 cursor-pointer disabled:opacity-50"
+                                >
+                                  <Check size={12} />
+                                </button>
+                                <button
+                                  onClick={() => setEditingHeader(null)}
+                                  className="p-0.5 text-rose-400 hover:text-rose-300 cursor-pointer"
+                                >
+                                  <XIcon size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div 
+                                className="flex items-center gap-1.5 cursor-pointer select-none group/hdr hover:text-white transition-colors" 
+                                onClick={() => {
+                                  setEditingHeader(h);
+                                  setNewHeaderName(h);
+                                }}
+                                title="Clique para renomear esta coluna"
+                              >
+                                <span>{h || 'Coluna Sem Nome'}</span>
+                                <PencilSimple 
+                                  size={12} 
+                                  className="text-slate-500 opacity-0 group-hover/hdr:opacity-100 transition-opacity" 
+                                />
+                              </div>
+                            )}
+                          </th>
                         ))}
                       <th className="p-4 font-bold text-slate-400 uppercase tracking-wider">Status</th>
                       <th className="p-4 font-bold text-slate-400 uppercase tracking-wider text-center">Ações</th>
@@ -773,6 +907,28 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                                 </span>
                               )}
                             </button>
+
+                            {/* Registrar Acordo diretamente */}
+                            {onAttend && cli.status !== 'treated' && (
+                              <button
+                                onClick={() => onAttend({
+                                  id: '', // Criar novo
+                                  clientName: cli.clientName,
+                                  clientCpf: cli.clientCpf,
+                                  value: cli.value,
+                                  status: 'aguardando',
+                                  createdAt: new Date().toISOString(),
+                                  createdBy: profile.uid,
+                                  teamId: profile.teamId || '',
+                                  organizationId: profile.organizationId || '',
+                                  backOfficeClientIdRef: cli.id
+                                })}
+                                className="p-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/25 transition-all cursor-pointer"
+                                title="Registrar Acordo Fechado"
+                              >
+                                <Handshake size={14} />
+                              </button>
+                            )}
 
                             {/* Ações de status */}
                             {cli.status !== 'treated' && (
