@@ -474,16 +474,18 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'member' }: Help
                   </p>
                 </div>
               ) : (
-                Object.entries(groupedTopics).map(([groupName, topics]) => (
-                  <section key={groupName} className="space-y-3">
-                    <h3 className={`text-[10px] font-black uppercase tracking-widest ${
-                      theme === 'dark' ? 'text-orange-400' : 'text-orange-600'
-                    }`}>
-                      {groupName}
-                    </h3>
-                    
-                    <div className="grid gap-3">
-                      {topics.map(topic => {
+                Object.entries(groupedTopics).map(([groupName, topics]) => {
+                  const typedTopics = topics as HelpTopic[];
+                  return (
+                    <section key={groupName} className="space-y-3">
+                      <h3 className={`text-[10px] font-black uppercase tracking-widest ${
+                        theme === 'dark' ? 'text-orange-400' : 'text-orange-600'
+                      }`}>
+                        {groupName}
+                      </h3>
+                      
+                      <div className="grid gap-3">
+                        {typedTopics.map(topic => {
                         const IconComponent = topic.icon;
                         return (
                           <div 
@@ -519,8 +521,9 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'member' }: Help
                       })}
                     </div>
                   </section>
-                ))
-              )}
+                );
+              })
+            )}
             </div>
 
             {/* Rodapé do Drawer */}

@@ -94,7 +94,7 @@ export const Sidebar = ({
       id: 'support',
       label: 'Suporte & Ajuda',
       icon: SupportIcon,
-      show: (profile.role === 'manager' || profile.role === 'supervisor') && profile.role !== 'backoffice'
+      show: profile.role === 'manager' || profile.role === 'supervisor'
     }
   ];
 
