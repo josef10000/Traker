@@ -1783,16 +1783,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* CONTEÚDO DA ABA DE BACK OFFICE */}
               {dashboardTab === 'backoffice' && (
-                <BackOfficeTab 
-                  profile={profile}
-                  showToast={showToast}
-                  theme={theme}
-                  selectedTeamId={selectedTeamId}
-                  onAttend={(agreement) => {
-                    setEditingAgreement(agreement);
-                    setIsModalOpen(true);
-                  }}
-                />
+                <div className="space-y-8">
+                  {/* Agenda do Dia para o Back Office */}
+                  {!localHiddenCards.includes('agendaDoDia') && (
+                    <DailyAgendaSection
+                      scheduledAgreements={filteredScheduledAgreements}
+                      isLoading={isLoadingScheduled}
+                      profile={profile}
+                      currentTeamMembers={currentTeamMembers}
+                      selectedMemberId={selectedMemberId}
+                      setSelectedMemberId={setSelectedMemberId}
+                      viewMode={viewMode}
+                      onAttend={(agreement) => {
+                        setEditingAgreement(agreement);
+                        setIsModalOpen(true);
+                      }}
+                      showToast={showToast}
+                      theme={theme}
+                    />
+                  )}
+
+                  <BackOfficeTab 
+                    profile={profile}
+                    showToast={showToast}
+                    theme={theme}
+                    selectedTeamId={selectedTeamId}
+                    onAttend={(agreement) => {
+                      setEditingAgreement(agreement);
+                      setIsModalOpen(true);
+                    }}
+                  />
+                </div>
               )}
             </motion.div>
           </AnimatePresence>
