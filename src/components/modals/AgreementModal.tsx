@@ -104,7 +104,7 @@ export const AgreementModal = ({
   };
 
 
-  const isEditingClosedAgreement = !!editingAgreement && editingAgreement.status !== AgreementStatus.SCHEDULED;
+  const isEditingClosedAgreement = !!editingAgreement && !!editingAgreement.id && editingAgreement.status !== AgreementStatus.SCHEDULED;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
