@@ -145,6 +145,8 @@ export interface DashboardStats {
     checklist: number; // Quantidade de itens pendentes de conferência
   };
   hourlyDistribution: Record<number, number>;
+  todayPaidValue?: number;
+  todayEffectiveness?: number;
 }
 export interface Reconciliation {
   id: string;

@@ -269,21 +269,6 @@ export const DashboardHeader = ({
                     </button>
                   )}
 
-                  {/* Webhooks */}
-                  {profile.role === 'super_admin' && (
-                    <button
-                      onClick={() => {
-                        setIsToolsOpen(false);
-                        setIsWebhookSettingsOpen(true);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors cursor-pointer ${
-                        theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                      }`}
-                    >
-                      <Globe size={16} className="text-emerald-500" />
-                      <span>Configurar Webhooks</span>
-                    </button>
-                  )}
 
                   {/* Convidar membro */}
                   {profile.role === 'supervisor' && selectedTeamId !== 'all' && (
@@ -305,27 +290,6 @@ export const DashboardHeader = ({
                     </button>
                   )}
 
-                  {/* Alternador de Layout */}
-                  <button
-                    onClick={() => {
-                      setDesignMode(designMode === 'classic' ? 'premium' : 'classic');
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors cursor-pointer ${
-                      theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                    }`}
-                  >
-                    {designMode === 'premium' ? (
-                      <>
-                        <Sparkle size={16} className="text-amber-500 animate-pulse" />
-                        <span>Usar Modo Clássico</span>
-                      </>
-                    ) : (
-                      <>
-                        <Palette size={16} className="text-slate-400" />
-                        <span>Usar Modo Premium</span>
-                      </>
-                    )}
-                  </button>
 
                   {/* Relatório PDF */}
                   <button

@@ -190,18 +190,7 @@ export const HelpDrawer = ({ isOpen, onClose, theme }: HelpDrawerProps) => {
                 </p>
               </section>
 
-              {/* Integração CRM */}
-              <section className="space-y-4">
-                <h3 className={`text-xs font-black uppercase tracking-widest flex items-center gap-2 ${
-                  theme === 'dark' ? 'text-sky-400' : 'text-sky-600'
-                }`}>
-                  <FileCode size={16} />
-                  <span>Integrações (CRM Webhook)</span>
-                </h3>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  As chaves de integração CRM (`CRM Org ID`, `CRM Client ID`, `CRM Public Token`) devem ser configuradas pelo super administrador para sincronizar transações de pagamento externas e atualizar o status da fatura automaticamente via webhook.
-                </p>
-              </section>
+
             </div>
 
             {/* Rodapé do Drawer */}

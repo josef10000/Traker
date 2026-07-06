@@ -161,28 +161,7 @@ export const Sidebar = ({
       <div className={`p-4 border-t space-y-3 shrink-0 ${
         theme === 'dark' ? 'border-white/5' : 'border-slate-100'
       }`}>
-        {/* Toggle de Temas */}
-        <button
-          onClick={toggleTheme}
-          className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl transition-all text-left cursor-pointer border ${
-            theme === 'dark'
-              ? 'border-white/5 hover:bg-white/5 hover:text-white'
-              : 'border-slate-100 hover:bg-slate-50 hover:text-slate-900'
-          }`}
-          title={isCollapsed ? 'Alternar Tema' : undefined}
-        >
-          {theme === 'dark' ? (
-            <>
-              <Sun size={18} className="text-amber-400 shrink-0" />
-              {!isCollapsed && <span className="text-xs uppercase tracking-wider font-semibold">Tema Claro</span>}
-            </>
-          ) : (
-            <>
-              <Moon size={18} className="text-indigo-600 shrink-0" />
-              {!isCollapsed && <span className="text-xs uppercase tracking-wider font-semibold">Tema Escuro</span>}
-            </>
-          )}
-        </button>
+
 
         {/* Informações do Usuário e Logout */}
         <div className={`flex items-center justify-between p-2 rounded-2xl ${

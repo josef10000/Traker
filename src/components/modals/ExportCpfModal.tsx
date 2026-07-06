@@ -90,7 +90,7 @@ export const ExportCpfModal = ({
                 onExport(true);
                 onClose();
               }}
-              className="flex-1 px-5 py-4 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/10 active:scale-95 flex items-center justify-center gap-2"
+              className="flex-1 px-5 py-4 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/10 active:scale-95 flex items-center justify-center gap-2"
             >
               <ShieldAlert size={16} />
               Exportar CPF Completo

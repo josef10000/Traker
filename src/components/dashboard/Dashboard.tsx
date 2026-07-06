@@ -75,19 +75,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onSettingsClick, 
   showToast 
 }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('tracker-theme');
-    return (saved === 'dark' || saved === 'light') ? saved : 'light';
-  });
+  const theme = 'dark';
+  const toggleTheme = () => {};
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('tracker-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('tracker-theme', 'dark');
+  }, []);
 
   // Configurações e Filtros de Data/Status/Busca
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -1306,13 +1300,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className={`flex flex-col xl:flex-row xl:items-center justify-between gap-6 p-6 rounded-[2rem] border ${
                 theme === 'dark' ? 'bg-slate-900/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'
               }`}>
-                {/* Meta Diária */}
-                <div className="flex flex-wrap items-center gap-6">
+                {/* Total do Mês e Meta Mensal */}
+                <div className="flex flex-wrap items-center gap-4">
                   <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl border ${
                     theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
                   }`}>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta do Dia</span>
-                    <span className="text-base font-black text-emerald-500 tabular-nums">{formatCurrency(dailyGoal)}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total do Mês (Pago)</span>
+                    <span className="text-base font-black text-emerald-500 tabular-nums">{formatCurrency(stats.totalPaid)}</span>
+                  </div>
+
+                  <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl border ${
+                    theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta do Mês</span>
+                    <span className="text-base font-black text-sky-500 tabular-nums">{formatCurrency(monthlyGoal)}</span>
                   </div>
                 </div>
 

@@ -149,6 +149,19 @@ export const useDashboardStats = ({
       return days;
     })();
 
+    const dueTodayAgreements = realMonthAgreements.filter(a => 
+      parseLocalDate(a.dueDate).getTime() === today.getTime()
+    );
+    const dueTodayPaidCount = dueTodayAgreements.filter(a => a.status === AgreementStatus.PAID).length;
+    const dueTodayTotalCount = dueTodayAgreements.length;
+    const todayEffectiveness = dueTodayTotalCount > 0 
+      ? (dueTodayPaidCount / dueTodayTotalCount) * 100 
+      : 0;
+
+    const todayPaidValue = realMonthAgreements
+      .filter(a => a.status === AgreementStatus.PAID && new Date(a.createdAt) >= today)
+      .reduce((acc, curr) => acc + curr.value, 0);
+
     return {
       totalProjected,
       totalPaid: totalPaidMonth,
@@ -158,6 +171,8 @@ export const useDashboardStats = ({
       effectivenessRate: realMonthAgreements.length > 0
         ? (realMonthAgreements.filter(a => a.status === AgreementStatus.PAID).length / realMonthAgreements.length) * 100
         : 0,
+      todayPaidValue,
+      todayEffectiveness,
       counts: {
         month: {
           total: realMonthAgreements.length,

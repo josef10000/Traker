@@ -14,6 +14,7 @@ interface StatCardProps {
   id?: string;
   chartData?: any[];
   chartType?: 'area' | 'bar' | 'pie';
+  extra?: React.ReactNode;
 }
 
 export const StatCard = ({ 
@@ -25,7 +26,8 @@ export const StatCard = ({
   color,
   id,
   chartData = [],
-  chartType = 'area'
+  chartType = 'area',
+  extra
 }: StatCardProps) => {
   const [designMode] = useDesignMode();
 
@@ -160,6 +162,11 @@ export const StatCard = ({
             <Icon size={20} weight="duotone" />
           </div>
           <div className="flex flex-col items-end gap-1.5">
+            {extra && (
+              <div className="text-[11px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full border border-white/20 shadow-md backdrop-blur-sm uppercase tracking-wider">
+                {extra}
+              </div>
+            )}
             {trend && (
               <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-500/20 shadow-sm">
                 <TrendingUp size={10} />

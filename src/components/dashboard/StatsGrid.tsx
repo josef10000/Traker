@@ -63,6 +63,7 @@ export const StatsGrid = ({
         subtitle={`${stats.counts.filtered.paid} acordos pagos no período`}
         chartData={statTrends.paid}
         chartType="bar"
+        extra={stats.todayEffectiveness !== undefined ? `Efet. Dia: ${stats.todayEffectiveness.toFixed(1)}%` : undefined}
       />
       <StatCard 
         title="Falta para Meta" 
