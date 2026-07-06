@@ -22,7 +22,8 @@ import {
   Handshake,
   MagnifyingGlass,
   Book,
-  Tag
+  Tag,
+  CheckSquare
 } from '@phosphor-icons/react';
 
 interface HelpDrawerProps {
@@ -41,13 +42,28 @@ interface HelpTopic {
   roles: string[];
   icon: React.ComponentType<any>;
   badge?: string;
+  keywords?: string[];
 }
 
 export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: HelpDrawerProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  // Dicionário completo de tópicos de ajuda com visibilidade baseada na role
+  // Termos de busca recomendados com base no cargo atual
+  const recommendedSearches = useMemo(() => {
+    if (userRole === 'supervisor') {
+      return ['Verificar', 'Metas', 'Webhooks', 'LGPD', 'Back Office'];
+    }
+    if (userRole === 'backoffice') {
+      return ['Importar', 'Colunas', 'Planilha', 'Renomear', 'Acordo'];
+    }
+    if (userRole === 'monitor') {
+      return ['QA', 'Verificar', 'LGPD', 'Gravação', 'Scorecard'];
+    }
+    return ['Meta', 'Verificar', 'Revelar CPF', 'Status', 'Acordo'];
+  }, [userRole]);
+
+  // Dicionário completo de tópicos de ajuda com visibilidade baseada na role e palavras-chave para busca inteligente
   const helpTopics: HelpTopic[] = useMemo(() => [
     // --- CATEGORIA: KPIS ---
     {
@@ -57,7 +73,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'kpis',
       categoryLabel: 'Métricas e KPIs',
       roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
-      icon: Calculator
+      icon: Calculator,
+      keywords: ['projetado', 'valor', 'financeiro', 'estimado', 'bruto', 'soma']
     },
     {
       id: 'daily-productivity',
@@ -67,7 +84,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       categoryLabel: 'Métricas e KPIs',
       roles: ['operator', 'supervisor'],
       icon: Coins,
-      badge: 'Operacional'
+      badge: 'Operacional',
+      keywords: ['produtividade', 'hoje', 'dia', 'pago', 'reais', 'efetivado', 'diário']
     },
     {
       id: 'lack-for-goal',
@@ -77,7 +95,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       categoryLabel: 'Métricas e KPIs',
       roles: ['operator', 'supervisor'],
       icon: Percent,
-      badge: 'Operacional'
+      badge: 'Operacional',
+      keywords: ['meta', 'falta', 'objetivo', 'atingimento', 'percentual', 'restante']
     },
     {
       id: 'monthly-projection',
@@ -86,7 +105,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'kpis',
       categoryLabel: 'Métricas e KPIs',
       roles: ['operator', 'supervisor'],
-      icon: TrendUp
+      icon: TrendUp,
+      keywords: ['projeção', 'tendência', 'estimativa', 'previsão', 'calculo']
     },
 
     // --- CATEGORIA: STATUS ---
@@ -97,7 +117,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'status',
       categoryLabel: 'Status de Acordos',
       roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
-      icon: CheckCircle
+      icon: CheckCircle,
+      keywords: ['pago', 'liquidado', 'quitado', 'baixado', 'recebido', 'confirmado', 'verificar']
     },
     {
       id: 'status-waiting',
@@ -106,7 +127,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'status',
       categoryLabel: 'Status de Acordos',
       roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
-      icon: Clock
+      icon: Clock,
+      keywords: ['aguardando', 'pendente', 'vence', 'espera', 'boleto', 'pix', 'aberto']
     },
     {
       id: 'status-broken',
@@ -115,7 +137,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'status',
       categoryLabel: 'Status de Acordos',
       roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
-      icon: WarningCircle
+      icon: WarningCircle,
+      keywords: ['quebrado', 'atrasado', 'vencido', 'inadimplente', 'não pago', 'recuperação']
     },
     {
       id: 'status-scheduled',
@@ -124,7 +147,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'status',
       categoryLabel: 'Status de Acordos',
       roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
-      icon: Calendar
+      icon: Calendar,
+      keywords: ['agendado', 'retorno', 'ligar', 'agenda', 'ligação', 'lembrete', 'retornar']
     },
 
     // --- CATEGORIA: FEATURES ---
@@ -136,7 +160,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       categoryLabel: 'Ferramentas do Sistema',
       roles: ['backoffice', 'supervisor'],
       icon: DownloadSimple,
-      badge: 'Back Office'
+      badge: 'Back Office',
+      keywords: ['importar', 'subir', 'carregar', 'planilha', 'excel', 'csv', 'xls', 'xlsx', 'arquivo', 'verificar']
     },
     {
       id: 'feature-rename',
@@ -146,7 +171,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       categoryLabel: 'Ferramentas do Sistema',
       roles: ['backoffice', 'supervisor'],
       icon: Tag,
-      badge: 'Back Office'
+      badge: 'Back Office',
+      keywords: ['renomear', 'coluna', 'cabeçalho', 'tabela', 'nome', 'editar coluna', 'customizado']
     },
     {
       id: 'feature-action-handshake',
@@ -155,7 +181,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'features',
       categoryLabel: 'Ferramentas do Sistema',
       roles: ['operator', 'backoffice', 'supervisor'],
-      icon: Handshake
+      icon: Handshake,
+      keywords: ['acordo', 'negociar', 'fechar', 'registrar', 'salvar', 'cadastrar', 'tratar', 'handshake']
     },
     {
       id: 'feature-history',
@@ -164,7 +191,18 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'features',
       categoryLabel: 'Ferramentas do Sistema',
       roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
-      icon: Clock
+      icon: Clock,
+      keywords: ['histórico', 'timeline', 'passado', 'anotações', 'observações', 'tempo', 'verificar']
+    },
+    {
+      id: 'feature-check-agreement',
+      title: 'Conferência de Acordos (Verificar/Check)',
+      description: 'Caixa de seleção (checkbox) na tabela de acordos que permite aos operadores, monitores e supervisores marcarem um acordo como verificado/conferido. Grava a marcação temporal no histórico.',
+      category: 'features',
+      categoryLabel: 'Ferramentas do Sistema',
+      roles: ['operator', 'monitor', 'supervisor'],
+      icon: CheckSquare,
+      keywords: ['verificar', 'conferir', 'check', 'validar', 'auditar', 'checkbox', 'conferido', 'verificado']
     },
     {
       id: 'feature-qa-scorecard',
@@ -174,7 +212,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       categoryLabel: 'Ferramentas do Sistema',
       roles: ['monitor', 'supervisor'],
       icon: ShieldCheck,
-      badge: 'Monitoria'
+      badge: 'Monitoria',
+      keywords: ['qa', 'avaliação', 'monitoria', 'ligação', 'postura', 'gravação', 'áudio', 'nota', 'verificar']
     },
     {
       id: 'feature-team-mgmt',
@@ -184,7 +223,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       categoryLabel: 'Ferramentas do Sistema',
       roles: ['supervisor'],
       icon: Users,
-      badge: 'Gestão'
+      badge: 'Gestão',
+      keywords: ['equipe', 'time', 'membros', 'colaboradores', 'supervisor', 'cargo', 'back office', 'nome']
     },
     {
       id: 'feature-webhooks',
@@ -194,7 +234,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       categoryLabel: 'Ferramentas do Sistema',
       roles: ['supervisor'],
       icon: Globe,
-      badge: 'Integração'
+      badge: 'Integração',
+      keywords: ['webhook', 'discord', 'telegram', 'slack', 'integração', 'notificação', 'alerta']
     },
 
     // --- CATEGORIA: ICONS ---
@@ -205,7 +246,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'icons',
       categoryLabel: 'Guia de Ícones e Ações',
       roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
-      icon: EyeSlash
+      icon: EyeSlash,
+      keywords: ['revelar', 'olho', 'olhar', 'ver', 'visualizar', 'copiar', 'cpf', 'oculto', 'lgpd', 'privacidade', 'verificar']
     },
     {
       id: 'icon-trash',
@@ -214,7 +256,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'icons',
       categoryLabel: 'Guia de Ícones e Ações',
       roles: ['operator', 'supervisor'],
-      icon: Trash
+      icon: Trash,
+      keywords: ['excluir', 'apagar', 'deletar', 'remover', 'lixeira', 'limpar']
     },
     {
       id: 'icon-pencil',
@@ -223,7 +266,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'icons',
       categoryLabel: 'Guia de Ícones e Ações',
       roles: ['operator', 'supervisor'],
-      icon: PencilSimple
+      icon: PencilSimple,
+      keywords: ['editar', 'lápis', 'corrigir', 'alterar', 'atualizar', 'modificar']
     },
     {
       id: 'icon-bell',
@@ -232,9 +276,10 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       category: 'icons',
       categoryLabel: 'Guia de Ícones e Ações',
       roles: ['operator', 'backoffice', 'supervisor'],
-      icon: Bell
+      icon: Bell,
+      keywords: ['sino', 'alerta', 'colisão', 'aviso', 'notificação', 'ativo']
     }
-  ], []);
+  ], [userRole]);
 
   // Filtra os tópicos com base na role do usuário (cargo atual) e nos termos de busca
   const filteredTopics = useMemo(() => {
@@ -252,7 +297,8 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
         const matchesTitle = topic.title.toLowerCase().includes(query);
         const matchesDesc = topic.description.toLowerCase().includes(query);
         const matchesCat = topic.categoryLabel.toLowerCase().includes(query);
-        return matchesTitle || matchesDesc || matchesCat;
+        const matchesKeywords = topic.keywords?.some(kw => kw.toLowerCase().includes(query));
+        return matchesTitle || matchesDesc || matchesCat || matchesKeywords;
       }
 
       return true;
@@ -300,7 +346,7 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
             <div className={`p-6 border-b flex flex-col shrink-0 ${
               theme === 'dark' ? 'border-white/5 bg-slate-900/20' : 'border-slate-100 bg-slate-50'
             }`}>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2.5">
                   <div className={`p-2 rounded-xl ${
                     theme === 'dark' ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-500/5 text-orange-600'
@@ -349,6 +395,28 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
                       : 'bg-slate-100 border border-slate-200 text-slate-900 focus:ring-orange-500/10 focus:border-orange-500'
                   }`}
                 />
+              </div>
+
+              {/* Sugestões de Busca Rápidas */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-2.5 select-none">
+                <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                  theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                }`}>
+                  Sugestões:
+                </span>
+                {recommendedSearches.map(term => (
+                  <button
+                    key={term}
+                    onClick={() => setSearchTerm(term)}
+                    className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-colors cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-slate-900 border-white/5 text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                    }`}
+                  >
+                    {term}
+                  </button>
+                ))}
               </div>
 
               {/* Filtro de Categorias */}
