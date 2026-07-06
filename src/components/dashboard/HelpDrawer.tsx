@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
@@ -6,20 +6,271 @@ import {
   Calculator, 
   TrendUp, 
   ShieldCheck, 
-  Lifebuoy, 
-  Question,
-  FileCode,
-  CheckCircle,
-  WarningCircle
+  CheckCircle, 
+  WarningCircle,
+  Clock,
+  Calendar,
+  Coins,
+  Percent,
+  DownloadSimple,
+  Users,
+  Globe,
+  EyeSlash,
+  Trash,
+  PencilSimple,
+  Bell,
+  Handshake,
+  MagnifyingGlass,
+  Book,
+  Tag
 } from '@phosphor-icons/react';
 
 interface HelpDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   theme: 'light' | 'dark';
+  userRole?: string;
 }
 
-export const HelpDrawer = ({ isOpen, onClose, theme }: HelpDrawerProps) => {
+interface HelpTopic {
+  id: string;
+  title: string;
+  description: string;
+  category: 'kpis' | 'status' | 'features' | 'icons';
+  categoryLabel: string;
+  roles: string[];
+  icon: React.ComponentType<any>;
+  badge?: string;
+}
+
+export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: HelpDrawerProps) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+
+  // Dicionário completo de tópicos de ajuda com visibilidade baseada na role
+  const helpTopics: HelpTopic[] = useMemo(() => [
+    // --- CATEGORIA: KPIS ---
+    {
+      id: 'total-projected',
+      title: 'Total Projetado',
+      description: 'Soma total do valor nominal de todos os acordos cadastrados no sistema dentro do mês corrente, independentemente de estarem pagos ou pendentes.',
+      category: 'kpis',
+      categoryLabel: 'Métricas e KPIs',
+      roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
+      icon: Calculator
+    },
+    {
+      id: 'daily-productivity',
+      title: 'Produtividade Diária',
+      description: 'Total financeiro de acordos que você efetivou como "Pago" no dia atual. Mostra sua produtividade em tempo real para o atingimento das campanhas do dia.',
+      category: 'kpis',
+      categoryLabel: 'Métricas e KPIs',
+      roles: ['operator', 'supervisor'],
+      icon: Coins,
+      badge: 'Operacional'
+    },
+    {
+      id: 'lack-for-goal',
+      title: 'Falta para Meta',
+      description: 'O valor residual em Reais necessário para que seu time atinja a meta mensal definida pelo supervisor. Acompanha o percentual atual de progresso.',
+      category: 'kpis',
+      categoryLabel: 'Métricas e KPIs',
+      roles: ['operator', 'supervisor'],
+      icon: Percent,
+      badge: 'Operacional'
+    },
+    {
+      id: 'monthly-projection',
+      title: 'Projeção para o Mês',
+      description: 'Cálculo estatístico que estima a arrecadação final com base na média diária de pagamentos já efetuados e os dias úteis restantes no mês.',
+      category: 'kpis',
+      categoryLabel: 'Métricas e KPIs',
+      roles: ['operator', 'supervisor'],
+      icon: TrendUp
+    },
+
+    // --- CATEGORIA: STATUS ---
+    {
+      id: 'status-paid',
+      title: 'Status: Pago',
+      description: 'Acordo financeiro liquidado e confirmado. Atinge diretamente a produtividade do operador e soma na meta coletiva da equipe.',
+      category: 'status',
+      categoryLabel: 'Status de Acordos',
+      roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
+      icon: CheckCircle
+    },
+    {
+      id: 'status-waiting',
+      title: 'Status: Aguardando',
+      description: 'Acordo registrado com sucesso e guia de pagamento (Boleto/PIX) enviada ao cliente. O sistema monitora até o vencimento.',
+      category: 'status',
+      categoryLabel: 'Status de Acordos',
+      roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
+      icon: Clock
+    },
+    {
+      id: 'status-broken',
+      title: 'Status: Quebrado',
+      description: 'Acordo que ultrapassou a data de vencimento sem identificação do pagamento. Entra automaticamente no Balcão de Recuperação.',
+      category: 'status',
+      categoryLabel: 'Status de Acordos',
+      roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
+      icon: WarningCircle
+    },
+    {
+      id: 'status-scheduled',
+      title: 'Status: Agendado (Retorno)',
+      description: 'Lembrete de ligação ou renegociação agendada com data e hora. O painel avisa o operador no momento correto para retornar a ligação.',
+      category: 'status',
+      categoryLabel: 'Status de Acordos',
+      roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
+      icon: Calendar
+    },
+
+    // --- CATEGORIA: FEATURES ---
+    {
+      id: 'feature-import',
+      title: 'Importação de Clientes (Excel/CSV)',
+      description: 'Módulo para carregar listas de devedores. Aceita arquivos XLSX, XLS e CSV. Corrige automaticamente datas seriais do Excel e cria registros sob demanda.',
+      category: 'features',
+      categoryLabel: 'Ferramentas do Sistema',
+      roles: ['backoffice', 'supervisor'],
+      icon: DownloadSimple,
+      badge: 'Back Office'
+    },
+    {
+      id: 'feature-rename',
+      title: 'Renomeação Dinâmica de Colunas',
+      description: 'Ao importar planilhas, colunas extras podem ser renomeadas na própria tabela clicando no cabeçalho. O sistema atualiza em lote todos os clientes vinculados.',
+      category: 'features',
+      categoryLabel: 'Ferramentas do Sistema',
+      roles: ['backoffice', 'supervisor'],
+      icon: Tag,
+      badge: 'Back Office'
+    },
+    {
+      id: 'feature-action-handshake',
+      title: 'Registrar Acordo (🤝)',
+      description: 'Botão de ação rápida na tabela de clientes do Back Office que abre o formulário pré-preenchido para fechar o acordo na hora com o devedor.',
+      category: 'features',
+      categoryLabel: 'Ferramentas do Sistema',
+      roles: ['operator', 'backoffice', 'supervisor'],
+      icon: Handshake
+    },
+    {
+      id: 'feature-history',
+      title: 'Gaveta de Histórico e Linha do Tempo',
+      description: 'Clique no CPF de qualquer cliente para ver todas as negociações passadas, datas, quem atendeu e as anotações inseridas por outros operadores.',
+      category: 'features',
+      categoryLabel: 'Ferramentas do Sistema',
+      roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
+      icon: Clock
+    },
+    {
+      id: 'feature-qa-scorecard',
+      title: 'Scorecard de Avaliação (QA)',
+      description: 'Módulo exclusivo para auditar ligações. Monitores de qualidade atribuem notas de 0 a 100 baseadas em script, tom de voz e registro correto.',
+      category: 'features',
+      categoryLabel: 'Ferramentas do Sistema',
+      roles: ['monitor', 'supervisor'],
+      icon: ShieldCheck,
+      badge: 'Monitoria'
+    },
+    {
+      id: 'feature-team-mgmt',
+      title: 'Gestão de Times e Nomenclaturas',
+      description: 'Supervisores criam equipes, distribuem operadores e podem renomear o setor de "Back Office" para qualquer termo organizacional customizado.',
+      category: 'features',
+      categoryLabel: 'Ferramentas do Sistema',
+      roles: ['supervisor'],
+      icon: Users,
+      badge: 'Gestão'
+    },
+    {
+      id: 'feature-webhooks',
+      title: 'Integrações de Webhook',
+      description: 'Dispare notificações instantâneas no Slack, Discord ou Telegram de sua empresa sempre que um operador fechar ou liquidar um acordo.',
+      category: 'features',
+      categoryLabel: 'Ferramentas do Sistema',
+      roles: ['supervisor'],
+      icon: Globe,
+      badge: 'Integração'
+    },
+
+    // --- CATEGORIA: ICONS ---
+    {
+      id: 'icon-eye',
+      title: 'Ícone de Olho Riscado (👁️ / 🙈)',
+      description: 'Indica que o CPF completo do cliente está oculto por privacidade. Clique no ícone para confirmar consentimento da LGPD e revelar os dados.',
+      category: 'icons',
+      categoryLabel: 'Guia de Ícones e Ações',
+      roles: ['operator', 'backoffice', 'monitor', 'supervisor'],
+      icon: EyeSlash
+    },
+    {
+      id: 'icon-trash',
+      title: 'Ícone de Lixeira (🗑️)',
+      description: 'Exclui permanentemente o acordo do banco de dados. Abre um modal de confirmação para prevenir cliques acidentais.',
+      category: 'icons',
+      categoryLabel: 'Guia de Ícones e Ações',
+      roles: ['operator', 'supervisor'],
+      icon: Trash
+    },
+    {
+      id: 'icon-pencil',
+      title: 'Ícone de Lápis (✏️)',
+      description: 'Abre o modal de edição de acordo para corrigir valores, datas de vencimento ou adicionar novos comentários na negociação.',
+      category: 'icons',
+      categoryLabel: 'Guia de Ícones e Ações',
+      roles: ['operator', 'supervisor'],
+      icon: PencilSimple
+    },
+    {
+      id: 'icon-bell',
+      title: 'Ícone de Sino (🔔)',
+      description: 'Alerta sobre agendamento ativo ou colisão de CPF. Indica que o cliente já está em tratativa recente por outro colega da equipe.',
+      category: 'icons',
+      categoryLabel: 'Guia de Ícones e Ações',
+      roles: ['operator', 'backoffice', 'supervisor'],
+      icon: Bell
+    }
+  ], []);
+
+  // Filtra os tópicos com base na role do usuário (cargo atual) e nos termos de busca
+  const filteredTopics = useMemo(() => {
+    return helpTopics.filter(topic => {
+      // 1. Filtrar pelo cargo atual
+      const hasRole = topic.roles.includes(userRole);
+      if (!hasRole) return false;
+
+      // 2. Filtrar pela aba/categoria selecionada
+      if (activeCategory !== 'all' && topic.category !== activeCategory) return false;
+
+      // 3. Filtrar pelo termo de pesquisa
+      if (searchTerm.trim() !== '') {
+        const query = searchTerm.toLowerCase();
+        const matchesTitle = topic.title.toLowerCase().includes(query);
+        const matchesDesc = topic.description.toLowerCase().includes(query);
+        const matchesCat = topic.categoryLabel.toLowerCase().includes(query);
+        return matchesTitle || matchesDesc || matchesCat;
+      }
+
+      return true;
+    });
+  }, [helpTopics, userRole, activeCategory, searchTerm]);
+
+  // Agrupar os tópicos filtrados por categoria para melhor exibição
+  const groupedTopics = useMemo(() => {
+    const groups: Record<string, HelpTopic[]> = {};
+    filteredTopics.forEach(topic => {
+      if (!groups[topic.categoryLabel]) {
+        groups[topic.categoryLabel] = [];
+      }
+      groups[topic.categoryLabel].push(topic);
+    });
+    return groups;
+  }, [filteredTopics]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -30,7 +281,7 @@ export const HelpDrawer = ({ isOpen, onClose, theme }: HelpDrawerProps) => {
             animate={{ opacity: 0.5 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm cursor-pointer"
           />
 
           {/* Drawer Lateral */}
@@ -39,158 +290,162 @@ export const HelpDrawer = ({ isOpen, onClose, theme }: HelpDrawerProps) => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className={`fixed right-0 top-0 bottom-0 w-full max-w-md border-l z-50 flex flex-col shadow-2xl ${
+            className={`fixed right-0 top-0 bottom-0 w-full max-w-md border-l z-[95] flex flex-col shadow-2xl ${
               theme === 'dark'
                 ? 'bg-slate-950 border-white/10 text-slate-100'
                 : 'bg-white border-slate-200 text-slate-800'
             }`}
           >
             {/* Header do Drawer */}
-            <div className={`p-6 border-b flex justify-between items-center shrink-0 ${
+            <div className={`p-6 border-b flex flex-col shrink-0 ${
               theme === 'dark' ? 'border-white/5 bg-slate-900/20' : 'border-slate-100 bg-slate-50'
             }`}>
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${
-                  theme === 'dark' ? 'bg-sky-500/10 text-sky-400' : 'bg-sky-500/5 text-sky-600'
-                }`}>
-                  <BookOpen size={20} weight="duotone" />
-                </div>
-                <div>
-                  <h2 className={`font-black text-sm uppercase tracking-wider leading-none ${
-                    theme === 'dark' ? 'text-white' : 'text-slate-900'
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl ${
+                    theme === 'dark' ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-500/5 text-orange-600'
                   }`}>
-                    Central de Ajuda
-                  </h2>
-                  <span className="text-[9px] font-bold text-slate-400 tracking-widest uppercase block mt-0.5">SaaS & Termos de Cobrança</span>
+                    <Book size={20} weight="duotone" />
+                  </div>
+                  <div>
+                    <h2 className={`font-black text-sm uppercase tracking-wider leading-none ${
+                      theme === 'dark' ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      Manual do Usuário
+                    </h2>
+                    <span className="text-[9px] font-bold text-slate-400 tracking-widest uppercase block mt-0.5">
+                      Visualização de {userRole === 'supervisor' ? 'Supervisor' : userRole === 'backoffice' ? 'Back Office' : userRole === 'monitor' ? 'Monitor' : 'Operador'}
+                    </span>
+                  </div>
                 </div>
+                <button
+                  onClick={onClose}
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${
+                    theme === 'dark'
+                      ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <button
-                onClick={onClose}
-                className={`p-2 rounded-xl transition-all cursor-pointer ${
-                  theme === 'dark'
-                    ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-              >
-                <X size={18} />
-              </button>
+
+              {/* Barra de Pesquisa */}
+              <div className="relative w-full">
+                <MagnifyingGlass 
+                  size={16} 
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                    theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                  }`} 
+                />
+                <input
+                  type="text"
+                  placeholder="Pesquisar métricas, ícones, status..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 transition-all ${
+                    theme === 'dark' 
+                      ? 'bg-white/5 border border-white/10 text-white focus:ring-orange-500/20 focus:border-orange-500' 
+                      : 'bg-slate-100 border border-slate-200 text-slate-900 focus:ring-orange-500/10 focus:border-orange-500'
+                  }`}
+                />
+              </div>
+
+              {/* Filtro de Categorias */}
+              <div className="flex gap-1.5 mt-4 overflow-x-auto pb-1 shrink-0 custom-scrollbar select-none">
+                <button
+                  onClick={() => setActiveCategory('all')}
+                  className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border shrink-0 ${
+                    activeCategory === 'all'
+                      ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-500/10'
+                      : theme === 'dark'
+                        ? 'bg-white/5 text-slate-400 border-white/5 hover:text-white hover:bg-white/10'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
+                >
+                  Todos
+                </button>
+                {[
+                  { id: 'kpis', label: 'Métricas' },
+                  { id: 'status', label: 'Status' },
+                  { id: 'features', label: 'Ferramentas' },
+                  { id: 'icons', label: 'Ícones' }
+                ].map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer border shrink-0 ${
+                      activeCategory === cat.id
+                        ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-500/10'
+                        : theme === 'dark'
+                          ? 'bg-white/5 text-slate-400 border-white/5 hover:text-white hover:bg-white/10'
+                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:text-slate-900 hover:bg-slate-200'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Conteúdo Explicativo */}
-            <div className="flex-1 p-6 space-y-8 overflow-y-auto custom-scrollbar">
-              {/* Glossário de KPIs */}
-              <section className="space-y-4">
-                <h3 className={`text-xs font-black uppercase tracking-widest flex items-center gap-2 ${
-                  theme === 'dark' ? 'text-sky-400' : 'text-sky-600'
-                }`}>
-                  <Calculator size={16} />
-                  <span>Dicionário de Estatísticas</span>
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className={`p-4 rounded-2xl border ${
-                    theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
-                  }`}>
-                    <h4 className={`text-xs font-bold leading-none ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Total Projetado</h4>
-                    <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                      Soma total do valor nominal de todos os acordos cadastrados no sistema dentro do período mensal corrente, independentemente do status de pagamento.
-                    </p>
-                  </div>
-
-                  <div className={`p-4 rounded-2xl border ${
-                    theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
-                  }`}>
-                    <h4 className={`text-xs font-bold leading-none ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Produtividade Diária (Efetivados)</h4>
-                    <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                      Total financeiro de acordos cujo pagamento foi validado como **Pago** na data corrente ou no período selecionado, refletindo a produtividade operacional instantânea.
-                    </p>
-                  </div>
-
-                  <div className={`p-4 rounded-2xl border ${
-                    theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
-                  }`}>
-                    <h4 className={`text-xs font-bold leading-none ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Falta para Meta</h4>
-                    <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                      Diferença entre o valor acumulado já pago e a meta mensal estabelecida pelo gerente administrativo para a equipe. Mostra o percentual em tempo real.
-                    </p>
-                  </div>
-
-                  <div className={`p-4 rounded-2xl border ${
-                    theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'
-                  }`}>
-                    <h4 className={`text-xs font-bold leading-none ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Projeção para o Mês</h4>
-                    <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                      Cálculo preditivo que multiplica o ritmo médio de recuperação diária pelo número total de dias úteis do mês corrente, indicando a tendência de fechamento financeiro.
-                    </p>
-                  </div>
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
+              {Object.keys(groupedTopics).length === 0 ? (
+                <div className="text-center py-12 space-y-2">
+                  <WarningCircle size={32} className="mx-auto text-slate-500" />
+                  <h4 className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Nenhum resultado encontrado</h4>
+                  <p className="text-[11px] text-slate-500 max-w-[200px] mx-auto leading-relaxed">
+                    Tente buscar por termos mais genéricos como "meta", "pago", "olho" ou "importar".
+                  </p>
                 </div>
-              </section>
-
-              {/* Status de Acordos */}
-              <section className="space-y-4">
-                <h3 className={`text-xs font-black uppercase tracking-widest flex items-center gap-2 ${
-                  theme === 'dark' ? 'text-sky-400' : 'text-sky-600'
-                }`}>
-                  <WarningCircle size={16} />
-                  <span>Entendendo os Status</span>
-                </h3>
-
-                <div className="space-y-3.5">
-                  <div className="flex gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                    <div>
-                      <span className={`text-xs font-bold block ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>Pago</span>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">Acordo liquidado integralmente. Soma diretamente na produtividade e no atingimento da meta.</p>
+              ) : (
+                Object.entries(groupedTopics).map(([groupName, topics]) => (
+                  <section key={groupName} className="space-y-3">
+                    <h3 className={`text-[10px] font-black uppercase tracking-widest ${
+                      theme === 'dark' ? 'text-orange-400' : 'text-orange-600'
+                    }`}>
+                      {groupName}
+                    </h3>
+                    
+                    <div className="grid gap-3">
+                      {topics.map(topic => {
+                        const IconComponent = topic.icon;
+                        return (
+                          <div 
+                            key={topic.id}
+                            className={`p-4 rounded-2xl border flex gap-3 transition-colors ${
+                              theme === 'dark' 
+                                ? 'bg-white/5 border-white/5 hover:bg-white/10' 
+                                : 'bg-slate-50 border-slate-100 hover:bg-slate-100/50'
+                            }`}
+                          >
+                            <div className={`p-2 rounded-xl self-start ${
+                              theme === 'dark' ? 'bg-white/5 text-slate-300' : 'bg-slate-200 text-slate-700'
+                            }`}>
+                              <IconComponent size={18} weight="bold" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className={`text-xs font-bold leading-none ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                  {topic.title}
+                                </h4>
+                                {topic.badge && (
+                                  <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-orange-500/10 text-orange-500 border border-orange-500/20 uppercase tracking-widest">
+                                    {topic.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10.5px] text-slate-400 leading-relaxed font-medium">
+                                {topic.description}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                    <div>
-                      <span className={`text-xs font-bold block ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>Aguardando</span>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">O boleto/PIX do acordo já foi enviado ao cliente e está aguardando o vencimento.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
-                    <div>
-                      <span className={`text-xs font-bold block ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>Quebrado</span>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">Data de vencimento ultrapassada sem registro de pagamento. O acordo entra automaticamente no Balcão de Recuperação.</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Balcão de Recuperação */}
-              <section className="space-y-4">
-                <h3 className={`text-xs font-black uppercase tracking-widest flex items-center gap-2 ${
-                  theme === 'dark' ? 'text-sky-400' : 'text-sky-600'
-                }`}>
-                  <TrendUp size={16} />
-                  <span>Balcão de Recuperação</span>
-                </h3>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Quando um acordo de cobrança vence e não é pago, ele se torna um **Acordo Quebrado**. Para evitar perdas, o sistema o move para a aba **Recuperação**.
-                  Lá, qualquer operador ou supervisor da organização pode assumir a carteira de cobrança deste cliente para renegociar os valores, gerando uma nova oportunidade de meta.
-                </p>
-              </section>
-
-              {/* Qualidade e Avaliações de QA */}
-              <section className="space-y-4">
-                <h3 className={`text-xs font-black uppercase tracking-widest flex items-center gap-2 ${
-                  theme === 'dark' ? 'text-sky-400' : 'text-sky-600'
-                }`}>
-                  <ShieldCheck size={16} />
-                  <span>Sistema de Qualidade (QA)</span>
-                </h3>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  O painel de QA permite que os supervisores ou monitores ouçam as ligações, verifiquem os históricos e avaliem cada acordo registrado pelos operadores baseado em critérios objetivos. 
-                  A nota média do operador é exibida como **Efetividade/Qualidade (QA)** nos relatórios individuais.
-                </p>
-              </section>
-
-
+                  </section>
+                ))
+              )}
             </div>
 
             {/* Rodapé do Drawer */}

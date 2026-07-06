@@ -2236,6 +2236,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         isOpen={isHelpOpen}
         onClose={() => setIsHelpOpen(false)}
         theme={theme}
+        userRole={profile?.role}
       />
     </div>
   );
