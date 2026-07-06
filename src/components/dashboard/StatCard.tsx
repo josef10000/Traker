@@ -175,7 +175,7 @@ export const StatCard = ({
             )}
             {subtitle && (
               <div 
-                className="text-white/30 hover:text-white/60 transition-colors cursor-help p-0.5"
+                className="text-white/70 hover:text-white transition-colors cursor-help p-0.5"
                 title={subtitle}
               >
                 <Info size={14} weight="duotone" />
@@ -187,10 +187,10 @@ export const StatCard = ({
         {/* Barra Inferior: Título/Valor na Esquerda e Gráfico na Direita */}
         <div className="flex justify-between items-end w-full mt-2 z-10">
           <div className="flex-1 min-w-0 pr-2">
-            <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] truncate">{title}</p>
+            <p className="text-[9px] font-black text-white/90 uppercase tracking-[0.2em] truncate">{title}</p>
             <h3 className="text-2xl font-black text-white mt-1 leading-none drop-shadow-md tracking-tight">{value}</h3>
             {subtitle && (
-              <p className="text-[8px] font-bold text-white/20 mt-1.5 uppercase tracking-wider truncate">{subtitle}</p>
+              <p className="text-[8px] font-bold text-white/75 mt-1.5 uppercase tracking-wider truncate">{subtitle}</p>
             )}
           </div>
           
