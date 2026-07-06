@@ -75,7 +75,8 @@ export const AgreementModal = ({
         category: 'variavel' as AgreementCategory,
         status: AgreementStatus.SCHEDULED,
         notes: notes,
-        scheduledAt: scheduledAt
+        scheduledAt: scheduledAt,
+        backOfficeClientIdRef: (editingAgreement as any)?.backOfficeClientIdRef || undefined
       };
       onSubmit(agreementData);
     } else {
@@ -92,6 +93,7 @@ export const AgreementModal = ({
         category: formData.get('category') as AgreementCategory,
         status: formData.get('initialStatus') as AgreementStatus,
         notes: notes,
+        backOfficeClientIdRef: (editingAgreement as any)?.backOfficeClientIdRef || undefined
       };
       onSubmit(agreementData);
     }

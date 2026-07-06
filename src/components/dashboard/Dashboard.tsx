@@ -816,7 +816,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const saveAgreement = async (data: any, targetTeamId: string, forced = false) => {
     try {
       const payload = forced ? { ...data, forcedCollision: true } : data;
-      if (editingAgreement) {
+      if (editingAgreement && editingAgreement.id) {
         const agreementRef = doc(db, 'agreements', editingAgreement.id);
         const updatedFields = {
           ...payload,
