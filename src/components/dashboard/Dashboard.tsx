@@ -158,6 +158,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [revealedCpfs, setRevealedCpfs] = useState<Record<string, boolean>>({});
   const [cpfToConfirm, setCpfToConfirm] = useState<{ id: string; cpf: string; actionType: 'reveal' | 'copy' } | null>(null);
   const [agreementIdToDelete, setAgreementIdToDelete] = useState<string | null>(null);
+  const [dontShowLgpdAgain, setDontShowLgpdAgain] = useState(false);
 
   // Seleção reativa de aba padrão para monitores
   useEffect(() => {
@@ -793,7 +794,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleCopyCpfRequest = (id: string, cpf: string) => {
-    setCpfToConfirm({ id, cpf, actionType: 'copy' });
+    const skipWarning = localStorage.getItem('tracker-skip-lgpd-warning') === 'true';
+    if (skipWarning) {
+      navigator.clipboard.writeText(cpf.replace(/\D/g, ''));
+      showToast('CPF copiado para a área de transferência!', 'success');
+      setRevealedCpfs(prev => ({ ...prev, [id]: true }));
+      logAudit('REVEAL_CPF', { agreementId: id, cpf, context: 'CopyToClipboard' }, profile.displayName || '', profile.organizationId);
+    } else {
+      setDontShowLgpdAgain(false); // Reseta a checkbox ao abrir
+      setCpfToConfirm({ id, cpf, actionType: 'copy' });
+    }
   };
 
   const executeConfirmCpf = async () => {
@@ -801,6 +811,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const { id, cpf, actionType } = cpfToConfirm;
     
     try {
+      if (dontShowLgpdAgain) {
+        localStorage.setItem('tracker-skip-lgpd-warning', 'true');
+      }
+
       if (actionType === 'copy') {
         await navigator.clipboard.writeText(cpf.replace(/\D/g, ''));
         showToast('CPF copiado para a área de transferência!', 'success');
@@ -1296,7 +1310,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (isRevealed) {
       setRevealedCpfs(prev => ({ ...prev, [id]: false }));
     } else {
-      setCpfToConfirm({ id, cpf, actionType: 'reveal' });
+      const skipWarning = localStorage.getItem('tracker-skip-lgpd-warning') === 'true';
+      if (skipWarning) {
+        setRevealedCpfs(prev => ({ ...prev, [id]: true }));
+        logAudit('REVEAL_CPF', { agreementId: id, cpf, context: 'RevealOnScreen' }, profile.displayName || '', profile.organizationId);
+        showToast('CPF revelado!', 'success');
+      } else {
+        setDontShowLgpdAgain(false); // Reseta a checkbox ao abrir
+        setCpfToConfirm({ id, cpf, actionType: 'reveal' });
+      }
     }
   };
 
@@ -2157,7 +2179,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {cpfToConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md" onClick={() => setCpfToConfirm(null)} />
-          <div className={`relative glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl border text-center space-y-4 ${
+          <div className={`relative glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl border text-center space-y-5 ${
             theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
           }`}>
             <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/20">
@@ -2170,6 +2192,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Esta operação de acesso a informações sensíveis é rastreada e auditada no sistema para fins de conformidade jurídica.
               </p>
             </div>
+            
+            {/* Checkbox para não exibir aviso novamente */}
+            <div className="flex items-center justify-center gap-2 select-none py-1">
+              <input
+                type="checkbox"
+                id="dont-show-lgpd-again"
+                checked={dontShowLgpdAgain}
+                onChange={(e) => setDontShowLgpdAgain(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-orange-500 focus:ring-orange-500/20 cursor-pointer"
+              />
+              <label 
+                htmlFor="dont-show-lgpd-again" 
+                className={`text-[10px] font-black uppercase tracking-wider cursor-pointer ${
+                  theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-950'
+                }`}
+              >
+                Não mostrar este aviso novamente
+              </label>
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setCpfToConfirm(null)}
