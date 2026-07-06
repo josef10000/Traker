@@ -151,6 +151,49 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     }
   }, [clients]);
 
+  // Função para tratar e formatar datas do Excel/CSV de forma robusta
+  const formatExcelDate = (value: any): string => {
+    if (!value && value !== 0) return '';
+    
+    if (value instanceof Date) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, '0');
+      const day = String(value.getDate()).padStart(2, '0');
+      return `${day}/${month}/${year}`;
+    }
+
+    // Se for um número de série do Excel (representando dias desde 1900-01-01)
+    if (typeof value === 'number' && value > 30000 && value < 60000) {
+      try {
+        const date = new Date(Math.round((value - 25569) * 86400 * 1000));
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${day}/${month}/${year}`;
+      } catch (e) {
+        return String(value);
+      }
+    }
+
+    // Se for uma string numérica (como "46206") representando a data
+    if (typeof value === 'string' && /^\d+(\.\d+)?$/.test(value)) {
+      const num = parseFloat(value);
+      if (num > 30000 && num < 60000) {
+        try {
+          const date = new Date(Math.round((num - 25569) * 86400 * 1000));
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${day}/${month}/${year}`;
+        } catch (e) {
+          return value;
+        }
+      }
+    }
+
+    return String(value).trim();
+  };
+
   // Processar arquivo Excel/CSV localmente
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -161,7 +204,8 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     reader.onload = (evt) => {
       try {
         const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
+        // Habilita cellDates para interpretar células formatadas como data
+        const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
@@ -247,7 +291,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         const rawName = String(row[columnMapping.clientName] || '').trim();
         const rawCpf = String(row[columnMapping.clientCpf] || '').trim().replace(/\D/g, '');
         const rawVal = parseFloat(String(row[columnMapping.value] || '').replace(/[^\d.,-]/g, '').replace(',', '.'));
-        const rawDate = String(row[columnMapping.dueDate] || '').trim();
+        const rawDate = formatExcelDate(row[columnMapping.dueDate]);
 
         if (!rawName || !rawCpf) return; // Ignora se não houver identificador
 
@@ -257,7 +301,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         const customFields: Record<string, string> = {};
         excelHeaders.forEach(h => {
           if (!Object.values(columnMapping).includes(h)) {
-            customFields[h] = String(row[h] || '');
+            customFields[h] = formatExcelDate(row[h]);
           }
         });
 
