@@ -74,6 +74,7 @@ export const useAgreements = ({
   
   const itemsPerPage = 8;
   const isMounted = useRef(true);
+  const shouldForceServerForPage = useRef(false);
 
   useEffect(() => {
     isMounted.current = true;
@@ -171,6 +172,7 @@ export const useAgreements = ({
         // Cache stale, forçado, ou IndexedDB vazio — buscar do servidor
         const snapshot = await getDocsFromServer(qStats);
         usedServer = true;
+        shouldForceServerForPage.current = true;
         if (!isMounted.current) return;
         const data = snapshot.docs.map(d => (
           { id: d.id, ...(d.data() as Record<string, unknown>) } as unknown as Agreement
@@ -358,16 +360,23 @@ export const useAgreements = ({
          * após a primeira carga. Só o refresh manual/auto vai ao servidor.
          */
         let snapshot;
-        try {
-          snapshot = await getDocsFromCache(qPage);
-          // Se o cache retornou vazio mas a query deveria ter resultados,
-          // fallback para o servidor para não mostrar tela em branco
-          if (snapshot.empty && refreshTrigger === 0) {
+        const forceServer = shouldForceServerForPage.current;
+        shouldForceServerForPage.current = false;
+
+        if (forceServer) {
+          snapshot = await getDocsFromServer(qPage);
+        } else {
+          try {
+            snapshot = await getDocsFromCache(qPage);
+            // Se o cache retornou vazio mas a query deveria ter resultados,
+            // fallback para o servidor para não mostrar tela em branco
+            if (snapshot.empty && refreshTrigger === 0) {
+              snapshot = await getDocsFromServer(qPage);
+            }
+          } catch {
+            // Cache indisponível (ex: primeira abertura) — vai direto ao servidor
             snapshot = await getDocsFromServer(qPage);
           }
-        } catch {
-          // Cache indisponível (ex: primeira abertura) — vai direto ao servidor
-          snapshot = await getDocsFromServer(qPage);
         }
 
         if (!active || !isMounted.current) return;

@@ -320,15 +320,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const isLoading = teamLoading || agreementsLoading;
 
-  /**
-   * Marca o cache de stats como stale após qualquer escrita de acordo.
-   * Fire-and-forget: não bloqueia a operação principal.
-   */
   const doMarkStale = React.useCallback(() => {
     markStatsStale(
       profile.organizationId || '', teamsToWatch, selectedMonth, selectedYear
     ).catch(err => console.error('[Dashboard] Erro ao marcar cache stale:', err));
-  }, [profile.organizationId, teamsToWatch, selectedMonth, selectedYear]);
+    refreshAgreements();
+  }, [profile.organizationId, teamsToWatch, selectedMonth, selectedYear, refreshAgreements]);
 
   // Atualiza metas reativamente com base na seleção de equipes gerenciadas do hook
   useEffect(() => {
