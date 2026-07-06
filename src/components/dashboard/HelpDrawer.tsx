@@ -45,23 +45,30 @@ interface HelpTopic {
   keywords?: string[];
 }
 
-export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: HelpDrawerProps) => {
+export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'member' }: HelpDrawerProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  // Termos de busca recomendados com base no cargo atual
+  // Normaliza o cargo (role) do banco para as roles explicativas internas do manual de ajuda
+  const normalizedRole = useMemo(() => {
+    if (userRole === 'member') return 'operator';
+    if (userRole === 'super_admin' || userRole === 'manager') return 'supervisor';
+    return userRole; // 'supervisor', 'backoffice', 'monitor'
+  }, [userRole]);
+
+  // Termos de busca recomendados com base no cargo normalizado
   const recommendedSearches = useMemo(() => {
-    if (userRole === 'supervisor') {
+    if (normalizedRole === 'supervisor') {
       return ['Verificar', 'Metas', 'Webhooks', 'LGPD', 'Back Office'];
     }
-    if (userRole === 'backoffice') {
+    if (normalizedRole === 'backoffice') {
       return ['Importar', 'Colunas', 'Planilha', 'Renomear', 'Acordo'];
     }
-    if (userRole === 'monitor') {
+    if (normalizedRole === 'monitor') {
       return ['QA', 'Verificar', 'LGPD', 'Gravação', 'Scorecard'];
     }
     return ['Meta', 'Verificar', 'Revelar CPF', 'Status', 'Acordo'];
-  }, [userRole]);
+  }, [normalizedRole]);
 
   // Dicionário completo de tópicos de ajuda com visibilidade baseada na role e palavras-chave para busca inteligente
   const helpTopics: HelpTopic[] = useMemo(() => [
@@ -279,13 +286,13 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
       icon: Bell,
       keywords: ['sino', 'alerta', 'colisão', 'aviso', 'notificação', 'ativo']
     }
-  ], [userRole]);
+  ], []);
 
-  // Filtra os tópicos com base na role do usuário (cargo atual) e nos termos de busca
+  // Filtra os tópicos com base na role normalizada e nos termos de busca
   const filteredTopics = useMemo(() => {
     return helpTopics.filter(topic => {
-      // 1. Filtrar pelo cargo atual
-      const hasRole = topic.roles.includes(userRole);
+      // 1. Filtrar pelo cargo normalizado
+      const hasRole = topic.roles.includes(normalizedRole);
       if (!hasRole) return false;
 
       // 2. Filtrar pela aba/categoria selecionada
@@ -303,7 +310,7 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
 
       return true;
     });
-  }, [helpTopics, userRole, activeCategory, searchTerm]);
+  }, [helpTopics, normalizedRole, activeCategory, searchTerm]);
 
   // Agrupar os tópicos filtrados por categoria para melhor exibição
   const groupedTopics = useMemo(() => {
@@ -360,7 +367,7 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'operator' }: He
                       Manual do Usuário
                     </h2>
                     <span className="text-[9px] font-bold text-slate-400 tracking-widest uppercase block mt-0.5">
-                      Visualização de {userRole === 'supervisor' ? 'Supervisor' : userRole === 'backoffice' ? 'Back Office' : userRole === 'monitor' ? 'Monitor' : 'Operador'}
+                      Visualização de {normalizedRole === 'supervisor' ? 'Supervisor' : normalizedRole === 'backoffice' ? 'Back Office' : normalizedRole === 'monitor' ? 'Monitor' : 'Operador'}
                     </span>
                   </div>
                 </div>
