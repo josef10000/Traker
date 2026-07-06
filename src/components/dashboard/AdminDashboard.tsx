@@ -54,7 +54,7 @@ interface AdminDashboardProps {
   profile: UserProfile;
   onLogoutSuccess: () => void;
   showToast: (message: string, type?: ToastType) => void;
-  onStartSimulation: (role: 'manager' | 'supervisor' | 'member' | 'monitor') => void;
+  onStartSimulation: (role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice') => void;
 }
 
 export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation }: AdminDashboardProps) => {
@@ -132,7 +132,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     };
   }, []);
 
-  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member' | 'monitor', forceProvision = false) => {
+  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice', forceProvision = false) => {
     setIsProvisioningSandbox(true);
     try {
       const sandboxOrgId = 'sandbox-test';
@@ -226,6 +226,21 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           displayName: 'Monitor de Testes',
           role: 'monitor',
           organizationId: sandboxOrgId,
+          createdAt: new Date().toISOString(),
+          acceptedTermsAt: new Date().toISOString(),
+          termsAccepted: true
+        });
+
+        // 3.2. Criar perfil de backoffice simulado
+        const backofficeProfileRef = doc(db, 'users', 'sandbox-user-backoffice');
+        await setDoc(backofficeProfileRef, {
+          uid: 'sandbox-user-backoffice',
+          email: 'backoffice@sandbox.local',
+          displayName: 'Back Office de Testes',
+          role: 'backoffice',
+          jobTitle: 'Back Office',
+          organizationId: sandboxOrgId,
+          teamId: 'sandbox-team-alpha',
           createdAt: new Date().toISOString(),
           acceptedTermsAt: new Date().toISOString(),
           termsAccepted: true
@@ -665,6 +680,18 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       title="Entrar como Monitor (Modo Simulação)"
                     >
                       Entrar como Monitor
+                    </button>
+                    <button
+                      onClick={() => handleSimulateRole('backoffice', false)}
+                      disabled={isProvisioningSandbox}
+                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                        theme === 'dark'
+                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20'
+                          : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                      }`}
+                      title="Entrar como Back Office (Modo Simulação)"
+                    >
+                      Entrar como Back Office
                     </button>
                   </div>
                   <button

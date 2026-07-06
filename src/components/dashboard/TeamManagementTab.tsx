@@ -1,5 +1,7 @@
-import React from 'react';
-import { Printer, User as UserIcon } from '@phosphor-icons/react';
+import React, { useState } from 'react';
+import { Printer, User as UserIcon, Check, X as XIcon, PencilSimple } from '@phosphor-icons/react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency } from '../../utils/masks';
 
@@ -44,6 +46,25 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
   qaScores = {},
   theme = 'dark'
 }) => {
+  const [editingMemberUid, setEditingMemberUid] = useState<string | null>(null);
+  const [newJobTitle, setNewJobTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveJobTitle = async (uid: string) => {
+    if (!newJobTitle.trim()) return;
+    setIsSaving(true);
+    try {
+      const userRef = doc(db, 'users', uid);
+      await updateDoc(userRef, { jobTitle: newJobTitle.trim() });
+      setEditingMemberUid(null);
+      setNewJobTitle('');
+    } catch (error) {
+      console.error('[TeamManagementTab] Erro ao salvar cargo:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in no-print">
       {/* Header da Aba de Gestão */}
@@ -142,8 +163,58 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
                     <h4 className={`font-bold text-base leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                       {member.displayName || member.email.split('@')[0]}
                     </h4>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 font-medium">
-                      <span>{member.jobTitle || 'Operador'}</span>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-550 dark:text-slate-500 font-medium">
+                      {editingMemberUid === member.uid ? (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <input 
+                            type="text"
+                            value={newJobTitle}
+                            onChange={(e) => setNewJobTitle(e.target.value)}
+                            className={`px-2 py-0.5 rounded text-xs outline-none border ${
+                              theme === 'dark' ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                            }`}
+                            placeholder="Cargo (Ex: Tratador)"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveJobTitle(member.uid);
+                              if (e.key === 'Escape') {
+                                setEditingMemberUid(null);
+                                setNewJobTitle('');
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => handleSaveJobTitle(member.uid)}
+                            disabled={isSaving}
+                            className="p-1 hover:text-emerald-400 cursor-pointer disabled:opacity-50"
+                          >
+                            <Check size={14} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingMemberUid(null);
+                              setNewJobTitle('');
+                            }}
+                            className="p-1 hover:text-rose-400 cursor-pointer"
+                          >
+                            <XIcon size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <span>{member.jobTitle || 'Operador'}</span>
+                          <button
+                            onClick={() => {
+                              setEditingMemberUid(member.uid);
+                              setNewJobTitle(member.jobTitle || 'Operador');
+                            }}
+                            className="p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-sky-400 cursor-pointer"
+                            title="Editar Cargo"
+                          >
+                            <PencilSimple size={12} />
+                          </button>
+                        </div>
+                      )}
                       <span className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`} />
                       <span className="font-mono">{member.email}</span>
                     </div>

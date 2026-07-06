@@ -23,7 +23,7 @@ export function AppContent() {
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-  const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' } | null>(null);
+  const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' } | null>(null);
 
   const navigate = useNavigate();
 
@@ -213,14 +213,18 @@ export function AppContent() {
             ? 'sandbox-user-supervisor'
             : (simulation.role === 'monitor'
               ? 'sandbox-user-monitor'
-              : 'sandbox-user-operator')),
+              : (simulation.role === 'backoffice'
+                ? 'sandbox-user-backoffice'
+                : 'sandbox-user-operator'))),
         displayName: `${simulation.role === 'manager'
           ? 'Gerente'
           : (simulation.role === 'supervisor'
             ? 'Supervisor'
             : (simulation.role === 'monitor'
               ? 'Monitor'
-              : 'Operador'))} (Simulado)`,
+              : (simulation.role === 'backoffice'
+                ? 'Back Office'
+                : 'Operador')))} (Simulado)`,
         email: profile.email,
         role: simulation.role,
         organizationId: 'sandbox-test',
@@ -257,38 +261,16 @@ export function AppContent() {
                       ? 'Supervisor'
                       : (simulation.role === 'monitor'
                         ? 'Monitor'
-                        : 'Operador'))}
+                        : (simulation.role === 'backoffice'
+                          ? 'Back Office'
+                          : 'Operador')))}
                 </span> da Empresa Fictícia Sandbox
               </p>
             </div>
             <div className="flex items-center gap-4">
-              {/* Botão de Toggle de Layout */}
-              <div className="flex items-center bg-black/30 rounded-lg p-0.5 border border-purple-500/20">
-                <button
-                  onClick={() => setDesignMode('classic')}
-                  className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
-                    designMode === 'classic' 
-                      ? 'bg-purple-500 text-white shadow-sm' 
-                      : 'text-purple-300 hover:text-white'
-                  }`}
-                >
-                  Clássico
-                </button>
-                <button
-                  onClick={() => setDesignMode('premium')}
-                  className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
-                    designMode === 'premium' 
-                      ? 'bg-purple-500 text-white shadow-sm' 
-                      : 'text-purple-300 hover:text-white'
-                  }`}
-                >
-                  Premium
-                </button>
-              </div>
-
               <button 
                 onClick={() => setSimulation(null)}
-                className="px-4 py-1.5 bg-purple-500 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-400 transition-colors shadow-md shadow-purple-500/20 active:scale-95"
+                className="px-4 py-1.5 bg-purple-500 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-400 transition-colors shadow-md shadow-purple-500/20 active:scale-95 cursor-pointer"
               >
                 Sair da Simulação
               </button>

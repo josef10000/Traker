@@ -27,7 +27,7 @@ export enum AgreementCategory {
   VARIAVEL = 'variavel'
 }
 
-export type UserRole = 'super_admin' | 'manager' | 'supervisor' | 'member' | 'monitor';
+export type UserRole = 'super_admin' | 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice';
 
 export interface Organization {
   id: string;
@@ -209,4 +209,42 @@ export interface Pdi {
   dueDate: string;           // Vencimento do PDI
   status: 'pending' | 'completed' | 'expired';
   createdAt: string;
+}
+
+export interface BackOfficeNote {
+  id: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface BackOfficeImport {
+  id: string;
+  organizationId: string;
+  teamId: string;
+  importedBy: string;
+  importedByName: string;
+  fileName: string;
+  totalRows: number;
+  validRows: number;
+  headers: string[];
+  columnMapping: Record<string, string>;
+  createdAt: string;
+}
+
+export interface BackOfficeClient {
+  id: string;
+  importId: string;
+  organizationId: string;
+  teamId: string;
+  clientName: string;
+  clientCpf: string;
+  value: number;
+  dueDate: string;
+  customFields: Record<string, string>;
+  notes: BackOfficeNote[];
+  status: 'pending' | 'treated' | 'ignored';
+  createdAt: string;
+  updatedAt: string;
 }

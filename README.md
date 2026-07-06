@@ -47,6 +47,10 @@ A plataforma conta com 5 níveis de controle de permissões dinâmicos (Roles):
 5. **👤 Operador (Colaborador que Atende)**:
    - Registro e consulta de acordos individuais e visualização da meta diária pessoal.
    - Modo de conferência rápida (Checklist / Botão "Verificar") para focar na checagem de CPFs de clientes pendentes de pagamento.
+6. **📊 Back Office (Tratador / Auditor de Planilhas)**:
+   - Acesso exclusivo a painéis de tratamento de planilhas locais para processar e higienizar clientes.
+   - Autonomia para mapear colunas, ler dados, adicionar notas e realizar a exportação consolidada sem acessar informações de QA, BI ou metas financeiras.
+   - Cargo visualmente editável pelo supervisor/gerente no painel de equipe.
 
 ---
 
@@ -87,6 +91,12 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
    - **Travamento de Conversas**: Chat de réplicas interativo integrado diretamente à API do CRM que é travado permanentemente quando o chamado assume o status `concluido` (Resolvido).
    - **Permissões Administrativas**: O acesso à central de ajuda e à abertura de chamados é permitido apenas a Gerentes e Supervisores (Operadores e Monitores não visualizam a opção).
    - **Cancelamento de Assinatura Automático**: Gerentes podem cancelar a assinatura diretamente pela central do SaaS. O sistema faz a chamada correspondente ao HubCRM, obtém a data limite de acesso e configura o bloqueio de acesso 100% automatizado da organização para o dia seguinte da expiração.
+
+7. **📊 Tratamento & Mapeamento de Planilhas (Back Office)**:
+   - **Upload Local via SheetJS**: Carrega e processa planilhas dinâmicas (.xlsx, .xls, .csv) diretamente no navegador, economizando tráfego de dados e sem peso de storage físico.
+   - **Mapeador Inteligente de Colunas**: Associa campos do sistema (Nome, CPF, Valor, Vencimento) aos cabeçalhos e guarda quaisquer colunas remanescentes na propriedade `customFields` para tags dinâmicas.
+   - **Gaveta Lateral de Notas**: Histórico completo de anotações sobre cada cliente tratador com assinatura e data.
+   - **Exportação Consolidada**: Download da planilha atualizada com status (Pendente, Tratado, Ignorado) e as notas comportamentais agregadas.
 
 ---
 

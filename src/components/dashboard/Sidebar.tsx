@@ -12,7 +12,8 @@ import {
   CaretRight,
   SignOut as LogOut,
   Building,
-  User
+  User,
+  FileCsv as FileSpreadsheet
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
 
@@ -54,40 +55,46 @@ export const Sidebar = ({
   // Lista de itens de menu
   const menuItems = [
     {
+      id: 'backoffice',
+      label: profile.jobTitle || 'Back Office',
+      icon: FileSpreadsheet,
+      show: profile.role === 'backoffice'
+    },
+    {
       id: 'financial',
       label: 'Painel Financeiro',
       icon: ChartLine,
-      show: profile.role !== 'monitor'
+      show: profile.role !== 'monitor' && profile.role !== 'backoffice'
     },
     {
       id: 'recovery',
       label: 'Recuperação',
       icon: RecoveryIcon,
-      show: profile.role !== 'monitor'
+      show: profile.role !== 'monitor' && profile.role !== 'backoffice'
     },
     {
       id: 'qa',
       label: 'Qualidade (QA)',
       icon: QaIcon,
-      show: true
+      show: profile.role !== 'backoffice'
     },
     {
       id: 'bi',
       label: 'BI & Analytics',
       icon: BiIcon,
-      show: true
+      show: profile.role !== 'backoffice'
     },
     {
       id: 'people',
       label: 'Gestão de Equipe',
       icon: TeamIcon,
-      show: isSuperUser && profile.role !== 'monitor'
+      show: isSuperUser && profile.role !== 'monitor' && profile.role !== 'backoffice'
     },
     {
       id: 'support',
       label: 'Suporte & Ajuda',
       icon: SupportIcon,
-      show: profile.role === 'manager' || profile.role === 'supervisor'
+      show: (profile.role === 'manager' || profile.role === 'supervisor') && profile.role !== 'backoffice'
     }
   ];
 

@@ -48,6 +48,7 @@ import { useDashboardStats } from '../../hooks/useDashboardStats';
 import { DashboardHeader } from './DashboardHeader';
 import { SupportTab } from './SupportTab';
 import { StatsGrid } from './StatsGrid';
+import { BackOfficeTab } from './BackOfficeTab';
 import { AdvancedInsights } from './AdvancedInsights';
 import { AgreementsTable } from './AgreementsTable';
 import { TeamManagementTab } from './TeamManagementTab';
@@ -93,7 +94,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   // Abas do Dashboard
-  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support'>('financial');
+  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support' | 'backoffice'>(() => {
+    return profile.role === 'backoffice' ? 'backoffice' : 'financial';
+  });
+
+  useEffect(() => {
+    if (profile.role === 'backoffice' && dashboardTab !== 'backoffice') {
+      setDashboardTab('backoffice');
+    }
+  }, [profile.role, dashboardTab]);
   
   // Visualização e Seleção de Equipes
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
@@ -1702,6 +1711,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   crmPublicToken={crmPublicToken}
                   showToast={showToast}
                   theme={theme}
+                />
+              )}
+
+              {/* CONTEÚDO DA ABA DE BACK OFFICE */}
+              {dashboardTab === 'backoffice' && (
+                <BackOfficeTab 
+                  profile={profile}
+                  showToast={showToast}
+                  theme={theme}
+                  selectedTeamId={selectedTeamId}
                 />
               )}
             </motion.div>
