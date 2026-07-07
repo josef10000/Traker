@@ -244,40 +244,52 @@ class SandboxService {
         };
       }
 
-      // 6. Gerar avaliação de QA para cada operador
-      const qaId = `sandbox-qa-${qaIdCounter++}`;
-      // Nota baseada no index
-      const score = Math.round(75 + (opIdx * 1.5) % 25); 
-      const grades: Record<string, number> = {
-        'comp-1': Math.min(100, score + (opIdx % 5) - 2),
-        'comp-2': Math.min(100, score - (opIdx % 3) + 1),
-        'comp-3': score < 80 ? 70 : 90,
-        'comp-4': Math.min(100, score + 4)
-      };
+      // 6. Gerar no mínimo 3 avaliações de QA para cada operador (com evolução de notas)
+      const baseScores = [
+        Math.round(65 + (opIdx * 1.5) % 15), // Primeira avaliação (antiga)
+        Math.round(72 + (opIdx * 1.5) % 15), // Segunda avaliação
+        Math.round(79 + (opIdx * 1.5) % 15)  // Terceira avaliação (recente)
+      ];
 
-      const qaDateIso = new Date(currentYear, currentMonth, 10 + (opIdx % 10)).toISOString();
-      const qaDateYmd = qaDateIso.split('T')[0];
+      let lastScore = 100;
 
-      this.qaEvaluations[qaId] = {
-        id: qaId,
-        organizationId: orgId,
-        operatorId: op.uid,
-        evaluatorId: 'sandbox-user-monitor',
-        score,
-        callId: `REC-${100000 + qaIdCounter}`,
-        protocol: `PROT-${20260000 + qaIdCounter}`,
-        grades,
-        feedback: `Excelente atendimento. O operador ${op.displayName} demonstrou forte poder de argumentação e seguiu as regras de compliance perfeitamente.`,
-        createdAt: qaDateIso
-      };
+      baseScores.forEach((score, scoreIdx) => {
+        const qaId = `sandbox-qa-${qaIdCounter++}`;
+        const grades: Record<string, number> = {
+          'comp-1': Math.min(100, score + (opIdx % 5) - 2),
+          'comp-2': Math.min(100, score - (opIdx % 3) + 1),
+          'comp-3': score < 80 ? 70 : 90,
+          'comp-4': Math.min(100, score + 4)
+        };
 
-      if (this.users[op.uid]) {
-        this.users[op.uid].lastQaDate = qaDateYmd;
-        this.users[op.uid].qaCycleStatus = 'evaluated';
-      }
+        const qaDate = new Date(currentYear, currentMonth, 3 + (scoreIdx * 8) + (opIdx % 3));
+        const qaDateIso = qaDate.toISOString();
+        const qaDateYmd = qaDateIso.split('T')[0];
+
+        this.qaEvaluations[qaId] = {
+          id: qaId,
+          organizationId: orgId,
+          operatorId: op.uid,
+          evaluatorId: 'sandbox-user-monitor',
+          score,
+          callId: `REC-${100000 + qaIdCounter}`,
+          protocol: `PROT-${20260000 + qaIdCounter}`,
+          grades,
+          feedback: `Avaliação de monitoria #${scoreIdx + 1}. Atendimento sob protocolo ${20260000 + qaIdCounter}. O operador ${op.displayName} demonstrou alinhamento técnico.`,
+          createdAt: qaDateIso
+        };
+
+        if (scoreIdx === 2) {
+          lastScore = score;
+          if (this.users[op.uid]) {
+            this.users[op.uid].lastQaDate = qaDateYmd;
+            this.users[op.uid].qaCycleStatus = 'evaluated';
+          }
+        }
+      });
 
       // 7. Gerar PDI para quem teve nota mais baixa (< 82)
-      if (score < 82) {
+      if (lastScore < 82) {
         const pdiId = `sandbox-pdi-${pdiIdCounter++}`;
         this.pdis[pdiId] = {
           id: pdiId,

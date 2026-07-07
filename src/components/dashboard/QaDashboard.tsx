@@ -34,7 +34,7 @@ export const QaDashboard = ({
   showToast,
   theme = 'dark'
 }: QaDashboardProps) => {
-  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin' || profile.role === 'monitor';
+  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin' || profile.role === 'monitor' || profile.role === 'coordinator';
 
   // Estados principais
   const [competences, setCompetences] = useState<QaCompetence[]>([]);
@@ -1006,7 +1006,7 @@ export const QaDashboard = ({
                     </div>
                   </div>
 
-                  {/* Gráfico de Análise de Competências (RH Gaps e Forças) */}
+                  {/* Gráfico de Análise de Competências (Forças e Oportunidades) */}
                   <div className={`p-6 rounded-3xl border min-h-[340px] md:col-span-2 ${
                     theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
                   }`}>
@@ -1016,7 +1016,7 @@ export const QaDashboard = ({
                       <Compass size={16} className="text-sky-500 dark:text-sky-400" />
                       {selectedOperatorId === 'all'
                         ? 'Médias Gerais por Competência'
-                        : 'Análise de RH: Forças e Oportunidades (Gaps)'}
+                        : 'Forças e Oportunidades (Gaps)'}
                     </h4>
                     <p className={`text-[10px] mb-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                       {selectedOperatorId === 'all'
@@ -1077,6 +1077,16 @@ export const QaDashboard = ({
                                   );
                                 })
                               )}
+                              <LabelList 
+                                dataKey={selectedOperatorId === 'all' ? 'Média Geral' : 'Diferença'}
+                                position={selectedOperatorId === 'all' ? 'right' : 'inside'} 
+                                fill={selectedOperatorId === 'all' ? (theme === 'dark' ? '#f8fafc' : '#0f172a') : '#ffffff'}
+                                style={{ fontSize: 9, fontWeight: 'black' }}
+                                formatter={(value: number) => {
+                                  if (selectedOperatorId === 'all') return `${value}%`;
+                                  return value >= 0 ? `+${value}` : `${value}`;
+                                }}
+                              />
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
