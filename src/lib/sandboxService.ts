@@ -475,7 +475,7 @@ class SandboxService {
     this.notify();
   }
 
-  public updatePdiStatus(id: string, status: 'pending' | 'completed' | 'expired'): void {
+  public updatePdiStatus(id: string, status: 'pending' | 'completed' | 'failed' | 'expired'): void {
     if (this.pdis[id]) {
       this.pdis[id] = { ...this.pdis[id], status };
       this.notify();

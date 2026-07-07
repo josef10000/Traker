@@ -242,16 +242,30 @@ export const QaDashboard = ({
 
   // Estatísticas e Analytics de QA
   const stats = useMemo(() => {
+    // 1. Calcular médias globais de competências (todos os operadores)
+    const globalCompetenceSum: Record<string, { total: number; count: number }> = {};
+    competences.forEach(c => {
+      globalCompetenceSum[c.id] = { total: 0, count: 0 };
+    });
+    
+    evaluations.forEach(e => {
+      Object.entries(e.grades).forEach(([compId, grade]) => {
+        if (globalCompetenceSum[compId]) {
+          globalCompetenceSum[compId].total += grade as number;
+          globalCompetenceSum[compId].count += 1;
+        }
+      });
+    });
+
+    // 2. Filtrar avaliações
     const filteredEvals = selectedOperatorId === 'all' 
       ? evaluations 
       : evaluations.filter(e => e.operatorId === selectedOperatorId);
 
-    if (filteredEvals.length === 0) return { avgScore: 0, totalEvals: 0, radarData: [], worstCompetence: 'N/A', chartData: [] };
-
     const sum = filteredEvals.reduce((acc, curr) => acc + curr.score, 0);
-    const avgScore = sum / filteredEvals.length;
+    const avgScore = filteredEvals.length > 0 ? sum / filteredEvals.length : 0;
 
-    // Calcular médias de competências
+    // Calcular médias do operador / filtro selecionado
     const competenceSum: Record<string, { total: number; count: number }> = {};
     competences.forEach(c => {
       competenceSum[c.id] = { total: 0, count: 0 };
@@ -266,12 +280,18 @@ export const QaDashboard = ({
       });
     });
 
+    // Gerar radarData com as duas chaves: "Operador" e "Média Geral"
     const radarData = competences.map(c => {
       const info = competenceSum[c.id];
       const avg = info && info.count > 0 ? info.total / info.count : 0;
+
+      const globalInfo = globalCompetenceSum[c.id];
+      const globalAvg = globalInfo && globalInfo.count > 0 ? globalInfo.total / globalInfo.count : 0;
+
       return {
         subject: c.name,
-        Média: Math.round(avg),
+        "Operador": Math.round(avg),
+        "Média Geral": Math.round(globalAvg),
         fullMark: 100
       };
     });
@@ -531,15 +551,15 @@ export const QaDashboard = ({
     setPdiDueDate('');
   };
 
-  const handleCompletePdi = async (id: string) => {
+  const handleResolvePdi = async (id: string, status: 'completed' | 'failed') => {
     if (profile.organizationId === 'sandbox-test') {
-      sandboxService.updatePdiStatus(id, 'completed');
-      showToast('PDI do Sandbox concluído na memória!', 'success');
+      sandboxService.updatePdiStatus(id, status);
+      showToast(`PDI do Sandbox atualizado para ${status === 'completed' ? 'Cumprido' : 'Não Cumprido'}!`, 'success');
       return;
     }
     try {
-      await updateDoc(doc(db, 'pdis', id), { status: 'completed' });
-      showToast('PDI marcado como Concluído!', 'success');
+      await updateDoc(doc(db, 'pdis', id), { status });
+      showToast(`PDI marcado como ${status === 'completed' ? 'Cumprido (Positivo)' : 'Não Cumprido (Negativo)'}!`, 'success');
     } catch (err) {
       console.error(err);
       showToast('Erro ao atualizar PDI.', 'error');
@@ -863,16 +883,16 @@ export const QaDashboard = ({
                       </div>
                     </div>
 
-                    <div className={`p-6 rounded-3xl border flex items-center justify-between ${
+                    <div className={`p-6 rounded-3xl border flex items-center justify-between gap-4 ${
                       theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
                     }`}>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pontos Fracos Comuns</p>
-                        <h3 className="text-xl font-black text-rose-600 dark:text-rose-455 mt-1 truncate max-w-[150px]" title={stats.worstCompetence}>
+                        <h3 className="text-base font-black text-rose-600 dark:text-rose-455 mt-1 leading-tight break-words" title={stats.worstCompetence}>
                           {stats.worstCompetence}
                         </h3>
                       </div>
-                      <div className="p-3.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl border border-rose-500/20">
+                      <div className="p-3.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl border border-rose-500/20 shrink-0">
                         <ShieldAlert size={22} />
                       </div>
                     </div>
@@ -908,12 +928,20 @@ export const QaDashboard = ({
                     ) : (
                       <div className="w-full h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                          <RadarChart cx="50%" cy="50%" outerRadius="75%" data={stats.radarData}>
+                          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={stats.radarData}>
                             <PolarGrid stroke={theme === 'dark' ? "#334155" : "#e2e8f0"} />
                             <PolarAngleAxis dataKey="subject" tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 10, fontWeight: 'bold' }} />
                             <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: theme === 'dark' ? '#475569' : '#94a3b8' }} />
-                            <Radar name="Média Qualidade" dataKey="Média" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
+                            {selectedOperatorId !== 'all' ? (
+                              <>
+                                <Radar name="Média Geral" dataKey="Média Geral" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.05} />
+                                <Radar name="Operador" dataKey="Operador" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
+                              </>
+                            ) : (
+                              <Radar name="Média Geral" dataKey="Média Geral" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
+                            )}
                             <Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff', borderColor: theme === 'dark' ? '#1e293b' : '#e2e8f0', color: theme === 'dark' ? '#f8fafc' : '#0f172a' }} />
+                            <Legend wrapperStyle={{ fontSize: 10, fontWeight: 'bold', paddingTop: 10 }} />
                           </RadarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1063,9 +1091,11 @@ export const QaDashboard = ({
                       className={`p-6 rounded-3xl border flex flex-col justify-between gap-4 transition-all ${
                         p.status === 'completed' 
                           ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/15' 
-                          : p.status === 'expired'
+                          : p.status === 'failed'
                             ? 'bg-rose-50/50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/15'
-                            : `border ${theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`
+                            : p.status === 'expired'
+                              ? 'bg-rose-50/50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/15'
+                              : `border ${theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`
                       }`}
                     >
                       <div className="space-y-3">
@@ -1078,11 +1108,13 @@ export const QaDashboard = ({
                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${
                             p.status === 'completed'
                               ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30'
-                              : p.status === 'expired'
+                              : p.status === 'failed'
                                 ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 border-rose-200 dark:border-rose-500/30'
-                                : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 border-amber-255 dark:border-amber-500/20'
+                                : p.status === 'expired'
+                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 border-rose-200 dark:border-rose-500/30'
+                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 border-amber-255 dark:border-amber-500/20'
                           }`}>
-                            {p.status === 'completed' ? 'Concluído' : p.status === 'expired' ? 'Expirado' : 'Pendente'}
+                            {p.status === 'completed' ? 'Cumprido' : p.status === 'failed' ? 'Não Cumprido' : p.status === 'expired' ? 'Expirado' : 'Pendente'}
                           </span>
                         </div>
 
@@ -1098,7 +1130,7 @@ export const QaDashboard = ({
                         </div>
                       </div>
 
-                      <div className={`flex justify-between items-center border-t pt-3 ${
+                      <div className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-t pt-3 ${
                         theme === 'dark' ? 'border-white/5' : 'border-slate-100'
                       }`}>
                         <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
@@ -1107,13 +1139,22 @@ export const QaDashboard = ({
                         </span>
 
                         {isSuperUser && p.status === 'pending' && (
-                          <button
-                            onClick={() => handleCompletePdi(p.id)}
-                            className="px-3 py-1.5 bg-emerald-555 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center gap-1 active:scale-95 cursor-pointer"
-                          >
-                            <CheckCircle2 size={10} />
-                            Concluir
-                          </button>
+                          <div className="flex gap-2 self-end sm:self-auto">
+                            <button
+                              onClick={() => handleResolvePdi(p.id, 'completed')}
+                              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center gap-1 active:scale-95 cursor-pointer"
+                            >
+                              <CheckCircle2 size={10} />
+                              Cumprido
+                            </button>
+                            <button
+                              onClick={() => handleResolvePdi(p.id, 'failed')}
+                              className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-555 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center gap-1 active:scale-95 cursor-pointer"
+                            >
+                              <X size={10} />
+                              Não Cumprido
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>

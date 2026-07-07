@@ -217,7 +217,7 @@ export interface Pdi {
   competenceName: string;    // Nome da competência do foco
   actionPlan: string;        // Plano de Ação
   dueDate: string;           // Vencimento do PDI
-  status: 'pending' | 'completed' | 'expired';
+  status: 'pending' | 'completed' | 'failed' | 'expired';
   createdAt: string;
 }
 
