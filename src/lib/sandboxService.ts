@@ -332,8 +332,16 @@ class SandboxService {
     return this.users[uid] || null;
   }
 
+  public getUser(uid: string): UserProfile | null {
+    return this.getProfile(uid);
+  }
+
   public getAllProfiles(): UserProfile[] {
     return Object.values(this.users);
+  }
+
+  public getUsers(orgId: string): UserProfile[] {
+    return Object.values(this.users).filter(u => u.organizationId === orgId);
   }
 
   public getTeam(teamId: string): Team | null {
@@ -393,6 +401,11 @@ class SandboxService {
 
   public deleteAgreement(id: string): void {
     delete this.agreements[id];
+    this.notify();
+  }
+
+  public deleteTeam(id: string): void {
+    delete this.teams[id];
     this.notify();
   }
 
