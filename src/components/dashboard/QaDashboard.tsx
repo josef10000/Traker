@@ -10,7 +10,7 @@ import {
   Clock, TrendUp as TrendingUp, Compass, Gear, User, Check, X
 } from '@phosphor-icons/react';
 import { 
-  BarChart, Bar, Cell, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, 
+  BarChart, Bar, Cell, ReferenceLine, LabelList, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Legend, RadarChart, PolarGrid, 
   PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, AreaChart, Area
 } from 'recharts';
