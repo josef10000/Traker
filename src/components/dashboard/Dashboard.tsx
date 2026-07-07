@@ -482,7 +482,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const timer = setTimeout(() => {
         startTour(profile.role, async () => {
           try {
-            await updateDoc(doc(db, 'users', profile.uid), { hasSeenTour: true });
+            if (profile.organizationId === 'sandbox-test') {
+              sandboxService.setProfile({ ...profile, hasSeenTour: true });
+            } else {
+              await updateDoc(doc(db, 'users', profile.uid), { hasSeenTour: true });
+            }
           } catch (e) {
             console.error("Erro ao salvar estado do tour:", e);
           }
@@ -652,6 +656,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleAcceptTerms = async () => {
     try {
       const now = new Date().toISOString();
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.setProfile({
+          ...profile,
+          acceptedTermsAt: now
+        });
+        setIsTermsModalOpen(false);
+        showToast('Termos de Uso do Sandbox aceitos com sucesso!', 'success');
+        return;
+      }
+
       await updateDoc(doc(db, 'users', profile.uid), { acceptedTermsAt: now });
       await logAudit('ACCEPT_TERMS', {}, profile.displayName || '', profile.organizationId);
       setIsTermsModalOpen(false);
@@ -1427,8 +1441,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
       ? localHiddenCards.filter(id => id !== cardId)
       : [...localHiddenCards, cardId];
 
-    // Atualização otimista imediata
+    // Otimista
     setLocalHiddenCards(newHiddenCards);
+
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.setProfile({
+        ...profile,
+        dashboardPreferences: {
+          hiddenCards: newHiddenCards
+        }
+      });
+      return;
+    }
 
     try {
       await setDoc(doc(db, 'users', profile.uid), {

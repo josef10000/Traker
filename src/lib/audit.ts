@@ -29,6 +29,11 @@ export const logAudit = async (
   organizationId?: string
 ) => {
   try {
+    if (organizationId === 'sandbox-test') {
+      console.log(`[Sandbox Audit] Ação: ${action}, Detalhes:`, details);
+      return;
+    }
+
     const user = auth.currentUser;
     if (!user) return;
 
