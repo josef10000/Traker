@@ -18,10 +18,11 @@ import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization } from '../../types';
 import { getTeamData, deleteTeam, getTeamMembers, removeTeamMember, regenerateSupervisorInviteToken } from '../../lib/teams';
 import { ToastType } from '../ui/Toast';
+import { sandboxService } from '../../lib/sandboxService';
 
 interface ProfileSettingsProps {
   profile: UserProfile;
-  onUpdate: () => void;
+  onUpdate: (updatedData?: any) => void;
   onBack: () => void;
   onCreateTeam: () => void;
   showToast: (message: string, type?: ToastType) => void;
@@ -41,8 +42,31 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
   const [orgData, setOrgData] = useState<Organization | null>(null);
   const [supervisorInviteToken, setSupervisorInviteToken] = useState<string | null>(null);
 
+  const [sandboxVersion, setSandboxVersion] = useState(0);
+
+  useEffect(() => {
+    if (profile.organizationId === 'sandbox-test') {
+      const unsubscribe = sandboxService.subscribe(() => {
+        setSandboxVersion(prev => prev + 1);
+      });
+      return () => unsubscribe();
+    }
+  }, [profile.organizationId]);
+
   useEffect(() => {
     const loadOrg = async () => {
+      if (profile.organizationId === 'sandbox-test') {
+        setOrgData({
+          id: 'sandbox-test',
+          name: 'Empresa Sandbox',
+          createdAt: new Date().toISOString(),
+          agreementLimit: 999999,
+          supervisorInviteToken: 'sandbox-token-123'
+        });
+        setSupervisorInviteToken('sandbox-token-123');
+        return;
+      }
+
       if (profile.organizationId) {
         try {
           const orgSnap = await getDoc(doc(db, 'organizations', profile.organizationId));
@@ -61,6 +85,21 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
 
   useEffect(() => {
     const loadTeams = async () => {
+      if (profile.organizationId === 'sandbox-test') {
+        let teams: Team[] = [];
+        if (profile.role === 'manager') {
+          teams = sandboxService.getTeams(profile.organizationId);
+        } else if (profile.managedTeams && profile.managedTeams.length > 0) {
+          teams = profile.managedTeams
+            .map(id => sandboxService.getTeam(id))
+            .filter((t): t is Team => t !== null);
+        } else if (profile.role === 'supervisor') {
+          teams = sandboxService.getTeams(profile.organizationId).filter(t => t.supervisorId === profile.uid);
+        }
+        setManagedTeamsData(teams);
+        return;
+      }
+
       if (profile.role === 'manager' && profile.organizationId) {
         try {
           const teamsRef = collection(db, 'teams');
@@ -89,13 +128,29 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
       }
     };
     loadTeams();
-  }, [profile.managedTeams, profile.role, profile.organizationId, profile.uid]);
+  }, [profile.managedTeams, profile.role, profile.organizationId, profile.uid, sandboxVersion]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
     try {
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.setProfile({
+          ...profile,
+          displayName,
+          jobTitle,
+          theme
+        });
+        showToast('Perfil simulado atualizado com sucesso!', 'success');
+        onUpdate({
+          displayName,
+          jobTitle,
+          theme
+        });
+        return;
+      }
+
       const userRef = doc(db, 'users', profile.uid);
       await updateDoc(userRef, {
         displayName,
@@ -103,7 +158,11 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
         theme
       });
       showToast('Perfil atualizado com sucesso!', 'success');
-      onUpdate();
+      onUpdate({
+        displayName,
+        jobTitle,
+        theme
+      });
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
       showToast('Erro ao salvar as alterações.', 'error');
@@ -115,10 +174,18 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
   const handleDeleteTeam = async (teamId: string, teamName: string) => {
     if (confirm(`Tem certeza que deseja excluir a equipe "${teamName}"? Esta ação não pode ser desfeita.`)) {
       try {
+        if (profile.organizationId === 'sandbox-test') {
+          // No Sandbox, apenas deletar em memória
+          sandboxService.deleteTeam(teamId);
+          setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
+          showToast('Equipe excluída do Sandbox com sucesso!', 'success');
+          onUpdate({});
+          return;
+        }
         await deleteTeam(profile.uid, teamId);
         setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
         showToast('Equipe excluída com sucesso!', 'success');
-        onUpdate();
+        onUpdate({});
       } catch (error) {
         showToast('Erro ao excluir equipe.', 'error');
       }
@@ -129,8 +196,13 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
     setSelectedTeamForMembers(team);
     setLoadingMembers(true);
     try {
-      const members = await getTeamMembers(team.id);
-      setTeamMembers(members);
+      if (profile.organizationId === 'sandbox-test') {
+        const members = sandboxService.getUsers(profile.organizationId).filter(u => u.teamId === team.id);
+        setTeamMembers(members);
+      } else {
+        const members = await getTeamMembers(team.id);
+        setTeamMembers(members);
+      }
     } catch (error) {
       showToast('Erro ao carregar membros.', 'error');
     } finally {
@@ -141,6 +213,15 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
   const handleRemoveMember = async (memberUid: string, memberName: string) => {
     if (confirm(`Remover ${memberName} desta equipe?`)) {
       try {
+        if (profile.organizationId === 'sandbox-test') {
+          const user = sandboxService.getUser(memberUid);
+          if (user) {
+            sandboxService.setProfile({ ...user, teamId: '' });
+          }
+          setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
+          showToast('Membro removido no Sandbox com sucesso!', 'success');
+          return;
+        }
         await removeTeamMember(memberUid);
         setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
         showToast('Membro removido com sucesso!', 'success');
@@ -431,6 +512,145 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
                 ))
               )}
             </div>
+          </div>
+        )}
+
+        {/* Seção Exclusiva de Sandbox */}
+        {profile.organizationId === 'sandbox-test' && (
+          <div className="glass-card rounded-3xl p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 bg-sky-500 rounded-full animate-pulse" />
+                  Simulação de Times (Sandbox)
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Mude operadores e supervisores de time em tempo real. Nada será persistido no Firebase.
+                </p>
+              </div>
+            </div>
+
+            {profile.role === 'supervisor' && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold text-slate-300">Operadores das Minhas Equipes</h4>
+                <div className="grid grid-cols-1 gap-3">
+                  {sandboxService.getUsers(profile.organizationId)
+                    .filter(u => u.role === 'member' && u.teamId && managedTeamsData.some(t => t.id === u.teamId))
+                    .map(op => {
+                      const currentTeam = managedTeamsData.find(t => t.id === op.teamId);
+                      return (
+                        <div key={op.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-2xl gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-primary font-bold text-sm">
+                              {op.displayName[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-white">{op.displayName}</p>
+                              <p className="text-xs text-slate-400">{op.email}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase">Equipe Atual:</span>
+                              <span className="text-xs text-sky-400 font-bold bg-sky-500/10 px-2 py-0.5 rounded-lg border border-sky-500/25">
+                                {currentTeam ? currentTeam.name : 'Sem Time'}
+                              </span>
+                            </div>
+                            
+                            <select
+                              value={op.teamId || ''}
+                              onChange={(e) => {
+                                const newTeamId = e.target.value;
+                                const updatedUser = { ...op, teamId: newTeamId };
+                                sandboxService.setProfile(updatedUser);
+                                showToast(`Operador ${op.displayName} movido para ${managedTeamsData.find(t => t.id === newTeamId)?.name}!`, 'success');
+                              }}
+                              className="bg-slate-900 border border-slate-800 text-white rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-primary cursor-pointer hover:border-slate-600 transition-all"
+                            >
+                              {managedTeamsData.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {sandboxService.getUsers(profile.organizationId)
+                    .filter(u => u.role === 'member' && u.teamId && managedTeamsData.some(t => t.id === u.teamId)).length === 0 && (
+                      <p className="text-xs text-slate-500 text-center py-4">Nenhum operador vinculado às suas equipes.</p>
+                    )}
+                </div>
+              </div>
+            )}
+
+            {profile.role === 'manager' && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold text-slate-300">Supervisores da Organização</h4>
+                <div className="grid grid-cols-1 gap-4">
+                  {sandboxService.getUsers(profile.organizationId)
+                    .filter(u => u.role === 'supervisor')
+                    .map(sup => {
+                      const supervisorTeams = managedTeamsData.filter(t => t.supervisorId === sup.uid);
+                      const allTeams = managedTeamsData;
+                      return (
+                        <div key={sup.uid} className="flex flex-col p-5 bg-slate-950 border border-slate-800 rounded-3xl gap-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-primary font-bold text-sm">
+                                {sup.displayName[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-white">{sup.displayName}</p>
+                                <p className="text-xs text-slate-400">{sup.email}</p>
+                              </div>
+                            </div>
+
+                            <div className="text-[11px] text-slate-400">
+                              <span className="font-bold">Equipes sob supervisão: </span>
+                              {supervisorTeams.length > 0 
+                                ? supervisorTeams.map(t => t.name).join(', ') 
+                                : 'Nenhuma'}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Vincular a Equipes:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {allTeams.map(t => {
+                                const isLinked = t.supervisorId === sup.uid;
+                                return (
+                                  <button
+                                    key={t.id}
+                                    type="button"
+                                    onClick={() => {
+                                      const updatedTeam = { ...t, supervisorId: isLinked ? '' : sup.uid };
+                                      sandboxService.setTeam(updatedTeam);
+                                      showToast(
+                                        isLinked 
+                                          ? `Supervisor desvinculado da equipe ${t.name}!` 
+                                          : `Equipe ${t.name} agora está sob supervisão de ${sup.displayName}!`,
+                                        'success'
+                                      );
+                                    }}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                      isLinked 
+                                        ? 'bg-primary/20 text-primary border-primary/30' 
+                                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-white'
+                                    }`}
+                                  >
+                                    {t.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

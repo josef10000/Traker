@@ -407,6 +407,11 @@ class SandboxService {
     }
   }
 
+  public setTeam(team: Team): void {
+    this.teams[team.id] = { ...team };
+    this.notify();
+  }
+
   public setProfile(profile: UserProfile): void {
     this.users[profile.uid] = { ...profile };
     this.notify();
