@@ -255,6 +255,9 @@ class SandboxService {
         'comp-4': Math.min(100, score + 4)
       };
 
+      const qaDateIso = new Date(currentYear, currentMonth, 10 + (opIdx % 10)).toISOString();
+      const qaDateYmd = qaDateIso.split('T')[0];
+
       this.qaEvaluations[qaId] = {
         id: qaId,
         organizationId: orgId,
@@ -265,8 +268,13 @@ class SandboxService {
         protocol: `PROT-${20260000 + qaIdCounter}`,
         grades,
         feedback: `Excelente atendimento. O operador ${op.displayName} demonstrou forte poder de argumentação e seguiu as regras de compliance perfeitamente.`,
-        createdAt: new Date(currentYear, currentMonth, 10 + (opIdx % 10)).toISOString()
+        createdAt: qaDateIso
       };
+
+      if (this.users[op.uid]) {
+        this.users[op.uid].lastQaDate = qaDateYmd;
+        this.users[op.uid].qaCycleStatus = 'evaluated';
+      }
 
       // 7. Gerar PDI para quem teve nota mais baixa (< 82)
       if (score < 82) {

@@ -2003,6 +2003,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   profile={profile}
                   currentTeamMembers={currentTeamMembers}
                   managedTeamsData={managedTeamsData}
+                  agreements={monthAgreements}
+                  attendanceStatuses={attendanceStatuses}
                   showToast={showToast}
                   theme={theme}
                 />

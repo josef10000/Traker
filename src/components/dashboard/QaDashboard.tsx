@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { UserProfile, QaCompetence, QaEvaluation, Pdi, Team, QaSettings } from '../../types';
+import { UserProfile, QaCompetence, QaEvaluation, Pdi, Team, QaSettings, Agreement } from '../../types';
 import { sandboxService } from '../../lib/sandboxService';
 import { 
   Medal as Award, ShieldWarning as ShieldAlert, Plus, Pencil as Edit2, Trash as Trash2, Calendar, 
@@ -10,7 +10,7 @@ import {
   Clock, TrendUp as TrendingUp, Compass, Gear, User, Check, X
 } from '@phosphor-icons/react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
+  BarChart, Bar, Cell, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Legend, RadarChart, PolarGrid, 
   PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, AreaChart, Area
 } from 'recharts';
@@ -19,6 +19,8 @@ interface QaDashboardProps {
   profile: UserProfile;
   currentTeamMembers: UserProfile[];
   managedTeamsData: Team[];
+  agreements: Agreement[];
+  attendanceStatuses: Record<string, 'present' | 'late' | 'absent'>;
   showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   theme?: 'light' | 'dark';
 }
@@ -27,6 +29,8 @@ export const QaDashboard = ({
   profile,
   currentTeamMembers,
   managedTeamsData,
+  agreements,
+  attendanceStatuses,
   showToast,
   theme = 'dark'
 }: QaDashboardProps) => {
@@ -280,19 +284,22 @@ export const QaDashboard = ({
       });
     });
 
-    // Gerar radarData com as duas chaves: "Operador" e "Média Geral"
-    const radarData = competences.map(c => {
+    // Gerar gapsData com "Operador", "Média Geral" e "Diferença" (Gaps e Forças)
+    const gapsData = competences.map(c => {
       const info = competenceSum[c.id];
       const avg = info && info.count > 0 ? info.total / info.count : 0;
 
       const globalInfo = globalCompetenceSum[c.id];
       const globalAvg = globalInfo && globalInfo.count > 0 ? globalInfo.total / globalInfo.count : 0;
 
+      const opAvg = info && info.count > 0 ? avg : 0;
+      const diff = Math.round(opAvg - globalAvg);
+
       return {
         subject: c.name,
-        "Operador": Math.round(avg),
+        "Operador": Math.round(opAvg),
         "Média Geral": Math.round(globalAvg),
-        fullMark: 100
+        "Diferença": diff
       };
     });
 
@@ -319,11 +326,47 @@ export const QaDashboard = ({
     return {
       avgScore,
       totalEvals: filteredEvals.length,
-      radarData,
+      gapsData,
       worstCompetence: worstCompName,
       chartData
     };
   }, [evaluations, competences, selectedOperatorId]);
+
+  // Produtividade do Operador Selecionado
+  const opPerformance = useMemo(() => {
+    if (selectedOperatorId === 'all') return null;
+
+    const opAgreements = agreements.filter(a => a.operatorId === selectedOperatorId);
+    
+    // Valor total do mês (pagos + aguardando)
+    const monthVal = opAgreements
+      .filter(a => a.status === 'paid' || a.status === 'waiting')
+      .reduce((acc, curr) => acc + curr.value, 0);
+
+    // Valor total semanal
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const weekVal = opAgreements
+      .filter(a => {
+        const createDate = new Date(a.createdAt);
+        return createDate >= sevenDaysAgo && (a.status === 'paid' || a.status === 'waiting');
+      })
+      .reduce((acc, curr) => acc + curr.value, 0);
+
+    // Média de acordos por dia
+    const todayDay = new Date().getDate() || 1;
+    const avgCount = opAgreements.length / todayDay;
+
+    // Frequência
+    const todayStatus = attendanceStatuses[selectedOperatorId] || 'present';
+
+    return {
+      monthVal,
+      weekVal,
+      avgCount,
+      todayStatus
+    };
+  }, [agreements, selectedOperatorId, attendanceStatuses]);
 
   // Alerta de PDIs Vencidos para Supervisores
   const expiredPdisCount = useMemo(() => {
@@ -866,6 +909,57 @@ export const QaDashboard = ({
                   </div>
                 )}
 
+                {/* Card Único de Desempenho e Frequência (RH) */}
+                {selectedOperatorId !== 'all' && opPerformance && (
+                  <div className={`p-6 rounded-3xl border ${
+                    theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
+                    <h5 className={`text-xs font-black uppercase tracking-widest mb-4 ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+                    }`}>
+                      Desempenho e Frequência do Operador
+                    </h5>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-550 dark:text-slate-500 font-bold block uppercase tracking-wider">Faturamento (Mês)</span>
+                        <p className={`text-base font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                          R$ {opPerformance.monthVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-550 dark:text-slate-500 font-bold block uppercase tracking-wider">Faturamento (7 dias)</span>
+                        <p className={`text-base font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                          R$ {opPerformance.weekVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-550 dark:text-slate-500 font-bold block uppercase tracking-wider">Média de Acordos/Dia</span>
+                        <p className={`text-base font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                          {opPerformance.avgCount.toFixed(1)} acordos
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-550 dark:text-slate-500 font-bold block uppercase tracking-wider">Frequência Hoje</span>
+                        <div>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider mt-1 border ${
+                            opPerformance.todayStatus === 'present'
+                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                              : opPerformance.todayStatus === 'late'
+                                ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                          }`}>
+                            {opPerformance.todayStatus === 'present' ? 'Presença' : opPerformance.todayStatus === 'late' ? 'Atraso' : 'Falta'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* KPIs de Qualidade */}
                   <div className="md:col-span-1 space-y-4 flex flex-col justify-between">
@@ -912,37 +1006,79 @@ export const QaDashboard = ({
                     </div>
                   </div>
 
-                  {/* Gráfico de Radar de Competências */}
-                  <div className={`p-6 rounded-3xl border min-h-[300px] md:col-span-2 ${
+                  {/* Gráfico de Análise de Competências (RH Gaps e Forças) */}
+                  <div className={`p-6 rounded-3xl border min-h-[340px] md:col-span-2 ${
                     theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
                   }`}>
-                    <h4 className={`text-sm font-bold uppercase tracking-tight flex items-center gap-2 mb-4 ${
+                    <h4 className={`text-sm font-bold uppercase tracking-tight flex items-center gap-2 mb-2 ${
                       theme === 'dark' ? 'text-white' : 'text-slate-900'
                     }`}>
                       <Compass size={16} className="text-sky-500 dark:text-sky-400" />
-                      Evolução por Competência (Radar)
+                      {selectedOperatorId === 'all'
+                        ? 'Médias Gerais por Competência'
+                        : 'Análise de RH: Forças e Oportunidades (Gaps)'}
                     </h4>
+                    <p className={`text-[10px] mb-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {selectedOperatorId === 'all'
+                        ? 'Visão consolidada das notas médias do time em cada indicador de desempenho.'
+                        : 'Mostra os desvios em relação à média geral. Barras verdes indicam forças; vermelhas indicam gaps.'}
+                    </p>
                     
-                    {stats.radarData.length === 0 ? (
+                    {stats.gapsData.length === 0 ? (
                       <div className="text-center py-16 text-slate-500 text-xs italic">Nenhuma avaliação realizada para desenhar gráfico.</div>
                     ) : (
                       <div className="w-full h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={stats.radarData}>
-                            <PolarGrid stroke={theme === 'dark' ? "#334155" : "#e2e8f0"} />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 10, fontWeight: 'bold' }} />
-                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: theme === 'dark' ? '#475569' : '#94a3b8' }} />
-                            {selectedOperatorId !== 'all' ? (
-                              <>
-                                <Radar name="Média Geral" dataKey="Média Geral" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.05} />
-                                <Radar name="Operador" dataKey="Operador" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
-                              </>
-                            ) : (
-                              <Radar name="Média Geral" dataKey="Média Geral" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
+                          <BarChart
+                            layout="vertical"
+                            data={stats.gapsData}
+                            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1e293b' : '#e2e8f0'} />
+                            <XAxis
+                              type="number"
+                              domain={selectedOperatorId === 'all' ? [0, 100] : [-50, 50]}
+                              stroke={theme === 'dark' ? '#64748b' : '#94a3b8'}
+                              style={{ fontSize: 10, fontWeight: 'bold' }}
+                            />
+                            <YAxis
+                              type="category"
+                              dataKey="subject"
+                              stroke={theme === 'dark' ? '#64748b' : '#94a3b8'}
+                              style={{ fontSize: 9, fontWeight: 'bold' }}
+                              width={90}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: theme === 'dark' ? '#0f172a' : '#fff',
+                                borderColor: theme === 'dark' ? '#334155' : '#e2e8f0',
+                                color: theme === 'dark' ? '#f8fafc' : '#0f172a'
+                              }}
+                            />
+                            {selectedOperatorId !== 'all' && (
+                              <ReferenceLine x={0} stroke={theme === 'dark' ? '#475569' : '#94a3b8'} strokeWidth={1.5} />
                             )}
-                            <Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff', borderColor: theme === 'dark' ? '#1e293b' : '#e2e8f0', color: theme === 'dark' ? '#f8fafc' : '#0f172a' }} />
-                            <Legend wrapperStyle={{ fontSize: 10, fontWeight: 'bold', paddingTop: 10 }} />
-                          </RadarChart>
+                            <Bar
+                              dataKey={selectedOperatorId === 'all' ? 'Média Geral' : 'Diferença'}
+                              radius={[0, 8, 8, 0]}
+                            >
+                              {selectedOperatorId === 'all' ? (
+                                stats.gapsData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill="#0ea5e9" />
+                                ))
+                              ) : (
+                                stats.gapsData.map((entry, index) => {
+                                  const isPositive = entry.Diferença >= 0;
+                                  return (
+                                    <Cell
+                                      key={`cell-${index}`}
+                                      fill={isPositive ? '#10b981' : '#f43f5e'}
+                                    />
+                                  );
+                                })
+                              )}
+                            </Bar>
+                          </BarChart>
                         </ResponsiveContainer>
                       </div>
                     )}
