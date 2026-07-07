@@ -333,3 +333,83 @@ export const regenerateSupervisorInviteToken = async (orgId: string): Promise<st
   });
   return token;
 };
+
+export const joinOrganizationAsCoordinator = async (uid: string, userEmail: string, inviteToken: string): Promise<string> => {
+  const orgsRef = collection(db, 'organizations');
+  const q = query(orgsRef, where('coordinatorInviteToken', '==', inviteToken));
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+    throw new Error('Código de convite de Coordenador inválido.');
+  }
+
+  const orgDoc = querySnapshot.docs[0];
+  const orgData = orgDoc.data() as Organization;
+
+  if (orgData.status === 'inactive') {
+    throw new Error('Esta empresa está inativa.');
+  }
+
+  const now = new Date().toISOString();
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid,
+    email: userEmail,
+    displayName: userEmail.split('@')[0],
+    role: 'coordinator',
+    organizationId: orgData.id,
+    createdAt: now
+  }, { merge: true });
+
+  await updateDoc(orgDoc.ref, { coordinatorInviteToken: null });
+
+  return orgData.name;
+};
+
+export const joinOrganizationAsMonitor = async (uid: string, userEmail: string, inviteToken: string): Promise<string> => {
+  const orgsRef = collection(db, 'organizations');
+  const q = query(orgsRef, where('monitorInviteToken', '==', inviteToken));
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+    throw new Error('Código de convite de Monitor/QA inválido.');
+  }
+
+  const orgDoc = querySnapshot.docs[0];
+  const orgData = orgDoc.data() as Organization;
+
+  if (orgData.status === 'inactive') {
+    throw new Error('Esta empresa está inativa.');
+  }
+
+  const now = new Date().toISOString();
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid,
+    email: userEmail,
+    displayName: userEmail.split('@')[0],
+    role: 'monitor',
+    organizationId: orgData.id,
+    createdAt: now
+  }, { merge: true });
+
+  await updateDoc(orgDoc.ref, { monitorInviteToken: null });
+
+  return orgData.name;
+};
+
+export const regenerateCoordinatorInviteToken = async (orgId: string): Promise<string> => {
+  const token = `COORD-${generateSecureToken(6)}`;
+  await updateDoc(doc(db, 'organizations', orgId), {
+    coordinatorInviteToken: token
+  });
+  return token;
+};
+
+export const regenerateMonitorInviteToken = async (orgId: string): Promise<string> => {
+  const token = `MON-${generateSecureToken(6)}`;
+  await updateDoc(doc(db, 'organizations', orgId), {
+    monitorInviteToken: token
+  });
+  return token;
+};

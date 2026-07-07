@@ -44,6 +44,8 @@ export interface Organization {
   crmPublicToken?: string;
   managerInviteToken?: string | null;
   supervisorInviteToken?: string | null;
+  coordinatorInviteToken?: string | null;
+  monitorInviteToken?: string | null;
   createdAt: string;
 }
 

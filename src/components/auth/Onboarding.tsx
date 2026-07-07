@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { UserPlus, ArrowRight, CircleNotch, Building, Shield } from '@phosphor-icons/react';
-import { createTeam, joinTeam, createOrganization, joinOrganizationAsManager, joinOrganizationAsSupervisor } from '../../lib/teams';
+import { createTeam, joinTeam, createOrganization, joinOrganizationAsManager, joinOrganizationAsSupervisor, joinOrganizationAsCoordinator, joinOrganizationAsMonitor } from '../../lib/teams';
 import { User } from 'firebase/auth';
 import { UserProfile, UserRole, Organization, Team } from '../../types';
 import { collection, query, where, getDocs, limit, doc, setDoc } from 'firebase/firestore';
@@ -124,6 +124,14 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
       if (token.startsWith('MGR-')) {
         const orgName = await joinOrganizationAsManager(user.uid, user.email!, token);
         if (showToast) showToast(`Você ingressou como Gerente na empresa ${orgName}!`, 'success');
+        onComplete();
+      } else if (token.startsWith('COORD-')) {
+        const orgName = await joinOrganizationAsCoordinator(user.uid, user.email!, token);
+        if (showToast) showToast(`Você ingressou como Coordenador na empresa ${orgName}!`, 'success');
+        onComplete();
+      } else if (token.startsWith('MON-')) {
+        const orgName = await joinOrganizationAsMonitor(user.uid, user.email!, token);
+        if (showToast) showToast(`Você ingressou como Monitor/QA na empresa ${orgName}!`, 'success');
         onComplete();
       } else if (token.startsWith('SUP-')) {
         // Buscar organização vinculada a este token de supervisor

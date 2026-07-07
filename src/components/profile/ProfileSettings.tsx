@@ -16,7 +16,7 @@ import {
 import { doc, updateDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization } from '../../types';
-import { getTeamData, deleteTeam, getTeamMembers, removeTeamMember, regenerateSupervisorInviteToken } from '../../lib/teams';
+import { getTeamData, deleteTeam, getTeamMembers, removeTeamMember, regenerateSupervisorInviteToken, regenerateCoordinatorInviteToken, regenerateMonitorInviteToken } from '../../lib/teams';
 import { ToastType } from '../ui/Toast';
 import { sandboxService } from '../../lib/sandboxService';
 
@@ -41,6 +41,8 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
 
   const [orgData, setOrgData] = useState<Organization | null>(null);
   const [supervisorInviteToken, setSupervisorInviteToken] = useState<string | null>(null);
+  const [coordinatorInviteToken, setCoordinatorInviteToken] = useState<string | null>(null);
+  const [monitorInviteToken, setMonitorInviteToken] = useState<string | null>(null);
 
   const [sandboxVersion, setSandboxVersion] = useState(0);
 
@@ -61,9 +63,13 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
           name: 'Empresa Sandbox',
           createdAt: new Date().toISOString(),
           agreementLimit: 999999,
-          supervisorInviteToken: 'sandbox-token-123'
-        });
+          supervisorInviteToken: 'sandbox-token-123',
+          coordinatorInviteToken: 'sandbox-coord-123',
+          monitorInviteToken: 'sandbox-mon-123'
+        } as any);
         setSupervisorInviteToken('sandbox-token-123');
+        setCoordinatorInviteToken('sandbox-coord-123');
+        setMonitorInviteToken('sandbox-mon-123');
         return;
       }
 
@@ -74,6 +80,8 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
             const org = orgSnap.data() as Organization;
             setOrgData(org);
             setSupervisorInviteToken(org.supervisorInviteToken || null);
+            setCoordinatorInviteToken(org.coordinatorInviteToken || null);
+            setMonitorInviteToken(org.monitorInviteToken || null);
           }
         } catch (error) {
           console.error('Erro ao carregar organização:', error);
@@ -87,7 +95,7 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
     const loadTeams = async () => {
       if (profile.organizationId === 'sandbox-test') {
         let teams: Team[] = [];
-        if (profile.role === 'manager') {
+        if (profile.role === 'manager' || profile.role === 'coordinator') {
           teams = sandboxService.getTeams(profile.organizationId);
         } else if (profile.managedTeams && profile.managedTeams.length > 0) {
           teams = profile.managedTeams
@@ -100,7 +108,7 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
         return;
       }
 
-      if (profile.role === 'manager' && profile.organizationId) {
+      if ((profile.role === 'manager' || profile.role === 'coordinator') && profile.organizationId) {
         try {
           const teamsRef = collection(db, 'teams');
           const q = query(teamsRef, where('organizationId', '==', profile.organizationId));
@@ -398,64 +406,150 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
         </div>
 
         {/* Gestão de Equipes */}
-        {(profile.role === 'supervisor' || profile.role === 'manager') && (
+        {(profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator') && (
           <div className="glass-card rounded-3xl p-8 shadow-2xl">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="text-xl font-bold text-white">
-                  {profile.role === 'manager' ? 'Equipes da Empresa' : 'Minhas Equipes'}
+                  {(profile.role === 'manager' || profile.role === 'coordinator') ? 'Equipes da Empresa' : 'Minhas Equipes'}
                 </h3>
-                {profile.role === 'manager' && (
-                  <p className="text-xs text-slate-400 mt-1">Todas as equipes cadastradas sob o tenant do gerente.</p>
+                {(profile.role === 'manager' || profile.role === 'coordinator') && (
+                  <p className="text-xs text-slate-400 mt-1">Todas as equipes cadastradas sob o tenant da organização.</p>
                 )}
               </div>
-              <button 
-                onClick={onCreateTeam}
-                className="p-2 text-primary/80 hover:bg-primary/10 rounded-xl transition-all"
-                title="Nova Equipe"
-              >
-                <Plus size={24} />
-              </button>
+              {(profile.role === 'manager' || profile.role === 'coordinator') && (
+                <button 
+                  onClick={onCreateTeam}
+                  className="p-2 text-primary/80 hover:bg-primary/10 rounded-xl transition-all"
+                  title="Nova Equipe"
+                >
+                  <Plus size={24} />
+                </button>
+              )}
             </div>
 
-            {profile.role === 'manager' && (
-              <div className="mb-6 p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h4 className="text-sm font-bold text-white">Convite de Supervisor</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">Use este código para convidar um novo supervisor para gerenciar equipes.</p>
-                </div>
-                {supervisorInviteToken ? (
-                  <div className="flex items-center gap-1.5 self-stretch sm:self-auto justify-between bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
-                    <span className="text-sm text-primary font-bold font-mono">{supervisorInviteToken}</span>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(supervisorInviteToken);
-                        showToast('Token de supervisor copiado!', 'success');
-                      }}
-                      className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
-                      title="Copiar Token"
-                    >
-                      <Copy size={14} />
-                    </button>
+            {(profile.role === 'manager' || profile.role === 'coordinator') && (
+              <div className="space-y-4 mb-8">
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Convites de Nível Organizacional</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Convite Supervisor */}
+                  <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col justify-between gap-3">
+                    <div>
+                      <h5 className="text-xs font-bold text-white uppercase tracking-wider">Supervisor</h5>
+                      <p className="text-[10px] text-slate-500 mt-1">Convite para gerenciar equipes operacionais.</p>
+                    </div>
+                    {supervisorInviteToken ? (
+                      <div className="flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 mt-2">
+                        <span className="text-xs text-primary font-bold font-mono">{supervisorInviteToken}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(supervisorInviteToken);
+                            showToast('Código de Supervisor copiado!', 'success');
+                          }}
+                          className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          if (profile.organizationId) {
+                            try {
+                              const token = await regenerateSupervisorInviteToken(profile.organizationId);
+                              setSupervisorInviteToken(token);
+                              showToast('Código de Supervisor gerado!', 'success');
+                            } catch (e) {
+                              showToast('Erro ao gerar código', 'error');
+                            }
+                          }
+                        }}
+                        className="w-full py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] rounded-lg transition-all uppercase tracking-wider cursor-pointer"
+                      >
+                        Gerar Código
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <button
-                    onClick={async () => {
-                      if (profile.organizationId) {
-                        try {
-                          const token = await regenerateSupervisorInviteToken(profile.organizationId);
-                          setSupervisorInviteToken(token);
-                          showToast('Código de Supervisor gerado com sucesso!', 'success');
-                        } catch (e) {
-                          showToast('Erro ao gerar código', 'error');
-                        }
-                      }
-                    }}
-                    className="px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary font-bold text-xs rounded-xl transition-all"
-                  >
-                    Gerar Convite de Supervisor
-                  </button>
-                )}
+
+                  {/* Convite Coordenador */}
+                  <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col justify-between gap-3">
+                    <div>
+                      <h5 className="text-xs font-bold text-white uppercase tracking-wider">Coordenador</h5>
+                      <p className="text-[10px] text-slate-500 mt-1">Acesso completo e criação de equipes.</p>
+                    </div>
+                    {coordinatorInviteToken ? (
+                      <div className="flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 mt-2">
+                        <span className="text-xs text-primary font-bold font-mono">{coordinatorInviteToken}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(coordinatorInviteToken);
+                            showToast('Código de Coordenador copiado!', 'success');
+                          }}
+                          className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          if (profile.organizationId) {
+                            try {
+                              const token = await regenerateCoordinatorInviteToken(profile.organizationId);
+                              setCoordinatorInviteToken(token);
+                              showToast('Código de Coordenador gerado!', 'success');
+                            } catch (e) {
+                              showToast('Erro ao gerar código', 'error');
+                            }
+                          }
+                        }}
+                        className="w-full py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] rounded-lg transition-all uppercase tracking-wider cursor-pointer"
+                      >
+                        Gerar Código
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Convite Monitor */}
+                  <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col justify-between gap-3">
+                    <div>
+                      <h5 className="text-xs font-bold text-white uppercase tracking-wider">Monitor (QA)</h5>
+                      <p className="text-[10px] text-slate-500 mt-1">Acesso para monitorias e PDIs.</p>
+                    </div>
+                    {monitorInviteToken ? (
+                      <div className="flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 mt-2">
+                        <span className="text-xs text-primary font-bold font-mono">{monitorInviteToken}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(monitorInviteToken);
+                            showToast('Código de Monitor copiado!', 'success');
+                          }}
+                          className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          if (profile.organizationId) {
+                            try {
+                              const token = await regenerateMonitorInviteToken(profile.organizationId);
+                              setMonitorInviteToken(token);
+                              showToast('Código de Monitor gerado!', 'success');
+                            } catch (e) {
+                              showToast('Erro ao gerar código', 'error');
+                            }
+                          }
+                        }}
+                        className="w-full py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] rounded-lg transition-all uppercase tracking-wider cursor-pointer"
+                      >
+                        Gerar Código
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
