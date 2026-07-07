@@ -62,6 +62,23 @@ export const useAgreements = ({
 
   const isSandbox = organizationId === 'sandbox-test';
 
+  // Controle de refresh manual e auto-refresh
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const forceServerRefreshRef = useRef(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [firstVisible, setFirstVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [pageHistory, setPageHistory] = useState<(QueryDocumentSnapshot<DocumentData> | null)[]>([null]);
+  
+  const itemsPerPage = 8;
+  const isMounted = useRef(true);
+  const shouldForceServerForPage = useRef(false);
+
   // Sincronização de mudanças do sandboxService
   useEffect(() => {
     if (!isSandbox) return;
@@ -158,23 +175,6 @@ export const useAgreements = ({
     operatorId, 
     currentPage
   ]);
-
-  // Controle de refresh manual e auto-refresh
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-  const forceServerRefreshRef = useRef(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Paginação
-  const [currentPage, setCurrentPage] = useState(1);
-  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const [firstVisible, setFirstVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [pageHistory, setPageHistory] = useState<(QueryDocumentSnapshot<DocumentData> | null)[]>([null]);
-  
-  const itemsPerPage = 8;
-  const isMounted = useRef(true);
-  const shouldForceServerForPage = useRef(false);
 
   useEffect(() => {
     isMounted.current = true;
