@@ -190,38 +190,46 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                           
                           {agreement.status === AgreementStatus.WAITING && (
                             <div 
-                              className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
+                              className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border transition-all ${
                                 isMorning 
-                                  ? theme === 'dark' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'bg-sky-50 text-sky-600 border-sky-200'
-                                  : theme === 'dark' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-amber-50 text-amber-600 border-amber-200'
+                                  ? theme === 'dark' ? 'bg-sky-500/5 text-sky-400 border-sky-500/20 shadow-sm' : 'bg-sky-50 text-sky-600 border-sky-200'
+                                  : theme === 'dark' ? 'bg-amber-500/5 text-amber-400 border-amber-500/20 shadow-sm' : 'bg-amber-50 text-amber-600 border-amber-200'
                               }`}
                               title={isMorning ? 'Registrado no ciclo da manhã (Verificação Hoje)' : 'Registrado no ciclo da tarde (Verificação Amanhã)'}
                             >
-                              {isMorning ? <Sun size={8} /> : <Moon size={8} />}
+                              {isMorning ? <Sun size={9} /> : <Moon size={9} />}
                               {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
                             </div>
                           )}
                           {isCheckedToday && (
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-sky-500 text-white border border-sky-400">
-                              <Check size={8} strokeWidth={4} />
+                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border shadow-sm ${
+                              theme === 'dark' ? 'bg-sky-500/10 text-sky-300 border-sky-500/25' : 'bg-sky-500 text-white border-sky-400'
+                            }`}>
+                              <Check size={9} strokeWidth={4} />
                               Conferido
                             </div>
                           )}
                           {isPriorityOntem && (
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-amber-500 text-white border border-amber-400">
-                              <Zap size={8} fill="currentColor" />
+                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border shadow-sm ${
+                              theme === 'dark' ? 'bg-amber-500/15 text-amber-300 border-amber-500/25' : 'bg-amber-500 text-white border-amber-400'
+                            }`}>
+                              <Zap size={9} fill="currentColor" />
                               Prioridade Ontem
                             </div>
                           )}
                           {isOverdue && !isCheckedToday && (
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                              <AlertTriangle size={8} />
+                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border shadow-sm ${
+                              theme === 'dark' ? 'bg-rose-500/5 text-rose-450 border-rose-500/20' : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                            }`}>
+                              <AlertTriangle size={9} />
                               Vencimento Expirado
                             </div>
                           )}
                           {isOverdue && isCheckedToday && (
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter bg-rose-600 text-white border border-rose-500">
-                              <AlertTriangle size={8} />
+                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border shadow-sm ${
+                              theme === 'dark' ? 'bg-rose-500/15 text-rose-350 border-rose-500/25' : 'bg-rose-600 text-white border-rose-500'
+                            }`}>
+                              <AlertTriangle size={9} />
                               Confirmado: Quebrado
                             </div>
                           )}
@@ -295,7 +303,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             )}
                             <button 
                               onClick={() => handleEfetivar(agreement.id)}
-                              className="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 cursor-pointer"
+                              className="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500 hover:text-white transition-all active:scale-[0.95] border border-emerald-500/20 cursor-pointer"
                               title="Efetivar Pagamento"
                             >
                               <Check size={18} />
@@ -303,9 +311,11 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             
                             <button 
                               onClick={() => handleToggleChecked(agreement.id, agreement.lastCheckedAt)}
-                              className={`p-2 rounded-lg transition-all border cursor-pointer ${
+                              className={`p-2 rounded-lg transition-all active:scale-[0.95] border cursor-pointer ${
                                 isCheckedToday 
-                                  ? 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-550/20' 
+                                  ? theme === 'dark' 
+                                    ? 'bg-sky-500/20 text-sky-450 border-sky-500/40 shadow-sm' 
+                                    : 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-550/20' 
                                   : theme === 'dark' 
                                     ? 'bg-slate-800 border-transparent text-slate-400 hover:text-sky-400 hover:border-sky-500/50' 
                                     : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-sky-500 hover:bg-slate-200'
@@ -325,7 +335,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 setEditingAgreement(agreement);
                                 setIsModalOpen(true);
                               }}
-                              className={`p-2 rounded-lg transition-all cursor-pointer ${
+                              className={`p-2 rounded-lg transition-all active:scale-[0.95] cursor-pointer ${
                                 theme === 'dark' ? 'text-slate-500 hover:text-sky-400 hover:bg-white/5' : 'text-slate-400 hover:text-sky-500 hover:bg-sky-50'
                               }`}
                               title="Editar"
@@ -334,7 +344,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             </button>
                             <button 
                               onClick={() => handleDelete(agreement.id)}
-                              className={`p-2 rounded-lg transition-all cursor-pointer ${
+                              className={`p-2 rounded-lg transition-all active:scale-[0.95] cursor-pointer ${
                                 theme === 'dark' ? 'text-slate-500 hover:text-rose-400 hover:bg-white/5' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'
                               }`}
                               title="Excluir"
@@ -366,10 +376,10 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
-              className={`p-2 rounded-lg border text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+              className={`p-2 rounded-lg border text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
                 theme === 'dark' 
-                  ? 'bg-white/5 border-white/5 text-slate-400 hover:text-white hover:bg-white/10' 
-                  : 'bg-white border-slate-200 text-slate-655 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-white/5 border-white/10 text-slate-450 hover:text-white hover:bg-white/10' 
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               Anterior
@@ -377,10 +387,10 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
             <button
               onClick={nextPage}
               disabled={currentPage === totalPages}
-              className={`p-2 rounded-lg border text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+              className={`p-2 rounded-lg border text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
                 theme === 'dark' 
-                  ? 'bg-white/5 border-white/5 text-slate-400 hover:text-white hover:bg-white/10' 
-                  : 'bg-white border-slate-200 text-slate-655 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-white/5 border-white/10 text-slate-450 hover:text-white hover:bg-white/10' 
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               Próximo

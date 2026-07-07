@@ -155,7 +155,7 @@ export const DashboardHeader = ({
                 showToast('Digite um CPF com 11 dígitos.', 'error');
               }
             }}
-            className={`relative flex items-center px-3 py-1.5 rounded-xl border focus-within:border-sky-500/50 transition-all shrink-0 max-w-[160px] ${
+            className={`relative flex items-center px-3 py-1.5 rounded-xl border focus-within:border-sky-500/50 focus-within:ring-2 focus-within:ring-sky-500/10 transition-all shrink-0 max-w-[160px] ${
               theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
             }`}
           >
@@ -184,7 +184,7 @@ export const DashboardHeader = ({
           <button
             onClick={onRefreshData}
             disabled={isRefreshing}
-            className={`p-2 rounded-xl transition-all border shrink-0 cursor-pointer ${
+            className={`p-2 rounded-xl transition-all border shrink-0 cursor-pointer active:scale-95 ${
               isRefreshing
                 ? 'text-sky-500 bg-sky-500/10 border-sky-500/20 cursor-wait'
                 : `border-transparent ${theme === 'dark' ? 'text-slate-500 hover:text-sky-400 hover:bg-sky-500/10' : 'text-slate-400 hover:text-sky-600 hover:bg-sky-50'}`
@@ -208,7 +208,7 @@ export const DashboardHeader = ({
                 e.stopPropagation();
                 setIsToolsOpen(!isToolsOpen);
               }}
-              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+              className={`p-2 rounded-xl border transition-all cursor-pointer active:scale-95 ${
                 isToolsOpen
                   ? 'bg-sky-500/15 border-sky-500/30 text-sky-500'
                   : `${theme === 'dark' ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-slate-100 border-slate-200 text-slate-655 hover:text-slate-900 hover:bg-slate-200'}`
@@ -222,9 +222,10 @@ export const DashboardHeader = ({
             <AnimatePresence>
               {isToolsOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className={`absolute right-0 mt-2 w-56 backdrop-blur-2xl border rounded-2xl p-2 shadow-2xl z-50 space-y-1 ${
                     theme === 'dark' ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
                   }`}
@@ -243,7 +244,7 @@ export const DashboardHeader = ({
                         setIsImportCsvOpen(true);
                       }}
                       disabled={selectedTeamId === 'all'}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
                         theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
                       }`}
                     >
@@ -260,7 +261,7 @@ export const DashboardHeader = ({
                         setIsReconciliationModalOpen(true);
                       }}
                       disabled={selectedTeamId === 'all'}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
                         theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-955'
                       }`}
                     >
@@ -281,7 +282,7 @@ export const DashboardHeader = ({
                           showToast(`Código de convite para ${currentTeam.name} copiado!`, 'success');
                         }
                       }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
                         theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
                       }`}
                     >
@@ -297,7 +298,7 @@ export const DashboardHeader = ({
                       setIsToolsOpen(false);
                       window.print();
                     }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-colors cursor-pointer border-t pt-2 mt-1 ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] cursor-pointer border-t pt-2 mt-1 ${
                       theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white border-white/5' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950 border-slate-100'
                     }`}
                   >
@@ -312,7 +313,7 @@ export const DashboardHeader = ({
           {/* Perfil Menu */}
           <div 
             id="user-profile-menu"
-            className={`flex items-center gap-2.5 px-3 py-1.5 border rounded-xl cursor-pointer transition-all group shrink-0 ${
+            className={`flex items-center gap-2.5 px-3 py-1.5 border rounded-xl cursor-pointer transition-all group shrink-0 active:scale-[0.98] ${
               theme === 'dark' ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
             }`}
             onClick={onSettingsClick}
@@ -337,7 +338,7 @@ export const DashboardHeader = ({
           {/* Sair */}
           <button 
             onClick={() => setIsConfirmLogoutOpen(true)}
-            className={`p-2.5 rounded-xl transition-all shrink-0 cursor-pointer hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 ${
+            className={`p-2.5 rounded-xl transition-all shrink-0 cursor-pointer active:scale-95 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 ${
               theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
             }`}
             title="Sair do Sistema"
@@ -349,7 +350,7 @@ export const DashboardHeader = ({
               id="new-agreement-btn"
               onClick={() => setIsModalOpen(true)}
               disabled={selectedTeamId === 'all'}
-              className={`flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 disabled:cursor-not-allowed shrink-0 text-xs cursor-pointer ${
+              className={`flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all active:scale-[0.97] disabled:cursor-not-allowed shrink-0 text-xs cursor-pointer ${
                 theme === 'dark' 
                   ? 'shadow-lg shadow-sky-500/20 disabled:bg-slate-800 disabled:text-slate-500' 
                   : 'shadow-md shadow-sky-550/10 disabled:bg-slate-100 disabled:text-slate-400'

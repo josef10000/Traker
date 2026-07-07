@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { 
   ChartLine, 
   ArrowUUpLeft as RecoveryIcon, 
@@ -141,7 +142,7 @@ export const Sidebar = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left transition-all relative group cursor-pointer ${
+                className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left transition-all relative group cursor-pointer active:scale-[0.98] ${
                   isActive
                     ? theme === 'dark'
                       ? 'bg-sky-500/10 text-sky-400 font-bold border border-sky-500/20'
@@ -157,7 +158,11 @@ export const Sidebar = ({
                 
                 {/* Linha vertical ativa */}
                 {isActive && (
-                  <div className="absolute left-0 top-3 bottom-3 w-1 bg-sky-500 rounded-r-md" />
+                  <motion.div 
+                    layoutId="activeTabIndicator"
+                    className="absolute left-0 top-3 bottom-3 w-1 bg-sky-500 rounded-r-md" 
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
                 )}
               </button>
             );
@@ -196,7 +201,7 @@ export const Sidebar = ({
           
           <button
             onClick={onLogoutClick}
-            className={`p-2 rounded-xl transition-all cursor-pointer ${
+            className={`p-2 rounded-xl transition-all cursor-pointer active:scale-95 ${
               theme === 'dark' 
                 ? 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10' 
                 : 'text-slate-500 hover:text-rose-500 hover:bg-rose-500/5'
