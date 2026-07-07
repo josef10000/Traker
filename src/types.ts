@@ -62,7 +62,17 @@ export interface UserProfile {
   dashboardPreferences?: {
     hiddenCards: string[];
   };
+  lastQaDate?: string;
+  nextQaDate?: string;
+  qaCycleStatus?: 'pending' | 'evaluated';
   createdAt: string;
+}
+
+export interface QaSettings {
+  id: string;
+  organizationId: string;
+  evaluationCycleDays: number;
+  pdiObservationDays: number;
 }
 
 export interface Team {

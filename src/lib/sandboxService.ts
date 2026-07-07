@@ -11,7 +11,8 @@ import {
   QaEvaluation, 
   Pdi,
   BackOfficeImport,
-  BackOfficeClient
+  BackOfficeClient,
+  QaSettings
 } from '../types';
 
 // Tipo para listeners reativos
@@ -30,6 +31,7 @@ class SandboxService {
   private pdis: Record<string, Pdi> = {};
   private backofficeImports: Record<string, BackOfficeImport> = {};
   private backofficeClients: Record<string, BackOfficeClient> = {};
+  private qaSettings: Record<string, QaSettings> = {};
 
   constructor() {
     this.resetSandbox();
@@ -322,6 +324,7 @@ class SandboxService {
       };
     });
 
+    this.qaSettings = {};
     this.notify();
   }
 
@@ -378,6 +381,18 @@ class SandboxService {
 
   public getPdis(orgId: string): Pdi[] {
     return Object.values(this.pdis).filter(p => p.organizationId === orgId);
+  }
+
+  public getQaSettings(orgId: string): QaSettings {
+    if (!this.qaSettings[orgId]) {
+      this.qaSettings[orgId] = {
+        id: `settings-${orgId}`,
+        organizationId: orgId,
+        evaluationCycleDays: 30,
+        pdiObservationDays: 15
+      };
+    }
+    return this.qaSettings[orgId];
   }
 
   public getBackofficeImports(orgId: string): BackOfficeImport[] {
@@ -463,6 +478,27 @@ class SandboxService {
   public updatePdiStatus(id: string, status: 'pending' | 'completed' | 'expired'): void {
     if (this.pdis[id]) {
       this.pdis[id] = { ...this.pdis[id], status };
+      this.notify();
+    }
+  }
+
+  public updateQaSettings(orgId: string, settings: Partial<QaSettings>): void {
+    const current = this.getQaSettings(orgId);
+    this.qaSettings[orgId] = { ...current, ...settings };
+    this.notify();
+  }
+
+  public updateOperatorQaDates(uid: string, nextQaDate?: string, qaCycleStatus?: 'pending' | 'evaluated', lastQaDate?: string): void {
+    if (this.users[uid]) {
+      if (nextQaDate !== undefined) {
+        this.users[uid].nextQaDate = nextQaDate;
+      }
+      if (qaCycleStatus !== undefined) {
+        this.users[uid].qaCycleStatus = qaCycleStatus;
+      }
+      if (lastQaDate !== undefined) {
+        this.users[uid].lastQaDate = lastQaDate;
+      }
       this.notify();
     }
   }

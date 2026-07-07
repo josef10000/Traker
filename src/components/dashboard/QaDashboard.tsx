@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { UserProfile, QaCompetence, QaEvaluation, Pdi, Team } from '../../types';
+import { UserProfile, QaCompetence, QaEvaluation, Pdi, Team, QaSettings } from '../../types';
 import { sandboxService } from '../../lib/sandboxService';
 import { 
   Medal as Award, ShieldWarning as ShieldAlert, Plus, Pencil as Edit2, Trash as Trash2, Calendar, 
   ChatText as MessageSquare, CircleNotch as Loader2, Sparkle as Sparkles, CheckSquare, XSquare, 
   CaretRight as ChevronRight, ArrowUpRight, CheckCircle as CheckCircle2, Warning as AlertTriangle, 
-  Clock, TrendUp as TrendingUp, Compass
+  Clock, TrendUp as TrendingUp, Compass, Gear, User, Check, X
 } from '@phosphor-icons/react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Legend, RadarChart, PolarGrid, 
-  PolarAngleAxis, PolarRadiusAxis, Radar 
+  PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, AreaChart, Area
 } from 'recharts';
 
 interface QaDashboardProps {
@@ -37,6 +37,20 @@ export const QaDashboard = ({
   const [evaluations, setEvaluations] = useState<QaEvaluation[]>([]);
   const [pdis, setPdis] = useState<Pdi[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Estados de Ciclos e Operador Selecionado
+  const [selectedOperatorId, setSelectedOperatorId] = useState<string | 'all'>('all');
+  const [qaSettings, setQaSettings] = useState<QaSettings>({
+    id: `settings-${profile.organizationId || 'default'}`,
+    organizationId: profile.organizationId || 'default',
+    evaluationCycleDays: 30,
+    pdiObservationDays: 15
+  });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [cycleDays, setCycleDays] = useState(30);
+  const [pdiDays, setPdiDays] = useState(15);
+  const [editingNextQaDate, setEditingNextQaDate] = useState('');
+  const [isUpdatingDates, setIsUpdatingDates] = useState(false);
 
   // Estados de navegação interna
   const [qaSubTab, setQaSubTab] = useState<'overview' | 'evaluations' | 'pdis' | 'competences'>(
@@ -67,6 +81,15 @@ export const QaDashboard = ({
   const [pdiActionPlan, setPdiActionPlan] = useState('');
   const [pdiDueDate, setPdiDueDate] = useState('');
 
+  // Automação para calcular data limite do PDI padrão
+  useEffect(() => {
+    if (suggestPdi && !pdiDueDate) {
+      const d = new Date();
+      d.setDate(d.getDate() + (qaSettings.pdiObservationDays || 15));
+      setPdiDueDate(d.toISOString().split('T')[0]);
+    }
+  }, [suggestPdi, pdiDueDate, qaSettings.pdiObservationDays]);
+
   // Escutas em Tempo Real
   useEffect(() => {
     if (!profile.organizationId) return;
@@ -77,6 +100,12 @@ export const QaDashboard = ({
         // Competências
         const comps = sandboxService.getQaCompetences(profile.organizationId);
         setCompetences(comps);
+
+        // Settings
+        const settings = sandboxService.getQaSettings(profile.organizationId);
+        setQaSettings(settings);
+        setCycleDays(settings.evaluationCycleDays);
+        setPdiDays(settings.pdiObservationDays);
 
         // Avaliações
         let evals = sandboxService.getQaEvaluations(profile.organizationId);
@@ -109,6 +138,24 @@ export const QaDashboard = ({
     }
 
     setLoading(true);
+
+    // 0. Configurações de QA
+    const docSettingsRef = doc(db, 'qa_settings', `settings-${profile.organizationId}`);
+    const unsubscribeSettings = onSnapshot(docSettingsRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as QaSettings;
+        setQaSettings(data);
+        setCycleDays(data.evaluationCycleDays);
+        setPdiDays(data.pdiObservationDays);
+      } else if (profile.role === 'monitor') {
+        setDoc(docSettingsRef, {
+          id: `settings-${profile.organizationId}`,
+          organizationId: profile.organizationId,
+          evaluationCycleDays: 30,
+          pdiObservationDays: 15
+        });
+      }
+    });
 
     // 1. Competências
     const qComp = query(
@@ -186,6 +233,7 @@ export const QaDashboard = ({
     });
 
     return () => {
+      unsubscribeSettings();
       unsubscribeComp();
       unsubscribeEval();
       unsubscribePdi();
@@ -194,10 +242,14 @@ export const QaDashboard = ({
 
   // Estatísticas e Analytics de QA
   const stats = useMemo(() => {
-    if (evaluations.length === 0) return { avgScore: 0, totalEvals: 0, radarData: [], worstCompetence: 'N/A' };
+    const filteredEvals = selectedOperatorId === 'all' 
+      ? evaluations 
+      : evaluations.filter(e => e.operatorId === selectedOperatorId);
 
-    const sum = evaluations.reduce((acc, curr) => acc + curr.score, 0);
-    const avgScore = sum / evaluations.length;
+    if (filteredEvals.length === 0) return { avgScore: 0, totalEvals: 0, radarData: [], worstCompetence: 'N/A', chartData: [] };
+
+    const sum = filteredEvals.reduce((acc, curr) => acc + curr.score, 0);
+    const avgScore = sum / filteredEvals.length;
 
     // Calcular médias de competências
     const competenceSum: Record<string, { total: number; count: number }> = {};
@@ -205,7 +257,7 @@ export const QaDashboard = ({
       competenceSum[c.id] = { total: 0, count: 0 };
     });
 
-    evaluations.forEach(e => {
+    filteredEvals.forEach(e => {
       Object.entries(e.grades).forEach(([compId, grade]) => {
         if (competenceSum[compId]) {
           competenceSum[compId].total += grade as number;
@@ -236,13 +288,22 @@ export const QaDashboard = ({
       }
     });
 
+    // Histórico de notas temporal para o operador
+    const chartData = [...filteredEvals]
+      .reverse()
+      .map(e => ({
+        date: new Date(e.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        Nota: Math.round(e.score)
+      }));
+
     return {
       avgScore,
-      totalEvals: evaluations.length,
+      totalEvals: filteredEvals.length,
       radarData,
-      worstCompetence: worstCompName
+      worstCompetence: worstCompName,
+      chartData
     };
-  }, [evaluations, competences]);
+  }, [evaluations, competences, selectedOperatorId]);
 
   // Alerta de PDIs Vencidos para Supervisores
   const expiredPdisCount = useMemo(() => {
@@ -401,6 +462,7 @@ export const QaDashboard = ({
         });
       }
 
+      sandboxService.updateOperatorQaDates(evalOperatorId, undefined, 'evaluated', now.split('T')[0]);
       showToast('Avaliação do Sandbox registrada com sucesso!', 'success');
       setIsEvalModalOpen(false);
       resetEvalForm();
@@ -443,6 +505,10 @@ export const QaDashboard = ({
         });
       }
 
+      await updateDoc(doc(db, 'users', evalOperatorId), {
+        qaCycleStatus: 'evaluated',
+        lastQaDate: now.split('T')[0]
+      });
       showToast('Avaliação de QA registrada com sucesso!', 'success');
       setIsEvalModalOpen(false);
       resetEvalForm();
@@ -516,7 +582,7 @@ export const QaDashboard = ({
           <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Avalie ligações, extraia relatórios de radar de competências e gerencie PDIs.</p>
         </div>
         
-        {isSuperUser && (
+        {profile.role === 'monitor' && (
           <button
             onClick={() => setIsEvalModalOpen(true)}
             className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-sky-550/10 flex items-center gap-2 self-stretch sm:self-auto justify-center cursor-pointer"
@@ -586,78 +652,306 @@ export const QaDashboard = ({
       ) : (
         <>
           {qaSubTab === 'overview' && isSuperUser && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* KPIs de Qualidade */}
-              <div className="lg:col-span-1 space-y-4 flex flex-col justify-between">
-                <div className={`p-6 rounded-3xl border flex items-center justify-between ${
-                  theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
-                }`}>
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Média de Qualidade</p>
-                    <h3 className={`text-3xl font-black mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                      {stats.avgScore > 0 ? `${stats.avgScore.toFixed(1)}%` : '0.0%'}
-                    </h3>
-                  </div>
-                  <div className="p-3.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-2xl border border-sky-500/20">
-                    <Award size={22} />
-                  </div>
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              {/* LISTA LATERAL DE OPERADORES */}
+              <div className={`w-full lg:w-72 shrink-0 p-5 rounded-3xl border flex flex-col gap-4 ${
+                theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h4 className={`text-xs font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Operadores</h4>
+                  {profile.role === 'monitor' && (
+                    <button
+                      onClick={() => setIsSettingsOpen(true)}
+                      className={`p-1.5 rounded-lg border hover:text-sky-500 transition-colors ${
+                        theme === 'dark' ? 'bg-slate-950 border-white/5 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
+                      }`}
+                      title="Configurações de Ciclos de QA"
+                    >
+                      <Gear size={14} />
+                    </button>
+                  )}
                 </div>
 
-                <div className={`p-6 rounded-3xl border flex items-center justify-between ${
-                  theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
-                }`}>
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pontos Fracos Comuns</p>
-                    <h3 className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1 truncate max-w-[150px]" title={stats.worstCompetence}>
-                      {stats.worstCompetence}
-                    </h3>
-                  </div>
-                  <div className="p-3.5 bg-rose-500/10 text-rose-600 dark:text-rose-455 rounded-2xl border border-rose-500/20">
-                    <ShieldAlert size={22} />
-                  </div>
-                </div>
+                <div className="flex flex-col gap-1.5 max-h-[480px] overflow-y-auto pr-1">
+                  <button
+                    onClick={() => setSelectedOperatorId('all')}
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition-all font-bold text-xs cursor-pointer ${
+                      selectedOperatorId === 'all'
+                        ? 'bg-sky-500/10 border-sky-500/30 text-sky-500 dark:text-sky-400'
+                        : theme === 'dark'
+                          ? 'bg-slate-950/40 border-white/[0.02] text-slate-400 hover:border-slate-800'
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>Todos os Operadores</span>
+                    <span className="text-[10px] bg-sky-500/10 px-1.5 py-0.5 rounded-full font-black">
+                      {evaluations.length}
+                    </span>
+                  </button>
 
-                <div className={`p-6 rounded-3xl border flex items-center justify-between ${
-                  theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
-                }`}>
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avaliações Concluídas</p>
-                    <h3 className={`text-2xl font-black mt-1 ${
-                      theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
-                    }`}>{stats.totalEvals} no total</h3>
-                  </div>
-                  <div className="p-3.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-455 rounded-2xl border border-emerald-500/20">
-                    <CheckCircle2 size={22} />
-                  </div>
+                  {currentTeamMembers.map(member => {
+                    const isEvaluated = member.qaCycleStatus === 'evaluated';
+                    const hasNextQa = member.nextQaDate;
+                    
+                    return (
+                      <button
+                        key={member.uid}
+                        onClick={() => {
+                          setSelectedOperatorId(member.uid);
+                          setEditingNextQaDate(member.nextQaDate || '');
+                        }}
+                        className={`w-full flex items-center gap-3 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                          selectedOperatorId === member.uid
+                            ? 'bg-sky-500/10 border-sky-500/30 text-sky-500 dark:text-sky-400'
+                            : theme === 'dark'
+                              ? 'bg-slate-950/40 border-white/[0.02] text-slate-400 hover:border-slate-800'
+                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                          isEvaluated
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            : 'bg-amber-500/10 text-amber-555 text-amber-500 border border-amber-500/20'
+                        }`}>
+                          {member.displayName?.[0].toUpperCase() || 'O'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-bold text-xs truncate ${
+                            selectedOperatorId === member.uid
+                              ? 'text-sky-555 dark:text-sky-400'
+                              : theme === 'dark' ? 'text-slate-200' : 'text-slate-950'
+                          }`}>{member.displayName}</p>
+                          <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold mt-0.5">
+                            {isEvaluated ? 'Avaliado' : 'Pendente'}
+                          </p>
+                        </div>
+                        <div className="shrink-0 flex flex-col items-end gap-1">
+                          <span className={`w-2 h-2 rounded-full ${isEvaluated ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                          {hasNextQa && (
+                            <span className="text-[8px] font-bold text-slate-500 bg-slate-500/10 px-1 py-0.5 rounded">
+                              {member.nextQaDate.split('-').reverse().slice(0, 2).join('/')}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Gráfico de Radar de Competências */}
-              <div className={`p-6 rounded-3xl border min-h-[300px] ${
-                theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <h4 className={`text-sm font-bold uppercase tracking-tight flex items-center gap-2 mb-4 ${
-                  theme === 'dark' ? 'text-white' : 'text-slate-900'
-                }`}>
-                  <Compass size={16} className="text-sky-500 dark:text-sky-400" />
-                  Evolução por Competência (Radar)
-                </h4>
+              {/* KPIs E GRÁFICOS */}
+              <div className="flex-1 w-full space-y-6">
                 
-                {stats.radarData.length === 0 ? (
-                  <div className="text-center py-16 text-slate-500 text-xs italic">Nenhuma avaliação realizada para desenhar gráfico.</div>
-                ) : (
-                  <div className="w-full h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="75%" data={stats.radarData}>
-                        <PolarGrid stroke={theme === 'dark' ? "#334155" : "#e2e8f0"} />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 10, fontWeight: 'bold' }} />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: theme === 'dark' ? '#475569' : '#94a3b8' }} />
-                        <Radar name="Média Qualidade" dataKey="Média" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
-                        <Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff', borderColor: theme === 'dark' ? '#1e293b' : '#e2e8f0', color: theme === 'dark' ? '#f8fafc' : '#0f172a' }} />
-                      </RadarChart>
-                    </ResponsiveContainer>
+                {/* Seção do Operador Selecionado (Agenda e Status de Avaliação) */}
+                {selectedOperatorId !== 'all' && (
+                  <div className={`p-6 rounded-3xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${
+                    theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
+                    <div>
+                      <h4 className={`text-base font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                        <User size={16} className="text-sky-500" />
+                        Ciclo de QA: {currentTeamMembers.find(m => m.uid === selectedOperatorId)?.displayName || 'Operador'}
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        <div>
+                          Último QA: <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                            {currentTeamMembers.find(m => m.uid === selectedOperatorId)?.lastQaDate 
+                              ? currentTeamMembers.find(m => m.uid === selectedOperatorId)?.lastQaDate.split('-').reverse().join('/') 
+                              : 'Nunca'}
+                          </span>
+                        </div>
+                        <div className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-300'}`} />
+                        <div>
+                          Próxima Avaliação: <span className="font-bold text-sky-500 dark:text-sky-400">
+                            {currentTeamMembers.find(m => m.uid === selectedOperatorId)?.nextQaDate 
+                              ? currentTeamMembers.find(m => m.uid === selectedOperatorId)?.nextQaDate.split('-').reverse().join('/') 
+                              : 'Não agendada'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {profile.role === 'monitor' && (
+                      <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        {/* Agendar Data */}
+                        <div className={`flex items-center px-3 py-1.5 rounded-xl border ${
+                          theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                          <input
+                            type="date"
+                            value={editingNextQaDate}
+                            onChange={(e) => setEditingNextQaDate(e.target.value)}
+                            className={`bg-transparent text-xs outline-none border-none text-white ${
+                              theme === 'dark' ? 'color-scheme-dark' : ''
+                            }`}
+                          />
+                          <button
+                            onClick={async () => {
+                              setIsUpdatingDates(true);
+                              try {
+                                if (profile.organizationId === 'sandbox-test') {
+                                  sandboxService.updateOperatorQaDates(selectedOperatorId, editingNextQaDate || undefined);
+                                  showToast('Agendamento de QA salvo na memória!', 'success');
+                                } else {
+                                  await updateDoc(doc(db, 'users', selectedOperatorId), {
+                                    nextQaDate: editingNextQaDate || null
+                                  });
+                                  showToast('Agendamento de QA atualizado com sucesso!', 'success');
+                                }
+                              } catch (err) {
+                                console.error(err);
+                                showToast('Erro ao agendar.', 'error');
+                              } finally {
+                                setIsUpdatingDates(false);
+                              }
+                            }}
+                            disabled={isUpdatingDates}
+                            className="text-[10px] text-sky-500 font-black uppercase tracking-wider ml-2 hover:text-sky-400 cursor-pointer disabled:opacity-50"
+                          >
+                            Salvar
+                          </button>
+                        </div>
+
+                        {/* Toggle de Status Avaliado */}
+                        <button
+                          onClick={async () => {
+                            const currentStatus = currentTeamMembers.find(m => m.uid === selectedOperatorId)?.qaCycleStatus || 'pending';
+                            const nextStatus = currentStatus === 'evaluated' ? 'pending' : 'evaluated';
+                            try {
+                              if (profile.organizationId === 'sandbox-test') {
+                                sandboxService.updateOperatorQaDates(selectedOperatorId, undefined, nextStatus);
+                                showToast('Status do ciclo alterado no sandbox!', 'success');
+                              } else {
+                                await updateDoc(doc(db, 'users', selectedOperatorId), {
+                                  qaCycleStatus: nextStatus
+                                });
+                                showToast('Status do ciclo atualizado com sucesso!', 'success');
+                              }
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                            currentTeamMembers.find(m => m.uid === selectedOperatorId)?.qaCycleStatus === 'evaluated'
+                              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-450 border border-emerald-500/30'
+                              : 'bg-amber-500/20 text-amber-600 dark:text-amber-450 border border-amber-500/30'
+                          }`}
+                        >
+                          {currentTeamMembers.find(m => m.uid === selectedOperatorId)?.qaCycleStatus === 'evaluated'
+                            ? 'Marcar como Pendente'
+                            : 'Marcar como Avaliado'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* KPIs de Qualidade */}
+                  <div className="md:col-span-1 space-y-4 flex flex-col justify-between">
+                    <div className={`p-6 rounded-3xl border flex items-center justify-between ${
+                      theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                    }`}>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Média de Qualidade</p>
+                        <h3 className={`text-3xl font-black mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                          {stats.avgScore > 0 ? `${stats.avgScore.toFixed(1)}%` : '0.0%'}
+                        </h3>
+                      </div>
+                      <div className="p-3.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-2xl border border-sky-500/20">
+                        <Award size={22} />
+                      </div>
+                    </div>
+
+                    <div className={`p-6 rounded-3xl border flex items-center justify-between ${
+                      theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                    }`}>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pontos Fracos Comuns</p>
+                        <h3 className="text-xl font-black text-rose-600 dark:text-rose-455 mt-1 truncate max-w-[150px]" title={stats.worstCompetence}>
+                          {stats.worstCompetence}
+                        </h3>
+                      </div>
+                      <div className="p-3.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl border border-rose-500/20">
+                        <ShieldAlert size={22} />
+                      </div>
+                    </div>
+
+                    <div className={`p-6 rounded-3xl border flex items-center justify-between ${
+                      theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                    }`}>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avaliações Realizadas</p>
+                        <h3 className={`text-2xl font-black mt-1 ${
+                          theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
+                        }`}>{stats.totalEvals} no total</h3>
+                      </div>
+                      <div className="p-3.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-500/20">
+                        <CheckCircle2 size={22} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gráfico de Radar de Competências */}
+                  <div className={`p-6 rounded-3xl border min-h-[300px] md:col-span-2 ${
+                    theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
+                    <h4 className={`text-sm font-bold uppercase tracking-tight flex items-center gap-2 mb-4 ${
+                      theme === 'dark' ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      <Compass size={16} className="text-sky-500 dark:text-sky-400" />
+                      Evolução por Competência (Radar)
+                    </h4>
+                    
+                    {stats.radarData.length === 0 ? (
+                      <div className="text-center py-16 text-slate-500 text-xs italic">Nenhuma avaliação realizada para desenhar gráfico.</div>
+                    ) : (
+                      <div className="w-full h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart cx="50%" cy="50%" outerRadius="75%" data={stats.radarData}>
+                            <PolarGrid stroke={theme === 'dark' ? "#334155" : "#e2e8f0"} />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 10, fontWeight: 'bold' }} />
+                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: theme === 'dark' ? '#475569' : '#94a3b8' }} />
+                            <Radar name="Média Qualidade" dataKey="Média" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
+                            <Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff', borderColor: theme === 'dark' ? '#1e293b' : '#e2e8f0', color: theme === 'dark' ? '#f8fafc' : '#0f172a' }} />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Gráfico de Evolução de Qualidade do Operador (Linha do Tempo) */}
+                  {selectedOperatorId !== 'all' && stats.chartData.length > 0 && (
+                    <div className={`p-6 rounded-3xl border min-h-[300px] md:col-span-3 ${
+                      theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                    }`}>
+                      <h4 className={`text-sm font-bold uppercase tracking-tight flex items-center gap-2 mb-4 ${
+                        theme === 'dark' ? 'text-white' : 'text-slate-900'
+                      }`}>
+                        <TrendingUp size={16} className="text-sky-500" />
+                        Histórico de Notas do Operador (Linha do Tempo)
+                      </h4>
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorNota" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2}/>
+                                <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1e293b' : '#e2e8f0'} />
+                            <XAxis dataKey="date" stroke={theme === 'dark' ? '#64748b' : '#94a3b8'} style={{ fontSize: 10, fontWeight: 'bold' }} />
+                            <YAxis domain={[0, 100]} stroke={theme === 'dark' ? '#64748b' : '#94a3b8'} style={{ fontSize: 10, fontWeight: 'bold' }} />
+                            <Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#0f172a' : '#fff', borderColor: theme === 'dark' ? '#334155' : '#e2e8f0' }} />
+                            <Area type="monotone" dataKey="Nota" stroke="#0ea5e9" strokeWidth={2.5} fillOpacity={1} fill="url(#colorNota)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
               </div>
             </div>
           )}
@@ -833,22 +1127,24 @@ export const QaDashboard = ({
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Competências Cadastradas</h4>
-                <button
-                  onClick={() => {
-                    setEditingCompetence(null);
-                    setCompName('');
-                    setCompWeight(1);
-                    setCompDesc('');
-                    setIsCompModalOpen(true);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-[10px] uppercase font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
-                    theme === 'dark' 
-                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
-                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm'
-                  }`}
-                >
-                  <Plus size={12} /> Nova Competência
-                </button>
+                {profile.role === 'monitor' && (
+                  <button
+                    onClick={() => {
+                      setEditingCompetence(null);
+                      setCompName('');
+                      setCompWeight(1);
+                      setCompDesc('');
+                      setIsCompModalOpen(true);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] uppercase font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
+                      theme === 'dark' 
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm'
+                    }`}
+                  >
+                    <Plus size={12} /> Nova Competência
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -870,32 +1166,34 @@ export const QaDashboard = ({
                       )}
                     </div>
 
-                    <div className={`flex justify-end gap-2 border-t pt-3 ${
-                      theme === 'dark' ? 'border-white/5' : 'border-slate-100'
-                    }`}>
-                      <button
-                        onClick={() => handleEditCompClick(c)}
-                        className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
-                          theme === 'dark' 
-                            ? 'bg-white/5 hover:bg-sky-500/10 text-slate-400 hover:text-sky-400 border-white/5' 
-                            : 'bg-slate-50 hover:bg-sky-550/10 text-slate-500 hover:text-sky-600 border-slate-200'
-                        }`}
-                        title="Editar"
-                      >
-                        <Edit2 size={12} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteComp(c.id)}
-                        className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
-                          theme === 'dark' 
-                            ? 'bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 border-white/5' 
-                            : 'bg-slate-50 hover:bg-rose-550/10 text-slate-550 hover:text-rose-600 border-slate-200'
-                        }`}
-                        title="Excluir"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
+                    {profile.role === 'monitor' && (
+                      <div className={`flex justify-end gap-2 border-t pt-3 ${
+                        theme === 'dark' ? 'border-white/5' : 'border-slate-100'
+                      }`}>
+                        <button
+                          onClick={() => handleEditCompClick(c)}
+                          className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
+                            theme === 'dark' 
+                              ? 'bg-white/5 hover:bg-sky-500/10 text-slate-400 hover:text-sky-400 border-white/5' 
+                              : 'bg-slate-50 hover:bg-sky-550/10 text-slate-550 hover:text-sky-600 border-slate-200'
+                          }`}
+                          title="Editar"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteComp(c.id)}
+                          className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
+                            theme === 'dark' 
+                              ? 'bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 border-white/5' 
+                              : 'bg-slate-50 hover:bg-rose-550/10 text-slate-550 hover:text-rose-600 border-slate-200'
+                          }`}
+                          title="Excluir"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1194,6 +1492,97 @@ export const QaDashboard = ({
                   className="flex-1 py-4 bg-sky-500 hover:bg-sky-400 rounded-xl font-bold text-white text-xs shadow-lg shadow-sky-555/10 cursor-pointer"
                 >
                   Enviar Avaliação
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CONFIGURAÇÃO DE CICLO DE QA */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
+          <div className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl space-y-4 ${
+            theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+            <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              Configuração de Ciclos de QA
+            </h3>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                if (profile.organizationId === 'sandbox-test') {
+                  sandboxService.updateQaSettings(profile.organizationId, {
+                    evaluationCycleDays: cycleDays,
+                    pdiObservationDays: pdiDays
+                  });
+                  showToast('Configurações de QA salvas na memória!', 'success');
+                } else {
+                  await setDoc(doc(db, 'qa_settings', `settings-${profile.organizationId}`), {
+                    id: `settings-${profile.organizationId}`,
+                    organizationId: profile.organizationId,
+                    evaluationCycleDays: cycleDays,
+                    pdiObservationDays: pdiDays
+                  });
+                  showToast('Configurações de QA salvas com sucesso!', 'success');
+                }
+                setIsSettingsOpen(false);
+              } catch (err) {
+                console.error(err);
+                showToast('Erro ao salvar configurações.', 'error');
+              }
+            }} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Periodicidade de Avaliação (dias)</label>
+                <input 
+                  type="number" 
+                  min={7} 
+                  max={90}
+                  required
+                  value={cycleDays}
+                  onChange={(e) => setCycleDays(parseInt(e.target.value))}
+                  className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs ${
+                    theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
+                />
+                <p className="text-[10px] text-slate-550 dark:text-slate-500">Intervalo recomendado para a reavaliação padrão dos colaboradores.</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Duração Observação PDI (dias)</label>
+                <input 
+                  type="number" 
+                  min={5} 
+                  max={60}
+                  required
+                  value={pdiDays}
+                  onChange={(e) => setPdiDays(parseInt(e.target.value))}
+                  className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs ${
+                    theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
+                />
+                <p className="text-[10px] text-slate-550 dark:text-slate-500">Calcula automaticamente a data limite sugerida para os novos planos de ação.</p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(false)}
+                  className={`flex-1 py-3 rounded-xl font-bold text-xs border cursor-pointer ${
+                    theme === 'dark' 
+                      ? 'bg-slate-950 hover:bg-slate-800 text-slate-400 border-slate-800' 
+                      : 'bg-slate-105 hover:bg-slate-200 text-slate-600 border-slate-200'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-sky-500 hover:bg-sky-400 rounded-xl font-bold text-white text-xs shadow-lg shadow-sky-555/10 cursor-pointer"
+                >
+                  Salvar
                 </button>
               </div>
             </form>
