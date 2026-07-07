@@ -98,6 +98,12 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
    - **Gaveta Lateral de Notas**: Histórico completo de anotações sobre cada cliente tratador com assinatura e data.
    - **Exportação Consolidada**: Download da planilha atualizada com status (Pendente, Tratado, Ignorado) e as notas comportamentais agregadas.
 
+8. **🧪 Sandbox Volátil com Seletor de Hierarquia (Simulação Completa)**:
+   - **Simulação da Árvore Organizacional**: Permite que o Super Admin simule instantaneamente qualquer um dos cargos e usuários de uma hierarquia corporativa complexa e fictícia (composta por 2 gerentes, 3 supervisores subordinados, 6 equipes e 15 operadores).
+   - **Controle Visual Dinâmico**: Barra de controle flutuante superior no Dashboard com dropdown para trocar de visão no mesmo instante. Os layouts e painéis operacionais reagem de forma responsiva para refletir a permissão e o escopo de atuação do usuário simulado.
+   - **Volatilidade Total de Dados (Sandbox Híbrido)**: Todas as edições do Sandbox (adicionar acordo, conciliar saldo, mudar metas, registrar QA ou lançar notas comportamentais) utilizam o `SandboxService` local para salvar as alterações apenas em memória de sessão temporária, protegendo o banco Firestore de quaisquer escritas de teste.
+   - **Mecanismo de Auto-Descarte**: O estado da simulação é 100% resetado para os dados originais de fábrica sempre que o usuário muda de perfil ou clica em encerrar a simulação, prevenindo qualquer retenção de rascunhos de testes.
+
 ---
 
 ## 🚀 Arquitetura Técnica & Performance
