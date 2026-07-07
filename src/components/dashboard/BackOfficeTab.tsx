@@ -28,6 +28,7 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { sandboxService } from '../../lib/sandboxService';
 import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import * as XLSX from 'xlsx';
@@ -90,6 +91,21 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   useEffect(() => {
     if (!profile.organizationId) return;
 
+    if (profile.organizationId === 'sandbox-test') {
+      const syncSandboxImports = () => {
+        setIsLoadingImports(true);
+        const list = sandboxService.getBackofficeImports(profile.organizationId);
+        setImports(list);
+        setIsLoadingImports(false);
+
+        if (list.length > 0 && selectedImportId === 'all') {
+          setSelectedImportId(list[0].id);
+        }
+      };
+      syncSandboxImports();
+      return sandboxService.subscribe(syncSandboxImports);
+    }
+
     setIsLoadingImports(true);
     const q = query(
       collection(db, 'backoffice_imports'),
@@ -116,13 +132,26 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     });
 
     return () => unsubscribe();
-  }, [profile.organizationId]);
+  }, [profile.organizationId, selectedImportId]);
 
   // Listener para carregar os clientes da importação selecionada
   useEffect(() => {
     if (!profile.organizationId || selectedImportId === 'all') {
       setClients([]);
       return;
+    }
+
+    if (profile.organizationId === 'sandbox-test') {
+      const syncSandboxClients = () => {
+        setIsLoadingClients(true);
+        const list = sandboxService.getBackofficeClients(selectedImportId);
+        list.sort((a, b) => a.clientName.localeCompare(b.clientName));
+        setClients(list);
+        setIsLoadingClients(false);
+        setCurrentPage(1);
+      };
+      syncSandboxClients();
+      return sandboxService.subscribe(syncSandboxClients);
     }
 
     setIsLoadingClients(true);
@@ -418,6 +447,18 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       }
 
       // Salva os metadados do lote de importação
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.addBackofficeImport(importObj, clientObjects);
+        showToast(`Planilha importada com sucesso no Sandbox! ${validCount} registros criados em memória.`, 'success');
+        setSelectedImportId(importId);
+        setIsMappingModalOpen(false);
+        setFileToUpload(null);
+        setExcelData([]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setIsUploading(false);
+        return;
+      }
+
       await setDoc(doc(db, 'backoffice_imports', importId), importObj);
 
       // Salva os clientes em lotes (batch) de 500 no Firestore (limite do writeBatch)
@@ -450,6 +491,15 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   // Excluir importação inteira e todos os seus clientes
   const handleDeleteImport = async (importId: string) => {
     if (!window.confirm('Tem certeza que deseja excluir esta planilha e todos os seus clientes tratados? Esta ação não pode ser desfeita.')) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.deleteBackofficeImport(importId);
+      showToast('Planilha e dados vinculados removidos da memória do Sandbox.', 'success');
+      if (selectedImportId === importId) {
+        setSelectedImportId('all');
+      }
+      return;
+    }
 
     try {
       showToast('Excluindo planilha...', 'info');
@@ -485,6 +535,12 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
 
   // Atualizar Status do Cliente (pending, treated, ignored)
   const handleUpdateStatus = async (clientId: string, newStatus: 'pending' | 'treated' | 'ignored') => {
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.updateBackofficeClientStatus(clientId, newStatus);
+      showToast('Status atualizado na memória do Sandbox.', 'success');
+      return;
+    }
+
     try {
       const ref = doc(db, 'backoffice_clients', clientId);
       await updateDoc(ref, {
@@ -503,6 +559,22 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     if (!newNoteText.trim() || !activeClientForNotes) return;
 
     setIsSavingNote(true);
+
+    if (profile.organizationId === 'sandbox-test') {
+      const newNote = {
+        id: `note-${Date.now()}`,
+        authorId: profile.uid,
+        authorName: profile.displayName || 'Colaborador',
+        content: newNoteText.trim(),
+        createdAt: new Date().toISOString()
+      };
+      sandboxService.addBackofficeClientNote(activeClientForNotes.id, newNote);
+      setNewNoteText('');
+      showToast('Nota adicionada ao cliente em memória!', 'success');
+      setIsSavingNote(false);
+      return;
+    }
+
     try {
       const newNote: BackOfficeNote = {
         id: `note-${Date.now()}`,

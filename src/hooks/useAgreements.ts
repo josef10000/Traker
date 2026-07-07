@@ -16,6 +16,7 @@ import { db } from '../lib/firebase';
 import { areStatsCachesFresh, saveStatsCache } from '../lib/statsCache';
 import { Agreement, AgreementStatus } from '../types';
 import { parseLocalDate } from '../utils/date';
+import { sandboxService } from '../lib/sandboxService';
 
 /**
  * Auto-refresh silencioso a cada 30 minutos.
@@ -58,6 +59,105 @@ export const useAgreements = ({
   const [monthAgreements, setMonthAgreements] = useState<Agreement[]>([]);
   const [paginatedAgreements, setPaginatedAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isSandbox = organizationId === 'sandbox-test';
+
+  // Sincronização de mudanças do sandboxService
+  useEffect(() => {
+    if (!isSandbox) return;
+
+    const syncSandboxData = () => {
+      // 1. Carrega todos os acordos da org sandbox do mês/ano correspondente
+      const allAgreements = sandboxService.getAgreements(organizationId, selectedMonth, selectedYear);
+      setMonthAgreements(allAgreements);
+
+      // 2. Aplica filtros para a paginação local
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let matched = allAgreements.filter(a => !a.isAdjustment);
+
+      if (operatorId !== 'all') {
+        matched = matched.filter(a => a.operatorId === operatorId);
+      }
+
+      if (isChecklistMode) {
+        matched = matched.filter(a => {
+          const dueDate = parseLocalDate(a.dueDate);
+          const isPending = a.status === AgreementStatus.WAITING;
+          const wasCheckedToday = a.lastCheckedAt && 
+            new Date(a.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
+          
+          const isOverdue = dueDate < today;
+          const isDueToday = dueDate.getTime() === today.getTime();
+          const wasCheckedAtAnyTime = !!a.lastCheckedAt;
+
+          if (isDueToday) return isPending && !wasCheckedToday;
+          if (isOverdue) return isPending && !wasCheckedAtAnyTime;
+          return false;
+        });
+      } else {
+        if (filterStatus !== 'all') {
+          if (filterStatus === AgreementStatus.BROKEN) {
+            matched = matched.filter(a => 
+              a.status === AgreementStatus.BROKEN || 
+              (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)
+            );
+          } else if (filterStatus === AgreementStatus.WAITING) {
+            matched = matched.filter(a => 
+              a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) >= today
+            );
+          } else {
+            matched = matched.filter(a => a.status === filterStatus);
+          }
+        }
+
+        if (dateFilter === 'today') {
+          const todayStr = today.toISOString().split('T')[0];
+          matched = matched.filter(a => a.dueDate === todayStr);
+        } else if (dateFilter === 'yesterday') {
+          const yesterday = new Date(today);
+          yesterday.setDate(today.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          matched = matched.filter(a => a.dueDate === yesterdayStr);
+        } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+          matched = matched.filter(a => a.dueDate >= customStartDate && a.dueDate <= customEndDate);
+        }
+      }
+
+      if (searchTerm.trim() !== '') {
+        const lowerSearch = searchTerm.toLowerCase();
+        matched = matched.filter(a => 
+          a.clientName.toLowerCase().includes(lowerSearch) ||
+          a.clientCpf.includes(searchTerm)
+        );
+      }
+
+      const startIdx = (currentPage - 1) * itemsPerPage;
+      const endIdx = startIdx + itemsPerPage;
+      setPaginatedAgreements(matched.slice(startIdx, endIdx));
+      setHasNextPage(matched.length > endIdx);
+      setLoading(false);
+    };
+
+    syncSandboxData();
+    
+    // Inscreve-se para atualizar sempre que as escritas do sandbox ocorrerem
+    const unsubscribe = sandboxService.subscribe(syncSandboxData);
+    return () => unsubscribe();
+  }, [
+    isSandbox, 
+    organizationId, 
+    selectedMonth, 
+    selectedYear, 
+    filterStatus, 
+    dateFilter, 
+    customStartDate, 
+    customEndDate, 
+    searchTerm, 
+    isChecklistMode, 
+    operatorId, 
+    currentPage
+  ]);
 
   // Controle de refresh manual e auto-refresh
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -110,9 +210,11 @@ export const useAgreements = ({
   //
   // Resultado: ~94% de redução nas leituras diárias com 60 operadores.
   useEffect(() => {
-    if (!organizationId || teamsToWatch.length === 0) {
-      setMonthAgreements([]);
-      setLoading(false);
+    if (!organizationId || teamsToWatch.length === 0 || organizationId === 'sandbox-test') {
+      if (organizationId !== 'sandbox-test') {
+        setMonthAgreements([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -257,8 +359,10 @@ export const useAgreements = ({
 
   // 2. QUERY DA TABELA PAGINADA
   useEffect(() => {
-    if (!organizationId || teamsToWatch.length === 0) {
-      setPaginatedAgreements([]);
+    if (!organizationId || teamsToWatch.length === 0 || organizationId === 'sandbox-test') {
+      if (organizationId !== 'sandbox-test') {
+        setPaginatedAgreements([]);
+      }
       return;
     }
 

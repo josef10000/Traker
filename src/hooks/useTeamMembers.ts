@@ -3,6 +3,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, Team } from '../types';
 import { getTeamData, getTeamMembers } from '../lib/teams';
+import { sandboxService } from '../lib/sandboxService';
 
 interface UseTeamMembersProps {
   profile: UserProfile;
@@ -29,8 +30,68 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
     stableManagedTeams.current = profile.managedTeams || [];
   }, [managedTeamsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const isSandbox = profile.organizationId === 'sandbox-test';
+
+  // 0. Sincronização Sandbox
+  useEffect(() => {
+    if (!isSandbox) return;
+
+    const syncSandboxTeams = () => {
+      setLoading(true);
+
+      // Carregar Equipes Gerenciadas
+      let validTeams: Team[] = [];
+      if (profile.role === 'manager' || profile.role === 'monitor') {
+        validTeams = sandboxService.getTeams(profile.organizationId);
+      } else if (profile.managedTeams && profile.managedTeams.length > 0) {
+        validTeams = profile.managedTeams
+          .map(id => sandboxService.getTeam(id))
+          .filter((t): t is Team => t !== null);
+      } else if (profile.teamId) {
+        const t = sandboxService.getTeam(profile.teamId);
+        if (t) validTeams = [t];
+      }
+      setManagedTeamsData(validTeams);
+
+      // Carregar Membros da Equipe Selecionada
+      if (selectedTeamId !== 'all') {
+        const members = sandboxService.getTeamMembers(selectedTeamId);
+        setCurrentTeamMembers(members.filter(m => m.role === 'member'));
+      } else {
+        // Obter todos os membros acessíveis
+        let accessibleTeamIds: string[] = [];
+        if (profile.role === 'manager' || profile.role === 'monitor') {
+          accessibleTeamIds = sandboxService.getTeams(profile.organizationId).map(t => t.id);
+        } else if (profile.managedTeams && profile.managedTeams.length > 0) {
+          accessibleTeamIds = profile.managedTeams;
+        } else if (profile.teamId) {
+          accessibleTeamIds = [profile.teamId];
+        }
+
+        if (accessibleTeamIds.length > 0) {
+          const flatMembers = accessibleTeamIds.flatMap(id => sandboxService.getTeamMembers(id));
+          const uniqueMembersMap: Record<string, UserProfile> = {};
+          flatMembers.forEach(m => {
+            if (m.role === 'member') {
+              uniqueMembersMap[m.uid] = m;
+            }
+          });
+          setCurrentTeamMembers(Object.values(uniqueMembersMap));
+        } else {
+          setCurrentTeamMembers([]);
+        }
+      }
+      setLoading(false);
+    };
+
+    syncSandboxTeams();
+    const unsubscribe = sandboxService.subscribe(syncSandboxTeams);
+    return () => unsubscribe();
+  }, [isSandbox, selectedTeamId, profile.role, profile.organizationId, profile.managedTeams, profile.teamId]);
+
   // 1. Carregar membros quando o time selecionado muda
   useEffect(() => {
+    if (profile.organizationId === 'sandbox-test') return;
     let active = true;
     const loadMembers = async () => {
       setLoading(true);
@@ -96,6 +157,7 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
 
   // 2. Carregar informações das equipes gerenciadas
   useEffect(() => {
+    if (profile.organizationId === 'sandbox-test') return;
     let active = true;
     const loadTeamsData = async () => {
       let validTeams: Team[] = [];

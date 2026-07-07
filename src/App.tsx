@@ -12,6 +12,7 @@ import { Onboarding } from './components/auth/Onboarding';
 import { ProfileSettings } from './components/profile/ProfileSettings';
 import { getUserProfile } from './lib/teams';
 import { UserProfile } from './types';
+import { sandboxService } from './lib/sandboxService';
 import { Toast, ToastType } from './components/ui/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
@@ -24,8 +25,30 @@ export function AppContent() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' } | null>(null);
+  const [simulatedUid, setSimulatedUid] = useState<string>('');
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (simulation?.active) {
+      // Define o UID inicial com base na role selecionada
+      if (simulation.role === 'manager') {
+        setSimulatedUid('sandbox-manager-a');
+      } else if (simulation.role === 'supervisor') {
+        setSimulatedUid('sandbox-supervisor-a1');
+      } else if (simulation.role === 'monitor') {
+        setSimulatedUid('sandbox-user-monitor');
+      } else if (simulation.role === 'backoffice') {
+        setSimulatedUid('sandbox-user-backoffice');
+      } else {
+        setSimulatedUid('sandbox-op-1');
+      }
+      // Inicializa/Reseta dados em memória do Sandbox
+      sandboxService.resetSandbox();
+    } else {
+      setSimulatedUid('');
+    }
+  }, [simulation]);
 
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });
@@ -206,31 +229,17 @@ export function AppContent() {
 
   if (profile?.role === 'super_admin') {
     if (simulation?.active) {
-      const simulatedProfile: UserProfile = {
-        uid: simulation.role === 'manager'
-          ? 'sandbox-user-manager'
-          : (simulation.role === 'supervisor'
-            ? 'sandbox-user-supervisor'
-            : (simulation.role === 'monitor'
-              ? 'sandbox-user-monitor'
-              : (simulation.role === 'backoffice'
-                ? 'sandbox-user-backoffice'
-                : 'sandbox-user-operator'))),
-        displayName: `${simulation.role === 'manager'
-          ? 'Gerente'
-          : (simulation.role === 'supervisor'
-            ? 'Supervisor'
-            : (simulation.role === 'monitor'
-              ? 'Monitor'
-              : (simulation.role === 'backoffice'
-                ? 'Back Office'
-                : 'Operador')))} (Simulado)`,
+      const rawProfile = sandboxService.getProfile(simulatedUid);
+      const simulatedProfile: UserProfile = rawProfile ? {
+        ...rawProfile,
+        email: profile.email, // Mantém o email do super_admin
+        theme: profile.theme || 'dark'
+      } : {
+        uid: 'sandbox-manager-a',
         email: profile.email,
-        role: simulation.role,
+        displayName: 'Arthur (Gerente A)',
+        role: 'manager',
         organizationId: 'sandbox-test',
-        teamId: (simulation.role === 'manager' || simulation.role === 'monitor') ? undefined : 'sandbox-team-alpha',
-        managedTeams: simulation.role === 'supervisor' ? ['sandbox-team-alpha'] : undefined,
-        acceptedTermsAt: new Date().toISOString(),
         theme: profile.theme || 'dark',
         createdAt: new Date().toISOString()
       };
@@ -247,30 +256,89 @@ export function AppContent() {
             )}
           </AnimatePresence>
 
-          <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-950/90 to-indigo-950/90 backdrop-blur-md border-b border-purple-500/30 px-6 py-3 flex justify-between items-center no-print">
+          <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-950/95 to-indigo-950/95 backdrop-blur-md border-b border-purple-500/30 px-6 py-3 flex justify-between items-center no-print shadow-lg">
             <div className="flex items-center gap-3">
               <span className="flex h-3.5 w-3.5 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-purple-500"></span>
               </span>
               <p className="text-xs font-bold text-purple-200">
-                AMBIENTE DE TESTE ATIVO — Simulando <span className="uppercase text-white font-black">
-                  {simulation.role === 'manager'
-                    ? 'Gerente'
-                    : (simulation.role === 'supervisor'
-                      ? 'Supervisor'
-                      : (simulation.role === 'monitor'
-                        ? 'Monitor'
-                        : (simulation.role === 'backoffice'
-                          ? 'Back Office'
-                          : 'Operador')))}
-                </span> da Empresa Fictícia Sandbox
+                AMBIENTE DE TESTE ATIVO — Simulando <span className="uppercase text-white font-black">{simulatedProfile.displayName}</span>
               </p>
             </div>
+
+            {/* Seletor de Perfis do Sandbox */}
+            <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-purple-500/20 shadow-inner no-print">
+              <span className="text-[10px] font-black text-purple-300 uppercase tracking-wider">Visão:</span>
+              <select
+                value={simulatedUid}
+                onChange={(e) => {
+                  const newUid = e.target.value;
+                  // Reseta o estado volátil do sandbox ao trocar de visão
+                  sandboxService.resetSandbox();
+                  setSimulatedUid(newUid);
+                  
+                  const selectedUser = sandboxService.getProfile(newUid);
+                  if (selectedUser) {
+                    setSimulation(prev => prev ? { ...prev, role: selectedUser.role as any } : null);
+                  }
+                  
+                  showToast(`Visão alterada para ${selectedUser?.displayName || 'Simulação'}. Alterações anteriores foram descartadas.`, 'info');
+                  navigate('/');
+                }}
+                className="bg-transparent border-none text-xs font-bold text-white outline-none cursor-pointer px-1 py-0.5"
+              >
+                <optgroup label="Gerentes">
+                  <option value="sandbox-manager-a" className="bg-slate-900 text-white">Arthur (Gerente A - Carlos & Amanda)</option>
+                  <option value="sandbox-manager-b" className="bg-slate-900 text-white">Beatrice (Gerente B - Roberto)</option>
+                </optgroup>
+                <optgroup label="Supervisores">
+                  <option value="sandbox-supervisor-a1" className="bg-slate-900 text-white">Carlos (A1 - Fênix & Dragão)</option>
+                  <option value="sandbox-supervisor-a2" className="bg-slate-900 text-white">Amanda (A2 - Águia & Falcão)</option>
+                  <option value="sandbox-supervisor-b1" className="bg-slate-900 text-white">Roberto (B1 - Lobo & Tigre)</option>
+                </optgroup>
+                <optgroup label="Operadores (Time Fênix - Carlos)">
+                  <option value="sandbox-op-1" className="bg-slate-900 text-white">Ana Souza</option>
+                  <option value="sandbox-op-2" className="bg-slate-900 text-white">Bruno Lima</option>
+                  <option value="sandbox-op-3" className="bg-slate-900 text-white">Daniela Silva</option>
+                </optgroup>
+                <optgroup label="Operadores (Time Dragão - Carlos)">
+                  <option value="sandbox-op-4" className="bg-slate-900 text-white">Eduardo Costa</option>
+                  <option value="sandbox-op-5" className="bg-slate-900 text-white">Fernanda Dias</option>
+                </optgroup>
+                <optgroup label="Operadores (Time Águia - Amanda)">
+                  <option value="sandbox-op-6" className="bg-slate-900 text-white">Gabriel Alves</option>
+                  <option value="sandbox-op-7" className="bg-slate-900 text-white">Helena Ramos</option>
+                  <option value="sandbox-op-8" className="bg-slate-900 text-white">Igor Rocha</option>
+                </optgroup>
+                <optgroup label="Operadores (Time Falcão - Amanda)">
+                  <option value="sandbox-op-9" className="bg-slate-900 text-white">Julia Martins</option>
+                  <option value="sandbox-op-10" className="bg-slate-900 text-white">Lucas Freitas</option>
+                </optgroup>
+                <optgroup label="Operadores (Time Lobo - Roberto)">
+                  <option value="sandbox-op-11" className="bg-slate-900 text-white">Marina Santos</option>
+                  <option value="sandbox-op-12" className="bg-slate-900 text-white">Nicolas Barbosa</option>
+                  <option value="sandbox-op-13" className="bg-slate-900 text-white">Olivia Castro</option>
+                </optgroup>
+                <optgroup label="Operadores (Time Tigre - Roberto)">
+                  <option value="sandbox-op-14" className="bg-slate-900 text-white">Pedro Cardoso</option>
+                  <option value="sandbox-op-15" className="bg-slate-900 text-white">Rafael Melo</option>
+                </optgroup>
+                <optgroup label="Qualidade & Apoio">
+                  <option value="sandbox-user-monitor" className="bg-slate-900 text-white">Monitor de Qualidade</option>
+                  <option value="sandbox-user-backoffice" className="bg-slate-900 text-white">Back Office Principal</option>
+                </optgroup>
+              </select>
+            </div>
+
             <div className="flex items-center gap-4">
               <button 
-                onClick={() => setSimulation(null)}
-                className="px-4 py-1.5 bg-purple-500 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-400 transition-colors shadow-md shadow-purple-500/20 active:scale-95 cursor-pointer"
+                onClick={() => {
+                  sandboxService.resetSandbox();
+                  setSimulation(null);
+                  showToast('Simulação encerrada. Dados de teste descartados.', 'info');
+                }}
+                className="px-4 py-1.5 bg-purple-600 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-500 transition-colors shadow-md shadow-purple-500/20 active:scale-95 cursor-pointer"
               >
                 Sair da Simulação
               </button>
@@ -284,7 +352,37 @@ export function AppContent() {
                 <Dashboard 
                   user={user} 
                   profile={simulatedProfile} 
-                  onSettingsClick={() => showToast('Configurações de perfil desativadas no modo simulação.', 'info')} 
+                  onSettingsClick={() => navigate('/profile')} 
+                  showToast={showToast}
+                />
+              } />
+              <Route path="/profile" element={
+                <ProfileSettings 
+                  profile={simulatedProfile} 
+                  onUpdate={(updatedData) => {
+                    if (updatedData) {
+                      sandboxService.setProfile({
+                        ...simulatedProfile,
+                        ...updatedData
+                      });
+                      showToast('Perfil simulado atualizado na memória!', 'success');
+                    }
+                  }}
+                  onBack={() => navigate('/')}
+                  onCreateTeam={() => navigate('/create-team')}
+                  showToast={showToast}
+                />
+              } />
+              <Route path="/create-team" element={
+                <Onboarding 
+                  user={user} 
+                  profile={simulatedProfile}
+                  onComplete={() => {
+                    showToast('Equipe simulada criada com sucesso!', 'success');
+                    navigate('/profile');
+                  }} 
+                  isAdditionalTeam={true}
+                  onBack={() => navigate('/profile')}
                   showToast={showToast}
                 />
               } />

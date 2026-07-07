@@ -38,6 +38,7 @@ import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkin
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
 import { CheckSquare, ShieldWarning, Trash } from '@phosphor-icons/react';
+import { sandboxService } from '../../lib/sandboxService';
 
 // Hooks customizados
 import { useAgreements } from '../../hooks/useAgreements';
@@ -357,6 +358,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Escuta configurações do time selecionado para manter metas em tempo real
   useEffect(() => {
     if (selectedTeamId === 'all') return;
+    if (profile.organizationId === 'sandbox-test') {
+      const syncSandboxTeamMeta = () => {
+        const team = sandboxService.getTeam(selectedTeamId);
+        if (team) {
+          setMonthlyGoal(team.monthlyGoal || 80000);
+          setEffectivenessGoal(team.effectivenessGoal || 85);
+        }
+      };
+      syncSandboxTeamMeta();
+      return sandboxService.subscribe(syncSandboxTeamMeta);
+    }
     const settingsRef = doc(db, 'settings', selectedTeamId);
     const unsubscribe = onSnapshot(settingsRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -366,11 +378,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
     });
     return () => unsubscribe();
-  }, [selectedTeamId]);
+  }, [selectedTeamId, profile.organizationId]);
 
   // Carrega informações da organização em tempo real
   useEffect(() => {
     if (!profile.organizationId) return;
+    if (profile.organizationId === 'sandbox-test') {
+      const org = sandboxService.getOrganization(profile.organizationId);
+      if (org) {
+        setWebhookUrl('');
+        setOrganizationName(org.name || 'Empresa de Teste (Sandbox)');
+        setOrganizationCnpj('00.000.000/0001-00');
+        setCrmOrgId('');
+        setCrmClientId('');
+        setCrmPublicToken('');
+      }
+      return;
+    }
     const orgRef = doc(db, 'organizations', profile.organizationId);
     const unsubscribe = onSnapshot(orgRef, (snap) => {
       if (snap.exists()) {
@@ -719,6 +743,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleEfetivar = async (id: string) => {
+    if (profile.organizationId === 'sandbox-test') {
+      const now = new Date().toISOString();
+      sandboxService.updateAgreement(id, { 
+        status: AgreementStatus.PAID,
+        paidAt: now
+      });
+      showToast('Acordo do Sandbox efetivado na memória!', 'success');
+      return;
+    }
+
     try {
       const agreementRef = doc(db, 'agreements', id);
       const now = new Date().toISOString();
@@ -745,6 +779,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleToggleChecked = async (id: string, currentStatus: string | undefined) => {
+    if (profile.organizationId === 'sandbox-test') {
+      const agreement = monthAgreements.find(a => a.id === id);
+      if (!agreement) return;
+
+      const dueDate = parseLocalDate(agreement.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const isCurrentlyChecked = currentStatus && new Date(currentStatus).toLocaleDateString() === new Date().toLocaleDateString();
+      const isAfterDueDate = today > dueDate;
+
+      if (!isCurrentlyChecked && isAfterDueDate) {
+        sandboxService.updateAgreement(id, {
+          status: AgreementStatus.BROKEN,
+          lastCheckedAt: new Date().toISOString()
+        });
+        showToast('Acordo do Sandbox marcado como quebrado (conferência após o vencimento).', 'info');
+      } else {
+        sandboxService.updateAgreement(id, {
+          lastCheckedAt: isCurrentlyChecked ? null : new Date().toISOString()
+        });
+        showToast(isCurrentlyChecked ? 'Marcação de conferência removida do Sandbox.' : 'Acordo do Sandbox marcado como conferido!', 'success');
+      }
+      return;
+    }
+
     try {
       const agreement = monthAgreements.find(a => a.id === id);
       if (!agreement) return;
@@ -782,6 +842,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const executeDeleteAgreement = async () => {
     if (!agreementIdToDelete) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.deleteAgreement(agreementIdToDelete);
+      showToast('Acordo do Sandbox excluído da memória!', 'success');
+      setAgreementIdToDelete(null);
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, 'agreements', agreementIdToDelete));
       doMarkStale();
@@ -840,6 +908,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleUpdateGoal = async (newGoal: number, newEffGoal: number) => {
     const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
     if (!targetTeamId) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.setTeamGoal(targetTeamId, newGoal, newEffGoal);
+      setMonthlyGoal(newGoal);
+      setEffectivenessGoal(newEffGoal);
+      setIsGoalModalOpen(false);
+      showToast('Metas do Sandbox atualizadas na memória!', 'success');
+      return;
+    }
     
     try {
       await setDoc(doc(db, 'settings', targetTeamId), { 
@@ -865,6 +942,49 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const saveAgreement = async (data: any, targetTeamId: string, forced = false) => {
+    if (profile.organizationId === 'sandbox-test') {
+      try {
+        const payload = forced ? { ...data, forcedCollision: true } : data;
+        const now = new Date().toISOString();
+
+        if (editingAgreement && editingAgreement.id) {
+          const updatedFields = {
+            ...payload,
+            status: data.status || editingAgreement.status,
+            organizationId: profile.organizationId,
+            operatorId: profile.uid,
+            teamId: targetTeamId
+          };
+          sandboxService.updateAgreement(editingAgreement.id, updatedFields);
+          showToast('Acordo do Sandbox atualizado na memória!', 'success');
+        } else {
+          const id = `sandbox-agree-manual-${Date.now()}`;
+          const agreementData = {
+            id,
+            ...payload,
+            status: data.status || AgreementStatus.WAITING,
+            operatorId: profile.uid,
+            teamId: targetTeamId,
+            organizationId: profile.organizationId,
+            createdAt: now,
+            paidAt: data.status === AgreementStatus.PAID ? now : null
+          };
+          sandboxService.setAgreement(agreementData);
+          showToast('Acordo do Sandbox registrado na memória!', 'success');
+
+          if (payload.backOfficeClientIdRef) {
+            sandboxService.updateBackofficeClientStatus(payload.backOfficeClientIdRef, 'treated');
+          }
+        }
+        setIsModalOpen(false);
+        setEditingAgreement(null);
+        doMarkStale();
+      } catch (error) {
+        showToast('Erro ao salvar no Sandbox.', 'error');
+      }
+      return;
+    }
+
     try {
       const payload = forced ? { ...data, forcedCollision: true } : data;
       if (editingAgreement && editingAgreement.id) {
@@ -1036,6 +1156,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
 
     const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
+
+    if (profile.organizationId === 'sandbox-test') {
+      const trackerEff = stats.totalProjected > 0 ? (stats.totalPaid / stats.totalProjected) * 100 : 0;
+      const reconData: any = {
+        id: reconId,
+        userId: profile.uid,
+        teamId: targetTeamId,
+        organizationId: profile.organizationId,
+        month: selectedMonth,
+        year: selectedYear,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (officialValue === null) {
+        const adjustmentsToDelete = monthAgreements.filter(a => a.isAdjustment && a.operatorId === profile.uid && a.teamId === targetTeamId);
+        adjustmentsToDelete.forEach(a => sandboxService.deleteAgreement(a.id));
+      } else {
+        reconData.officialValue = officialValue;
+        reconData.trackerValue = stats.totalPaid;
+        reconData.difference = officialValue - stats.totalPaid;
+      }
+
+      if (officialEffectiveness !== null) {
+        reconData.officialEffectiveness = officialEffectiveness;
+        reconData.trackerEffectiveness = trackerEff;
+        reconData.differenceEffectiveness = officialEffectiveness - trackerEff;
+      }
+
+      setReconciliation(reconData);
+      showToast('Dados de conciliação do Sandbox atualizados na memória!', 'success');
+      return;
+    }
+
     const reconRef = doc(db, 'reconciliations', reconId);
     const trackerEff = stats.totalProjected > 0 ? (stats.totalPaid / stats.totalProjected) * 100 : 0;
 
@@ -1096,6 +1249,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
     if (!targetTeamId) return;
 
+    if (profile.organizationId === 'sandbox-test') {
+      setReconciliation(null);
+      const adjustmentsToDelete = monthAgreements.filter(a => a.isAdjustment && a.operatorId === profile.uid && a.teamId === targetTeamId);
+      adjustmentsToDelete.forEach(a => sandboxService.deleteAgreement(a.id));
+      showToast('Conciliação do Sandbox apagada da memória!', 'success');
+      return;
+    }
+
     const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
     const reconRef = doc(db, 'reconciliations', reconId);
 
@@ -1121,6 +1282,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleDeleteAdjustment = async (agreementId: string) => {
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.deleteAgreement(agreementId);
+      showToast('Ajuste de saldo do Sandbox apagado da memória!', 'success');
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, 'agreements', agreementId));
       doMarkStale();
@@ -1134,6 +1301,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleNormalizeSaldo = async (difference: number, officialEffectiveness?: number | null) => {
     const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
     if (!targetTeamId) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      const adjustmentData = {
+        id: `sandbox-adj-${Date.now()}`,
+        clientName: "Ajuste de Saldo Oficial",
+        clientCpf: "000.000.000-00",
+        value: difference,
+        dueDate: new Date().toISOString().split('T')[0],
+        status: AgreementStatus.PAID,
+        origin: AgreementOrigin.SALESFORCE,
+        type: AgreementType.QUITACAO,
+        category: AgreementCategory.FIXA,
+        operatorId: profile.uid,
+        teamId: targetTeamId,
+        organizationId: profile.organizationId,
+        createdAt: new Date().toISOString(),
+        paidAt: new Date().toISOString(),
+        isAdjustment: true
+      };
+      sandboxService.setAgreement(adjustmentData);
+
+      const trackerEff = stats.totalProjected > 0 ? ((stats.totalPaid + difference) / stats.totalProjected) * 100 : 0;
+      const reconUpdate: any = {
+        ...reconciliation,
+        trackerValue: stats.totalPaid + difference,
+        difference: 0,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (officialEffectiveness !== undefined && officialEffectiveness !== null) {
+        reconUpdate.officialEffectiveness = officialEffectiveness;
+        reconUpdate.trackerEffectiveness = trackerEff;
+        reconUpdate.differenceEffectiveness = officialEffectiveness - trackerEff;
+      }
+
+      setReconciliation(reconUpdate);
+      showToast('Saldo do Sandbox normalizado na memória!', 'success');
+      return;
+    }
 
     try {
       const adjustmentData = {

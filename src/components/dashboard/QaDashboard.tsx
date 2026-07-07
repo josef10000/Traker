@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, QaCompetence, QaEvaluation, Pdi, Team } from '../../types';
+import { sandboxService } from '../../lib/sandboxService';
 import { 
   Medal as Award, ShieldWarning as ShieldAlert, Plus, Pencil as Edit2, Trash as Trash2, Calendar, 
   ChatText as MessageSquare, CircleNotch as Loader2, Sparkle as Sparkles, CheckSquare, XSquare, 
@@ -69,6 +70,43 @@ export const QaDashboard = ({
   // Escutas em Tempo Real
   useEffect(() => {
     if (!profile.organizationId) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      const syncSandboxQa = () => {
+        setLoading(true);
+        // Competências
+        const comps = sandboxService.getQaCompetences(profile.organizationId);
+        setCompetences(comps);
+
+        // Avaliações
+        let evals = sandboxService.getQaEvaluations(profile.organizationId);
+        if (!isSuperUser) {
+          evals = evals.filter(e => e.operatorId === profile.uid);
+        }
+        evals.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setEvaluations(evals);
+
+        // PDIs
+        let rawPdis = sandboxService.getPdis(profile.organizationId);
+        if (!isSuperUser) {
+          rawPdis = rawPdis.filter(p => p.operatorId === profile.uid);
+        }
+        
+        // Auto-expirar PDIs se a data limite passou e está pendente
+        const todayStr = new Date().toISOString().split('T')[0];
+        rawPdis.forEach(p => {
+          if (p.status === 'pending' && p.dueDate < todayStr) {
+            sandboxService.updatePdiStatus(p.id, 'expired');
+            p.status = 'expired';
+          }
+        });
+        setPdis(rawPdis);
+        setLoading(false);
+      };
+
+      syncSandboxQa();
+      return sandboxService.subscribe(syncSandboxQa);
+    }
 
     setLoading(true);
 
@@ -216,6 +254,33 @@ export const QaDashboard = ({
     e.preventDefault();
     if (!compName.trim()) return;
 
+    if (profile.organizationId === 'sandbox-test') {
+      if (editingCompetence) {
+        sandboxService.updateQaCompetence(editingCompetence.id, {
+          name: compName,
+          weight: compWeight,
+          description: compDesc
+        });
+        showToast('Competência do Sandbox atualizada na memória!', 'success');
+      } else {
+        const id = `sandbox-comp-${Date.now()}`;
+        sandboxService.addQaCompetence({
+          id,
+          organizationId: profile.organizationId,
+          name: compName,
+          weight: compWeight,
+          description: compDesc
+        });
+        showToast('Competência do Sandbox criada na memória!', 'success');
+      }
+      setIsCompModalOpen(false);
+      setEditingCompetence(null);
+      setCompName('');
+      setCompWeight(1);
+      setCompDesc('');
+      return;
+    }
+
     try {
       if (editingCompetence) {
         await updateDoc(doc(db, 'qa_competences', editingCompetence.id), {
@@ -256,6 +321,11 @@ export const QaDashboard = ({
 
   const handleDeleteComp = async (id: string) => {
     if (!confirm('Deseja realmente excluir esta competência?')) return;
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.deleteQaCompetence(id);
+      showToast('Competência do Sandbox excluída da memória!', 'success');
+      return;
+    }
     try {
       await deleteDoc(doc(db, 'qa_competences', id));
       showToast('Competência excluída.', 'success');
@@ -265,7 +335,6 @@ export const QaDashboard = ({
     }
   };
 
-  // Handler de Avaliação
   const handleSaveEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!evalOperatorId) {
@@ -286,18 +355,59 @@ export const QaDashboard = ({
       return;
     }
 
-    try {
-      // Calcular a média final
-      let sumGrades = 0;
-      let sumWeights = 0;
-      competences.forEach(c => {
-        const grade = evalGrades[c.id];
-        const weight = c.weight || 1;
-        sumGrades += grade * weight;
-        sumWeights += weight;
+    // Calcular a média final
+    let sumGrades = 0;
+    let sumWeights = 0;
+    competences.forEach(c => {
+      const grade = evalGrades[c.id];
+      const weight = c.weight || 1;
+      sumGrades += grade * weight;
+      sumWeights += weight;
+    });
+
+    const finalScore = sumGrades / (sumWeights || 1);
+    const now = new Date().toISOString();
+
+    if (profile.organizationId === 'sandbox-test') {
+      const evalId = `sandbox-qa-${Date.now()}`;
+      sandboxService.setQaEvaluation({
+        id: evalId,
+        organizationId: profile.organizationId,
+        operatorId: evalOperatorId,
+        evaluatorId: profile.uid,
+        score: Math.round(finalScore),
+        callId: evalCallId || null,
+        protocol: evalProtocol || null,
+        callLink: evalCallLink || null,
+        grades: evalGrades,
+        feedback: evalFeedback,
+        createdAt: now
       });
 
-      const finalScore = sumGrades / (sumWeights || 1);
+      if (suggestPdi && pdiCompetenceId && pdiActionPlan && pdiDueDate) {
+        const pdiId = `sandbox-pdi-${Date.now()}`;
+        const selectedComp = competences.find(c => c.id === pdiCompetenceId);
+        sandboxService.setPdi({
+          id: pdiId,
+          organizationId: profile.organizationId,
+          operatorId: evalOperatorId,
+          evaluatorId: profile.uid,
+          competenceId: pdiCompetenceId,
+          competenceName: selectedComp?.name || 'Competência',
+          actionPlan: pdiActionPlan,
+          dueDate: pdiDueDate,
+          status: 'pending',
+          createdAt: now
+        });
+      }
+
+      showToast('Avaliação do Sandbox registrada com sucesso!', 'success');
+      setIsEvalModalOpen(false);
+      resetEvalForm();
+      return;
+    }
+
+    try {
       const evalId = doc(collection(db, 'qa_evaluations')).id;
       const now = new Date().toISOString();
 
@@ -355,8 +465,12 @@ export const QaDashboard = ({
     setPdiDueDate('');
   };
 
-  // Handler PDI Concluir
   const handleCompletePdi = async (id: string) => {
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.updatePdiStatus(id, 'completed');
+      showToast('PDI do Sandbox concluído na memória!', 'success');
+      return;
+    }
     try {
       await updateDoc(doc(db, 'pdis', id), { status: 'completed' });
       showToast('PDI marcado como Concluído!', 'success');
