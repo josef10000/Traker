@@ -1724,6 +1724,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {/* CONTEÚDO DA ABA FINANCEIRA */}
               {dashboardTab === 'financial' && (
                 <div className="space-y-8">
+                  {/* Notificação de Visão Individual Filtrada */}
+                  {selectedMemberId !== 'all' && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-extrabold text-xs border border-sky-500/30">
+                          {currentTeamMembers.find(m => m.uid === selectedMemberId)?.displayName?.[0].toUpperCase() || 'O'}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-sky-500">Modo de Visualização Individual</p>
+                          <p className="text-sm font-bold text-white mt-0.5">
+                            Você está verificando os resultados de: <span className="text-sky-400">{currentTeamMembers.find(m => m.uid === selectedMemberId)?.displayName || 'Operador'}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelectedMemberId('all')}
+                        className="px-4 py-2 bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-extrabold text-[10px] rounded-xl shadow-lg shadow-sky-500/20 transition-all uppercase tracking-wider"
+                      >
+                        Voltar para Visão de Equipe
+                      </button>
+                    </div>
+                  )}
                   {/* Agenda do Dia */}
                   {!localHiddenCards.includes('agendaDoDia') && (
                     <DailyAgendaSection
@@ -1807,6 +1829,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       members={currentTeamMembers}
                       dailyGoal={dailyGoal}
                       qaScores={qaScores}
+                      selectedMemberId={selectedMemberId}
+                      onSelectMember={setSelectedMemberId}
                     />
                   )}
 
