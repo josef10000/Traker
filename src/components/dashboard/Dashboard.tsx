@@ -101,7 +101,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   // Visualização e Seleção de Equipes
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
-  const [viewMode, setViewMode] = useState<'personal' | 'team'>((profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'monitor') ? 'team' : 'personal');
+  const [viewMode, setViewMode] = useState<'personal' | 'team'>((profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'monitor') ? 'team' : 'personal');
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
   // Metas Gerais
@@ -170,9 +170,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const [supervisors, setSupervisors] = useState<UserProfile[]>([]);
 
-  // Carrega supervisores da organização (para gerente)
+  // Carrega supervisores da organização (para gerente e coordenador)
   useEffect(() => {
-    if (profile.role !== 'manager' || !profile.organizationId) return;
+    if ((profile.role !== 'manager' && profile.role !== 'coordinator') || !profile.organizationId) return;
 
     const loadSupervisors = async () => {
       if (profile.organizationId === 'sandbox-test') {
@@ -2060,7 +2060,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
 
               {/* CONTEÚDO DA ABA DE SUPORTE */}
-              {dashboardTab === 'support' && (profile.role === 'manager' || profile.role === 'supervisor') && (
+              {dashboardTab === 'support' && (profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor') && (
                 <SupportTab
                   profile={profile}
                   organizationId={profile.organizationId || ''}

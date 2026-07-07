@@ -95,6 +95,9 @@ class SandboxService {
       { uid: 'sandbox-manager-a', email: 'arthur.gerente@sandbox.local', displayName: 'Arthur (Gerente A)', role: 'manager', organizationId: orgId, createdAt: now },
       { uid: 'sandbox-manager-b', email: 'beatrice.gerente@sandbox.local', displayName: 'Beatrice (Gerente B)', role: 'manager', organizationId: orgId, createdAt: now },
       
+      // Coordenadores
+      { uid: 'sandbox-coordinator-a', email: 'carolina.coordenador@sandbox.local', displayName: 'Carolina (Coordenador)', role: 'coordinator', organizationId: orgId, createdAt: now },
+      
       // Supervisores
       { uid: 'sandbox-supervisor-a1', email: 'carlos.supervisor@sandbox.local', displayName: 'Carlos (Supervisor A1)', role: 'supervisor', organizationId: orgId, managedTeams: ['team-fenix', 'team-dragao'], teamId: 'team-fenix', createdAt: now },
       { uid: 'sandbox-supervisor-a2', email: 'amanda.supervisor@sandbox.local', displayName: 'Amanda (Supervisor A2)', role: 'supervisor', organizationId: orgId, managedTeams: ['team-aguia', 'team-falcao'], teamId: 'team-aguia', createdAt: now },

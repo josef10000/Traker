@@ -106,6 +106,11 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
    - **Volatilidade Total de Dados (Sandbox Híbrido)**: Todas as edições do Sandbox (adicionar acordo, conciliar saldo, mudar metas, registrar QA ou lançar notas comportamentais) utilizam o `SandboxService` local para salvar as alterações apenas em memória de sessão temporária, protegendo o banco Firestore de quaisquer escritas de teste.
    - **Mecanismo de Auto-Descarte**: O estado da simulação é 100% resetado para os dados originais de fábrica sempre que o usuário muda de perfil ou clica em encerrar a simulação, prevenindo qualquer retenção de rascunhos de testes.
 
+9. **👥 Papel de Coordenador & Controle de Frequência Rigoroso**:
+   - **Cargo de Coordenador (`coordinator`)**: Cargo operacional estratégico posicionado entre a Gerência e a Supervisão. O coordenador possui visão macro completa (visualiza todas as equipes, supervisores e BI analítico), porém sem acesso a modificações de webhooks, metas corporativas oficiais ou exclusões de banco.
+   - **Regra de Presença Automática**: Por padrão, no início de cada período/dia, todos os operadores têm a presença marcada automaticamente como **Presente** (`present`).
+   - **Restrição de Marcação**: Apenas os papéis com permissão gestora (**Coordenador**, **Gerente** e **Supervisor**) visualizam as opções de marcar falta (`absent`) ou atraso (`late`) para os membros de seus respectivos times. Outros perfis operacionais ou externos visualizam apenas o estado estático de frequência, sem botões de alteração.
+
 ---
 
 ## 🚀 Arquitetura Técnica & Performance

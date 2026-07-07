@@ -292,6 +292,9 @@ export function AppContent() {
                   <option value="sandbox-manager-a" className="bg-slate-900 text-white">Arthur (Gerente A - Carlos & Amanda)</option>
                   <option value="sandbox-manager-b" className="bg-slate-900 text-white">Beatrice (Gerente B - Roberto)</option>
                 </optgroup>
+                <optgroup label="Coordenadores">
+                  <option value="sandbox-coordinator-a" className="bg-slate-900 text-white">Carolina (Coordenador - Macro)</option>
+                </optgroup>
                 <optgroup label="Supervisores">
                   <option value="sandbox-supervisor-a1" className="bg-slate-900 text-white">Carlos (A1 - Fênix & Dragão)</option>
                   <option value="sandbox-supervisor-a2" className="bg-slate-900 text-white">Amanda (A2 - Águia & Falcão)</option>

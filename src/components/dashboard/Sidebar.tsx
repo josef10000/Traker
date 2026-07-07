@@ -51,7 +51,7 @@ export const Sidebar = ({
     });
   };
 
-  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin' || profile.role === 'monitor';
+  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin' || profile.role === 'monitor';
 
   // Lista de itens de menu
   const menuItems = [
@@ -95,7 +95,7 @@ export const Sidebar = ({
       id: 'support',
       label: 'Suporte & Ajuda',
       icon: SupportIcon,
-      show: profile.role === 'manager' || profile.role === 'supervisor'
+      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor'
     }
   ];
 

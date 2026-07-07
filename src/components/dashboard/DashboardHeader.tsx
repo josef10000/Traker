@@ -123,7 +123,7 @@ export const DashboardHeader = ({
             </h1>
             
             <div className="flex items-center gap-2 mt-1.5">
-              {(profile.role === 'manager' || (profile.managedTeams && profile.managedTeams.length > 1)) ? (
+              {(profile.role === 'manager' || profile.role === 'coordinator' || (profile.managedTeams && profile.managedTeams.length > 1)) ? (
                 <button 
                   onClick={() => setIsTeamSelectorOpen(true)}
                   className="flex items-center gap-1.5 text-[10px] text-sky-500 dark:text-sky-400 uppercase tracking-widest font-bold hover:text-sky-600 dark:hover:text-sky-300 transition-colors group"

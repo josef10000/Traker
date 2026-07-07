@@ -46,6 +46,7 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
   qaScores = {},
   theme = 'dark'
 }) => {
+  const canManageAttendance = profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor';
   const [editingMemberUid, setEditingMemberUid] = useState<string | null>(null);
   const [newJobTitle, setNewJobTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -246,72 +247,88 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
                 {/* Gestão Operacional (Presença + Notas) */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
                   
-                  {/* Seletor de Presença */}
-                  <div className={`flex p-1 rounded-xl border self-start sm:self-auto shrink-0 ${
-                    theme === 'dark' ? 'bg-slate-950/80 border-slate-800' : 'bg-slate-100 border-slate-200'
-                  }`}>
-                    <button
-                      onClick={() => handleAttendanceChange(member.uid, member.displayName || member.email.split('@')[0], 'present')}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                        activeAttendance === 'present' 
-                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                      }`}
-                      title="Registrar Presente"
-                    >
-                      Pres.
-                    </button>
-                    <button
-                      onClick={() => handleAttendanceChange(member.uid, member.displayName || member.email.split('@')[0], 'late')}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                        activeAttendance === 'late' 
-                          ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                      }`}
-                      title="Registrar Atraso"
-                    >
-                      Atr.
-                    </button>
-                    <button
-                      onClick={() => handleAttendanceChange(member.uid, member.displayName || member.email.split('@')[0], 'absent')}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                        activeAttendance === 'absent' 
-                          ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                      }`}
-                      title="Registrar Falta"
-                    >
-                      Falta
-                    </button>
-                  </div>
+                  {/* Seletor de Presença ou Indicador de Frequência Estático */}
+                  {canManageAttendance ? (
+                    <div className={`flex p-1 rounded-xl border self-start sm:self-auto shrink-0 ${
+                      theme === 'dark' ? 'bg-slate-950/80 border-slate-800' : 'bg-slate-100 border-slate-200'
+                    }`}>
+                      <button
+                        onClick={() => handleAttendanceChange(member.uid, member.displayName || member.email.split('@')[0], 'present')}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                          activeAttendance === 'present' 
+                            ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm' 
+                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                        }`}
+                        title="Registrar Presente"
+                      >
+                        Pres.
+                      </button>
+                      <button
+                        onClick={() => handleAttendanceChange(member.uid, member.displayName || member.email.split('@')[0], 'late')}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                          activeAttendance === 'late' 
+                            ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm' 
+                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                        }`}
+                        title="Registrar Atraso"
+                      >
+                        Atr.
+                      </button>
+                      <button
+                        onClick={() => handleAttendanceChange(member.uid, member.displayName || member.email.split('@')[0], 'absent')}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                          activeAttendance === 'absent' 
+                            ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-sm' 
+                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                        }`}
+                        title="Registrar Falta"
+                      >
+                        Falta
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="shrink-0">
+                      <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
+                        activeAttendance === 'present'
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                          : activeAttendance === 'late'
+                            ? 'bg-amber-500/10 border-amber-500/20 text-amber-455 text-amber-400'
+                            : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                      }`}>
+                        {activeAttendance === 'present' ? 'Presente' : activeAttendance === 'late' ? 'Atrasado' : 'Falta'}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Campo de Anotação Privada */}
-                  <div className={`flex items-center px-3 py-1.5 rounded-xl border flex-1 sm:flex-initial sm:w-64 shrink-0 ${
-                    theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
-                  }`}>
-                    <input 
-                      type="text"
-                      placeholder="Anotação privada..."
-                      value={quickNotesText[member.uid] || ''}
-                      onChange={(e) => setQuickNotesText(prev => ({ ...prev, [member.uid]: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddNote(member.uid, member.displayName || member.email.split('@')[0]);
-                        }
-                      }}
-                      className={`bg-transparent text-xs outline-none border-none w-full transition-colors ${
-                        theme === 'dark' 
-                          ? 'text-white placeholder-slate-600 focus:placeholder-slate-400' 
-                          : 'text-slate-800 placeholder-slate-400 focus:placeholder-slate-500'
-                      }`}
-                    />
-                    <button
-                      onClick={() => handleAddNote(member.uid, member.displayName || member.email.split('@')[0])}
-                      className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-2 hover:text-emerald-500 transition-colors cursor-pointer"
-                    >
-                      Salvar
-                    </button>
-                  </div>
+                  {canManageAttendance && (
+                    <div className={`flex items-center px-3 py-1.5 rounded-xl border flex-1 sm:flex-initial sm:w-64 shrink-0 ${
+                      theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <input 
+                        type="text"
+                        placeholder="Anotação privada..."
+                        value={quickNotesText[member.uid] || ''}
+                        onChange={(e) => setQuickNotesText(prev => ({ ...prev, [member.uid]: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddNote(member.uid, member.displayName || member.email.split('@')[0]);
+                          }
+                        }}
+                        className={`bg-transparent text-xs outline-none border-none w-full transition-colors ${
+                          theme === 'dark' 
+                            ? 'text-white placeholder-slate-600 focus:placeholder-slate-400' 
+                            : 'text-slate-800 placeholder-slate-400 focus:placeholder-slate-500'
+                        }`}
+                      />
+                      <button
+                        onClick={() => handleAddNote(member.uid, member.displayName || member.email.split('@')[0])}
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-2 hover:text-emerald-500 transition-colors cursor-pointer"
+                      >
+                        Salvar
+                      </button>
+                    </div>
+                  )}
 
                   {/* Botão de Histórico */}
                   <button

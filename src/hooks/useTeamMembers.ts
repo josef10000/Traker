@@ -41,7 +41,7 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
 
       // Carregar Equipes Gerenciadas
       let validTeams: Team[] = [];
-      if (profile.role === 'manager' || profile.role === 'monitor') {
+      if (profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'monitor') {
         validTeams = sandboxService.getTeams(profile.organizationId);
       } else if (profile.managedTeams && profile.managedTeams.length > 0) {
         validTeams = profile.managedTeams
@@ -60,7 +60,7 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
       } else {
         // Obter todos os membros acessíveis
         let accessibleTeamIds: string[] = [];
-        if (profile.role === 'manager' || profile.role === 'monitor') {
+        if (profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'monitor') {
           accessibleTeamIds = sandboxService.getTeams(profile.organizationId).map(t => t.id);
         } else if (profile.managedTeams && profile.managedTeams.length > 0) {
           accessibleTeamIds = profile.managedTeams;
@@ -109,7 +109,7 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
       } else {
         try {
           let accessibleTeamIds: string[] = [];
-          if (profile.role === 'manager' && profile.organizationId) {
+          if ((profile.role === 'manager' || profile.role === 'coordinator') && profile.organizationId) {
             const snap = await getDocs(query(collection(db, 'teams'), where('organizationId', '==', profile.organizationId)));
             accessibleTeamIds = snap.docs.map(d => d.id);
           } else if (profile.managedTeams && profile.managedTeams.length > 0) {
