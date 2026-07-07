@@ -46,6 +46,7 @@ interface DashboardHeaderProps {
   /** Callback para ativar a aba de suporte */
   onSupportTabClick: () => void;
   theme?: 'light' | 'dark';
+  supervisors?: UserProfile[];
 }
 
 export const DashboardHeader = ({
@@ -67,7 +68,8 @@ export const DashboardHeader = ({
   isRefreshing,
   organizationName,
   onSupportTabClick,
-  theme = 'dark'
+  theme = 'dark',
+  supervisors
 }: DashboardHeaderProps) => {
   const [designMode, setDesignMode] = useDesignMode();
   const [isToolsOpen, setIsToolsOpen] = useState(false);
@@ -128,14 +130,18 @@ export const DashboardHeader = ({
                 >
                   {selectedTeamId === 'all' 
                     ? 'Visão Macro (Todas)' 
-                    : managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Selecionar Equipe'}
+                    : selectedTeamId.startsWith('supervisor-')
+                      ? `Sup: ${supervisors?.find(s => s.uid === selectedTeamId.replace('supervisor-', ''))?.displayName || 'Supervisor'}`
+                      : managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Selecionar Equipe'}
                   <ChevronDown size={12} className="transition-transform duration-300" />
                 </button>
               ) : (
                 <p className={`text-[10px] uppercase tracking-widest font-bold ${
                   theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
                 }`}>
-                  {managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Dashboard Operacional'}
+                  {selectedTeamId.startsWith('supervisor-')
+                    ? `Sup: ${supervisors?.find(s => s.uid === selectedTeamId.replace('supervisor-', ''))?.displayName || 'Supervisor'}`
+                    : managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Dashboard Operacional'}
                 </p>
               )}
             </div>

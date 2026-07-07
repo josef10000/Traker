@@ -85,7 +85,13 @@ export const useAgreements = ({
 
     const syncSandboxData = () => {
       // 1. Carrega todos os acordos da org sandbox do mês/ano correspondente
-      const allAgreements = sandboxService.getAgreements(organizationId, selectedMonth, selectedYear);
+      let allAgreements = sandboxService.getAgreements(organizationId, selectedMonth, selectedYear);
+      
+      // Filtrar acordos por equipes sob monitoramento (teamsToWatch)
+      if (teamsToWatch && teamsToWatch.length > 0) {
+        allAgreements = allAgreements.filter(a => teamsToWatch.includes(a.teamId));
+      }
+      
       setMonthAgreements(allAgreements);
 
       // 2. Aplica filtros para a paginação local
@@ -173,7 +179,8 @@ export const useAgreements = ({
     searchTerm, 
     isChecklistMode, 
     operatorId, 
-    currentPage
+    currentPage,
+    teamsToWatch
   ]);
 
   useEffect(() => {

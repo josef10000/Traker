@@ -107,6 +107,7 @@ export interface DashboardModalsProps {
   setIsTeamSelectorOpen: (open: boolean) => void;
   managedTeamsData: Team[];
   setSelectedTeamId: (teamId: string) => void;
+  supervisors?: UserProfile[];
 }
 
 export const DashboardModals: React.FC<DashboardModalsProps> = ({
@@ -186,6 +187,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
   setIsTeamSelectorOpen,
   managedTeamsData,
   setSelectedTeamId,
+  supervisors,
 }) => {
   return (
     <>
@@ -319,6 +321,8 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         teams={managedTeamsData}
         selectedTeamId={selectedTeamId}
         onSelectTeam={setSelectedTeamId}
+        supervisors={supervisors}
+        profileRole={profile.role}
       />
     </>
   );

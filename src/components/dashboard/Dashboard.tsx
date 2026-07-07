@@ -168,6 +168,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [profile?.role]);
 
+  const [supervisors, setSupervisors] = useState<UserProfile[]>([]);
+
+  // Carrega supervisores da organização (para gerente)
+  useEffect(() => {
+    if (profile.role !== 'manager' || !profile.organizationId) return;
+
+    const loadSupervisors = async () => {
+      if (profile.organizationId === 'sandbox-test') {
+        const sups = sandboxService.getUsers(profile.organizationId).filter(u => u.role === 'supervisor');
+        setSupervisors(sups);
+        return;
+      }
+
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(
+          usersRef, 
+          where('organizationId', '==', profile.organizationId),
+          where('role', '==', 'supervisor')
+        );
+        const snap = await getDocs(q);
+        const sups = snap.docs.map(doc => doc.data() as UserProfile);
+        setSupervisors(sups);
+      } catch (err) {
+        console.error("Erro ao carregar supervisores:", err);
+      }
+    };
+
+    loadSupervisors();
+  }, [profile.role, profile.organizationId]);
+
   // 1. CARREGAMENTO DOS DADOS DE EQUIPES E MEMBROS VIA CUSTOM HOOK
   const {
     currentTeamMembers,
@@ -176,12 +207,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     selectedMemberId,
     setSelectedMemberId,
     loading: teamLoading
-  } = useTeamMembers({ profile, selectedTeamId });
+  } = useTeamMembers({ profile, selectedTeamId: selectedTeamId.startsWith('supervisor-') ? 'all' : selectedTeamId });
 
   // Lista de Equipes para monitorar acordos
   const teamsToWatch = useMemo(() => {
     if (selectedTeamId === 'all') {
       return managedTeamsData.map(t => t.id);
+    }
+    if (selectedTeamId.startsWith('supervisor-')) {
+      const targetSupervisorId = selectedTeamId.replace('supervisor-', '');
+      return managedTeamsData
+        .filter(t => t.supervisorId === targetSupervisorId)
+        .map(t => t.id);
     }
     return [selectedTeamId];
   }, [selectedTeamId, managedTeamsData]);
@@ -1593,6 +1630,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               organizationName={organizationName}
               onSupportTabClick={() => setDashboardTab('support')}
               theme={theme}
+              supervisors={supervisors}
             />
           )}
 
@@ -2311,6 +2349,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         profile={profile}
         selectedTeamId={selectedTeamId}
         showToast={showToast}
+        supervisors={supervisors}
 
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
