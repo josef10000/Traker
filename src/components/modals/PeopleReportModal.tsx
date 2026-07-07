@@ -38,6 +38,15 @@ export const PeopleReportModal = ({
     loadReportData();
   }, [isOpen, orgId]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('occurrences-modal-open');
+    }
+    return () => {
+      document.body.classList.remove('occurrences-modal-open');
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // Filtrar notas com base no mês e ano selecionados

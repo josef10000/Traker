@@ -230,6 +230,18 @@ option {
   ::-webkit-scrollbar {
     display: none !important;
   }
+
+  /* Oculta layout de performance do Dashboard se o modal de ocorrências estiver aberto */
+  body.occurrences-modal-open .print-only {
+    display: none !important;
+  }
+
+  /* Oculta modais/overlays durante a impressão de performance */
+  body:not(.occurrences-modal-open) .fixed.inset-0,
+  body:not(.occurrences-modal-open) [role="dialog"],
+  body:not(.occurrences-modal-open) .modal {
+    display: none !important;
+  }
 }
 
 /* Esconde elementos exclusivos de impressão na tela */
