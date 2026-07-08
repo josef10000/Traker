@@ -15,16 +15,16 @@
   --color-glass-border: var(--glass-border, rgba(226, 232, 240, 0.8));
 }
 
-:root {
-  --primary-color: #0ea5e9;
-  --bg-color: #f8fafc;
+:root, [data-theme='light'] {
+  --primary-color: #004aa6;
+  --bg-color: #f8f9fa;
   --surface-color: #ffffff;
-  --border-color: #e2e8f0;
+  --border-color: #c2c6d6;
   --card-bg: #ffffff;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
+  --text-main: #191c1d;
+  --text-muted: #555f71;
   --glass-surface: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(226, 232, 240, 0.8);
+  --glass-border: #c2c6d6;
 }
 
 [data-theme='dark'] {

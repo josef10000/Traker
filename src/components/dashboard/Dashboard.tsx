@@ -77,13 +77,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onSettingsClick, 
   showToast 
 }) => {
-  const theme = 'dark';
-  const toggleTheme = () => {};
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('tracker-theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    return (profile.theme as 'light' | 'dark') || 'dark';
+  });
+
+  const toggleTheme = async () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('tracker-theme', newTheme);
+    
+    if (profile.organizationId !== 'sandbox-test' && profile.uid) {
+      try {
+        const { doc, updateDoc } = await import('firebase/firestore');
+        const userRef = doc(db, 'users', profile.uid);
+        await updateDoc(userRef, { theme: newTheme });
+      } catch (err) {
+        console.error("Erro ao atualizar tema no Firestore:", err);
+      }
+    }
+  };
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    localStorage.setItem('tracker-theme', 'dark');
-  }, []);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Configurações e Filtros de Data/Status/Busca
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
