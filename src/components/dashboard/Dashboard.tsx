@@ -87,6 +87,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     localStorage.setItem('tracker-theme', newTheme);
     
     if (profile.organizationId !== 'sandbox-test' && profile.uid) {
@@ -102,7 +107,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [theme]);
+
 
   // Configurações e Filtros de Data/Status/Busca
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());

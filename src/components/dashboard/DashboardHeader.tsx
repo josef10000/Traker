@@ -351,21 +351,19 @@ export const DashboardHeader = ({
           >
             <LogOut size={18} />
           </button>
-          {profile.role !== 'manager' && (
-            <button 
+          <button 
               id="new-agreement-btn"
               onClick={() => setIsModalOpen(true)}
-              disabled={selectedTeamId === 'all'}
-              className={`flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all active:scale-[0.97] disabled:cursor-not-allowed shrink-0 text-xs cursor-pointer ${
+              className={`flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all active:scale-[0.97] shrink-0 text-xs cursor-pointer ${
                 theme === 'dark' 
-                  ? 'shadow-lg shadow-sky-500/20 disabled:bg-slate-800 disabled:text-slate-500' 
-                  : 'shadow-md shadow-sky-550/10 disabled:bg-slate-100 disabled:text-slate-400'
+                  ? 'shadow-lg shadow-amber-500/20' 
+                  : 'shadow-md shadow-amber-500/10'
               }`}
             >
               <Plus size={16} />
               <span>Novo Acordo</span>
             </button>
-          )}
+
         </div>
       </div>
     </header>
