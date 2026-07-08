@@ -84,8 +84,8 @@ export function AppContent() {
             setIsOrgActive(true);
           }
 
-          // Se for usuário logado na organização sandbox-test, ativa a simulação automaticamente
-          if (userProfile && userProfile.organizationId === 'sandbox-test') {
+          // Se for usuário logado na organização sandbox-test e não for super_admin, ativa a simulação automaticamente
+          if (userProfile && userProfile.organizationId === 'sandbox-test' && userProfile.role !== 'super_admin') {
             setSimulation({ active: true, role: userProfile.role as any });
             const defaultUids = [
               'sandbox-manager-a', 'sandbox-manager-b', 'sandbox-coordinator-a',
@@ -299,73 +299,6 @@ export function AppContent() {
               <p className="text-xs font-bold text-purple-200">
                 AMBIENTE DE TESTE ATIVO — Simulando <span className="uppercase text-white font-black">{simulatedProfile.displayName}</span>
               </p>
-            </div>
-
-            {/* Seletor de Perfis do Sandbox */}
-            <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-purple-500/20 shadow-inner no-print">
-              <span className="text-[10px] font-black text-purple-300 uppercase tracking-wider">Visão:</span>
-              <select
-                value={simulatedUid}
-                onChange={(e) => {
-                  const newUid = e.target.value;
-                  // Reseta o estado volátil do sandbox ao trocar de visão
-                  sandboxService.resetSandbox();
-                  setSimulatedUid(newUid);
-                  
-                  const selectedUser = sandboxService.getProfile(newUid);
-                  if (selectedUser) {
-                    setSimulation(prev => prev ? { ...prev, role: selectedUser.role as any } : null);
-                  }
-                  
-                  showToast(`Visão alterada para ${selectedUser?.displayName || 'Simulação'}. Alterações anteriores foram descartadas.`, 'info');
-                  navigate('/');
-                }}
-                className="bg-transparent border-none text-xs font-bold text-white outline-none cursor-pointer px-1 py-0.5"
-              >
-                <optgroup label="Gerentes">
-                  <option value="sandbox-manager-a" className="bg-slate-900 text-white">Arthur (Gerente A - Carlos & Amanda)</option>
-                  <option value="sandbox-manager-b" className="bg-slate-900 text-white">Beatrice (Gerente B - Roberto)</option>
-                </optgroup>
-                <optgroup label="Coordenadores">
-                  <option value="sandbox-coordinator-a" className="bg-slate-900 text-white">Carolina (Coordenador - Macro)</option>
-                </optgroup>
-                <optgroup label="Supervisores">
-                  <option value="sandbox-supervisor-a1" className="bg-slate-900 text-white">Carlos (A1 - Fênix & Dragão)</option>
-                  <option value="sandbox-supervisor-a2" className="bg-slate-900 text-white">Amanda (A2 - Águia & Falcão)</option>
-                  <option value="sandbox-supervisor-b1" className="bg-slate-900 text-white">Roberto (B1 - Lobo & Tigre)</option>
-                </optgroup>
-                <optgroup label="Operadores (Time Fênix - Carlos)">
-                  <option value="sandbox-op-1" className="bg-slate-900 text-white">Ana Souza</option>
-                  <option value="sandbox-op-2" className="bg-slate-900 text-white">Bruno Lima</option>
-                  <option value="sandbox-op-3" className="bg-slate-900 text-white">Daniela Silva</option>
-                </optgroup>
-                <optgroup label="Operadores (Time Dragão - Carlos)">
-                  <option value="sandbox-op-4" className="bg-slate-900 text-white">Eduardo Costa</option>
-                  <option value="sandbox-op-5" className="bg-slate-900 text-white">Fernanda Dias</option>
-                </optgroup>
-                <optgroup label="Operadores (Time Águia - Amanda)">
-                  <option value="sandbox-op-6" className="bg-slate-900 text-white">Gabriel Alves</option>
-                  <option value="sandbox-op-7" className="bg-slate-900 text-white">Helena Ramos</option>
-                  <option value="sandbox-op-8" className="bg-slate-900 text-white">Igor Rocha</option>
-                </optgroup>
-                <optgroup label="Operadores (Time Falcão - Amanda)">
-                  <option value="sandbox-op-9" className="bg-slate-900 text-white">Julia Martins</option>
-                  <option value="sandbox-op-10" className="bg-slate-900 text-white">Lucas Freitas</option>
-                </optgroup>
-                <optgroup label="Operadores (Time Lobo - Roberto)">
-                  <option value="sandbox-op-11" className="bg-slate-900 text-white">Marina Santos</option>
-                  <option value="sandbox-op-12" className="bg-slate-900 text-white">Nicolas Barbosa</option>
-                  <option value="sandbox-op-13" className="bg-slate-900 text-white">Olivia Castro</option>
-                </optgroup>
-                <optgroup label="Operadores (Time Tigre - Roberto)">
-                  <option value="sandbox-op-14" className="bg-slate-900 text-white">Pedro Cardoso</option>
-                  <option value="sandbox-op-15" className="bg-slate-900 text-white">Rafael Melo</option>
-                </optgroup>
-                <optgroup label="Qualidade & Apoio">
-                  <option value="sandbox-user-monitor" className="bg-slate-900 text-white">Monitor de Qualidade</option>
-                  <option value="sandbox-user-backoffice" className="bg-slate-900 text-white">Back Office Principal</option>
-                </optgroup>
-              </select>
             </div>
 
             <div className="flex items-center gap-4">

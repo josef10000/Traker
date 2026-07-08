@@ -52,7 +52,7 @@ export const SupportTab = ({
   showToast,
   theme = 'dark'
 }: SupportTabProps) => {
-  const isIntegrated = true;
+  const isIntegrated = organizationId === 'sandbox-test' || (!!crmOrgId && !!crmClientId && !!crmPublicToken);
 
   // Chamados fictícios do Sandbox
   const SANDBOX_TICKETS: CRMRequest[] = [
