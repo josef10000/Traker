@@ -351,18 +351,17 @@ export const DashboardHeader = ({
           >
             <LogOut size={18} />
           </button>
-          <button 
+          {(profile.role === 'supervisor' || profile.role === 'operator') && (
+            <button 
               id="new-agreement-btn"
               onClick={() => setIsModalOpen(true)}
-              className={`flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all active:scale-[0.97] shrink-0 text-xs cursor-pointer ${
-                theme === 'dark' 
-                  ? 'shadow-lg shadow-amber-500/20' 
-                  : 'shadow-md shadow-amber-500/10'
-              }`}
+              className={`flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white px-4 py-2.5 rounded-xl font-bold transition-all active:scale-[0.97] shrink-0 text-xs cursor-pointer shadow-lg shadow-amber-500/20`}
             >
               <Plus size={16} />
               <span>Novo Acordo</span>
             </button>
+          )}
+
 
         </div>
       </div>

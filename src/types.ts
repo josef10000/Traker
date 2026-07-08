@@ -94,13 +94,18 @@ export interface Agreement {
   id: string;
   clientName: string;
   clientCpf: string;
-  value: number;
+  value: number;       // Valor que conta nas métricas (entrada, se houver; ou parcela)
   dueDate: string;
   status: AgreementStatus;
   origin: AgreementOrigin;
   type: AgreementType;
   category: AgreementCategory;
   phone?: string;
+
+  // Campos de Parcelamento
+  installmentCount?: number;   // Quantidade de parcelas (informativo)
+  hasEntry?: boolean;           // Se o parcelamento tem entrada
+  installmentValue?: number;   // Valor de cada parcela (informativo — não conta nas métricas)
 
   operatorId: string; // Quem registrou
   teamId: string;     // A qual equipe pertence
@@ -113,6 +118,7 @@ export interface Agreement {
   scheduledAt?: string; // Data/Hora agendada para retorno
   forcedCollision?: boolean; // Bypass manual de colisão de CPF
 }
+
 
 export interface DashboardStats {
   totalProjected: number;

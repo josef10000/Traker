@@ -77,42 +77,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onSettingsClick, 
   showToast 
 }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('tracker-theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    return (profile.theme as 'light' | 'dark') || 'dark';
-  });
-
-  const toggleTheme = async () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('tracker-theme', newTheme);
-    
-    if (profile.organizationId !== 'sandbox-test' && profile.uid) {
-      try {
-        const { doc, updateDoc } = await import('firebase/firestore');
-        const userRef = doc(db, 'users', profile.uid);
-        await updateDoc(userRef, { theme: newTheme });
-      } catch (err) {
-        console.error("Erro ao atualizar tema no Firestore:", err);
-      }
-    }
-  };
+  // Modo escuro fixo
+  const theme = 'dark';
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('dark');
+  }, []);
 
 
   // Configurações e Filtros de Data/Status/Busca
@@ -1620,17 +1591,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className={`flex min-h-screen font-sans ${
-      theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'
-    }`}>
+    <div className="flex min-h-screen font-sans bg-slate-950 text-slate-100">
       {/* Sidebar de Navegação */}
       {!isPresentMode && (
         <Sidebar
           profile={profile}
           activeTab={dashboardTab}
           setActiveTab={(tab: any) => setDashboardTab(tab)}
-          theme={theme}
-          toggleTheme={toggleTheme}
           organizationName={organizationName}
           onLogoutClick={() => setIsConfirmLogoutOpen(true)}
         />

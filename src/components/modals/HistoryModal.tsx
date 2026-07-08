@@ -129,12 +129,23 @@ export const HistoryModal = ({
                         <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500 text-white px-2 py-0.5 rounded">AGUARDANDO</span>
                       )}
                       <OriginBadge origin={item.origin} />
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
-                        {item.type === 'quitacao' ? 'Quitação' : 
-                         item.type === 'parcelamento' ? 'Parcelamento' :
-                         item.type === 'parcela_atrasada' ? 'Parc. Atrasada' :
-                         item.type === 'antecipacao' ? 'Antecipação' : item.type}
-                      </span>
+                      <div className="flex flex-col items-end gap-1 mt-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                          {item.type === 'quitacao' ? 'Quitação' : 
+                           item.type === 'parcelamento' ? 'Parcelamento' :
+                           item.type === 'parcela_atrasada' ? 'Parc. Atrasada' :
+                           item.type === 'antecipacao' ? 'Antecipação' : item.type}
+                        </span>
+                        {/* Badge de parcelamento com detalhes */}
+                        {item.type === 'parcelamento' && item.installmentCount && (
+                          <span className="text-[10px] font-black bg-sky-500/10 border border-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full">
+                            {item.hasEntry && item.installmentValue
+                              ? `entrada + ${item.installmentCount}x ${formatCurrency(item.installmentValue)}`
+                              : `${item.installmentCount}x`}
+                          </span>
+                        )}
+                      </div>
+
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-slate-400">
