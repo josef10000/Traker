@@ -84,37 +84,6 @@ export function AppContent() {
             setIsOrgActive(true);
           }
 
-          // Se for usuário logado na organização sandbox-test e não for super_admin, ativa a simulação automaticamente
-          if (userProfile && userProfile.organizationId === 'sandbox-test' && userProfile.role !== 'super_admin') {
-            setSimulation({ active: true, role: userProfile.role as any });
-            const defaultUids = [
-              'sandbox-manager-a', 'sandbox-manager-b', 'sandbox-coordinator-a',
-              'sandbox-supervisor-a1', 'sandbox-supervisor-a2', 'sandbox-supervisor-b1',
-              'sandbox-op-1', 'sandbox-op-2', 'sandbox-op-3', 'sandbox-op-4',
-              'sandbox-op-5', 'sandbox-op-6', 'sandbox-op-7', 'sandbox-op-8',
-              'sandbox-op-9', 'sandbox-op-10', 'sandbox-op-11', 'sandbox-op-12',
-              'sandbox-op-13', 'sandbox-op-14', 'sandbox-op-15',
-              'sandbox-user-monitor', 'sandbox-user-backoffice'
-            ];
-            if (defaultUids.includes(u.uid)) {
-              setSimulatedUid(u.uid);
-            } else {
-              if (userProfile.role === 'coordinator') {
-                setSimulatedUid('sandbox-coordinator-a');
-              } else if (userProfile.role === 'supervisor') {
-                setSimulatedUid('sandbox-supervisor-a1');
-              } else if (userProfile.role === 'monitor') {
-                setSimulatedUid('sandbox-user-monitor');
-              } else if (userProfile.role === 'backoffice') {
-                setSimulatedUid('sandbox-user-backoffice');
-              } else if (userProfile.role === 'manager') {
-                setSimulatedUid('sandbox-manager-a');
-              } else {
-                setSimulatedUid('sandbox-op-1');
-              }
-            }
-          }
-
           setUser(u);
         } catch (error) {
           console.error("Erro ao buscar perfil:", error);
