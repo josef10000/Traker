@@ -24,7 +24,7 @@ export function AppContent() {
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-  const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' } | null>(null);
+  const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' | 'coordinator' } | null>(null);
   const [simulatedUid, setSimulatedUid] = useState<string>('');
 
   const navigate = useNavigate();
@@ -34,6 +34,8 @@ export function AppContent() {
       // Define o UID inicial com base na role selecionada
       if (simulation.role === 'manager') {
         setSimulatedUid('sandbox-manager-a');
+      } else if (simulation.role === 'coordinator') {
+        setSimulatedUid('sandbox-coordinator-a');
       } else if (simulation.role === 'supervisor') {
         setSimulatedUid('sandbox-supervisor-a1');
       } else if (simulation.role === 'monitor') {
@@ -81,6 +83,38 @@ export function AppContent() {
           } else {
             setIsOrgActive(true);
           }
+
+          // Se for usuário logado na organização sandbox-test, ativa a simulação automaticamente
+          if (userProfile && userProfile.organizationId === 'sandbox-test') {
+            setSimulation({ active: true, role: userProfile.role as any });
+            const defaultUids = [
+              'sandbox-manager-a', 'sandbox-manager-b', 'sandbox-coordinator-a',
+              'sandbox-supervisor-a1', 'sandbox-supervisor-a2', 'sandbox-supervisor-b1',
+              'sandbox-op-1', 'sandbox-op-2', 'sandbox-op-3', 'sandbox-op-4',
+              'sandbox-op-5', 'sandbox-op-6', 'sandbox-op-7', 'sandbox-op-8',
+              'sandbox-op-9', 'sandbox-op-10', 'sandbox-op-11', 'sandbox-op-12',
+              'sandbox-op-13', 'sandbox-op-14', 'sandbox-op-15',
+              'sandbox-user-monitor', 'sandbox-user-backoffice'
+            ];
+            if (defaultUids.includes(u.uid)) {
+              setSimulatedUid(u.uid);
+            } else {
+              if (userProfile.role === 'coordinator') {
+                setSimulatedUid('sandbox-coordinator-a');
+              } else if (userProfile.role === 'supervisor') {
+                setSimulatedUid('sandbox-supervisor-a1');
+              } else if (userProfile.role === 'monitor') {
+                setSimulatedUid('sandbox-user-monitor');
+              } else if (userProfile.role === 'backoffice') {
+                setSimulatedUid('sandbox-user-backoffice');
+              } else if (userProfile.role === 'manager') {
+                setSimulatedUid('sandbox-manager-a');
+              } else {
+                setSimulatedUid('sandbox-op-1');
+              }
+            }
+          }
+
           setUser(u);
         } catch (error) {
           console.error("Erro ao buscar perfil:", error);
@@ -227,16 +261,16 @@ export function AppContent() {
     );
   }
 
-  if (profile?.role === 'super_admin') {
+  if (profile?.role === 'super_admin' || profile?.organizationId === 'sandbox-test') {
     if (simulation?.active) {
       const rawProfile = sandboxService.getProfile(simulatedUid);
       const simulatedProfile: UserProfile = rawProfile ? {
         ...rawProfile,
-        email: profile.email, // Mantém o email do super_admin
+        email: profile.email || '', // Mantém o email do usuário real
         theme: profile.theme || 'dark'
       } : {
         uid: 'sandbox-manager-a',
-        email: profile.email,
+        email: profile.email || '',
         displayName: 'Arthur (Gerente A)',
         role: 'manager',
         organizationId: 'sandbox-test',
@@ -336,14 +370,20 @@ export function AppContent() {
 
             <div className="flex items-center gap-4">
               <button 
-                onClick={() => {
+                onClick={async () => {
                   sandboxService.resetSandbox();
                   setSimulation(null);
-                  showToast('Simulação encerrada. Dados de teste descartados.', 'info');
+                  if (profile?.role !== 'super_admin') {
+                    await signOut(auth);
+                    navigate('/login');
+                    showToast('Sessão do Sandbox encerrada.', 'info');
+                  } else {
+                    showToast('Simulação encerrada. Dados de teste descartados.', 'info');
+                  }
                 }}
                 className="px-4 py-1.5 bg-purple-600 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-500 transition-colors shadow-md shadow-purple-500/20 active:scale-95 cursor-pointer"
               >
-                Sair da Simulação
+                {profile?.role === 'super_admin' ? 'Sair da Simulação' : 'Sair do Sandbox'}
               </button>
             </div>
           </div>
@@ -424,9 +464,9 @@ export function AppContent() {
 
   const hasNoTeam = !profile?.teamId;
   const isSupervisorWithManagedTeams = profile?.role === 'supervisor' && (profile?.managedTeams?.length || 0) > 0;
-  const isManager = profile?.role === 'manager';
+  const isManagerOrCoordinator = profile?.role === 'manager' || profile?.role === 'coordinator';
 
-  if (!profile || (!isManager && hasNoTeam && !isSupervisorWithManagedTeams)) {
+  if (!profile || (!isManagerOrCoordinator && hasNoTeam && !isSupervisorWithManagedTeams)) {
     return (
       <>
         <AnimatePresence>
