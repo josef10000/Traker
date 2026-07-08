@@ -351,7 +351,7 @@ export const DashboardHeader = ({
           >
             <LogOut size={18} />
           </button>
-          {(profile.role === 'supervisor' || profile.role === 'operator') && (
+          {(profile.role === 'supervisor' || profile.role === 'member') && (
             <button 
               id="new-agreement-btn"
               onClick={() => setIsModalOpen(true)}
