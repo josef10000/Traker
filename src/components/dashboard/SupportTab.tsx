@@ -415,7 +415,7 @@ export const SupportTab = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Formulário Novo Chamado (Esquerda) */}
-        <div className={`p-6 rounded-[2rem] border h-fit space-y-5 ${
+        <div className={`lg:col-span-4 p-6 rounded-[2rem] border h-fit space-y-5 ${
           theme === 'dark' ? 'bg-slate-900/10 border-white/5 shadow-none' : 'bg-white border-slate-200 shadow-sm'
         }`}>
           <div>
@@ -444,7 +444,7 @@ export const SupportTab = ({
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-555 transition-all outline-none text-xs appearance-none select-custom-arrow cursor-pointer ${
+                  className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none text-xs appearance-none select-custom-arrow cursor-pointer ${
                     theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 >
@@ -460,7 +460,7 @@ export const SupportTab = ({
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-555 transition-all outline-none text-xs appearance-none select-custom-arrow cursor-pointer ${
+                  className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none text-xs appearance-none select-custom-arrow cursor-pointer ${
                     theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 >
@@ -488,7 +488,7 @@ export const SupportTab = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 bg-sky-500 text-white rounded-xl hover:bg-sky-400 transition-all font-bold text-xs active:scale-95 shadow-lg shadow-sky-555/10 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-4 bg-sky-500 text-white rounded-xl hover:bg-sky-400 transition-all font-bold text-xs active:scale-95 shadow-lg shadow-sky-500/10 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isSubmitting ? <CircleNotch className="animate-spin" size={16} /> : <PaperPlane size={16} />}
               {isSubmitting ? 'Enviando chamado...' : 'Abrir chamado suporte'}
