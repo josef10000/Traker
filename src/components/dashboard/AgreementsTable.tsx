@@ -277,56 +277,66 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                     </td>
                     <td className="px-6 py-5 text-right no-print">
                       <div className="flex items-center justify-end gap-2">
-                        {agreement.status === AgreementStatus.PAID ? (
+                       {agreement.status === AgreementStatus.PAID ? (
                           <div className="flex items-center gap-1.5 text-emerald-400 pr-2">
                             <CheckCircle2 size={16} />
                             <span className="text-xs font-bold uppercase tracking-wide">Pago</span>
                           </div>
-                        ) : profile.role === 'manager' ? (
-                          isOverdue || agreement.status === AgreementStatus.BROKEN ? (
-                            <div className="flex items-center gap-1.5 text-rose-400 pr-2">
-                              <AlertCircle size={16} />
-                              <span className="text-xs font-bold uppercase tracking-wide">Quebrado</span>
-                            </div>
-                          ) : (
-                            <div className={`flex items-center gap-1.5 pr-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                              <Clock size={16} />
-                              <span className="text-xs font-bold uppercase tracking-wide">Aguardando</span>
-                            </div>
-                          )
-                        ) : (
-                          <>
-                            {isOverdue && (
-                              <div className="flex items-center gap-1 text-rose-500/40 mr-1 hidden sm:flex">
-                                <AlertCircle size={14} />
+                        ) : (() => {
+                          // Apenas o operador dono do acordo pode agir sobre ele
+                          const canAct = profile.role === 'member' && agreement.operatorId === profile.uid;
+                          const isOverdueOrBroken = isOverdue || agreement.status === AgreementStatus.BROKEN;
+                          if (!canAct) {
+                            // Supervisor e outros cargos: somente status visual
+                            return isOverdueOrBroken ? (
+                              <div className="flex items-center gap-1.5 text-rose-400 pr-2">
+                                <AlertCircle size={16} />
+                                <span className="text-xs font-bold uppercase tracking-wide">Quebrado</span>
                               </div>
-                            )}
-                            <button 
-                              onClick={() => handleEfetivar(agreement.id)}
-                              className="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500 hover:text-white transition-all active:scale-[0.95] border border-emerald-500/20 cursor-pointer"
-                              title="Efetivar Pagamento"
-                            >
-                              <Check size={18} />
-                            </button>
-                            
-                            <button 
-                              onClick={() => handleToggleChecked(agreement.id, agreement.lastCheckedAt)}
-                              className={`p-2 rounded-lg transition-all active:scale-[0.95] border cursor-pointer ${
-                                isCheckedToday 
-                                  ? theme === 'dark' 
-                                    ? 'bg-sky-500/20 text-sky-450 border-sky-500/40 shadow-sm' 
-                                    : 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-550/20' 
-                                  : theme === 'dark' 
-                                    ? 'bg-slate-800 border-transparent text-slate-400 hover:text-sky-400 hover:border-sky-500/50' 
-                                    : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-sky-500 hover:bg-slate-200'
-                              }`}
-                              title={isCheckedToday ? 'Remover marcação de conferido' : 'Marcar como conferido hoje'}
-                            >
-                              <Search size={18} />
-                            </button>
-                          </>
-                        )}
-                        {profile.role !== 'manager' && (
+                            ) : (
+                              <div className={`flex items-center gap-1.5 pr-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                                <Clock size={16} />
+                                <span className="text-xs font-bold uppercase tracking-wide">Aguardando</span>
+                              </div>
+                            );
+                          }
+                          // Operador dono: botões de ação completos
+                          return (
+                            <>
+                              {isOverdue && (
+                                <div className="flex items-center gap-1 text-rose-500/40 mr-1 hidden sm:flex">
+                                  <AlertCircle size={14} />
+                                </div>
+                              )}
+                              <button 
+                                onClick={() => handleEfetivar(agreement.id)}
+                                className="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg hover:bg-emerald-500 hover:text-white transition-all active:scale-[0.95] border border-emerald-500/20 cursor-pointer"
+                                title="Efetivar Pagamento"
+                              >
+                                <Check size={18} />
+                              </button>
+                              
+                              <button 
+                                onClick={() => handleToggleChecked(agreement.id, agreement.lastCheckedAt)}
+                                className={`p-2 rounded-lg transition-all active:scale-[0.95] border cursor-pointer ${
+                                  isCheckedToday 
+                                    ? theme === 'dark' 
+                                      ? 'bg-sky-500/20 text-sky-450 border-sky-500/40 shadow-sm' 
+                                      : 'bg-sky-500 text-white border-sky-400 shadow-lg shadow-sky-550/20' 
+                                    : theme === 'dark' 
+                                      ? 'bg-slate-800 border-transparent text-slate-400 hover:text-sky-400 hover:border-sky-500/50' 
+                                      : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-sky-500 hover:bg-slate-200'
+                                }`}
+                                title={isCheckedToday ? 'Remover marcação de conferido' : 'Marcar como conferido hoje'}
+                              >
+                                <Search size={18} />
+                              </button>
+                            </>
+                          );
+                        })()
+                        }
+                        {/* Botões editar e excluir: somente para o operador dono do acordo */}
+                        {profile.role === 'member' && agreement.operatorId === profile.uid && (
                           <div className={`flex items-center gap-1 border-l pl-2 opacity-0 group-hover:opacity-100 transition-opacity ${
                             theme === 'dark' ? 'border-slate-800' : 'border-slate-200'
                           }`}>

@@ -337,7 +337,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return qaScores[profile.uid];
   }, [qaScores, profile.uid]);
 
-  const operatorIdForAgreements = viewMode === 'personal' ? profile.uid : selectedMemberId;
+  // Filtragem de acordos por cargo:
+  // - member (operador): sempre os seus próprios
+  // - supervisor: pode ver por membro selecionado ou toda a equipe
+  // - demais cargos: não relevante (lista não é renderizada)
+  const operatorIdForAgreements =
+    profile.role === 'member'
+      ? profile.uid
+      : profile.role === 'supervisor'
+        ? selectedMemberId
+        : 'all';
 
   // 2. CARREGAMENTO DOS ACORDOS DA PÁGINA ATUAL E ESTATÍSTICAS DO MÊS VIA CUSTOM HOOK
   const {
@@ -1841,7 +1850,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     />
                   )}
 
-                  {/* Tabela Analítica de Acordos com Filtro de Busca */}
+                  {/* Tabela Analítica de Acordos — visível apenas para operador e supervisor */}
+                  {(profile.role === 'member' || profile.role === 'supervisor') && (
                   <section className="space-y-4">
                     <div className={`flex flex-col sm:flex-row justify-between sm:items-center gap-4 p-6 rounded-3xl border ${
                       theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'
@@ -1915,16 +1925,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         >
                           Quebrados
                         </button>
-                        <button
-                          onClick={handleExportClick}
-                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                            theme === 'dark'
-                              ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
-                          }`}
-                        >
-                          Exportar CSV
-                        </button>
+
                       </div>
                     </div>
 
@@ -1949,6 +1950,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       theme={theme}
                     />
                   </section>
+                  )}
                 </div>
               )}
 
