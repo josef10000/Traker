@@ -8,6 +8,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import firebaseConfigJson from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -23,6 +24,29 @@ const firebaseConfig = {
 const databaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfigJson.firestoreDatabaseId;
 
 const app = initializeApp(firebaseConfig);
+
+/**
+ * Firebase App Check com reCAPTCHA v3 Enterprise.
+ * Garante que apenas o app legítimo (rodando no domínio autorizado)
+ * consiga acessar os serviços Firebase — mesmo que a API Key seja conhecida.
+ *
+ * Em desenvolvimento (import.meta.env.DEV), ativa o debug token automaticamente
+ * para não bloquear o ambiente local.
+ */
+const appCheckSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
+if (import.meta.env.DEV) {
+  // Debug token para desenvolvimento local — não bloqueia o dev
+  // Adicione o token gerado no console do Firebase App Check como token de debug permitido
+  (self as unknown as Record<string, unknown>).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+}
+
+if (appCheckSiteKey) {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
 
 /**
  * Firestore com cache local persistente (IndexedDB).

@@ -31,7 +31,7 @@ import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
 import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface BackOfficeTabProps {
   profile: UserProfile;
@@ -317,14 +317,35 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     setFileToUpload(file);
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
-        const bstr = evt.target?.result;
-        // Habilita cellDates para interpretar células formatadas como data
-        const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const buffer = evt.target?.result as ArrayBuffer;
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+        const ws = workbook.worksheets[0];
+
+        if (!ws || ws.rowCount < 2) {
+          showToast('A planilha selecionada está vazia.', 'error');
+          setFileToUpload(null);
+          return;
+        }
+
+        // Extrai cabeçalhos da primeira linha
+        const headerRow = ws.getRow(1);
+        const headers: string[] = [];
+        headerRow.eachCell((cell) => { headers.push(String(cell.value ?? '')); });
+
+        // Converte todas as linhas para objetos
+        const data: Record<string, any>[] = [];
+        ws.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) return; // pula cabeçalho
+          const obj: Record<string, any> = {};
+          headers.forEach((h, i) => {
+            const cell = row.getCell(i + 1);
+            obj[h] = cell.value ?? '';
+          });
+          data.push(obj);
+        });
 
         if (data.length === 0) {
           showToast('A planilha selecionada está vazia.', 'error');
@@ -332,8 +353,6 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
           return;
         }
 
-        // Extrai os cabeçalhos
-        const headers = Object.keys(data[0]);
         setExcelHeaders(headers);
         setExcelData(data);
 
@@ -366,7 +385,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         setFileToUpload(null);
       }
     };
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   };
 
   // Salvar a importação e clientes no Firestore
@@ -603,7 +622,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   };
 
   // Baixar Planilha Original
-  const handleDownloadOriginal = () => {
+  const handleDownloadOriginal = async () => {
     const activeImport = imports.find(i => i.id === selectedImportId);
     if (!activeImport || clients.length === 0) return;
 
@@ -625,14 +644,24 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       return row;
     });
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Original');
-    XLSX.writeFile(wb, `original_${activeImport.fileName}`);
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Original');
+    if (rows.length > 0) {
+      ws.columns = Object.keys(rows[0]).map(key => ({ header: key, key }));
+      rows.forEach(r => ws.addRow(r));
+    }
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `original_${activeImport.fileName}`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // Baixar Planilha Atualizada (Original + Status de Tratamento + Notas)
-  const handleDownloadUpdated = () => {
+  const handleDownloadUpdated = async () => {
     const activeImport = imports.find(i => i.id === selectedImportId);
     if (!activeImport || clients.length === 0) return;
 
@@ -658,10 +687,20 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       return row;
     });
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Atualizado');
-    XLSX.writeFile(wb, `atualizado_${activeImport.fileName}`);
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Atualizado');
+    if (rows.length > 0) {
+      ws.columns = Object.keys(rows[0]).map(key => ({ header: key, key }));
+      rows.forEach(r => ws.addRow(r));
+    }
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `atualizado_${activeImport.fileName}`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // Filtros de Tabela
