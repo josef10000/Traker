@@ -52,19 +52,25 @@ service cloud.firestore {
     }
     
     // Coleção de acordos (agreements)
+    // SEGURANÇA: Apenas o operador dono pode editar/excluir seu acordo.
+    // Supervisor e Manager têm acesso de LEITURA mas NÃO podem alterar acordos de outros.
     match /agreements/{agreementId} {
       allow read: if request.auth != null 
         && (isSuperAdmin() || (resource == null || getUserOrganizationId() == resource.data.organizationId));
         
       allow create: if request.auth != null 
-        && (isSuperAdmin() || getUserOrganizationId() == request.resource.data.organizationId);
+        && (isSuperAdmin() || (
+          getUserOrganizationId() == request.resource.data.organizationId
+          && (isSupervisor() || isManager() || request.resource.data.operatorId == request.auth.uid)
+        ));
         
+      // CORRIGIDO: Apenas o dono do acordo (operatorId) ou super_admin podem editar/excluir.
+      // Supervisor e Manager NÃO têm mais permissão de alterar acordos de outros operadores.
       allow update, delete: if request.auth != null 
         && (
-             isSuperAdmin() 
-             || resource.data.operatorId == request.auth.uid 
-             || ((isSupervisor() || isManager()) && getUserOrganizationId() == resource.data.organizationId)
-           );
+          isSuperAdmin() 
+          || resource.data.operatorId == request.auth.uid
+        );
     }
     
     // Coleção de conciliações (reconciliations)
@@ -76,15 +82,22 @@ service cloud.firestore {
     }
     
     // Coleção de logs de auditoria (audit_logs)
+    // CORRIGIDO: Obrigatório ter userId E organizationId corretos na criação.
     match /audit_logs/{logId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.organizationId == getUserOrganizationId();
       allow read: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == resource.data.organizationId));
       allow update, delete: if false; // Logs são imutáveis e perenes
     }
 
     // Coleção de estatísticas mensais (monthlyStats)
+    // CORRIGIDO: Isolamento por organização — cada org só acessa suas próprias stats.
     match /monthlyStats/{statsId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null 
+        && (isSuperAdmin() || (resource == null || getUserOrganizationId() == resource.data.organizationId));
+      allow write: if request.auth != null 
+        && (isSuperAdmin() || getUserOrganizationId() == request.resource.data.organizationId);
     }
   }
 }

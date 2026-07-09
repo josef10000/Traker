@@ -317,6 +317,12 @@ export const useAgreements = ({
       where('teamId', 'in', teamsToWatch)
     );
 
+    // Filtro de operador no servidor — garante que dados de outros operadores
+    // nunca chegam ao browser (segurança em profundidade, além do filtro de UI)
+    if (operatorId !== 'all') {
+      q = query(q, where('operatorId', '==', operatorId));
+    }
+
     // Filtro de Status
     if (filterStatus !== 'all') {
       q = query(q, where('status', '==', filterStatus));

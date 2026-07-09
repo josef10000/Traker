@@ -5,7 +5,7 @@ export interface AuditLog {
   userId: string;
   userEmail: string | null;
   userName: string;
-  organizationId?: string;
+  organizationId: string; // Obrigatório para isolamento multi-tenant nas Firestore Rules
   action: 'REVEAL_CPF' | 'EXPORT_CSV_COMPLETE' | 'EXPORT_CSV_MASKED' | 'ANONIMIZE_CLIENT' | 'ACCEPT_TERMS' | 'CREATE_ORGANIZATION' | 'DELETE_ORGANIZATION' | 'UPDATE_ORGANIZATION_LIMITS' | 'FORCE_COLLISION' | 'EXPORT_CSV';
   details: Record<string, any>;
   timestamp: string;
@@ -36,6 +36,11 @@ export const logAudit = async (
 
     const user = auth.currentUser;
     if (!user) return;
+    // organizationId é obrigatório para satisfazer a Firestore Rule de audit_logs
+    if (!organizationId) {
+      console.warn('[Audit] logAudit chamado sem organizationId — log não gravado.');
+      return;
+    }
 
     // Buscar o último log global no banco para encadear os hashes
     let previousHash = 'genesis-block';
