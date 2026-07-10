@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Copy,
   PaperPlaneTilt,
-  UserPlus
+  UserPlus,
+  Globe
 } from '@phosphor-icons/react';
 import { doc, updateDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';

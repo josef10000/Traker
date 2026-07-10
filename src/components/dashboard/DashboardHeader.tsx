@@ -47,6 +47,7 @@ interface DashboardHeaderProps {
   onSupportTabClick: () => void;
   theme?: 'light' | 'dark';
   supervisors?: UserProfile[];
+  onLogoClick?: () => void;
 }
 
 export const DashboardHeader = ({
@@ -69,7 +70,8 @@ export const DashboardHeader = ({
   organizationName,
   onSupportTabClick,
   theme = 'dark',
-  supervisors
+  supervisors,
+  onLogoClick
 }: DashboardHeaderProps) => {
   const [designMode, setDesignMode] = useDesignMode();
   const [isToolsOpen, setIsToolsOpen] = useState(false);
@@ -107,7 +109,7 @@ export const DashboardHeader = ({
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div 
             className="cursor-pointer transition-transform hover:scale-105 active:scale-95" 
-            onClick={onSettingsClick}
+            onClick={onLogoClick}
           >
             <img 
               src="/logo.png" 

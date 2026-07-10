@@ -523,9 +523,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Exibe tour interativo se for primeiro login
+  // Exibe tour interativo se for primeiro login (somente após aceitar os termos de uso)
   useEffect(() => {
-    if (profile && !profile.hasSeenTour) {
+    if (profile && !profile.hasSeenTour && profile.acceptedTermsAt) {
       const timer = setTimeout(() => {
         startTour(profile.role, async () => {
           try {
@@ -541,7 +541,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [profile?.hasSeenTour]);
+  }, [profile?.hasSeenTour, profile?.acceptedTermsAt]);
 
   // 3. CÁLCULO DAS FILTRAGENS LOCAIS E ESTATÍSTICAS FINANCEIRAS
   // Ajustes técnicos do usuário no time selecionado para o faturamento
@@ -1637,6 +1637,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               onSupportTabClick={() => setDashboardTab('support')}
               theme={theme}
               supervisors={supervisors}
+              onLogoClick={() => setDashboardTab(profile.role === 'backoffice' ? 'backoffice' : 'financial')}
             />
           )}
 
