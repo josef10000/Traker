@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   FileCsv as FileSpreadsheet, 
   UploadSimple, 
@@ -13,7 +13,13 @@ import {
   CaretLeft,
   CaretRight,
   Handshake,
-  PencilSimple
+  PencilSimple,
+  CaretDown,
+  CaretUp,
+  ArrowsDownUp,
+  SlidersHorizontal,
+  Eye,
+  EyeSlash
 } from '@phosphor-icons/react';
 import { 
   collection, 
@@ -27,6 +33,15 @@ import {
   updateDoc,
   orderBy
 } from 'firebase/firestore';
+import { 
+  useReactTable, 
+  getCoreRowModel, 
+  getSortedRowModel, 
+  flexRender, 
+  SortingState, 
+  VisibilityState,
+  ColumnDef
+} from '@tanstack/react-table';
 import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
 import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote } from '../../types';
@@ -67,6 +82,19 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Estados para o TanStack Table (Ordenação e Visibilidade)
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [isColumnDropdownOpen, setIsColumnDropdownOpen] = useState(false);
+
+  // Resetar ordenação e visibilidade quando a importação muda
+  useEffect(() => {
+    setSorting([]);
+    setColumnVisibility({});
+    setIsColumnDropdownOpen(false);
+    setCurrentPage(1);
+  }, [selectedImportId]);
 
   // Estado de Upload de Arquivo
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
@@ -703,7 +731,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  // Filtros de Tabela
+  // Filtros de Tabela (dados originais filtrados)
   const filteredClients = clients.filter(cli => {
     const matchesSearch = cli.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           cli.clientCpf.includes(searchTerm.replace(/\D/g, ''));
@@ -711,13 +739,189 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     return matchesSearch && matchesStatus;
   });
 
-  // Cálculo de Paginação
-  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const activeImport = imports.find(i => i.id === selectedImportId);
+
+  // Definição de Colunas Dinâmicas do TanStack Table com base nos cabeçalhos do Excel
+  const columns = useMemo<ColumnDef<BackOfficeClient>[]>(() => {
+    if (!activeImport) return [];
+
+    // Colunas dinâmicas baseadas nos cabeçalhos originais do Excel e sua ordem exata
+    const dynColumns = activeImport.headers.map((h): ColumnDef<BackOfficeClient> => {
+      const isName = h === activeImport.columnMapping.clientName;
+      const isCpf = h === activeImport.columnMapping.clientCpf;
+      const isValue = h === activeImport.columnMapping.value;
+      const isDueDate = h === activeImport.columnMapping.dueDate;
+
+      return {
+        id: h,
+        accessorFn: (row) => {
+          if (isName) return row.clientName;
+          if (isCpf) return row.clientCpf;
+          if (isValue) return row.value;
+          if (isDueDate) return row.dueDate;
+          return row.customFields[h] || '';
+        },
+        header: h,
+        cell: (info) => {
+          const val = info.getValue();
+          if (isName) {
+            return (
+              <span className={`font-black ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
+                {String(val || '')}
+              </span>
+            );
+          }
+          if (isCpf) {
+            return <span className="font-mono text-slate-400">{maskCPF(String(val || ''))}</span>;
+          }
+          if (isValue) {
+            return (
+              <span className={`font-bold ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                {formatCurrency(Number(val || 0))}
+              </span>
+            );
+          }
+          if (isDueDate) {
+            return <span className="text-slate-400">{String(val || '')}</span>;
+          }
+          return (
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+              theme === 'dark' ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-700'
+            }`}>
+              {String(val || '-')}
+            </span>
+          );
+        }
+      };
+    });
+
+    // Coluna administrativa de Status
+    const statusColumn: ColumnDef<BackOfficeClient> = {
+      id: 'status',
+      header: 'Status',
+      accessorFn: (row) => row.status,
+      cell: (info) => {
+        const status = info.getValue() as string;
+        return (
+          <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+            status === 'treated' 
+              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+              : (status === 'ignored' 
+                ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' 
+                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20')
+          }`}>
+            {status === 'treated' ? 'Tratado' : (status === 'ignored' ? 'Ignorado' : 'Pendente')}
+          </span>
+        );
+      }
+    };
+
+    // Coluna administrativa de Ações
+    const actionsColumn: ColumnDef<BackOfficeClient> = {
+      id: 'actions',
+      header: 'Ações',
+      cell: ({ row }) => {
+        const cli = row.original;
+        return (
+          <div className="flex items-center justify-center gap-1.5">
+            {/* Notas */}
+            <button
+              onClick={() => setActiveClientForNotes(cli)}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer relative ${
+                cli.notes && cli.notes.length > 0 
+                  ? 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20' 
+                  : 'bg-slate-900 border-white/[0.04] text-slate-400 hover:text-white'
+              }`}
+              title={`${cli.notes?.length || 0} Notas`}
+            >
+              <ChatText size={14} />
+              {cli.notes && cli.notes.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-orange-600 text-[8px] font-black text-white">
+                  {cli.notes.length}
+                </span>
+              )}
+            </button>
+
+            {/* Registrar Acordo diretamente */}
+            {onAttend && cli.status !== 'treated' && (
+              <button
+                onClick={() => onAttend({
+                  id: '', 
+                  clientName: cli.clientName,
+                  clientCpf: cli.clientCpf,
+                  value: cli.value,
+                  status: 'aguardando',
+                  createdAt: new Date().toISOString(),
+                  createdBy: profile.uid,
+                  teamId: profile.teamId || '',
+                  organizationId: profile.organizationId || '',
+                  backOfficeClientIdRef: cli.id
+                })}
+                className="p-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/25 transition-all cursor-pointer"
+                title="Registrar Acordo Fechado"
+              >
+                <Handshake size={14} />
+              </button>
+            )}
+
+            {/* Ações de status */}
+            {cli.status !== 'treated' && (
+              <button
+                onClick={() => handleUpdateStatus(cli.id, 'treated')}
+                className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/25 transition-all cursor-pointer"
+                title="Marcar como Tratado"
+              >
+                <Check size={14} />
+              </button>
+            )}
+
+            {cli.status !== 'ignored' && (
+              <button
+                onClick={() => handleUpdateStatus(cli.id, 'ignored')}
+                className="p-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 hover:bg-slate-500/25 transition-all cursor-pointer"
+                title="Ignorar Cliente"
+              >
+                <XIcon size={14} />
+              </button>
+            )}
+
+            {(cli.status === 'treated' || cli.status === 'ignored') && (
+              <button
+                onClick={() => handleUpdateStatus(cli.id, 'pending')}
+                className="px-1.5 py-1 rounded-lg border border-orange-500/20 text-orange-400 hover:bg-orange-500/10 text-[9px] font-bold uppercase transition-all cursor-pointer"
+                title="Voltar para Pendente"
+              >
+                Reabrir
+              </button>
+            )}
+          </div>
+        );
+      }
+    };
+
+    return [...dynColumns, statusColumn, actionsColumn];
+  }, [activeImport, theme, onAttend, profile]);
+
+  // Inst instanciação do Hook useReactTable
+  const table = useReactTable({
+    data: filteredClients,
+    columns,
+    state: {
+      sorting,
+      columnVisibility,
+    },
+    onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  // Cálculo de Paginação baseado no modelo ordenado do TanStack Table
+  const sortedRows = table.getRowModel().rows;
+  const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentClients = filteredClients.slice(indexOfFirstItem, indexOfLastItem);
-
-  const activeImport = imports.find(i => i.id === selectedImportId);
+  const currentClientsRows = sortedRows.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="space-y-6">
@@ -849,8 +1053,65 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               </div>
             </div>
 
-            {/* Exportadores */}
+            {/* Exportadores e Seletor de Colunas */}
             <div className="flex items-center gap-2">
+              {/* Dropdown de Visibilidade de Colunas (TanStack Table) */}
+              <div className="relative">
+                {isColumnDropdownOpen && (
+                  <div 
+                    className="fixed inset-0 z-20 cursor-default" 
+                    onClick={() => setIsColumnDropdownOpen(false)}
+                  />
+                )}
+                <button
+                  onClick={() => setIsColumnDropdownOpen(!isColumnDropdownOpen)}
+                  className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer z-30 relative ${
+                    theme === 'dark' 
+                      ? 'border-slate-800 text-slate-300 bg-slate-950 hover:bg-slate-900' 
+                      : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50'
+                  }`}
+                  title="Configurar colunas exibidas na tabela"
+                >
+                  <SlidersHorizontal size={14} />
+                  Colunas
+                </button>
+                
+                {isColumnDropdownOpen && (
+                  <div 
+                    className={`absolute right-0 mt-2 w-56 rounded-2xl border p-3 z-30 shadow-xl space-y-2 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-950 border-slate-800 text-white' 
+                        : 'bg-white border-slate-200 text-slate-900'
+                    }`}
+                  >
+                    <div className="text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1">
+                      Exibir Colunas
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 select-none">
+                      {table.getAllLeafColumns()
+                        .filter(column => column.id !== 'actions' && column.id !== 'status')
+                        .map(column => {
+                          const isVisible = column.getIsVisible();
+                          return (
+                            <label 
+                              key={column.id} 
+                              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/[0.04] cursor-pointer text-[11px] font-bold"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isVisible}
+                                onChange={column.getToggleVisibilityHandler()}
+                                className="rounded border-slate-800 text-orange-500 focus:ring-orange-500"
+                              />
+                              <span className="truncate">{column.id}</span>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={handleDownloadOriginal}
                 className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer ${
@@ -867,12 +1128,12 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-md shadow-orange-500/10 flex items-center gap-1.5 cursor-pointer"
               >
                 <FileArrowDown size={14} />
-                Baixar Planilha Atualizada
+                Baixar Planilha
               </button>
             </div>
           </div>
 
-          {/* Tabela Premium de Clientes */}
+          {/* Tabela Premium de Clientes (TanStack Table) */}
           <div className={`border rounded-3xl overflow-hidden ${
             theme === 'dark' ? 'bg-slate-950/40 border-white/[0.04]' : 'bg-white border-slate-200 shadow-sm'
           }`}>
@@ -889,190 +1150,54 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className={`border-b ${theme === 'dark' ? 'bg-slate-900/50 border-white/[0.04]' : 'bg-slate-50 border-slate-100'}`}>
-                      <th className="p-4 font-bold text-slate-400 uppercase tracking-wider">Nome</th>
-                      <th className="p-4 font-bold text-slate-400 uppercase tracking-wider">CPF</th>
-                      <th className="p-4 font-bold text-slate-400 uppercase tracking-wider">Valor</th>
-                      <th className="p-4 font-bold text-slate-400 uppercase tracking-wider">Vencimento</th>
-                      {/* Mostrar as 2 primeiras colunas customizadas extras na tabela para contextualizar */}
-                      {activeImport?.headers
-                        .filter(h => !Object.values(activeImport.columnMapping).includes(h))
-                        .slice(0, 2)
-                        .map(h => (
-                          <th key={h} className="p-4 font-bold text-slate-400 uppercase tracking-wider relative group">
-                            {editingHeader === h ? (
-                              <div className="flex items-center gap-1.5 normal-case">
-                                <input
-                                  type="text"
-                                  value={newHeaderName}
-                                  onChange={(e) => setNewHeaderName(e.target.value)}
-                                  className={`px-2 py-0.5 rounded text-[10px] outline-none border ${
-                                    theme === 'dark' ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
-                                  }`}
-                                  placeholder="Novo nome"
-                                  autoFocus
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleRenameHeader(h);
-                                    if (e.key === 'Escape') setEditingHeader(null);
-                                  }}
-                                />
-                                <button
-                                  onClick={() => handleRenameHeader(h)}
-                                  disabled={isSavingHeader}
-                                  className="p-0.5 text-emerald-400 hover:text-emerald-300 cursor-pointer disabled:opacity-50"
-                                >
-                                  <Check size={12} />
-                                </button>
-                                <button
-                                  onClick={() => setEditingHeader(null)}
-                                  className="p-0.5 text-rose-400 hover:text-rose-300 cursor-pointer"
-                                >
-                                  <XIcon size={12} />
-                                </button>
+                    {table.getHeaderGroups().map(headerGroup => (
+                      <tr 
+                        key={headerGroup.id} 
+                        className={`border-b ${theme === 'dark' ? 'bg-slate-900/50 border-white/[0.04]' : 'bg-slate-50 border-slate-100'}`}
+                      >
+                        {headerGroup.headers.map(header => {
+                          const isSortable = header.column.id !== 'actions' && header.column.id !== 'status';
+                          return (
+                            <th 
+                              key={header.id} 
+                              className={`p-4 font-bold text-slate-400 uppercase tracking-wider relative group ${
+                                isSortable ? 'cursor-pointer select-none hover:text-white transition-colors' : ''
+                              }`}
+                              onClick={isSortable ? header.column.getToggleSortingHandler() : undefined}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                
+                                {isSortable && (
+                                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300">
+                                    {{
+                                      asc: <CaretUp size={10} weight="bold" />,
+                                      desc: <CaretDown size={10} weight="bold" />,
+                                    }[header.column.getIsSorted() as string] ?? (
+                                      <ArrowsDownUp size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    )}
+                                  </span>
+                                )}
                               </div>
-                            ) : (
-                              <div 
-                                className="flex items-center gap-1.5 cursor-pointer select-none group/hdr hover:text-white transition-colors" 
-                                onClick={() => {
-                                  setEditingHeader(h);
-                                  setNewHeaderName(h);
-                                }}
-                                title="Clique para renomear esta coluna"
-                              >
-                                <span>{h || 'Coluna Sem Nome'}</span>
-                                <PencilSimple 
-                                  size={12} 
-                                  className="text-slate-500 opacity-0 group-hover/hdr:opacity-100 transition-opacity" 
-                                />
-                              </div>
-                            )}
-                          </th>
-                        ))}
-                      <th className="p-4 font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                      <th className="p-4 font-bold text-slate-400 uppercase tracking-wider text-center">Ações</th>
-                    </tr>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    ))}
                   </thead>
                   <tbody className="divide-y divide-white/[0.02]">
-                    {currentClients.map(cli => (
+                    {currentClientsRows.map(row => (
                       <tr 
-                        key={cli.id} 
+                        key={row.id} 
                         className={`transition-colors group ${
                           theme === 'dark' ? 'hover:bg-slate-900/20' : 'hover:bg-slate-50/50'
                         }`}
                       >
-                        <td className="p-4">
-                          <span className={`font-black ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
-                            {cli.clientName}
-                          </span>
-                        </td>
-                        <td className="p-4 font-mono text-slate-400">{maskCPF(cli.clientCpf)}</td>
-                        <td className={`p-4 font-bold ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                          {formatCurrency(cli.value)}
-                        </td>
-                        <td className="p-4 text-slate-400">{cli.dueDate}</td>
-                        
-                        {/* Custom fields extras */}
-                        {activeImport?.headers
-                          .filter(h => !Object.values(activeImport.columnMapping).includes(h))
-                          .slice(0, 2)
-                          .map(h => (
-                            <td key={h} className="p-4">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                theme === 'dark' ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-700'
-                              }`}>
-                                {cli.customFields[h] || '-'}
-                              </span>
-                            </td>
-                          ))}
-
-                        {/* Status Tag */}
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                            cli.status === 'treated' 
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                              : (cli.status === 'ignored' 
-                                ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' 
-                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20')
-                          }`}>
-                            {cli.status === 'treated' ? 'Tratado' : (cli.status === 'ignored' ? 'Ignorado' : 'Pendente')}
-                          </span>
-                        </td>
-
-                        {/* Ações */}
-                        <td className="p-4">
-                          <div className="flex items-center justify-center gap-1.5">
-                            {/* Notas */}
-                            <button
-                              onClick={() => setActiveClientForNotes(cli)}
-                              className={`p-1.5 rounded-lg border transition-all cursor-pointer relative ${
-                                cli.notes && cli.notes.length > 0 
-                                  ? 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20' 
-                                  : 'bg-slate-900 border-white/[0.04] text-slate-400 hover:text-white'
-                              }`}
-                              title={`${cli.notes?.length || 0} Notas`}
-                            >
-                              <ChatText size={14} />
-                              {cli.notes && cli.notes.length > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-orange-600 text-[8px] font-black text-white">
-                                  {cli.notes.length}
-                                </span>
-                              )}
-                            </button>
-
-                            {/* Registrar Acordo diretamente */}
-                            {onAttend && cli.status !== 'treated' && (
-                              <button
-                                onClick={() => onAttend({
-                                  id: '', // Criar novo
-                                  clientName: cli.clientName,
-                                  clientCpf: cli.clientCpf,
-                                  value: cli.value,
-                                  status: 'aguardando',
-                                  createdAt: new Date().toISOString(),
-                                  createdBy: profile.uid,
-                                  teamId: profile.teamId || '',
-                                  organizationId: profile.organizationId || '',
-                                  backOfficeClientIdRef: cli.id
-                                })}
-                                className="p-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/25 transition-all cursor-pointer"
-                                title="Registrar Acordo Fechado"
-                              >
-                                <Handshake size={14} />
-                              </button>
-                            )}
-
-                            {/* Ações de status */}
-                            {cli.status !== 'treated' && (
-                              <button
-                                onClick={() => handleUpdateStatus(cli.id, 'treated')}
-                                className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/25 transition-all cursor-pointer"
-                                title="Marcar como Tratado"
-                              >
-                                <Check size={14} />
-                              </button>
-                            )}
-
-                            {cli.status !== 'ignored' && (
-                              <button
-                                onClick={() => handleUpdateStatus(cli.id, 'ignored')}
-                                className="p-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 hover:bg-slate-500/25 transition-all cursor-pointer"
-                                title="Ignorar Cliente"
-                              >
-                                <XIcon size={14} />
-                              </button>
-                            )}
-
-                            {(cli.status === 'treated' || cli.status === 'ignored') && (
-                              <button
-                                onClick={() => handleUpdateStatus(cli.id, 'pending')}
-                                className="px-1.5 py-1 rounded-lg border border-orange-500/20 text-orange-400 hover:bg-orange-500/10 text-[9px] font-bold uppercase transition-all cursor-pointer"
-                                title="Voltar para Pendente"
-                              >
-                                Reabrir
-                              </button>
-                            )}
-                          </div>
-                        </td>
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id} className="p-4">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
