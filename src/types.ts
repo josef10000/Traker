@@ -266,3 +266,16 @@ export interface BackOfficeClient {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Invite {
+  id: string;
+  email: string;
+  role: UserRole;
+  teamId: string | null;
+  organizationId: string;
+  status: 'pending' | 'accepted' | 'expired';
+  token: string;
+  invitedBy: string;
+  createdAt: string;
+  expiresAt: string;
+}

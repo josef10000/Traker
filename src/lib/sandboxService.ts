@@ -12,7 +12,9 @@ import {
   Pdi,
   BackOfficeImport,
   BackOfficeClient,
-  QaSettings
+  QaSettings,
+  Invite,
+  UserRole
 } from '../types';
 
 // Tipo para listeners reativos
@@ -32,6 +34,8 @@ class SandboxService {
   private backofficeImports: Record<string, BackOfficeImport> = {};
   private backofficeClients: Record<string, BackOfficeClient> = {};
   private qaSettings: Record<string, QaSettings> = {};
+  private invites: Record<string, Invite> = {};
+
 
   constructor() {
     this.resetSandbox();
@@ -345,6 +349,51 @@ class SandboxService {
     });
 
     this.qaSettings = {};
+    
+    // Iniciar e popular convites de teste
+    this.invites = {};
+    const inviteTestList: Invite[] = [
+      {
+        id: 'sandbox-invite-1',
+        email: 'colaborador.novo@sandbox.local',
+        role: 'member',
+        teamId: 'team-fenix',
+        organizationId: orgId,
+        status: 'pending',
+        token: 'invite-member-token',
+        invitedBy: 'sandbox-manager-a',
+        createdAt: now,
+        expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'sandbox-invite-2',
+        email: 'lider.novo@sandbox.local',
+        role: 'supervisor',
+        teamId: 'team-aguia',
+        organizationId: orgId,
+        status: 'pending',
+        token: 'invite-sup-token',
+        invitedBy: 'sandbox-manager-a',
+        createdAt: now,
+        expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'sandbox-invite-3',
+        email: 'back.equipe@sandbox.local',
+        role: 'backoffice',
+        teamId: 'team-fenix',
+        organizationId: orgId,
+        status: 'pending',
+        token: 'invite-back-token',
+        invitedBy: 'sandbox-supervisor-a1',
+        createdAt: now,
+        expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
+      }
+    ];
+    inviteTestList.forEach(inv => {
+      this.invites[inv.id] = inv;
+    });
+
     this.notify();
   }
 
@@ -562,6 +611,86 @@ class SandboxService {
       };
       this.notify();
     }
+  }
+
+  // --- MÉTODOS DE CONVITES DO SANDBOX ---
+  
+  public getPendingInvites(orgId: string): Invite[] {
+    return Object.values(this.invites).filter(
+      inv => inv.organizationId === orgId && inv.status === 'pending'
+    );
+  }
+
+  public createInvitesInBulk(
+    invitesData: Array<{ email: string; role: UserRole; teamId: string | null }>,
+    orgId: string,
+    invitedBy: string
+  ): Invite[] {
+    const now = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+    const newInvites: Invite[] = [];
+
+    invitesData.forEach((data, index) => {
+      const id = `sandbox-invite-${Date.now()}-${index}`;
+      const token = `sb-tok-${Math.random().toString(36).substring(2, 8)}`;
+      const invite: Invite = {
+        id,
+        email: data.email.trim(),
+        role: data.role,
+        teamId: data.teamId,
+        organizationId: orgId,
+        status: 'pending',
+        token,
+        invitedBy,
+        createdAt: now,
+        expiresAt
+      };
+
+      this.invites[id] = invite;
+      newInvites.push(invite);
+    });
+
+    this.notify();
+    return newInvites;
+  }
+
+  public revokeInvite(inviteId: string): void {
+    if (this.invites[inviteId]) {
+      delete this.invites[inviteId];
+      this.notify();
+    }
+  }
+
+  public validateInvite(token: string): Invite | null {
+    const invite = Object.values(this.invites).find(
+      inv => inv.token === token && inv.status === 'pending'
+    );
+    if (!invite) return null;
+    return invite;
+  }
+
+  public acceptInvite(uid: string, token: string): void {
+    const invite = Object.values(this.invites).find(inv => inv.token === token);
+    if (!invite) return;
+
+    // Marca como aceito
+    invite.status = 'accepted';
+
+    // Cria o usuário simulado
+    const now = new Date().toISOString();
+    const newUser: UserProfile = {
+      uid,
+      email: invite.email,
+      displayName: invite.email.split('@')[0],
+      role: invite.role,
+      teamId: invite.teamId || undefined,
+      organizationId: invite.organizationId,
+      createdAt: now,
+      managedTeams: invite.role === 'supervisor' && invite.teamId ? [invite.teamId] : undefined
+    };
+
+    this.users[uid] = newUser;
+    this.notify();
   }
 }
 

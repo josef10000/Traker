@@ -9,8 +9,10 @@ import {
   GoogleAuthProvider 
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
-
+import { validateInvite, acceptInvite } from '../../lib/teams';
+import { sandboxService } from '../../lib/sandboxService';
 import { ToastType } from '../ui/Toast';
+
 
 interface LoginPageProps {
   onAuthSuccess: () => void;
@@ -26,6 +28,47 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Estados do Onboarding por Convite
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteData, setInviteData] = useState<any>(null);
+  const [isInviteValidating, setIsInviteValidating] = useState(false);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('invite');
+    if (token) {
+      setInviteToken(token);
+      setIsInviteValidating(true);
+      
+      const validate = async () => {
+        try {
+          let data: any = null;
+          if (token.startsWith('sb-tok')) {
+            data = sandboxService.validateInvite(token);
+          } else {
+            data = await validateInvite(token);
+          }
+
+          if (data) {
+            setInviteData(data);
+            setEmail(data.email);
+            setIsLogin(false); // Força tela de cadastro
+            showToast(`Convite válido recebido para ${data.email}!`, 'success');
+          } else {
+            showToast('O link de convite é inválido ou expirou.', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro ao validar convite.', 'error');
+        } finally {
+          setIsInviteValidating(false);
+        }
+      };
+      
+      validate();
+    }
+  }, [showToast]);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -34,7 +77,22 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        // Se for convite, valida se o e-mail inserido é o e-mail convidado
+        if (inviteData && email.trim().toLowerCase() !== inviteData.email.toLowerCase()) {
+          throw new Error(`Este link de convite pertence a ${inviteData.email}. Por favor, registre-se com este e-mail.`);
+        }
+
+        const authResult = await createUserWithEmailAndPassword(auth, email, password);
+        
+        // Se houver token de convite ativo, aceita e vincula no Firestore
+        if (inviteToken) {
+          if (inviteToken.startsWith('sb-tok')) {
+            sandboxService.acceptInvite(authResult.user.uid, inviteToken);
+          } else {
+            await acceptInvite(authResult.user.uid, inviteToken);
+          }
+          showToast('Conta criada e vinculada à organização!', 'success');
+        }
       }
       onAuthSuccess();
     } catch (err: any) {
@@ -134,6 +192,22 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
           </div>
         </div>
 
+        {inviteData && (
+          <div className="bg-sky-500/10 border border-sky-500/20 p-4 rounded-2xl text-sky-400 text-xs text-center space-y-1">
+            <p className="font-bold">Convite Ativo</p>
+            <p className="opacity-80">
+              Você foi convidado para a função de <span className="font-bold uppercase">{inviteData.role === 'member' ? 'Operador' : inviteData.role}</span>. Preencha uma senha para registrar-se.
+            </p>
+          </div>
+        )}
+
+        {isInviteValidating && (
+          <div className="flex items-center justify-center gap-2 text-sky-400 text-xs">
+            <CircleNotch className="animate-spin" size={16} />
+            <span>Validando link de convite...</span>
+          </div>
+        )}
+
         {error && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl text-rose-400 text-[10px] font-black uppercase tracking-widest text-center">
             {error}
@@ -151,7 +225,8 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
                   type="email" 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
-                  className="w-full bg-transparent border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-white/20" 
+                  disabled={!!inviteData || isInviteValidating}
+                  className="w-full bg-transparent border border-white/10 pl-14 pr-6 py-4 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 outline-none transition-all text-white placeholder:text-white/20 disabled:opacity-50" 
                   placeholder="seu@email.com" 
                 />
               </div>

@@ -12,7 +12,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Team, UserProfile, UserRole, Organization } from '../types';
+import { Team, UserProfile, UserRole, Organization, Invite } from '../types';
 
 export const generateSecureToken = (length: number): string => {
   const array = new Uint8Array(length);
@@ -412,4 +412,150 @@ export const regenerateMonitorInviteToken = async (orgId: string): Promise<strin
     monitorInviteToken: token
   });
   return token;
+};
+
+export const getPendingInvites = async (organizationId: string): Promise<Invite[]> => {
+  const invitesRef = collection(db, 'invites');
+  const q = query(
+    invitesRef, 
+    where('organizationId', '==', organizationId),
+    where('status', '==', 'pending')
+  );
+  const querySnapshot = await getDocs(q);
+  
+  const now = new Date().getTime();
+  const list: Invite[] = [];
+  
+  for (const inviteDoc of querySnapshot.docs) {
+    const data = inviteDoc.data() as Invite;
+    if (data.expiresAt && now > new Date(data.expiresAt).getTime()) {
+      updateDoc(inviteDoc.ref, { status: 'expired' });
+    } else {
+      list.push(data);
+    }
+  }
+  
+  return list;
+};
+
+export const createInvitesInBulk = async (
+  invitesData: Array<{ email: string; role: UserRole; teamId: string | null }>,
+  organizationId: string,
+  invitedBy: string
+): Promise<Invite[]> => {
+  const orgRef = doc(db, 'organizations', organizationId);
+  const orgSnap = await getDoc(orgRef);
+  if (!orgSnap.exists()) {
+    throw new Error('A organização não foi encontrada.');
+  }
+  const orgData = orgSnap.data() as Organization;
+  if (orgData.status === 'inactive') {
+    throw new Error('Esta empresa está suspensa. Não é possível convidar novos membros.');
+  }
+
+  const usersRef = collection(db, 'users');
+  const userCountQuery = query(usersRef, where('organizationId', '==', organizationId));
+  const userCountSnap = await getDocs(userCountQuery);
+
+  const pendingInvites = await getPendingInvites(organizationId);
+  const totalSlotsUsed = userCountSnap.size + pendingInvites.length;
+
+  if (totalSlotsUsed + invitesData.length > orgData.maxUsers) {
+    throw new Error(
+      `Limite do plano excedido. Sua empresa possui ${userCountSnap.size} membros ativos e ${pendingInvites.length} convites pendentes. Limite máximo: ${orgData.maxUsers} usuários.`
+    );
+  }
+
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+  const createdList: Invite[] = [];
+
+  for (let i = 0; i < invitesData.length; i++) {
+    const data = invitesData[i];
+    const inviteId = generateSecureToken(12);
+    const token = generateSecureToken(16);
+
+    const invite: Invite = {
+      id: inviteId,
+      email: data.email.trim().toLowerCase(),
+      role: data.role,
+      teamId: data.teamId,
+      organizationId,
+      status: 'pending',
+      token,
+      invitedBy,
+      createdAt: now,
+      expiresAt
+    };
+
+    await setDoc(doc(db, 'invites', inviteId), invite);
+    createdList.push(invite);
+  }
+
+  return createdList;
+};
+
+export const revokeInvite = async (inviteId: string): Promise<void> => {
+  await deleteDoc(doc(db, 'invites', inviteId));
+};
+
+export const validateInvite = async (token: string): Promise<Invite | null> => {
+  const invitesRef = collection(db, 'invites');
+  const q = query(
+    invitesRef, 
+    where('token', '==', token), 
+    where('status', '==', 'pending')
+  );
+  const snap = await getDocs(q);
+
+  if (snap.empty) return null;
+
+  const data = snap.docs[0].data() as Invite;
+  
+  if (data.expiresAt && new Date().getTime() > new Date(data.expiresAt).getTime()) {
+    await updateDoc(snap.docs[0].ref, { status: 'expired' });
+    return null;
+  }
+
+  return data;
+};
+
+export const acceptInvite = async (uid: string, token: string): Promise<void> => {
+  const invitesRef = collection(db, 'invites');
+  const q = query(invitesRef, where('token', '==', token));
+  const snap = await getDocs(q);
+
+  if (snap.empty) {
+    throw new Error('Convite não encontrado.');
+  }
+
+  const inviteDoc = snap.docs[0];
+  const inviteData = inviteDoc.data() as Invite;
+
+  if (inviteData.status !== 'pending') {
+    throw new Error('Este convite já foi aceito ou está expirado.');
+  }
+
+  const now = new Date().toISOString();
+
+  const userProfile: UserProfile = {
+    uid,
+    email: inviteData.email,
+    displayName: inviteData.email.split('@')[0],
+    role: inviteData.role,
+    teamId: inviteData.teamId || undefined,
+    organizationId: inviteData.organizationId,
+    createdAt: now,
+    managedTeams: inviteData.role === 'supervisor' && inviteData.teamId ? [inviteData.teamId] : undefined
+  };
+
+  await setDoc(doc(db, 'users', uid), userProfile);
+
+  if (inviteData.role === 'supervisor' && inviteData.teamId) {
+    await updateDoc(doc(db, 'teams', inviteData.teamId), {
+      supervisorId: uid
+    });
+  }
+
+  await updateDoc(inviteDoc.ref, { status: 'accepted' });
 };

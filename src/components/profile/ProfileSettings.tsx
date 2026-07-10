@@ -11,14 +11,28 @@ import {
   Check, 
   X,
   ShieldCheck,
-  Copy
+  Copy,
+  PaperPlaneTilt,
+  UserPlus
 } from '@phosphor-icons/react';
 import { doc, updateDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { UserProfile, Team, Organization } from '../../types';
-import { getTeamData, deleteTeam, getTeamMembers, removeTeamMember, regenerateSupervisorInviteToken, regenerateCoordinatorInviteToken, regenerateMonitorInviteToken } from '../../lib/teams';
+import { UserProfile, Team, Organization, Invite, UserRole } from '../../types';
+import { 
+  getTeamData, 
+  deleteTeam, 
+  getTeamMembers, 
+  removeTeamMember, 
+  regenerateSupervisorInviteToken, 
+  regenerateCoordinatorInviteToken, 
+  regenerateMonitorInviteToken,
+  createInvitesInBulk,
+  getPendingInvites,
+  revokeInvite
+} from '../../lib/teams';
 import { ToastType } from '../ui/Toast';
 import { sandboxService } from '../../lib/sandboxService';
+
 
 interface ProfileSettingsProps {
   profile: UserProfile;
@@ -45,6 +59,39 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
   const [monitorInviteToken, setMonitorInviteToken] = useState<string | null>(null);
 
   const [sandboxVersion, setSandboxVersion] = useState(0);
+
+  // Estados de gerenciamento de convites
+  const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
+  const [loadingInvites, setLoadingInvites] = useState(false);
+  const [inviteRows, setInviteRows] = useState<Array<{ email: string; role: UserRole; teamId: string }>>([
+    { email: '', role: 'member', teamId: '' }
+  ]);
+  const [generatedInvites, setGeneratedInvites] = useState<Invite[] | null>(null);
+  const [isGeneratingInvites, setIsGeneratingInvites] = useState(false);
+
+  // Buscar convites pendentes
+  const loadInvites = async () => {
+    if (!profile.organizationId) return;
+    setLoadingInvites(true);
+    try {
+      if (profile.organizationId === 'sandbox-test') {
+        const list = sandboxService.getPendingInvites(profile.organizationId);
+        setPendingInvites(list);
+      } else {
+        const list = await getPendingInvites(profile.organizationId);
+        setPendingInvites(list);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar convites:', e);
+    } finally {
+      setLoadingInvites(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInvites();
+  }, [profile.organizationId, sandboxVersion]);
+
 
   useEffect(() => {
     if (profile.organizationId === 'sandbox-test') {
@@ -197,6 +244,105 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
       } catch (error) {
         showToast('Erro ao excluir equipe.', 'error');
       }
+    }
+  };
+
+  // --- AÇÕES DO FORMULÁRIO DINÂMICO DE CONVITES ---
+
+  const handleAddInviteRow = () => {
+    setInviteRows(prev => [...prev, { email: '', role: 'member', teamId: '' }]);
+  };
+
+  const handleRemoveInviteRow = (index: number) => {
+    if (inviteRows.length === 1) return;
+    setInviteRows(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleInviteRowChange = (index: number, field: 'email' | 'role' | 'teamId', value: string) => {
+    setInviteRows(prev => prev.map((row, idx) => {
+      if (idx !== index) return row;
+      const updatedRow = { ...row, [field]: value };
+      
+      // Se mudar a role para um cargo que não tem equipe (manager, coordinator, monitor), limpa o time
+      if (field === 'role' && !['member', 'supervisor', 'backoffice'].includes(value)) {
+        updatedRow.teamId = '';
+      }
+      return updatedRow;
+    }));
+  };
+
+  const handleGenerateInvites = async () => {
+    if (!profile.organizationId) return;
+
+    const invalidRows = inviteRows.filter(row => !row.email.trim() || !row.email.includes('@'));
+    if (invalidRows.length > 0) {
+      showToast('Por favor, preencha todos os e-mails corretamente.', 'error');
+      return;
+    }
+
+    setIsGeneratingInvites(true);
+    try {
+      const invitesPayload = inviteRows.map(row => ({
+        email: row.email.trim().toLowerCase(),
+        role: row.role,
+        teamId: row.teamId || null
+      }));
+
+      let list: Invite[] = [];
+      if (profile.organizationId === 'sandbox-test') {
+        list = sandboxService.createInvitesInBulk(
+          invitesPayload,
+          profile.organizationId,
+          profile.uid
+        );
+        showToast('Convites simulados criados no Sandbox!', 'success');
+      } else {
+        list = await createInvitesInBulk(
+          invitesPayload,
+          profile.organizationId,
+          profile.uid
+        );
+        showToast('Convites gerados com sucesso!', 'success');
+      }
+
+      setGeneratedInvites(list);
+      setInviteRows([{ email: '', role: 'member', teamId: '' }]);
+      loadInvites();
+      onUpdate({});
+    } catch (e: any) {
+      showToast(e.message || 'Erro ao gerar convites.', 'error');
+    } finally {
+      setIsGeneratingInvites(false);
+    }
+  };
+
+  const handleRevokeInvite = async (inviteId: string) => {
+    if (confirm('Deseja revogar e cancelar este convite? O link associado não funcionará mais.')) {
+      try {
+        if (profile.organizationId === 'sandbox-test') {
+          sandboxService.revokeInvite(inviteId);
+          showToast('Convite simulado revogado!', 'success');
+        } else {
+          await revokeInvite(inviteId);
+          showToast('Convite revogado com sucesso!', 'success');
+        }
+        loadInvites();
+        onUpdate({});
+      } catch (e) {
+        showToast('Erro ao revogar convite.', 'error');
+      }
+    }
+  };
+
+  const handleSimulateAccept = async (token: string, email: string) => {
+    try {
+      const simulatedUid = `sandbox-user-${Date.now()}`;
+      sandboxService.acceptInvite(simulatedUid, token);
+      showToast(`Simulação: ${email} aceitou o convite e se cadastrou!`, 'success');
+      loadInvites();
+      onUpdate({});
+    } catch (e) {
+      showToast('Erro ao simular aceitação.', 'error');
     }
   };
 
@@ -407,14 +553,15 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
 
         {/* Gestão de Equipes */}
         {(profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator') && (
-          <div className="glass-card rounded-3xl p-8 shadow-2xl">
-            <div className="flex items-center justify-between mb-8">
+          <div className="glass-card rounded-3xl p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div>
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Users size={22} className="text-primary" />
                   {(profile.role === 'manager' || profile.role === 'coordinator') ? 'Equipes da Empresa' : 'Minhas Equipes'}
                 </h3>
                 {(profile.role === 'manager' || profile.role === 'coordinator') && (
-                  <p className="text-xs text-slate-400 mt-1">Todas as equipes cadastradas sob o tenant da organização.</p>
+                  <p className="text-xs text-slate-400 mt-1">Todas as equipes cadastradas sob a organização.</p>
                 )}
               </div>
               {(profile.role === 'manager' || profile.role === 'coordinator') && (
@@ -427,131 +574,6 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
                 </button>
               )}
             </div>
-
-            {(profile.role === 'manager' || profile.role === 'coordinator') && (
-              <div className="space-y-4 mb-8">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Convites de Nível Organizacional</h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Convite Supervisor */}
-                  <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col justify-between gap-3">
-                    <div>
-                      <h5 className="text-xs font-bold text-white uppercase tracking-wider">Supervisor</h5>
-                      <p className="text-[10px] text-slate-500 mt-1">Convite para gerenciar equipes operacionais.</p>
-                    </div>
-                    {supervisorInviteToken ? (
-                      <div className="flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 mt-2">
-                        <span className="text-xs text-primary font-bold font-mono">{supervisorInviteToken}</span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(supervisorInviteToken);
-                            showToast('Código de Supervisor copiado!', 'success');
-                          }}
-                          className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
-                        >
-                          <Copy size={12} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={async () => {
-                          if (profile.organizationId) {
-                            try {
-                              const token = await regenerateSupervisorInviteToken(profile.organizationId);
-                              setSupervisorInviteToken(token);
-                              showToast('Código de Supervisor gerado!', 'success');
-                            } catch (e) {
-                              showToast('Erro ao gerar código', 'error');
-                            }
-                          }
-                        }}
-                        className="w-full py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] rounded-lg transition-all uppercase tracking-wider cursor-pointer"
-                      >
-                        Gerar Código
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Convite Coordenador */}
-                  <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col justify-between gap-3">
-                    <div>
-                      <h5 className="text-xs font-bold text-white uppercase tracking-wider">Coordenador</h5>
-                      <p className="text-[10px] text-slate-500 mt-1">Acesso completo e criação de equipes.</p>
-                    </div>
-                    {coordinatorInviteToken ? (
-                      <div className="flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 mt-2">
-                        <span className="text-xs text-primary font-bold font-mono">{coordinatorInviteToken}</span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(coordinatorInviteToken);
-                            showToast('Código de Coordenador copiado!', 'success');
-                          }}
-                          className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
-                        >
-                          <Copy size={12} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={async () => {
-                          if (profile.organizationId) {
-                            try {
-                              const token = await regenerateCoordinatorInviteToken(profile.organizationId);
-                              setCoordinatorInviteToken(token);
-                              showToast('Código de Coordenador gerado!', 'success');
-                            } catch (e) {
-                              showToast('Erro ao gerar código', 'error');
-                            }
-                          }
-                        }}
-                        className="w-full py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] rounded-lg transition-all uppercase tracking-wider cursor-pointer"
-                      >
-                        Gerar Código
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Convite Monitor */}
-                  <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col justify-between gap-3">
-                    <div>
-                      <h5 className="text-xs font-bold text-white uppercase tracking-wider">Monitor (QA)</h5>
-                      <p className="text-[10px] text-slate-500 mt-1">Acesso para monitorias e PDIs.</p>
-                    </div>
-                    {monitorInviteToken ? (
-                      <div className="flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 mt-2">
-                        <span className="text-xs text-primary font-bold font-mono">{monitorInviteToken}</span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(monitorInviteToken);
-                            showToast('Código de Monitor copiado!', 'success');
-                          }}
-                          className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
-                        >
-                          <Copy size={12} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={async () => {
-                          if (profile.organizationId) {
-                            try {
-                              const token = await regenerateMonitorInviteToken(profile.organizationId);
-                              setMonitorInviteToken(token);
-                              showToast('Código de Monitor gerado!', 'success');
-                            } catch (e) {
-                              showToast('Erro ao gerar código', 'error');
-                            }
-                          }
-                        }}
-                        className="w-full py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] rounded-lg transition-all uppercase tracking-wider cursor-pointer"
-                      >
-                        Gerar Código
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-3">
               {managedTeamsData.length === 0 ? (
@@ -571,20 +593,6 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
                         <h4 className="text-white font-bold">{team.name}</h4>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1 mt-1">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">ID: {team.id}</p>
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                            <span className="font-bold">Convite Operador:</span>
-                            <span className="text-emerald-400 font-bold font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">{team.inviteToken}</span>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(team.inviteToken);
-                                showToast('Código de operador copiado!', 'success');
-                              }}
-                              className="p-1 hover:bg-white/5 rounded text-slate-400 hover:text-white"
-                              title="Copiar Código de Operador"
-                            >
-                              <Copy size={12} />
-                            </button>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -604,6 +612,225 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Gestão de Convites Profissionais (SaaS Enterprise) */}
+        {(profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator') && (
+          <div className="glass-card rounded-3xl p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <PaperPlaneTilt size={22} className="text-primary" />
+                  Convidar Novos Colaboradores
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Gere links de convite dinâmicos e individuais atrelados ao e-mail corporativo.
+                </p>
+              </div>
+            </div>
+
+            {/* Linhas Dinâmicas de Convites */}
+            <div className="space-y-4">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">
+                Colaboradores a Convidar
+              </div>
+
+              <div className="space-y-3">
+                {inviteRows.map((row, idx) => {
+                  const showTeamSelector = ['member', 'supervisor', 'backoffice'].includes(row.role);
+                  return (
+                    <div key={idx} className="flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-slate-950/40 p-4 border border-slate-900 rounded-2xl">
+                      {/* E-mail */}
+                      <div className="flex-1">
+                        <label className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">E-mail</label>
+                        <input
+                          type="email"
+                          placeholder="nome@empresa.com"
+                          value={row.email}
+                          onChange={(e) => handleInviteRowChange(idx, 'email', e.target.value)}
+                          className="w-full px-4 py-2 border border-slate-800 bg-slate-950 text-white rounded-xl text-xs outline-none focus:border-primary transition-all"
+                        />
+                      </div>
+
+                      {/* Cargo (Role) */}
+                      <div className="w-full md:w-48">
+                        <label className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">Cargo</label>
+                        {profile.role === 'supervisor' ? (
+                          <select
+                            value={row.role}
+                            onChange={(e) => handleInviteRowChange(idx, 'role', e.target.value as UserRole)}
+                            className="w-full px-4 py-2 border border-slate-800 bg-slate-950 text-white rounded-xl text-xs outline-none focus:border-primary transition-all cursor-pointer"
+                          >
+                            <option value="member" className="bg-slate-950 text-white">Operador</option>
+                            <option value="backoffice" className="bg-slate-950 text-white">BackOffice</option>
+                          </select>
+                        ) : (
+                          <select
+                            value={row.role}
+                            onChange={(e) => handleInviteRowChange(idx, 'role', e.target.value as UserRole)}
+                            className="w-full px-4 py-2 border border-slate-800 bg-slate-950 text-white rounded-xl text-xs outline-none focus:border-primary transition-all cursor-pointer"
+                          >
+                            <option value="member" className="bg-slate-950 text-white">Operador</option>
+                            <option value="supervisor" className="bg-slate-950 text-white">Supervisor</option>
+                            <option value="backoffice" className="bg-slate-950 text-white">BackOffice</option>
+                            <option value="coordinator" className="bg-slate-950 text-white">Coordenador</option>
+                            <option value="monitor" className="bg-slate-950 text-white">Monitor/QA</option>
+                            <option value="manager" className="bg-slate-950 text-white">Gerente</option>
+                          </select>
+                        )}
+                      </div>
+
+                      {/* Equipe */}
+                      <div className="w-full md:w-48">
+                        <label className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">Equipe</label>
+                        <select
+                          disabled={!showTeamSelector}
+                          value={row.teamId}
+                          onChange={(e) => handleInviteRowChange(idx, 'teamId', e.target.value)}
+                          className="w-full px-4 py-2 border border-slate-800 bg-slate-950 text-white rounded-xl text-xs outline-none focus:border-primary transition-all disabled:opacity-30 cursor-pointer"
+                        >
+                          <option value="" className="bg-slate-950 text-slate-500">Sem equipe</option>
+                          {managedTeamsData.map(team => (
+                            <option key={team.id} value={team.id} className="bg-slate-950 text-white">{team.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Ação de Remover */}
+                      {inviteRows.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveInviteRow(idx)}
+                          className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl transition-all self-end md:self-auto cursor-pointer"
+                          title="Remover linha"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Botões de Ações do Formulário */}
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleAddInviteRow}
+                  className="w-full sm:w-auto px-4 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus size={14} />
+                  Adicionar outro
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateInvites}
+                  disabled={isGeneratingInvites}
+                  className="w-full sm:w-auto px-6 py-2 bg-primary hover:bg-primary/80 disabled:bg-primary/50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-primary/10 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {isGeneratingInvites ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                  ) : (
+                    <UserPlus size={14} />
+                  )}
+                  Gerar Links de Convite
+                </button>
+              </div>
+            </div>
+
+            {/* Listagem de Convites Pendentes */}
+            <div className="space-y-3 pt-4 border-t border-white/5">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">
+                Convites Pendentes ({pendingInvites.length})
+              </div>
+
+              {loadingInvites ? (
+                <div className="text-center py-6">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mx-auto" />
+                </div>
+              ) : pendingInvites.length === 0 ? (
+                <div className="text-center py-6 text-slate-500 text-xs italic">
+                  Nenhum convite pendente de aceitação.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 text-slate-500 font-bold uppercase text-[9px] tracking-wider">
+                        <th className="pb-2">E-mail</th>
+                        <th className="pb-2">Cargo</th>
+                        <th className="pb-2">Equipe</th>
+                        <th className="pb-2">Expira em</th>
+                        <th className="pb-2 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.02]">
+                      {pendingInvites.map(inv => {
+                        const teamName = managedTeamsData.find(t => t.id === inv.teamId)?.name || 'Sem Equipe';
+                        const inviteLink = `${window.location.origin}/register?invite=${inv.token}`;
+                        const expirationDate = new Date(inv.expiresAt).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+
+                        return (
+                          <tr key={inv.id} className="hover:bg-slate-900/10">
+                            <td className="py-2.5 font-bold text-white font-mono">{inv.email}</td>
+                            <td className="py-2.5 capitalize text-slate-400">
+                              {inv.role === 'member' ? 'Operador' : inv.role}
+                            </td>
+                            <td className="py-2.5 text-slate-400">{teamName}</td>
+                            <td className="py-2.5 text-slate-500">{expirationDate}</td>
+                            <td className="py-2.5">
+                              <div className="flex items-center justify-center gap-1.5">
+                                {/* Copiar Link */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(inviteLink);
+                                    showToast('Link de convite copiado!', 'success');
+                                  }}
+                                  className="p-1.5 bg-slate-900 text-slate-300 hover:text-white rounded-lg border border-slate-800 transition-all cursor-pointer"
+                                  title="Copiar Link de Convite"
+                                >
+                                  <Copy size={12} />
+                                </button>
+
+                                {/* Simular Aceite (Apenas Sandbox!) */}
+                                {profile.organizationId === 'sandbox-test' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSimulateAccept(inv.token, inv.email)}
+                                    className="px-2 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20 text-[9px] font-black rounded-lg transition-all cursor-pointer"
+                                    title="Simular que colaborador aceitou e se registrou"
+                                  >
+                                    Simular Aceite
+                                  </button>
+                                )}
+
+                                {/* Revogar Convite */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevokeInvite(inv.id)}
+                                  className="p-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-lg border border-rose-500/20 transition-all cursor-pointer"
+                                  title="Revogar Convite"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
@@ -747,6 +974,73 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
             )}
           </div>
         )}
+      {/* Modal de Exibição dos Links Gerados */}
+      {generatedInvites && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`w-full max-w-lg rounded-3xl border p-6 space-y-4 shadow-2xl ${
+            theme === 'dark' ? 'bg-slate-955 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+          }`} style={{ backgroundColor: theme === 'dark' ? '#090d16' : '#ffffff' }}>
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <h4 className="text-base font-black flex items-center gap-1.5">
+                <Check size={18} className="text-emerald-400" />
+                Convites Gerados com Sucesso!
+              </h4>
+              <button
+                type="button"
+                onClick={() => setGeneratedInvites(null)}
+                className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Copie os links individuais abaixo e envie para os colaboradores correspondentes para que possam se registrar:
+            </p>
+
+            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+              {generatedInvites.map(inv => {
+                const inviteLink = `${window.location.origin}/register?invite=${inv.token}`;
+                return (
+                  <div key={inv.id} className="p-3 bg-slate-900/60 border border-slate-900 rounded-xl space-y-1.5">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
+                      <span>{inv.email}</span>
+                      <span className="text-primary capitalize">{inv.role === 'member' ? 'Operador' : inv.role}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={inviteLink}
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-[10px] font-mono text-slate-400 outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(inviteLink);
+                          showToast(`Link de ${inv.email} copiado!`, 'success');
+                        }}
+                        className="px-3 py-1.5 bg-primary hover:bg-primary/80 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy size={12} />
+                        Copiar
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setGeneratedInvites(null)}
+              className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-slate-850 cursor-pointer"
+            >
+              Concluído
+            </button>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

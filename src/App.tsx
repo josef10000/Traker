@@ -195,7 +195,8 @@ export function AppContent() {
         </AnimatePresence>
         <Routes>
           <Route path="/login" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/register" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
+          <Route path="*" element={<Navigate to={`/login${window.location.search}`} replace />} />
         </Routes>
       </>
     );
