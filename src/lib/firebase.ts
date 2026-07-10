@@ -9,18 +9,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
-// Carregamento opcional do arquivo de configuração local do Firebase (que agora está fora do Git)
-// Evita falha de compilação no CI/Vercel onde o arquivo JSON não está presente
-let firebaseConfigJson: any = {};
-try {
-  const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
-  const configPath = Object.keys(configs)[0];
-  if (configPath) {
-    firebaseConfigJson = (configs[configPath] as any).default || configs[configPath];
-  }
-} catch (e) {
-  // Ignora se o arquivo não existir (em produção usa variáveis de ambiente)
-}
+import firebaseConfigJson from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigJson.apiKey,

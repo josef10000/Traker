@@ -7,5 +7,3 @@ coverage/
 .env*
 !.env.example
 service-account.json
-# Configuração Firebase com credenciais — não commitar
-firebase-applet-config.json
