@@ -181,6 +181,30 @@ export function AppContent() {
     );
   }
 
+  const queryParams = new URLSearchParams(window.location.search);
+  const hasInviteToken = queryParams.has('invite');
+
+  if (hasInviteToken) {
+    return (
+      <>
+        <AnimatePresence>
+          {toast && (
+            <Toast 
+              message={toast.message} 
+              type={toast.type} 
+              onClose={() => setToast(null)} 
+            />
+          )}
+        </AnimatePresence>
+        <Routes>
+          <Route path="/login" element={<LoginPage onAuthSuccess={refreshProfile} showToast={showToast} />} />
+          <Route path="/register" element={<LoginPage onAuthSuccess={refreshProfile} showToast={showToast} />} />
+          <Route path="*" element={<Navigate to={`/register${window.location.search}`} replace />} />
+        </Routes>
+      </>
+    );
+  }
+
   if (!user) {
     return (
       <>
