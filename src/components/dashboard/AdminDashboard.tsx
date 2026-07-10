@@ -729,6 +729,39 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           </div>
         </section>
 
+        {/* Demonstração Visual de Convite */}
+        <section className={`glass-card p-6 rounded-3xl border ${
+          theme === 'dark' ? 'border-white/5 bg-slate-900/10' : 'border-slate-200 bg-white shadow-sm'
+        } space-y-4`}>
+          <div>
+            <h2 className={`text-base font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              <Globe className="text-sky-500" size={18} />
+              Demonstração Visual de Convite
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Copie o link abaixo para visualizar o design e layout exatos da tela de cadastro de convites que o colaborador convidado verá.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <input
+              type="text"
+              readOnly
+              value={`${window.location.origin}/register?invite=demo`}
+              className="w-full flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs font-mono text-slate-400 outline-none"
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/register?invite=demo`);
+                showToast('Link de demonstração copiado!', 'success');
+              }}
+              className="w-full sm:w-auto px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-sky-500/25 active:scale-95"
+            >
+              <Copy size={14} />
+              Copiar Link
+            </button>
+          </div>
+        </section>
+
 
         {/* Lista de Empresas */}
         <section className={`glass-card rounded-3xl border overflow-hidden shadow-sm ${

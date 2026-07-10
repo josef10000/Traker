@@ -851,6 +851,38 @@ export function ProfileSettings({ profile, onUpdate, onBack, onCreateTeam, showT
               </div>
             </div>
 
+            {/* Link de Demonstração Visual de Convite */}
+            <div className="p-4 bg-slate-950/60 border border-slate-900 rounded-2xl space-y-3">
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Globe size={14} className="text-primary" />
+                  Visualizar Tela de Convite Aberto
+                </h4>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Copie o link de demonstração abaixo para visualizar exatamente o design e layout da tela de cadastro de convite que o colaborador convidado verá.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={`${window.location.origin}/register?invite=demo`}
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-[10px] font-mono text-slate-400 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/register?invite=demo`);
+                    showToast('Link de demonstração copiado!', 'success');
+                  }}
+                  className="px-3 py-1.5 bg-primary hover:bg-primary/80 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <Copy size={12} />
+                  Copiar
+                </button>
+              </div>
+            </div>
+
             {profile.role === 'supervisor' && (
               <div className="space-y-4">
                 <h4 className="text-sm font-bold text-slate-300">Operadores das Minhas Equipes</h4>

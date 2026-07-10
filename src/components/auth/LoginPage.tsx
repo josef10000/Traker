@@ -38,6 +38,19 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
     const token = params.get('invite');
     if (token) {
       setInviteToken(token);
+      
+      // Mock visual de demonstração estática a pedido do usuário
+      if (token === 'demo' || token === 'demo-invite') {
+        setInviteData({
+          email: 'colaborador.exemplo@empresa.com',
+          role: 'member',
+          organizationId: 'demo-org'
+        });
+        setEmail('colaborador.exemplo@empresa.com');
+        setIsLogin(false);
+        return;
+      }
+
       setIsInviteValidating(true);
       
       const validate = async () => {
