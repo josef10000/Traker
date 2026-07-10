@@ -731,13 +731,15 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  // Filtros de Tabela (dados originais filtrados)
-  const filteredClients = clients.filter(cli => {
-    const matchesSearch = cli.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          cli.clientCpf.includes(searchTerm.replace(/\D/g, ''));
-    const matchesStatus = statusFilter === 'all' || cli.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Filtros de Tabela (dados originais filtrados - agora memoizados para estabilidade do TanStack)
+  const filteredClients = useMemo(() => {
+    return clients.filter(cli => {
+      const matchesSearch = cli.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            cli.clientCpf.includes(searchTerm.replace(/\D/g, ''));
+      const matchesStatus = statusFilter === 'all' || cli.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [clients, searchTerm, statusFilter]);
 
   const activeImport = imports.find(i => i.id === selectedImportId);
 
@@ -746,14 +748,15 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     if (!activeImport) return [];
 
     // Colunas dinâmicas baseadas nos cabeçalhos originais do Excel e sua ordem exata
-    const dynColumns = activeImport.headers.map((h): ColumnDef<BackOfficeClient> => {
+    // Usamos um ID estável baseado em índice ('dyn_X') para evitar qualquer colisão e loops infinitos no TanStack
+    const dynColumns = activeImport.headers.map((h, idx): ColumnDef<BackOfficeClient> => {
       const isName = h === activeImport.columnMapping.clientName;
       const isCpf = h === activeImport.columnMapping.clientCpf;
       const isValue = h === activeImport.columnMapping.value;
       const isDueDate = h === activeImport.columnMapping.dueDate;
 
       return {
-        id: h,
+        id: `dyn_${idx}`,
         accessorFn: (row) => {
           if (isName) return row.clientName;
           if (isCpf) return row.clientCpf;
@@ -815,6 +818,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         );
       }
     };
+
 
     // Coluna administrativa de Ações
     const actionsColumn: ColumnDef<BackOfficeClient> = {
@@ -1103,7 +1107,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                                 onChange={column.getToggleVisibilityHandler()}
                                 className="rounded border-slate-800 text-orange-500 focus:ring-orange-500"
                               />
-                              <span className="truncate">{column.id}</span>
+                              <span className="truncate">{String(column.columnDef.header || column.columnDef.id || column.id)}</span>
                             </label>
                           );
                         })}
