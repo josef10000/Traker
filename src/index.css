@@ -609,4 +609,40 @@ option {
   color: #f1f5f9 !important;
 }
 
+/* Sidebar Glassmorphic & Premium Tooltips */
+.sidebar-glass {
+  background-color: rgba(9, 15, 30, 0.7) !important;
+  backdrop-filter: blur(24px) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.glass-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-tooltip {
+  background: rgba(9, 15, 30, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 1px 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+.glass-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -4px;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: rgba(9, 15, 30, 0.95);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: -1;
+}
+
+
 

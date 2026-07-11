@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React from 'react';
 import { 
   ChartLine, 
   ArrowUUpLeft as RecoveryIcon, 
@@ -7,11 +6,9 @@ import {
   ChartBar as BiIcon, 
   Users as TeamIcon, 
   Lifebuoy as SupportIcon,
-  CaretLeft, 
-  CaretRight,
   SignOut as LogOut,
   Building,
-  User,
+  User as UserIcon,
   FileCsv as FileSpreadsheet
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
@@ -31,89 +28,86 @@ export const Sidebar = ({
   organizationName,
   onLogoutClick
 }: SidebarProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    return saved === 'true';
-  });
-
-  const toggleCollapse = () => {
-    setIsCollapsed(prev => {
-      const next = !prev;
-      localStorage.setItem('sidebar-collapsed', String(next));
-      return next;
-    });
-  };
-
   const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin' || profile.role === 'monitor';
 
   const menuItems = [
     {
       id: 'backoffice',
       label: profile.jobTitle || 'Back Office',
+      description: 'Importação e conciliação de planilhas financeiras.',
       icon: FileSpreadsheet,
       show: profile.role === 'backoffice'
     },
     {
       id: 'financial',
       label: 'Painel Financeiro',
+      description: 'Faturamento, metas e acordos de hoje.',
       icon: ChartLine,
       show: profile.role !== 'monitor'
     },
     {
       id: 'recovery',
       label: 'Recuperação',
+      description: 'Gestão de promessas de pagamento e renegociação.',
       icon: RecoveryIcon,
       show: profile.role !== 'monitor'
     },
     {
       id: 'qa',
       label: 'Qualidade (QA)',
+      description: 'Monitoria de ligações e avaliações de operadores.',
       icon: QaIcon,
       show: profile.role !== 'backoffice'
     },
     {
       id: 'bi',
       label: 'BI & Analytics',
+      description: 'Relatórios estratégicos e gráficos de desempenho.',
       icon: BiIcon,
       show: profile.role !== 'backoffice'
     },
     {
       id: 'people',
       label: 'Gestão de Equipe',
+      description: 'Administração de colaboradores e novos convites.',
       icon: TeamIcon,
       show: isSuperUser && profile.role !== 'monitor' && profile.role !== 'backoffice'
     },
     {
       id: 'support',
       label: 'Suporte & Ajuda',
+      description: 'Canal direto de suporte técnico do Tracker.',
       icon: SupportIcon,
       show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor'
     }
   ];
 
   return (
-    <aside 
-      className={`relative flex flex-col h-screen transition-all duration-300 border-r shrink-0 select-none z-40 bg-slate-950/70 border-white/5 text-slate-300 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
-    >
-      {/* Topo / Header da Logo */}
-      <div className="p-6 flex items-center gap-3 border-b border-white/5 shrink-0">
-        <div className="p-2 rounded-xl flex items-center justify-center shrink-0 bg-sky-500/10 text-sky-400">
-          <Building size={22} weight="duotone" />
-        </div>
-        {!isCollapsed && (
-          <div className="min-w-0">
-            <h1 className="font-black text-sm uppercase tracking-wider leading-none truncate text-white">
-              {organizationName || 'Tracker'}
-            </h1>
-            <span className="text-[9px] font-bold tracking-widest uppercase block mt-0.5 text-slate-400">SaaS Cobrança</span>
+    <aside className="relative flex flex-col h-screen w-20 shrink-0 select-none z-40 sidebar-glass border-r text-slate-300">
+      {/* Topo / Logo Centralizada com Efeito de Pulso e Vidro */}
+      <div className="p-5 flex justify-center border-b border-white/5 shrink-0">
+        <div 
+          className="p-2.5 rounded-2xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-sky-500/5 border border-sky-500/25 shadow-lg shadow-sky-500/10 backdrop-blur-md text-sky-400 group relative"
+          title={organizationName || 'Tracker'}
+        >
+          <Building size={20} weight="duotone" className="animate-pulse" />
+          
+          {/* Tooltip da Empresa */}
+          <div className="absolute left-full ml-4 opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-50">
+            <div className="glass-tooltip px-3 py-2 rounded-xl min-w-[120px] text-left relative">
+              <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none">
+                {organizationName || 'Tracker'}
+              </span>
+              <span className="text-[8px] text-slate-400 mt-1 block uppercase font-bold tracking-tighter">
+                SaaS Cobrança
+              </span>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Navegação Principal */}
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 py-6 px-3 flex flex-col items-center gap-4 overflow-y-auto custom-scrollbar">
         {menuItems
           .filter(item => item.show)
           .map(item => {
@@ -124,67 +118,74 @@ export const Sidebar = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left transition-all relative group cursor-pointer active:scale-[0.98] ${
-                  isActive
-                    ? 'bg-sky-500/10 text-sky-400 font-bold border border-sky-500/20'
-                    : 'border border-transparent hover:bg-white/5 hover:text-white'
-                }`}
-                title={isCollapsed ? item.label : undefined}
+                className={`relative group w-full flex justify-center py-1 cursor-pointer active:scale-95 transition-all`}
               >
-                <Icon size={18} weight={isActive ? 'duotone' : 'regular'} className="shrink-0" />
-                {!isCollapsed && <span className="text-xs uppercase tracking-wider font-semibold">{item.label}</span>}
-                
-                {isActive && (
-                  <motion.div 
-                    layoutId="activeTabIndicator"
-                    className="absolute left-0 top-3 bottom-3 w-1 bg-sky-500 rounded-r-md" 
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
+                {/* Ícone Glassmorphism */}
+                <div className={`glass-icon-container p-2.5 rounded-xl transition-all duration-300 ${
+                  isActive
+                    ? 'bg-sky-500/15 border border-sky-500/30 text-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.15)]'
+                    : 'bg-white/5 border border-white/5 text-slate-400 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/10'
+                }`}>
+                  <Icon size={18} weight={isActive ? 'duotone' : 'regular'} className="shrink-0" />
+                </div>
+
+                {/* Tooltip Premium Flutuante à Direita */}
+                <div className="absolute left-full ml-4 opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-50">
+                  <div className="glass-tooltip px-3.5 py-2.5 rounded-2xl min-w-[180px] max-w-[220px] text-left relative flex flex-col">
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none">
+                      {item.label}
+                    </span>
+                    <span className="text-[9px] text-slate-400 mt-1.5 font-medium leading-relaxed">
+                      {item.description}
+                    </span>
+                  </div>
+                </div>
               </button>
             );
           })}
       </nav>
 
       {/* Rodapé — Usuário e Logout */}
-      <div className="p-4 border-t border-white/5 space-y-3 shrink-0">
-        <div className="flex items-center justify-between p-2 rounded-2xl bg-white/5">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 rounded-xl shrink-0 bg-white/5 text-slate-400">
-              <User size={16} />
-            </div>
-            {!isCollapsed && (
-              <div className="min-w-0">
-                <p className="text-xs font-bold truncate leading-none text-white">
-                  {profile.displayName?.split(' ')[0] || 'Usuário'}
-                </p>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">
-                  {profile.role === 'super_admin' ? 'Admin Master' : 
-                   profile.role === 'manager' ? 'Gerente' : 
-                   profile.role === 'coordinator' ? 'Coordenador' :
-                   profile.role === 'supervisor' ? 'Supervisor' : 'Operador'}
-                </span>
-              </div>
-            )}
+      <div className="p-4 border-t border-white/5 flex flex-col items-center gap-4 shrink-0">
+        {/* Avatar/Perfil do Usuário com Tooltip */}
+        <div className="relative group cursor-pointer flex justify-center w-full">
+          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 group-hover:bg-white/10 group-hover:text-white transition-all">
+            <UserIcon size={18} />
           </div>
-          
-          <button
-            onClick={onLogoutClick}
-            className="p-2 rounded-xl transition-all cursor-pointer active:scale-95 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
-            title="Sair"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-      </div>
 
-      {/* Botão de Recolher */}
-      <button
-        onClick={toggleCollapse}
-        className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full border flex items-center justify-center cursor-pointer shadow-md transition-transform active:scale-90 bg-slate-900 border-white/10 text-slate-400 hover:text-white"
-      >
-        {isCollapsed ? <CaretRight size={12} /> : <CaretLeft size={12} />}
-      </button>
+          {/* Tooltip do Usuário */}
+          <div className="absolute bottom-2 left-full ml-4 opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-50">
+            <div className="glass-tooltip px-3.5 py-2 rounded-2xl min-w-[140px] text-left relative flex flex-col">
+              <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none">
+                {profile.displayName || 'Usuário'}
+              </span>
+              <span className="text-[8px] text-slate-400 mt-1 block uppercase font-bold tracking-tighter">
+                {profile.role === 'super_admin' ? 'Admin Master' : 
+                 profile.role === 'manager' ? 'Gerente' : 
+                 profile.role === 'coordinator' ? 'Coordenador' :
+                 profile.role === 'supervisor' ? 'Supervisor' : 'Operador'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Botão de Logout */}
+        <button
+          onClick={onLogoutClick}
+          className="relative group p-2.5 rounded-xl transition-all cursor-pointer active:scale-95 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 flex justify-center"
+        >
+          <LogOut size={18} />
+          
+          {/* Tooltip Sair */}
+          <div className="absolute bottom-2 left-full ml-4 opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-50">
+            <div className="glass-tooltip px-3 py-1.5 rounded-xl min-w-[80px] text-center relative">
+              <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none">
+                Sair
+              </span>
+            </div>
+          </div>
+        </button>
+      </div>
     </aside>
   );
 };
