@@ -8,7 +8,6 @@ import {
   Lifebuoy as SupportIcon,
   SignOut as LogOut,
   Building,
-  User as UserIcon,
   FileCsv as FileSpreadsheet
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
@@ -83,12 +82,14 @@ export const Sidebar = ({
   ];
 
   return (
-    <aside className="relative flex flex-col h-screen w-20 shrink-0 select-none z-40 sidebar-glass border-r text-slate-300">
-      {/* Topo / Logo Centralizada com Efeito de Pulso e Vidro */}
+    <aside 
+      className="relative flex flex-col h-screen w-20 shrink-0 select-none z-45 sidebar-glass border-r text-slate-300"
+      style={{ overflow: 'visible' }}
+    >
+      {/* Topo / Logo Centralizada com Efeito de Vidro */}
       <div className="p-5 flex justify-center border-b border-white/5 shrink-0">
         <div 
           className="p-2.5 rounded-2xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-sky-500/5 border border-sky-500/25 shadow-lg shadow-sky-500/10 backdrop-blur-md text-sky-400 group relative"
-          title={organizationName || 'Tracker'}
         >
           <Building size={20} weight="duotone" className="animate-pulse" />
           
@@ -106,8 +107,11 @@ export const Sidebar = ({
         </div>
       </div>
 
-      {/* Navegação Principal */}
-      <nav className="flex-1 py-6 px-3 flex flex-col items-center gap-4 overflow-y-auto custom-scrollbar">
+      {/* Navegação Principal - Sem overflow oculto para permitir o Tooltip flutuante */}
+      <nav 
+        className="flex-1 py-6 px-3 flex flex-col items-center gap-4"
+        style={{ overflow: 'visible' }}
+      >
         {menuItems
           .filter(item => item.show)
           .map(item => {
@@ -118,7 +122,8 @@ export const Sidebar = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative group w-full flex justify-center py-1 cursor-pointer active:scale-95 transition-all`}
+                className="relative group w-full flex justify-center py-1 cursor-pointer active:scale-95 transition-all"
+                style={{ overflow: 'visible' }}
               >
                 {/* Ícone Glassmorphism */}
                 <div className={`glass-icon-container p-2.5 rounded-xl transition-all duration-300 ${
@@ -145,30 +150,8 @@ export const Sidebar = ({
           })}
       </nav>
 
-      {/* Rodapé — Usuário e Logout */}
+      {/* Rodapé — Apenas Logout */}
       <div className="p-4 border-t border-white/5 flex flex-col items-center gap-4 shrink-0">
-        {/* Avatar/Perfil do Usuário com Tooltip */}
-        <div className="relative group cursor-pointer flex justify-center w-full">
-          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 group-hover:bg-white/10 group-hover:text-white transition-all">
-            <UserIcon size={18} />
-          </div>
-
-          {/* Tooltip do Usuário */}
-          <div className="absolute bottom-2 left-full ml-4 opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-50">
-            <div className="glass-tooltip px-3.5 py-2 rounded-2xl min-w-[140px] text-left relative flex flex-col">
-              <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none">
-                {profile.displayName || 'Usuário'}
-              </span>
-              <span className="text-[8px] text-slate-400 mt-1 block uppercase font-bold tracking-tighter">
-                {profile.role === 'super_admin' ? 'Admin Master' : 
-                 profile.role === 'manager' ? 'Gerente' : 
-                 profile.role === 'coordinator' ? 'Coordenador' :
-                 profile.role === 'supervisor' ? 'Supervisor' : 'Operador'}
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Botão de Logout */}
         <button
           onClick={onLogoutClick}
