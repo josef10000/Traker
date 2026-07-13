@@ -61,8 +61,8 @@ export const PortfolioGoalsPanel = ({
 
   // Lógica de cálculo por operador
   const operatorStats = useMemo(() => {
-    return operators.map(op => {
-      // Valor Pago acumulado no mês
+    // 1. Calcular os valores acumulados e metas de todos os operadores
+    const baseStats = operators.map(op => {
       const opAgreements = monthAgreements.filter(a => a.operatorId === op.uid && !a.isAdjustment);
       const partial = opAgreements
         .filter(a => a.status === AgreementStatus.PAID)
@@ -75,14 +75,6 @@ export const PortfolioGoalsPanel = ({
       const goal = op.monthlyGoal || 0;
       const dailyGoal = workingDays > 0 ? goal / workingDays : 0;
 
-      // Cálculo de dispersão (desvio linear proporcional até o momento)
-      // Ritmo linear esperado: (workedDays / workingDays) * goal
-      const expectedToDate = workingDays > 0 ? (workedDays / workingDays) * goal : 0;
-      let dispersion = 0;
-      if (expectedToDate > 0) {
-        dispersion = ((partial - expectedToDate) / expectedToDate) * 100;
-      }
-
       // Projeção: (partial / workedDays) * workingDays
       const projection = workedDays > 0 ? (partial / workedDays) * workingDays : 0;
 
@@ -91,10 +83,33 @@ export const PortfolioGoalsPanel = ({
         goal,
         dailyGoal,
         partial,
-        dispersion,
         projection,
         effectiveness,
         observation: op.observation || ''
+      };
+    });
+
+    // 2. Encontrar o faturamento do melhor operador de cada equipe (teamId)
+    const bestPartialPerTeam: Record<string, number> = {};
+    baseStats.forEach(op => {
+      const teamKey = op.teamId || 'Sem Equipe';
+      if (op.partial > (bestPartialPerTeam[teamKey] || 0)) {
+        bestPartialPerTeam[teamKey] = op.partial;
+      }
+    });
+
+    // 3. Adicionar cálculo de dispersão relativa ao melhor operador da equipe
+    return baseStats.map(op => {
+      const teamKey = op.teamId || 'Sem Equipe';
+      const bestPartial = bestPartialPerTeam[teamKey] || 0;
+      let dispersion = 0;
+      if (bestPartial > 0) {
+        dispersion = ((op.partial - bestPartial) / bestPartial) * 100;
+      }
+
+      return {
+        ...op,
+        dispersion
       };
     });
   }, [operators, monthAgreements, workingDays, workedDays]);

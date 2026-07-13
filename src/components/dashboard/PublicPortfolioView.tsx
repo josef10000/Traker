@@ -108,7 +108,8 @@ export const PublicPortfolioView = () => {
   const visibleOperators = useMemo(() => {
     const ops = teamId === 'all' ? operators : operators.filter(o => o.teamId === teamId);
     
-    return ops.map(op => {
+    // 1. Calcular os faturamentos e metas básicas de todos os analistas visíveis
+    const baseStats = ops.map(op => {
       const opAgreements = agreements.filter(a => a.operatorId === op.uid && !a.isAdjustment);
       const partial = opAgreements
         .filter(a => a.status === AgreementStatus.PAID)
@@ -123,10 +124,6 @@ export const PublicPortfolioView = () => {
       const workedDays = 8;   // Fixo para visualização pública padrão
       const dailyGoal = workingDays > 0 ? goal / workingDays : 0;
 
-      // Dispersão
-      const expectedToDate = workingDays > 0 ? (workedDays / workingDays) * goal : 0;
-      const dispersion = expectedToDate > 0 ? ((partial - expectedToDate) / expectedToDate) * 100 : 0;
-
       // Projeção
       const projection = workedDays > 0 ? (partial / workedDays) * workingDays : 0;
 
@@ -135,10 +132,33 @@ export const PublicPortfolioView = () => {
         goal,
         dailyGoal,
         partial,
-        dispersion,
         projection,
         effectiveness,
         observation: op.observation || ''
+      };
+    });
+
+    // 2. Encontrar o faturamento do melhor operador de cada equipe (teamId)
+    const bestPartialPerTeam: Record<string, number> = {};
+    baseStats.forEach(op => {
+      const teamKey = op.teamId || 'Sem Equipe';
+      if (op.partial > (bestPartialPerTeam[teamKey] || 0)) {
+        bestPartialPerTeam[teamKey] = op.partial;
+      }
+    });
+
+    // 3. Adicionar cálculo de dispersão relativa ao melhor operador da equipe
+    return baseStats.map(op => {
+      const teamKey = op.teamId || 'Sem Equipe';
+      const bestPartial = bestPartialPerTeam[teamKey] || 0;
+      let dispersion = 0;
+      if (bestPartial > 0) {
+        dispersion = ((op.partial - bestPartial) / bestPartial) * 100;
+      }
+
+      return {
+        ...op,
+        dispersion
       };
     });
   }, [operators, agreements, teamId]);
