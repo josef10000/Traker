@@ -86,10 +86,13 @@ export interface DashboardModalsProps {
   stats: { totalPaid: number; totalProjected: number };
   reconciliation: Reconciliation | null;
   handleSaveReconciliation: (officialValue: number | null, officialEffectiveness: number | null) => Promise<void>;
-  handleNormalizeSaldo: () => Promise<void>;
+  handleNormalizeSaldo: (difference: number, officialEffectiveness: number | null) => Promise<void>;
   handleDeleteReconciliation: () => Promise<void>;
   monthAdjustments: any[];
   handleDeleteAdjustment: (id: string) => Promise<void>;
+  monthAgreements: Agreement[];
+  handleUpdateAgreementStatus: (agreementId: string, status: any, optionalData?: any) => Promise<void>;
+  handleCreateAgreementFromReconciliation: (agreementData: any) => Promise<void>;
 
   // CollaboratorHistoryModal
   selectedCollabForHistory: any | null;
@@ -173,6 +176,9 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
   handleDeleteReconciliation,
   monthAdjustments,
   handleDeleteAdjustment,
+  monthAgreements,
+  handleUpdateAgreementStatus,
+  handleCreateAgreementFromReconciliation,
 
   selectedCollabForHistory,
   setSelectedCollabForHistory,
@@ -298,6 +304,9 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         onClear={handleDeleteReconciliation}
         adjustments={monthAdjustments}
         onDeleteAdjustment={handleDeleteAdjustment}
+        monthAgreements={monthAgreements}
+        onUpdateAgreementStatus={handleUpdateAgreementStatus}
+        onCreateAgreement={handleCreateAgreementFromReconciliation}
       />
 
       <CollaboratorHistoryModal 

@@ -1359,6 +1359,81 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleUpdateAgreementStatus = async (agreementId: string, status: AgreementStatus, optionalData?: Partial<Agreement>) => {
+    if (profile.organizationId === 'sandbox-test') {
+      const agreement = sandboxService.getAgreements(profile.organizationId, selectedMonth, selectedYear).find(a => a.id === agreementId);
+      if (agreement) {
+        sandboxService.setAgreement({
+          ...agreement,
+          status,
+          paidAt: status === AgreementStatus.PAID ? new Date().toISOString() : null,
+          ...optionalData
+        });
+        showToast('Acordo do Sandbox atualizado na memória!', 'success');
+        doMarkStale();
+      }
+      return;
+    }
+
+    try {
+      const agreementRef = doc(db, 'agreements', agreementId);
+      const updateData: any = {
+        status,
+        paidAt: status === AgreementStatus.PAID ? new Date().toISOString() : null,
+        ...optionalData
+      };
+      await updateDoc(agreementRef, updateData);
+      showToast('Acordo atualizado com sucesso!', 'success');
+      doMarkStale();
+    } catch (error) {
+      console.error("Erro ao atualizar acordo:", error);
+      showToast('Erro ao atualizar acordo.', 'error');
+    }
+  };
+
+  const handleCreateAgreementFromReconciliation = async (agreementData: Omit<Agreement, 'id' | 'operatorId' | 'teamId' | 'organizationId' | 'createdAt'>) => {
+    const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
+    if (!targetTeamId) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      const id = 'sandbox-adj-' + Math.random().toString(36).substr(2, 9);
+      const now = new Date().toISOString();
+      const payload: Agreement = {
+        id,
+        ...agreementData,
+        operatorId: profile.uid,
+        teamId: targetTeamId,
+        organizationId: profile.organizationId,
+        createdAt: now,
+        paidAt: agreementData.status === AgreementStatus.PAID ? now : null
+      } as Agreement;
+      sandboxService.setAgreement(payload);
+      showToast('Acordo simulado registrado!', 'success');
+      doMarkStale();
+      return;
+    }
+
+    try {
+      const id = doc(collection(db, 'agreements')).id;
+      const now = new Date().toISOString();
+      const payload = {
+        id,
+        ...agreementData,
+        operatorId: profile.uid,
+        teamId: targetTeamId,
+        organizationId: profile.organizationId,
+        createdAt: now,
+        paidAt: agreementData.status === AgreementStatus.PAID ? now : null
+      };
+      await setDoc(doc(db, 'agreements', id), payload);
+      showToast('Acordo registrado com sucesso!', 'success');
+      doMarkStale();
+    } catch (error) {
+      console.error("Erro ao criar acordo:", error);
+      showToast('Erro ao registrar acordo.', 'error');
+    }
+  };
+
   const handleNormalizeSaldo = async (difference: number, officialEffectiveness?: number | null) => {
     const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
     if (!targetTeamId) return;
@@ -2439,6 +2514,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         handleDeleteReconciliation={handleDeleteReconciliation}
         monthAdjustments={monthAdjustments}
         handleDeleteAdjustment={handleDeleteAdjustment}
+        monthAgreements={monthAgreements}
+        handleUpdateAgreementStatus={handleUpdateAgreementStatus}
+        handleCreateAgreementFromReconciliation={handleCreateAgreementFromReconciliation}
 
         selectedCollabForHistory={selectedCollabForHistory}
         setSelectedCollabForHistory={setSelectedCollabForHistory}

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Trophy, 
   TrendUp as TrendingUp, 
@@ -6,7 +6,8 @@ import {
   Calculator, 
   CircleNotch as Loader2, 
   X,
-  Clock
+  Clock,
+  Question
 } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 import { 
@@ -63,6 +64,8 @@ export const FinancialPerformanceInsights = ({
     { name: 'Pendente', value: Math.max(0, stats.totalProjected - stats.totalPaid - stats.totalOverdue), color: 'url(#colorPending)' }
   ], [monthlyGoal, stats]);
 
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
     <div className="space-y-6">
       {/* Meta de recuperação e Meta Diária */}
@@ -89,20 +92,58 @@ export const FinancialPerformanceInsights = ({
                   {((stats.totalPaid / (monthlyGoal || 1)) * 100).toFixed(1)}%
                 </h3>
               </div>
-              <div className="text-right flex flex-col items-end">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Taxa de Efetividade</p>
-                <p className={`text-xl font-bold ${getEffectivenessColor((stats.totalPaid / (stats.totalProjected || 1)) * 100, effectivenessGoal)}`}>
-                  {((stats.totalPaid / (stats.totalProjected || 1)) * 100).toFixed(1)}%
-                </p>
-                <p className="text-[8px] text-slate-500 font-medium uppercase mt-0.5">Base: {formatCurrency(stats.totalProjected)} projetado</p>
-                {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && reconciliation.officialEffectiveness > 0 && (
-                  <div className="mt-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[9px] text-emerald-400 font-bold inline-flex items-center leading-none">
-                    Oficial: {reconciliation.officialEffectiveness.toFixed(1)}% 
-                    <span className={`ml-1 font-extrabold ${reconciliation.differenceEffectiveness !== undefined && reconciliation.differenceEffectiveness >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      (Dif: {reconciliation.differenceEffectiveness !== undefined && reconciliation.differenceEffectiveness > 0 ? '+' : ''}{reconciliation.differenceEffectiveness?.toFixed(1)}%)
-                    </span>
+              <div className="text-right flex flex-col items-end relative">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Taxa de Efetividade</p>
+                  {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && (
+                    <div 
+                      className="relative cursor-pointer text-slate-400 hover:text-white"
+                      onMouseEnter={() => setShowTooltip(true)}
+                      onMouseLeave={() => setShowTooltip(false)}
+                    >
+                      <Question size={13} weight="bold" />
+                      {showTooltip && (
+                        <div className="absolute right-0 top-6 w-64 p-3 bg-slate-950/95 border border-slate-800 rounded-xl text-left text-[10px] text-slate-300 leading-relaxed shadow-2xl z-50 backdrop-blur-md">
+                          <p className="font-bold text-white mb-1 uppercase tracking-wider text-[9px]">Divergência de Efetividade</p>
+                          <p className="mb-1.5">
+                            <strong className="text-sky-400">Efetividade do Operador:</strong> Mede a quantidade de acordos pagos em relação ao total de acordos lançados.
+                          </p>
+                          <p>
+                            <strong className="text-emerald-400">Efetividade de Caixa:</strong> Taxa de recuperação financeira oficial registrada na conciliação.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Se houver conciliação divergente */}
+                {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && Math.abs(stats.effectivenessRate - reconciliation.officialEffectiveness) >= 0.1 ? (
+                  <div className="flex flex-col items-end gap-1 mt-1">
+                    <p className={`text-sm font-bold ${getEffectivenessColor(stats.effectivenessRate, effectivenessGoal)}`}>
+                      <span className="text-[9px] text-slate-500 font-semibold uppercase mr-1">Operador (Qtd):</span>
+                      {stats.effectivenessRate.toFixed(1)}%
+                    </p>
+                    <p className={`text-sm font-bold ${getEffectivenessColor(reconciliation.officialEffectiveness, effectivenessGoal)}`}>
+                      <span className="text-[9px] text-slate-500 font-semibold uppercase mr-1">Caixa (Oficial):</span>
+                      {reconciliation.officialEffectiveness.toFixed(1)}%
+                    </p>
                   </div>
+                ) : (
+                  /* Sem conciliação ou conciliação batendo */
+                  <>
+                    <p className={`text-xl font-bold ${getEffectivenessColor(stats.effectivenessRate, effectivenessGoal)}`}>
+                      {stats.effectivenessRate.toFixed(1)}%
+                    </p>
+                    {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && (
+                      <p className="text-[9px] text-emerald-400 font-bold uppercase mt-0.5">
+                        ✨ Efetividade Real (Sincronizada)
+                      </p>
+                    )}
+                  </>
                 )}
+                
+                <p className="text-[8px] text-slate-500 font-medium uppercase mt-0.5">Base: {stats.counts?.month?.total || 0} acordos</p>
               </div>
             </div>
             <div className="space-y-2">
