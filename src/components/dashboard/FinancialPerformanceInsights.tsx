@@ -76,14 +76,6 @@ export const FinancialPerformanceInsights = ({
             animate={{ opacity: 1, y: 0 }}
             className="glass-card p-6 rounded-2xl shadow-xl relative group flex flex-col justify-center"
           >
-            {(profile.role === 'manager' || profile.role === 'supervisor') && (
-              <button 
-                onClick={() => setIsGoalModalOpen(true)}
-                className="absolute top-4 right-4 p-2 text-slate-500 hover:text-primary opacity-0 group-hover:opacity-100 transition-all bg-slate-900/50 rounded-lg border border-slate-800"
-              >
-                <Target size={14} />
-              </button>
-            )}
             
             <div className="flex justify-between items-start mb-6">
               <div>

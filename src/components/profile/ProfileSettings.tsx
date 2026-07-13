@@ -14,9 +14,10 @@ import {
   Copy,
   PaperPlaneTilt,
   UserPlus,
-  Globe
+  Globe,
+  Target
 } from '@phosphor-icons/react';
-import { doc, updateDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization, Invite, UserRole } from '../../types';
 import { 
@@ -48,7 +49,15 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals'>('profile');
+
+  const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
+
+  // Estados para configurar metas
+  const [selectedGoalTeamId, setSelectedGoalTeamId] = useState<string>('');
+  const [monthlyGoalInput, setMonthlyGoalInput] = useState<number>(0);
+  const [effectivenessGoalInput, setEffectivenessGoalInput] = useState<number>(0);
+  const [isSavingGoals, setIsSavingGoals] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -59,7 +68,77 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     }
   }, [profile, isOpen]);
 
-  const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
+  useEffect(() => {
+    if (managedTeamsData.length > 0 && !selectedGoalTeamId) {
+      const firstTeam = managedTeamsData[0];
+      setSelectedGoalTeamId(firstTeam.id);
+      setMonthlyGoalInput(firstTeam.monthlyGoal || 0);
+      setEffectivenessGoalInput(firstTeam.effectivenessGoal || 85);
+    }
+  }, [managedTeamsData, selectedGoalTeamId]);
+
+  const handleGoalTeamChange = (teamId: string) => {
+    setSelectedGoalTeamId(teamId);
+    const team = managedTeamsData.find(t => t.id === teamId);
+    if (team) {
+      setMonthlyGoalInput(team.monthlyGoal || 0);
+      setEffectivenessGoalInput(team.effectivenessGoal || 85);
+    }
+  };
+
+  const handleSaveGoals = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGoalTeamId) return;
+
+    setIsSavingGoals(true);
+    try {
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.setTeamGoal(selectedGoalTeamId, monthlyGoalInput, effectivenessGoalInput);
+        setManagedTeamsData(prev => prev.map(t => {
+          if (t.id === selectedGoalTeamId) {
+            return {
+              ...t,
+              monthlyGoal: monthlyGoalInput,
+              effectivenessGoal: effectivenessGoalInput
+            };
+          }
+          return t;
+        }));
+        showToast('Metas do Sandbox atualizadas na memória!', 'success');
+      } else {
+        await setDoc(doc(db, 'settings', selectedGoalTeamId), { 
+          monthlyGoal: monthlyGoalInput,
+          effectivenessGoal: effectivenessGoalInput,
+          organizationId: profile.organizationId,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        await updateDoc(doc(db, 'teams', selectedGoalTeamId), {
+          monthlyGoal: monthlyGoalInput,
+          effectivenessGoal: effectivenessGoalInput
+        });
+
+        setManagedTeamsData(prev => prev.map(t => {
+          if (t.id === selectedGoalTeamId) {
+            return {
+              ...t,
+              monthlyGoal: monthlyGoalInput,
+              effectivenessGoal: effectivenessGoalInput
+            };
+          }
+          return t;
+        }));
+        showToast('Metas atualizadas com sucesso!', 'success');
+      }
+      onUpdate();
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao atualizar metas', 'error');
+    } finally {
+      setIsSavingGoals(false);
+    }
+  };
+
   const [selectedTeamForMembers, setSelectedTeamForMembers] = useState<Team | null>(null);
   const [teamMembers, setTeamMembers] = useState<UserProfile[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -488,6 +567,24 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 >
                   <Globe size={16} />
                   Simulação Sandbox
+                </button>
+              )}
+
+              {(profile.role === 'manager' || profile.role === 'supervisor') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('goals');
+                    setSelectedTeamForMembers(null);
+                  }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
+                    activeTab === 'goals'
+                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Target size={16} />
+                  Configurar Metas
                 </button>
               )}
             </nav>
@@ -1076,6 +1173,80 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                         );
                       })}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ABA: CONFIGURAR METAS */}
+          {activeTab === 'goals' && (profile.role === 'manager' || profile.role === 'supervisor') && (
+            <div className="space-y-6 max-w-2xl">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Target size={20} className="text-sky-400" />
+                  Configurar Metas das Equipes
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Configure a meta mensal de recuperação financeira e a meta de efetividade de acordos da equipe selecionada.
+                </p>
+              </div>
+
+              {managedTeamsData.length > 0 ? (
+                <form onSubmit={handleSaveGoals} className="space-y-6">
+                  <div className="space-y-4 bg-slate-900/30 p-6 rounded-2xl border border-white/5">
+                    {/* Seletor de Equipe */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Selecione a Equipe</label>
+                      <select
+                        value={selectedGoalTeamId}
+                        onChange={(e) => handleGoalTeamChange(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
+                      >
+                        {managedTeamsData.map(team => (
+                          <option key={team.id} value={team.id}>{team.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Cota Mensal */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Cota Mensal de Recuperação (R$)</label>
+                        <input
+                          required
+                          type="number"
+                          value={monthlyGoalInput}
+                          onChange={(e) => setMonthlyGoalInput(parseFloat(e.target.value) || 0)}
+                          className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
+                        />
+                      </div>
+
+                      {/* Meta Efetividade */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Meta de Efetividade de Acordos (%)</label>
+                        <input
+                          required
+                          type="number"
+                          value={effectivenessGoalInput}
+                          onChange={(e) => setEffectivenessGoalInput(parseFloat(e.target.value) || 0)}
+                          className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingGoals}
+                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl transition-all disabled:opacity-50 active:scale-95 text-xs shadow-lg shadow-sky-500/15 cursor-pointer"
+                  >
+                    <Save size={16} />
+                    {isSavingGoals ? 'Salvando...' : 'Salvar Metas da Equipe'}
+                  </button>
+                </form>
+              ) : (
+                <div className="glass-card p-8 text-center border border-white/5 rounded-2xl">
+                  <p className="text-sm text-slate-400">Você não possui nenhuma equipe sob sua gerência direta para configurar metas.</p>
                 </div>
               )}
             </div>
