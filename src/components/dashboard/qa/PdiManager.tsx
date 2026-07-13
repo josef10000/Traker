@@ -5,7 +5,7 @@ import { Calendar, CheckCircle as CheckCircle2, X } from '@phosphor-icons/react'
 interface PdiManagerProps {
   pdis: Pdi[];
   currentTeamMembers: UserProfile[];
-  isSuperUser: boolean;
+  profile: UserProfile;
   theme?: 'light' | 'dark';
   onResolvePdi: (id: string, status: 'completed' | 'failed') => Promise<void>;
 }
@@ -13,10 +13,11 @@ interface PdiManagerProps {
 export const PdiManager: React.FC<PdiManagerProps> = ({
   pdis,
   currentTeamMembers,
-  isSuperUser,
+  profile,
   theme = 'dark',
   onResolvePdi
 }) => {
+  const canResolve = profile.role === 'monitor';
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {pdis.length === 0 ? (
@@ -80,7 +81,7 @@ export const PdiManager: React.FC<PdiManagerProps> = ({
                   Limite: {p.dueDate.split('-').reverse().join('/')}
                 </span>
 
-                {isSuperUser && p.status === 'pending' && (
+                {canResolve && p.status === 'pending' && (
                   <div className="flex gap-2 self-end sm:self-auto">
                     <button
                       onClick={() => onResolvePdi(p.id, 'completed')}

@@ -222,6 +222,10 @@ export const QaDashboard = ({
 
   // Handlers CRUD Competência
   const handleSaveCompetence = async (name: string, weight: number, description: string) => {
+    if (profile.role !== 'monitor') {
+      showToast('Apenas o Monitor de Qualidade pode modificar competências.', 'error');
+      return;
+    }
     if (!name.trim()) return;
 
     if (profile.organizationId === 'sandbox-test') {
@@ -276,6 +280,10 @@ export const QaDashboard = ({
   };
 
   const handleDeleteComp = async (id: string) => {
+    if (profile.role !== 'monitor') {
+      showToast('Apenas o Monitor de Qualidade pode excluir competências.', 'error');
+      return;
+    }
     if (!confirm('Deseja realmente excluir esta competência?')) return;
     if (profile.organizationId === 'sandbox-test') {
       sandboxService.deleteQaCompetence(id);
@@ -304,6 +312,10 @@ export const QaDashboard = ({
     pdiActionPlan?: string;
     pdiDueDate?: string;
   }) => {
+    if (profile.role !== 'monitor') {
+      showToast('Apenas o Monitor de Qualidade pode registrar avaliações.', 'error');
+      return;
+    }
     if (!data.operatorId) {
       showToast('Selecione um operador.', 'warning');
       return;
@@ -421,6 +433,10 @@ export const QaDashboard = ({
   };
 
   const handleResolvePdi = async (id: string, status: 'completed' | 'failed') => {
+    if (profile.role !== 'monitor') {
+      showToast('Apenas o Monitor de Qualidade pode resolver PDIs.', 'error');
+      return;
+    }
     if (profile.organizationId === 'sandbox-test') {
       sandboxService.updatePdiStatus(id, status);
       showToast(`PDI do Sandbox atualizado para ${status === 'completed' ? 'Cumprido' : 'Não Cumprido'}!`, 'success');
@@ -436,6 +452,10 @@ export const QaDashboard = ({
   };
 
   const handleUpdateOperatorDates = async (operatorId: string, date: string) => {
+    if (profile.role !== 'monitor') {
+      showToast('Apenas o Monitor de Qualidade pode agendar avaliações.', 'error');
+      return;
+    }
     setIsUpdatingDates(true);
     try {
       if (profile.organizationId === 'sandbox-test') {
@@ -456,6 +476,10 @@ export const QaDashboard = ({
   };
 
   const handleToggleCycleStatus = async (operatorId: string, currentStatus: 'pending' | 'evaluated') => {
+    if (profile.role !== 'monitor') {
+      showToast('Apenas o Monitor de Qualidade pode alterar o status do ciclo.', 'error');
+      return;
+    }
     const nextStatus = currentStatus === 'evaluated' ? 'pending' : 'evaluated';
     try {
       if (profile.organizationId === 'sandbox-test') {
@@ -474,6 +498,10 @@ export const QaDashboard = ({
   };
 
   const handleSaveSettings = async (cycleDays: number, pdiDays: number) => {
+    if (profile.role !== 'monitor') {
+      showToast('Apenas o Monitor de Qualidade pode salvar configurações de ciclo.', 'error');
+      return;
+    }
     try {
       if (profile.organizationId === 'sandbox-test') {
         sandboxService.updateQaSettings(profile.organizationId, {
@@ -635,7 +663,7 @@ export const QaDashboard = ({
             <PdiManager
               pdis={pdis}
               currentTeamMembers={currentTeamMembers}
-              isSuperUser={isSuperUser}
+              profile={profile}
               theme={theme}
               onResolvePdi={handleResolvePdi}
             />
