@@ -18,7 +18,6 @@ import { UserProfile, Agreement, AgreementStatus, Team } from '../../types';
 import { formatCurrency } from '../../utils/masks';
 
 export const PublicPortfolioView = () => {
-  const [activeTab, setActiveTab] = useState<'table' | 'charts'>('table');
   const [loading, setLoading] = useState(true);
 
   // Estados dos dados carregados
@@ -248,30 +247,6 @@ export const PublicPortfolioView = () => {
           <h1 className="text-2xl font-black text-white mt-3 tracking-tight">Performance & Metas</h1>
           <p className="text-xs text-slate-400 mt-1.5">Acompanhamento transparente do realizado, dispersão e projeções.</p>
         </div>
-
-        {/* TABS PÚBLICAS */}
-        <div className="flex bg-slate-900/60 p-1.5 border border-white/5 rounded-2xl gap-1.5">
-          <button
-            onClick={() => setActiveTab('table')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'table' 
-                ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/10' 
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Tabela de Resultados
-          </button>
-          <button
-            onClick={() => setActiveTab('charts')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'charts' 
-                ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/10' 
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Mural de Gráficos (Dashboard)
-          </button>
-        </div>
       </div>
 
       <div className="max-w-7xl mx-auto space-y-8">
@@ -303,9 +278,8 @@ export const PublicPortfolioView = () => {
           </div>
         </div>
 
-        {activeTab === 'table' ? (
-          /* TABELA DE METAS */
-          <div className="space-y-8">
+        {/* TABELA DE METAS */}
+        <div className="space-y-8">
             {(Object.entries(teamsGroupedData) as [string, any[]][]).map(([groupId, ops]) => {
               const teamInfo = teams.find(t => t.id === groupId);
               const teamName = teamInfo ? teamInfo.name : 'Sem Equipe';
@@ -351,7 +325,7 @@ export const PublicPortfolioView = () => {
                                 <User size={12} className="text-slate-500" />
                                 {op.displayName}
                               </td>
-                              <td className="px-6 py-3.5 text-right font-semibold">{formatCurrency(op.goal)}</td>
+                              <td className="px-6 py-3.5 text-right font-semibold text-white">{formatCurrency(op.goal)}</td>
                               <td className="px-6 py-3.5 text-right font-medium text-slate-400">{formatCurrency(op.dailyGoal)}</td>
                               <td className="px-6 py-3.5 text-right font-bold text-emerald-400">{formatCurrency(op.partial)}</td>
                               <td className="px-6 py-3.5 text-center">
@@ -377,148 +351,6 @@ export const PublicPortfolioView = () => {
               );
             })}
           </div>
-        ) : (
-          /* MURAL DE GRÁFICOS */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* CARD 1: TERMÔMETRO DE META (GAUGE) */}
-            <div className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col justify-between items-center text-center">
-              <div className="w-full flex items-center gap-2 mb-4 text-left">
-                <Trophy size={16} className="text-amber-500" />
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Atingimento Coletivo</h3>
-              </div>
-
-              {/* Gauge Circular SVG */}
-              <div className="relative w-48 h-48 flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle
-                    cx="96"
-                    cy="96"
-                    r="80"
-                    className="stroke-slate-900"
-                    strokeWidth="12"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="96"
-                    cy="96"
-                    r="80"
-                    className="stroke-sky-500 transition-all duration-1000"
-                    strokeWidth="12"
-                    fill="transparent"
-                    strokeDasharray="502"
-                    strokeDashoffset={502 - (502 * Math.min(totals.progressPercent, 100)) / 100}
-                    strokeLinecap="round"
-                    style={{ filter: 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.4))' }}
-                  />
-                </svg>
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-3xl font-black text-white">{totals.progressPercent.toFixed(1)}%</span>
-                  <span className="text-[9px] text-slate-500 uppercase tracking-wider font-bold mt-1">Recuperado</span>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-1 text-xs">
-                <p className="text-slate-400">Total Pago: <strong className="text-emerald-400">{formatCurrency(totals.totalPartial)}</strong></p>
-                <p className="text-slate-500 text-[10px]">Meta Geral: {formatCurrency(totals.totalGoal)}</p>
-              </div>
-            </div>
-
-            {/* CARD 2: TOP OPERADORES (PODIUM) */}
-            <div className="glass-card p-6 rounded-3xl border border-white/5 space-y-6 lg:col-span-2">
-              <div className="flex items-center gap-2 text-left">
-                <Trophy size={16} className="text-yellow-400" />
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Podium de Performance</h3>
-              </div>
-
-              {/* Pódio de Imagens/Nomes */}
-              {rankingList.length > 0 ? (
-                <div className="space-y-6">
-                  <div className="flex justify-center items-end gap-6 pt-8 pb-4">
-                    {/* 2º Lugar */}
-                    {rankingList[1] && (
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-400">{rankingList[1].displayName}</span>
-                        <div className="w-20 bg-slate-900 border border-white/5 rounded-t-xl h-20 flex flex-col items-center justify-center text-center shadow-lg">
-                          <span className="text-xl font-bold text-slate-400">2º</span>
-                          <span className="text-[8px] text-emerald-400 font-bold">{formatCurrency(rankingList[1].partial)}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 1º Lugar */}
-                    {rankingList[0] && (
-                      <div className="flex flex-col items-center gap-2 -translate-y-2">
-                        <Trophy size={20} className="text-yellow-400 animate-bounce" />
-                        <span className="text-xs font-black text-white">{rankingList[0].displayName}</span>
-                        <div className="w-24 bg-gradient-to-t from-sky-500/10 to-sky-500/20 border border-sky-500/30 rounded-t-2xl h-28 flex flex-col items-center justify-center text-center shadow-2xl shadow-sky-500/15">
-                          <span className="text-3xl font-black text-sky-400">1º</span>
-                          <span className="text-[9px] text-emerald-400 font-black">{formatCurrency(rankingList[0].partial)}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 3º Lugar */}
-                    {rankingList[2] && (
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-500">{rankingList[2].displayName}</span>
-                        <div className="w-20 bg-slate-900 border border-white/5 rounded-t-xl h-14 flex flex-col items-center justify-center text-center shadow-lg">
-                          <span className="text-lg font-bold text-amber-600">3º</span>
-                          <span className="text-[8px] text-emerald-400 font-bold">{formatCurrency(rankingList[2].partial)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Restante dos Operadores em lista compacta */}
-                  {rankingList.length > 3 && (
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                      {rankingList.slice(3).map((op, idx) => (
-                        <div key={op.uid} className="flex justify-between items-center p-2.5 bg-slate-900/30 border border-white/5 rounded-xl text-xs">
-                          <span className="text-slate-400 font-medium">#{idx + 4} {op.displayName}</span>
-                          <span className="text-white font-bold">{formatCurrency(op.partial)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500 italic text-center py-12">Nenhum operador com faturamento registrado no período.</p>
-              )}
-            </div>
-
-            {/* CARD 3: COMPARATIVO POR CARTEIRA */}
-            <div className="glass-card p-6 rounded-3xl border border-white/5 space-y-6 lg:col-span-3">
-              <div className="flex items-center gap-2 text-left">
-                <ChartLine size={16} className="text-sky-400" />
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Faturamento Acumulado por Carteira</h3>
-              </div>
-
-              {portfolioSummary.length > 0 ? (
-                <div className="space-y-4">
-                  {portfolioSummary.map(ps => {
-                    const pct = ps.goal > 0 ? (ps.partial / ps.goal) * 100 : 0;
-                    return (
-                      <div key={ps.name} className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-bold">
-                          <span className="text-white">{ps.name}</span>
-                          <span className="text-sky-400">{pct.toFixed(0)}% ({formatCurrency(ps.partial)} / {formatCurrency(ps.goal)})</span>
-                        </div>
-                        <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-white/5">
-                          <div 
-                            className="bg-sky-500 h-full rounded-full"
-                            style={{ width: `${Math.min(pct, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500 italic text-center py-12">Sem dados de carteiras carregados.</p>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

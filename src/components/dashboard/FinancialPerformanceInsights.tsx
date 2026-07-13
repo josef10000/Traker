@@ -84,57 +84,11 @@ export const FinancialPerformanceInsights = ({
                   {((stats.totalPaid / (monthlyGoal || 1)) * 100).toFixed(1)}%
                 </h3>
               </div>
-              <div className="text-right flex flex-col items-end relative">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Taxa de Efetividade</p>
-                  {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && (
-                    <div 
-                      className="relative cursor-pointer text-slate-400 hover:text-white"
-                      onMouseEnter={() => setShowTooltip(true)}
-                      onMouseLeave={() => setShowTooltip(false)}
-                    >
-                      <Question size={13} weight="bold" />
-                      {showTooltip && (
-                        <div className="absolute right-0 top-6 w-64 p-3 bg-slate-950/95 border border-slate-800 rounded-xl text-left text-[10px] text-slate-300 leading-relaxed shadow-2xl z-50 backdrop-blur-md">
-                          <p className="font-bold text-white mb-1 uppercase tracking-wider text-[9px]">Divergência de Efetividade</p>
-                          <p className="mb-1.5">
-                            <strong className="text-sky-400">Efetividade do Operador:</strong> Mede a quantidade de acordos pagos em relação ao total de acordos lançados.
-                          </p>
-                          <p>
-                            <strong className="text-emerald-400">Efetividade de Caixa:</strong> Taxa de recuperação financeira oficial registrada na conciliação.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Se houver conciliação divergente */}
-                {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && Math.abs(stats.effectivenessRate - reconciliation.officialEffectiveness) >= 0.1 ? (
-                  <div className="flex flex-col items-end gap-1 mt-1">
-                    <p className={`text-sm font-bold ${getEffectivenessColor(stats.effectivenessRate, effectivenessGoal)}`}>
-                      <span className="text-[9px] text-slate-500 font-semibold uppercase mr-1">Operador (Qtd):</span>
-                      {stats.effectivenessRate.toFixed(1)}%
-                    </p>
-                    <p className={`text-sm font-bold ${getEffectivenessColor(reconciliation.officialEffectiveness, effectivenessGoal)}`}>
-                      <span className="text-[9px] text-slate-500 font-semibold uppercase mr-1">Caixa (Oficial):</span>
-                      {reconciliation.officialEffectiveness.toFixed(1)}%
-                    </p>
-                  </div>
-                ) : (
-                  /* Sem conciliação ou conciliação batendo */
-                  <>
-                    <p className={`text-xl font-bold ${getEffectivenessColor(stats.effectivenessRate, effectivenessGoal)}`}>
-                      {stats.effectivenessRate.toFixed(1)}%
-                    </p>
-                    {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && (
-                      <p className="text-[9px] text-emerald-400 font-bold uppercase mt-0.5">
-                        ✨ Efetividade Real (Sincronizada)
-                      </p>
-                    )}
-                  </>
-                )}
-                
+              <div className="text-right flex flex-col items-end">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Taxa de Efetividade</p>
+                <p className={`text-xl font-bold mt-1 ${getEffectivenessColor(reconciliation?.officialEffectiveness !== undefined && reconciliation?.officialEffectiveness !== null ? reconciliation.officialEffectiveness : stats.effectivenessRate, effectivenessGoal)}`}>
+                  {(reconciliation?.officialEffectiveness !== undefined && reconciliation?.officialEffectiveness !== null ? reconciliation.officialEffectiveness : stats.effectivenessRate).toFixed(1)}%
+                </p>
                 <p className="text-[8px] text-slate-500 font-medium uppercase mt-0.5">Base: {stats.counts?.month?.total || 0} acordos</p>
               </div>
             </div>
@@ -154,6 +108,25 @@ export const FinancialPerformanceInsights = ({
                  <span>Recuperado: {formatCurrency(stats.totalPaid)}</span>
                  <span>Faltam: {formatCurrency(Math.max(0, monthlyGoal - stats.totalPaid))}</span>
               </div>
+
+              {reconciliation && reconciliation.officialEffectiveness !== undefined && reconciliation.officialEffectiveness !== null && Math.abs(stats.effectivenessRate - reconciliation.officialEffectiveness) >= 0.1 && (
+                <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Efetividade do Tracker</p>
+                    <p className={`text-sm font-bold mt-0.5 ${getEffectivenessColor(stats.effectivenessRate, effectivenessGoal)}`}>
+                      {stats.effectivenessRate.toFixed(1)}%
+                    </p>
+                    <p className="text-[8px] text-slate-500">Baseado em acordos registrados</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Efetividade Oficial (Caixa)</p>
+                    <p className={`text-sm font-bold mt-0.5 ${getEffectivenessColor(reconciliation.officialEffectiveness, effectivenessGoal)}`}>
+                      {reconciliation.officialEffectiveness.toFixed(1)}%
+                    </p>
+                    <p className="text-[8px] text-slate-500">Registrado na conciliação</p>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
 
