@@ -65,6 +65,11 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [showTransferModal, setShowTransferModal] = useState<UserProfile | null>(null);
   const [targetManagerId, setTargetManagerId] = useState('');
   const [isProcessingTransfer, setIsProcessingTransfer] = useState(false);
+  const [sandboxVersion, setSandboxVersion] = useState(0);
+
+  const toggleNode = (nodeId: string) => {
+    setExpandedNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
+  };
 
   const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
 
@@ -332,8 +337,6 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [supervisorInviteToken, setSupervisorInviteToken] = useState<string | null>(null);
   const [coordinatorInviteToken, setCoordinatorInviteToken] = useState<string | null>(null);
   const [monitorInviteToken, setMonitorInviteToken] = useState<string | null>(null);
-
-  const [sandboxVersion, setSandboxVersion] = useState(0);
 
   // Estados de gerenciamento de convites
   const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
