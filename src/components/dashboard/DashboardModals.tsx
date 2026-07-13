@@ -86,7 +86,6 @@ export interface DashboardModalsProps {
   stats: { totalPaid: number; totalProjected: number };
   reconciliation: Reconciliation | null;
   handleSaveReconciliation: (officialValue: number | null, officialEffectiveness: number | null) => Promise<void>;
-  handleNormalizeSaldo: (difference: number, officialEffectiveness: number | null) => Promise<void>;
   handleDeleteReconciliation: () => Promise<void>;
   monthAdjustments: any[];
   handleDeleteAdjustment: (id: string) => Promise<void>;
@@ -172,7 +171,6 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
   stats,
   reconciliation,
   handleSaveReconciliation,
-  handleNormalizeSaldo,
   handleDeleteReconciliation,
   monthAdjustments,
   handleDeleteAdjustment,
@@ -300,7 +298,6 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         currentOfficialValue={reconciliation?.officialValue || 0}
         currentOfficialEffectiveness={reconciliation?.officialEffectiveness || 0}
         onSave={handleSaveReconciliation}
-        onNormalize={handleNormalizeSaldo}
         onClear={handleDeleteReconciliation}
         adjustments={monthAdjustments}
         onDeleteAdjustment={handleDeleteAdjustment}

@@ -27,7 +27,6 @@ interface ReconciliationModalProps {
   currentOfficialValue: number;
   currentOfficialEffectiveness: number;
   onSave: (officialValue: number | null, officialEffectiveness: number | null) => void;
-  onNormalize: (difference: number, officialEffectiveness: number | null) => void;
   onClear: () => void;
   adjustments: any[];
   onDeleteAdjustment: (id: string) => Promise<void>;
@@ -62,7 +61,6 @@ export const ReconciliationModal = ({
   currentOfficialValue,
   currentOfficialEffectiveness,
   onSave,
-  onNormalize,
   onClear,
   adjustments,
   onDeleteAdjustment,
@@ -519,7 +517,7 @@ export const ReconciliationModal = ({
                       <AlertCircle className="text-rose-400 shrink-0" size={18} />
                       <div>
                         <p className="text-xs font-bold text-rose-200">Divergência de Saldo Detectada</p>
-                        <p className="text-[10px] text-rose-300/80 mt-0.5">O valor do Tracker está diferente do oficial. Você pode salvar apenas o valor para referência ou normalizar o saldo agora.</p>
+                        <p className="text-[10px] text-rose-300/80 mt-0.5">O valor do Tracker está diferente do oficial. Salve os dados de fechamento para registrar a conciliação de caixa.</p>
                       </div>
                     </div>
                   </motion.div>
@@ -682,24 +680,12 @@ export const ReconciliationModal = ({
                 </button>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="pt-2">
                 <button 
                   onClick={handleSave}
-                  className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/10 transition-all text-xs"
+                  className="w-full py-4 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-sky-500/10 text-xs cursor-pointer"
                 >
-                  Salvar Dados
-                </button>
-                <button 
-                  disabled={difference === 0}
-                  onClick={() => {
-                    const officialEff = inputEffectiveness !== '' ? (parseFloat(inputEffectiveness.replace(',', '.')) || 0) : null;
-                    onNormalize(difference, officialEff);
-                    onClose();
-                  }}
-                  className="flex-[1.5] py-4 bg-sky-500 hover:bg-sky-400 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 text-xs"
-                >
-                  <RefreshCw size={18} className={difference !== 0 ? 'animate-spin-slow' : ''} />
-                  Normalizar Saldo
+                  Salvar Dados de Conciliação
                 </button>
               </div>
             </div>

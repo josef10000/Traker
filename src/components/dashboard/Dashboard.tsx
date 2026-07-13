@@ -1435,91 +1435,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleNormalizeSaldo = async (difference: number, officialEffectiveness?: number | null) => {
-    const targetTeamId = selectedTeamId === 'all' ? profile.teamId : selectedTeamId;
-    if (!targetTeamId) return;
 
-    if (profile.organizationId === 'sandbox-test') {
-      const adjustmentData = {
-        id: `sandbox-adj-${Date.now()}`,
-        clientName: "Ajuste de Saldo Oficial",
-        clientCpf: "000.000.000-00",
-        value: difference,
-        dueDate: new Date().toISOString().split('T')[0],
-        status: AgreementStatus.PAID,
-        origin: AgreementOrigin.SALESFORCE,
-        type: AgreementType.QUITACAO,
-        category: AgreementCategory.FIXA,
-        operatorId: profile.uid,
-        teamId: targetTeamId,
-        organizationId: profile.organizationId,
-        createdAt: new Date().toISOString(),
-        paidAt: new Date().toISOString(),
-        isAdjustment: true
-      };
-      sandboxService.setAgreement(adjustmentData);
-
-      const trackerEff = stats.totalProjected > 0 ? ((stats.totalPaid + difference) / stats.totalProjected) * 100 : 0;
-      const reconUpdate: any = {
-        ...reconciliation,
-        trackerValue: stats.totalPaid + difference,
-        difference: 0,
-        updatedAt: new Date().toISOString()
-      };
-
-      if (officialEffectiveness !== undefined && officialEffectiveness !== null) {
-        reconUpdate.officialEffectiveness = officialEffectiveness;
-        reconUpdate.trackerEffectiveness = trackerEff;
-        reconUpdate.differenceEffectiveness = officialEffectiveness - trackerEff;
-      }
-
-      setReconciliation(reconUpdate);
-      showToast('Saldo do Sandbox normalizado na memória!', 'success');
-      return;
-    }
-
-    try {
-      const adjustmentData = {
-        clientName: "Ajuste de Saldo Oficial",
-        clientCpf: "000.000.000-00",
-        value: difference,
-        dueDate: new Date().toISOString().split('T')[0],
-        status: AgreementStatus.PAID,
-        origin: AgreementOrigin.SALESFORCE,
-        type: AgreementType.QUITACAO,
-        category: AgreementCategory.FIXA,
-        operatorId: profile.uid,
-        teamId: targetTeamId,
-        organizationId: profile.organizationId,
-        createdAt: new Date().toISOString(),
-        paidAt: new Date().toISOString(),
-        isAdjustment: true
-      };
-
-      await setDoc(doc(collection(db, 'agreements')), adjustmentData);
-      
-      const reconId = `${targetTeamId}_${selectedMonth}_${selectedYear}_${profile.uid}`;
-      const reconUpdate: any = {
-        trackerValue: stats.totalPaid + difference,
-        difference: 0,
-        updatedAt: new Date().toISOString()
-      };
-
-      if (officialEffectiveness !== undefined && officialEffectiveness !== null) {
-        const trackerEff = stats.totalProjected > 0 ? ((stats.totalPaid + difference) / stats.totalProjected) * 100 : 0;
-        reconUpdate.officialEffectiveness = officialEffectiveness;
-        reconUpdate.trackerEffectiveness = trackerEff;
-        reconUpdate.differenceEffectiveness = officialEffectiveness - trackerEff;
-      }
-
-      await updateDoc(doc(db, 'reconciliations', reconId), reconUpdate);
-      doMarkStale();
-      showToast('Saldo normalizado com sucesso!', 'success');
-    } catch (error) {
-      console.error(error);
-      showToast('Erro ao normalizar saldo.', 'error');
-    }
-  };
 
   const handleRemoveMember = async (memberId: string) => {
     if (!selectedTeamId || selectedTeamId === 'all') return;
@@ -2526,7 +2442,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         stats={stats}
         reconciliation={reconciliation}
         handleSaveReconciliation={handleSaveReconciliation}
-        handleNormalizeSaldo={handleNormalizeSaldo}
         handleDeleteReconciliation={handleDeleteReconciliation}
         monthAdjustments={monthAdjustments}
         handleDeleteAdjustment={handleDeleteAdjustment}
