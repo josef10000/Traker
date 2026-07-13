@@ -26,6 +26,7 @@ export function AppContent() {
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' | 'coordinator' } | null>(null);
   const [simulatedUid, setSimulatedUid] = useState<string>('');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -322,24 +323,7 @@ export function AppContent() {
                 <Dashboard 
                   user={user} 
                   profile={simulatedProfile} 
-                  onSettingsClick={() => navigate('/profile')} 
-                  showToast={showToast}
-                />
-              } />
-              <Route path="/profile" element={
-                <ProfileSettings 
-                  profile={simulatedProfile} 
-                  onUpdate={(updatedData) => {
-                    if (updatedData) {
-                      sandboxService.setProfile({
-                        ...simulatedProfile,
-                        ...updatedData
-                      });
-                      showToast('Perfil simulado atualizado na memória!', 'success');
-                    }
-                  }}
-                  onBack={() => navigate('/')}
-                  onCreateTeam={() => navigate('/create-team')}
+                  onSettingsClick={() => setIsProfileModalOpen(true)} 
                   showToast={showToast}
                 />
               } />
@@ -349,16 +333,40 @@ export function AppContent() {
                   profile={simulatedProfile}
                   onComplete={() => {
                     showToast('Equipe simulada criada com sucesso!', 'success');
-                    navigate('/profile');
+                    setIsProfileModalOpen(true);
+                    navigate('/');
                   }} 
                   isAdditionalTeam={true}
-                  onBack={() => navigate('/profile')}
+                  onBack={() => {
+                    setIsProfileModalOpen(true);
+                    navigate('/');
+                  }}
                   showToast={showToast}
                 />
               } />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
+
+          <ProfileSettings
+            isOpen={isProfileModalOpen}
+            onClose={() => setIsProfileModalOpen(false)}
+            profile={simulatedProfile}
+            onUpdate={(updatedData) => {
+              if (updatedData) {
+                sandboxService.setProfile({
+                  ...simulatedProfile,
+                  ...updatedData
+                });
+                showToast('Perfil simulado atualizado na memória!', 'success');
+              }
+            }}
+            onCreateTeam={() => {
+              setIsProfileModalOpen(false);
+              navigate('/create-team');
+            }}
+            showToast={showToast}
+          />
         </>
       );
     }
@@ -431,16 +439,7 @@ export function AppContent() {
           <Dashboard 
             user={user} 
             profile={profile} 
-            onSettingsClick={() => navigate('/profile')} 
-            showToast={showToast}
-          />
-        } />
-        <Route path="/profile" element={
-          <ProfileSettings 
-            profile={profile} 
-            onUpdate={refreshProfile}
-            onBack={() => navigate('/')}
-            onCreateTeam={() => navigate('/create-team')}
+            onSettingsClick={() => setIsProfileModalOpen(true)} 
             showToast={showToast}
           />
         } />
@@ -450,12 +449,29 @@ export function AppContent() {
             profile={profile}
             onComplete={refreshProfile} 
             isAdditionalTeam={true}
-            onBack={() => navigate('/profile')}
+            onBack={() => {
+              setIsProfileModalOpen(true);
+              navigate('/');
+            }}
             showToast={showToast}
           />
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {profile && (
+        <ProfileSettings
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          profile={profile}
+          onUpdate={refreshProfile}
+          onCreateTeam={() => {
+            setIsProfileModalOpen(false);
+            navigate('/create-team');
+          }}
+          showToast={showToast}
+        />
+      )}
     </>
   );
 }
