@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Trophy, Medal, TrendUp as TrendingUp, Users } from '@phosphor-icons/react';
+import React, { useMemo, useState } from 'react';
+import { Trophy, Medal, TrendUp as TrendingUp, Users, MagnifyingGlass } from '@phosphor-icons/react';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency } from '../../utils/masks';
 
@@ -22,6 +22,8 @@ export const TeamPerformance = ({
   selectedMemberId,
   onSelectMember
 }: TeamPerformanceProps) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
   if (members.length === 0) {
     return (
       <div className="p-8 border-2 border-dashed border-white/10 rounded-3xl text-center text-slate-500">
@@ -69,6 +71,14 @@ export const TeamPerformance = ({
 
   const { ranking, uniqueDates } = performanceData;
   
+  // Filter ranking based on search query
+  const filteredRanking = useMemo(() => {
+    if (!searchQuery.trim()) return ranking;
+    return ranking.filter(row => 
+      (row.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [ranking, searchQuery]);
+
   // Only show the last 5 days in the table
   const tableDates = useMemo(() => uniqueDates.slice(-5), [uniqueDates]);
 
@@ -160,83 +170,111 @@ export const TeamPerformance = ({
 
       {/* Daily Productivity Table - Request Format */}
       <section>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-primary/10 text-primary rounded-lg">
-            <TrendingUp size={20} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 text-primary rounded-lg">
+              <TrendingUp size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-white">Produtividade Diária (Pagos)</h2>
           </div>
-          <h2 className="text-xl font-bold text-white">Produtividade Diária (Pagos)</h2>
+
+          <div className="relative w-full sm:max-w-xs">
+            <input
+              type="text"
+              placeholder="Buscar colaborador..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-900/60 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+            />
+            <div className="absolute left-3 top-2.5 text-slate-400 pointer-events-none">
+              <MagnifyingGlass size={16} />
+            </div>
+          </div>
         </div>
 
         <div className="glass-card rounded-xl overflow-hidden shadow-2xl">
-          <div className="overflow-x-auto">
+          <div className="max-h-[380px] overflow-y-auto overflow-x-auto custom-scrollbar">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-[11px] font-black text-white uppercase bg-sky-600/40 border-r border-white/10 sticky left-0 z-20 min-w-[200px]">
+                  <th className="px-4 py-3 text-left text-[11px] font-black text-white uppercase bg-[#182235] border-r border-white/10 sticky left-0 top-0 z-30 min-w-[200px]">
                     PAGAMENTO TOTAL
                   </th>
                   {tableDates.map(date => (
-                    <th key={date} className="px-4 py-3 text-center text-[10px] font-bold text-slate-300 uppercase bg-slate-800/50 border-r border-slate-700/30">
+                    <th key={date} className="px-4 py-3 text-center text-[10px] font-bold text-slate-300 uppercase bg-[#1e293b] border-r border-slate-700/30 sticky top-0 z-20">
                       {formatDate(date)}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-right text-[11px] font-black text-white uppercase bg-white/5 border-l border-white/10 sticky right-0 z-10">
+                  <th className="px-4 py-3 text-right text-[11px] font-black text-white uppercase bg-[#182235] border-l border-white/10 sticky right-0 top-0 z-30">
                     Total
                   </th>
                 </tr>
               </thead>
               <tbody className="text-slate-300">
-                {ranking.map((row) => {
-                  const isSelected = selectedMemberId === row.id;
-                  return (
-                    <tr 
-                      key={row.id} 
-                      onClick={() => onSelectMember?.(isSelected ? 'all' : row.id)}
-                      className={`border-b border-white/5 cursor-pointer transition-all select-none ${
-                        isSelected 
-                          ? 'bg-sky-500/10 hover:bg-sky-500/15' 
-                          : 'hover:bg-white/5'
-                      }`}
+                {filteredRanking.length === 0 ? (
+                  <tr>
+                    <td 
+                      colSpan={tableDates.length + 2} 
+                      className="px-4 py-8 text-center text-xs text-slate-500"
                     >
-                      <td className={`px-4 py-2.5 font-bold text-xs border-r border-white/10 sticky left-0 z-10 transition-colors ${
-                        isSelected ? 'bg-sky-950/80 text-sky-400' : 'bg-black/20'
-                      }`}>
-                        {row.name || 'Usuário'}
-                      </td>
-                      {tableDates.map(date => (
-                        <td key={date} className="px-4 py-2.5 text-center text-[11px] font-medium border-r border-slate-800/30">
-                          {row.daily[date] ? formatCurrency(row.daily[date]) : 'R$ 0,00'}
-                        </td>
-                      ))}
-                      <td className="px-4 py-2.5 text-right font-black text-xs text-white bg-black/30 sticky right-0 z-10 border-l border-white/10">
-                        {formatCurrency(row.paid)}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {/* Total Footer Row */}
-                <tr className="bg-white/5">
-                  <td className="px-4 py-3 font-black text-[11px] text-white uppercase bg-sky-600/40 border-r border-white/10 sticky left-0 z-10">
-                    Total
-                  </td>
-                  {tableDates.map(date => {
-                    const totalDay = ranking.reduce((acc, curr) => acc + (curr.daily[date] || 0), 0);
-                    const isGoalReached = dailyGoal > 0 && totalDay >= dailyGoal;
-                    
+                      Nenhum colaborador encontrado com "{searchQuery}"
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRanking.map((row) => {
+                    const isSelected = selectedMemberId === row.id;
                     return (
-                      <td key={date} className={`px-4 py-3 text-center text-[11px] font-black border-r border-white/10 transition-colors ${
-                        isGoalReached 
-                          ? 'bg-emerald-500/20 text-emerald-400' 
-                          : 'bg-rose-500/10 text-rose-400'
-                      }`}>
-                        {formatCurrency(totalDay)}
-                      </td>
+                      <tr 
+                        key={row.id} 
+                        onClick={() => onSelectMember?.(isSelected ? 'all' : row.id)}
+                        className={`border-b border-white/5 cursor-pointer transition-all select-none ${
+                          isSelected 
+                            ? 'bg-sky-500/10 hover:bg-sky-500/15' 
+                            : 'hover:bg-white/5'
+                        }`}
+                      >
+                        <td className={`px-4 py-2.5 font-bold text-xs border-r border-white/10 sticky left-0 z-10 transition-colors ${
+                          isSelected ? 'bg-sky-950/80 text-sky-400' : 'bg-slate-900'
+                        }`}>
+                          {row.name || 'Usuário'}
+                        </td>
+                        {tableDates.map(date => (
+                          <td key={date} className="px-4 py-2.5 text-center text-[11px] font-medium border-r border-slate-800/30">
+                            {row.daily[date] ? formatCurrency(row.daily[date]) : 'R$ 0,00'}
+                          </td>
+                        ))}
+                        <td className="px-4 py-2.5 text-right font-black text-xs text-white bg-slate-900 sticky right-0 z-10 border-l border-white/10">
+                          {formatCurrency(row.paid)}
+                        </td>
+                      </tr>
                     );
-                  })}
-                  <td className="px-4 py-3 text-right font-black text-[12px] text-sky-400 bg-black/20 sticky right-0 z-10 border-l border-white/10">
-                    {formatCurrency(ranking.reduce((acc, curr) => acc + curr.paid, 0))}
-                  </td>
-                </tr>
+                  })
+                )}
+                {/* Total Footer Row */}
+                {filteredRanking.length > 0 && (
+                  <tr className="bg-slate-900 sticky bottom-0 z-20 border-t border-white/10">
+                    <td className="px-4 py-3 font-black text-[11px] text-white uppercase bg-slate-900 border-r border-white/10 sticky left-0 z-30">
+                      Total
+                    </td>
+                    {tableDates.map(date => {
+                      const totalDay = filteredRanking.reduce((acc, curr) => acc + (curr.daily[date] || 0), 0);
+                      const isGoalReached = dailyGoal > 0 && totalDay >= dailyGoal;
+                      
+                      return (
+                        <td key={date} className={`px-4 py-3 text-center text-[11px] font-black border-r border-white/10 transition-colors ${
+                          isGoalReached 
+                            ? 'bg-emerald-500/20 text-emerald-400' 
+                            : 'bg-rose-500/10 text-rose-400'
+                        }`}>
+                          {formatCurrency(totalDay)}
+                        </td>
+                      );
+                    })}
+                    <td className="px-4 py-3 text-right font-black text-[12px] text-sky-400 bg-slate-900 sticky right-0 z-30 border-l border-white/10">
+                      {formatCurrency(filteredRanking.reduce((acc, curr) => acc + curr.paid, 0))}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
