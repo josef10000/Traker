@@ -63,6 +63,8 @@ export interface UserProfile {
   monthlyGoal?: number;
   observation?: string;
   hasSeenTour?: boolean;
+  managerId?: string | null;
+  createdAt: string; // Aceite da LGPD no primeiro login
   acceptedTermsAt?: string; // Aceite da LGPD no primeiro login
   dashboardPreferences?: {
     hiddenCards: string[];
@@ -90,6 +92,7 @@ export interface Team {
   monthlyGoal?: number;
   effectivenessGoal?: number;
   supervisorInviteToken?: string | null;
+  managerId?: string | null;
   createdAt: string;
 }
 
@@ -281,4 +284,16 @@ export interface Invite {
   invitedBy: string;
   createdAt: string;
   expiresAt: string;
+}
+
+export interface TransferRequest {
+  id: string;
+  fromManagerId: string;
+  fromManagerName: string;
+  toManagerId: string;
+  supervisorId: string;
+  supervisorName: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
 }

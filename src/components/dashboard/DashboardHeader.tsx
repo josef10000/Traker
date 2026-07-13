@@ -20,6 +20,9 @@ import {
 import { UserProfile, Team } from '../../types';
 import { ToastType } from '../ui/Toast';
 import { useDesignMode } from '../../hooks/useDesignMode';
+import { query, collection, where, getDocs } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { sandboxService } from '../../lib/sandboxService';
 
 interface DashboardHeaderProps {
   profile: UserProfile;
@@ -75,6 +78,42 @@ export const DashboardHeader = ({
 }: DashboardHeaderProps) => {
   const [designMode, setDesignMode] = useDesignMode();
   const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  useEffect(() => {
+    if (profile.role !== 'manager') return;
+
+    const loadNotifications = async () => {
+      if (profile.organizationId === 'sandbox-test') {
+        const count = sandboxService.getTransferRequests
+          ? sandboxService.getTransferRequests().filter((r: any) => r.toManagerId === profile.uid && r.status === 'pending').length
+          : 0;
+        setNotificationCount(count);
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, 'transfer_requests'),
+          where('toManagerId', '==', profile.uid),
+          where('status', '==', 'pending')
+        );
+        const snap = await getDocs(q);
+        setNotificationCount(snap.size);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadNotifications();
+    
+    // Se for sandbox, subscreve ao service
+    if (profile.organizationId === 'sandbox-test') {
+      const unsubscribe = sandboxService.subscribe(loadNotifications);
+      return () => unsubscribe();
+    }
+  }, [profile.uid, profile.role, profile.organizationId]);
+
   const toolsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -338,8 +377,11 @@ export const DashboardHeader = ({
                 {profile.jobTitle || 'Operador'}
               </span>
             </div>
-            <div className="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500 border border-sky-500/20 shrink-0">
+            <div className="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500 border border-sky-500/20 shrink-0 relative">
               <UserIcon size={14} />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse border border-[#090d16]" />
+              )}
             </div>
           </div>
 

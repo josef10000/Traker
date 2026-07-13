@@ -178,7 +178,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     const loadSupervisors = async () => {
       if (profile.organizationId === 'sandbox-test') {
-        const sups = sandboxService.getUsers(profile.organizationId).filter(u => u.role === 'supervisor');
+        let sups = sandboxService.getUsers(profile.organizationId).filter(u => u.role === 'supervisor');
+        if (profile.role === 'manager') {
+          sups = sups.filter(s => s.managerId === profile.uid);
+        }
         setSupervisors(sups);
         return;
       }
@@ -191,7 +194,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           where('role', '==', 'supervisor')
         );
         const snap = await getDocs(q);
-        const sups = snap.docs.map(doc => doc.data() as UserProfile);
+        let sups = snap.docs.map(doc => doc.data() as UserProfile);
+        if (profile.role === 'manager') {
+          sups = sups.filter(s => s.managerId === profile.uid);
+        }
         setSupervisors(sups);
       } catch (err) {
         console.error("Erro ao carregar supervisores:", err);
@@ -199,7 +205,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
 
     loadSupervisors();
-  }, [profile.role, profile.organizationId]);
+  }, [profile.role, profile.organizationId, profile.uid]);
 
   // 1. CARREGAMENTO DOS DADOS DE EQUIPES E MEMBROS VIA CUSTOM HOOK
   const {

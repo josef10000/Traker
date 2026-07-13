@@ -15,11 +15,17 @@ import {
   PaperPlaneTilt,
   UserPlus,
   Globe,
-  Target
+  Target,
+  MagnifyingGlass,
+  CaretRight,
+  CaretDown,
+  Folder,
+  FolderOpen,
+  Bell
 } from '@phosphor-icons/react';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { UserProfile, Team, Organization, Invite, UserRole } from '../../types';
+import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest } from '../../types';
 import { 
   getTeamData, 
   deleteTeam, 
@@ -49,7 +55,16 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers'>('profile');
+
+  // Árvore Organizacional e Transferências
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
+  const [transferRequests, setTransferRequests] = useState<TransferRequest[]>([]);
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
+  const [showTransferModal, setShowTransferModal] = useState<UserProfile | null>(null);
+  const [targetManagerId, setTargetManagerId] = useState('');
+  const [isProcessingTransfer, setIsProcessingTransfer] = useState(false);
 
   const [managedTeamsData, setManagedTeamsData] = useState<Team[]>([]);
 
@@ -67,6 +82,41 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       setSelectedTeamForMembers(null);
     }
   }, [profile, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !profile.organizationId) return;
+
+    const loadTreeData = async () => {
+      if (profile.organizationId === 'sandbox-test') {
+        const users = sandboxService.getUsers(profile.organizationId);
+        const teams = sandboxService.getTeams(profile.organizationId);
+        setAllUsers(users);
+        setAllTeams(teams);
+        
+        const requests = sandboxService.getTransferRequests ? sandboxService.getTransferRequests() : [];
+        setTransferRequests(requests as TransferRequest[]);
+        return;
+      }
+
+      try {
+        const usersSnap = await getDocs(query(collection(db, 'users'), where('organizationId', '==', profile.organizationId)));
+        const users = usersSnap.docs.map(d => d.data() as UserProfile);
+        setAllUsers(users);
+
+        const teamsSnap = await getDocs(query(collection(db, 'teams'), where('organizationId', '==', profile.organizationId)));
+        const teams = teamsSnap.docs.map(d => d.data() as Team);
+        setAllTeams(teams);
+
+        const reqsSnap = await getDocs(query(collection(db, 'transfer_requests'), where('toManagerId', '==', profile.uid), where('status', '==', 'pending')));
+        const reqs = reqsSnap.docs.map(d => ({ id: d.id, ...d.data() } as TransferRequest));
+        setTransferRequests(reqs);
+      } catch (err) {
+        console.error("Erro ao carregar dados da árvore:", err);
+      }
+    };
+
+    loadTreeData();
+  }, [isOpen, profile.organizationId, profile.uid, sandboxVersion]);
 
   useEffect(() => {
     if (managedTeamsData.length > 0 && !selectedGoalTeamId) {
@@ -139,9 +189,144 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     }
   };
 
+  const handleRequestTransfer = async () => {
+    if (!showTransferModal || !targetManagerId) return;
+
+    const targetManager = allUsers.find(u => u.uid === targetManagerId);
+    if (!targetManager) return;
+
+    const requestData: Omit<TransferRequest, 'id'> = {
+      fromManagerId: profile.uid,
+      fromManagerName: profile.displayName || profile.email.split('@')[0],
+      toManagerId: targetManagerId,
+      supervisorId: showTransferModal.uid,
+      supervisorName: showTransferModal.displayName || showTransferModal.email.split('@')[0],
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setIsProcessingTransfer(true);
+    if (profile.organizationId === 'sandbox-test') {
+      const sandboxReq = {
+        id: `sandbox-req-${Date.now()}`,
+        ...requestData
+      };
+      sandboxService.createTransferRequest(sandboxReq);
+      showToast('Solicitação de transferência criada na simulação!', 'success');
+    } else {
+      try {
+        const reqRef = doc(collection(db, 'transfer_requests'));
+        await setDoc(reqRef, requestData);
+        showToast('Solicitação de transferência enviada com sucesso!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao criar solicitação de transferência.', 'error');
+      }
+    }
+    setIsProcessingTransfer(false);
+    setSandboxVersion(prev => prev + 1);
+    setShowTransferModal(null);
+    setTargetManagerId('');
+  };
+
+  const handleAcceptRequest = async (req: TransferRequest) => {
+    setIsProcessingTransfer(true);
+    if (profile.organizationId === 'sandbox-test') {
+      const supervisor = sandboxService.getUser(req.supervisorId);
+      if (supervisor) {
+        sandboxService.setProfile({
+          ...supervisor,
+          managerId: req.fromManagerId
+        });
+      }
+      const teams = sandboxService.getTeams(profile.organizationId);
+      teams.forEach(team => {
+        if (team.supervisorId === req.supervisorId) {
+          sandboxService.setTeam({
+            ...team,
+            managerId: req.fromManagerId
+          });
+        }
+      });
+      sandboxService.updateTransferRequest(req.id, { status: 'accepted', updatedAt: new Date().toISOString() });
+      showToast('Transferência aceita e realizada com sucesso!', 'success');
+    } else {
+      try {
+        // Atualizar supervisor
+        await updateDoc(doc(db, 'users', req.supervisorId), {
+          managerId: req.fromManagerId
+        });
+        
+        // Atualizar equipes deste supervisor
+        const teamsRef = collection(db, 'teams');
+        const teamsSnap = await getDocs(query(teamsRef, where('supervisorId', '==', req.supervisorId)));
+        const updatePromises = teamsSnap.docs.map(d => updateDoc(d.ref, { managerId: req.fromManagerId }));
+        await Promise.all(updatePromises);
+
+        // Atualizar status da solicitação
+        await updateDoc(doc(db, 'transfer_requests', req.id), {
+          status: 'accepted',
+          updatedAt: new Date().toISOString()
+        });
+        showToast('Transferência aceita e realizada no Firestore!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao aceitar transferência.', 'error');
+      }
+    }
+    setIsProcessingTransfer(false);
+    setSandboxVersion(prev => prev + 1);
+  };
+
+  const handleRejectRequest = async (req: TransferRequest) => {
+    setIsProcessingTransfer(true);
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.updateTransferRequest(req.id, { status: 'rejected', updatedAt: new Date().toISOString() });
+      showToast('Transferência rejeitada!', 'info');
+    } else {
+      try {
+        await updateDoc(doc(db, 'transfer_requests', req.id), {
+          status: 'rejected',
+          updatedAt: new Date().toISOString()
+        });
+        showToast('Transferência rejeitada!', 'info');
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao rejeitar transferência.', 'error');
+      }
+    }
+    setIsProcessingTransfer(false);
+    setSandboxVersion(prev => prev + 1);
+  };
+
   const [selectedTeamForMembers, setSelectedTeamForMembers] = useState<Team | null>(null);
   const [teamMembers, setTeamMembers] = useState<UserProfile[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [memberCurrentPage, setMemberCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setMemberSearchQuery('');
+    setMemberCurrentPage(1);
+  }, [selectedTeamForMembers]);
+
+  const filteredTeamMembers = React.useMemo(() => {
+    return teamMembers.filter(member => {
+      const name = (member.displayName || '').toLowerCase();
+      const email = (member.email || '').toLowerCase();
+      const queryStr = memberSearchQuery.toLowerCase().trim();
+      return name.includes(queryStr) || email.includes(queryStr);
+    });
+  }, [teamMembers, memberSearchQuery]);
+
+  const ITEMS_PER_PAGE = 5;
+  const totalMemberPages = Math.max(1, Math.ceil(filteredTeamMembers.length / ITEMS_PER_PAGE));
+  
+  const paginatedTeamMembers = React.useMemo(() => {
+    const startIndex = (memberCurrentPage - 1) * ITEMS_PER_PAGE;
+    return filteredTeamMembers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredTeamMembers, memberCurrentPage]);
 
   const [orgData, setOrgData] = useState<Organization | null>(null);
   const [supervisorInviteToken, setSupervisorInviteToken] = useState<string | null>(null);
@@ -232,12 +417,17 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     const loadTeams = async () => {
       if (profile.organizationId === 'sandbox-test') {
         let teams: Team[] = [];
-        if (profile.role === 'manager' || profile.role === 'coordinator') {
+        if (profile.role === 'manager') {
+          const allTeams = sandboxService.getTeams(profile.organizationId);
+          const mySupervisorsUids = sandboxService.getUsers(profile.organizationId)
+            .filter(u => u.role === 'supervisor' && u.managerId === profile.uid)
+            .map(u => u.uid);
+          teams = allTeams.filter(team => 
+            team.managerId === profile.uid || 
+            (team.supervisorId && mySupervisorsUids.includes(team.supervisorId))
+          );
+        } else if (profile.role === 'coordinator') {
           teams = sandboxService.getTeams(profile.organizationId);
-        } else if (profile.managedTeams && profile.managedTeams.length > 0) {
-          teams = profile.managedTeams
-            .map(id => sandboxService.getTeam(id))
-            .filter((t): t is Team => t !== null);
         } else if (profile.role === 'supervisor') {
           teams = sandboxService.getTeams(profile.organizationId).filter(t => t.supervisorId === profile.uid);
         }
@@ -245,7 +435,30 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
         return;
       }
 
-      if ((profile.role === 'manager' || profile.role === 'coordinator') && profile.organizationId) {
+      if (profile.role === 'manager' && profile.organizationId) {
+        try {
+          const teamsRef = collection(db, 'teams');
+          const q = query(teamsRef, where('organizationId', '==', profile.organizationId));
+          const querySnapshot = await getDocs(q);
+          const allTeams = querySnapshot.docs.map(doc => doc.data() as Team);
+
+          const usersRef = collection(db, 'users');
+          const supsQ = query(usersRef, where('organizationId', '==', profile.organizationId), where('role', '==', 'supervisor'));
+          const supsSnap = await getDocs(supsQ);
+          const mySupervisorsUids = supsSnap.docs
+            .map(doc => doc.data() as UserProfile)
+            .filter(s => s.managerId === profile.uid)
+            .map(s => s.uid);
+
+          const filteredTeams = allTeams.filter(team => 
+            team.managerId === profile.uid || 
+            (team.supervisorId && mySupervisorsUids.includes(team.supervisorId))
+          );
+          setManagedTeamsData(filteredTeams);
+        } catch (error) {
+          console.error('Erro ao carregar equipes da empresa:', error);
+        }
+      } else if (profile.role === 'coordinator' && profile.organizationId) {
         try {
           const teamsRef = collection(db, 'teams');
           const q = query(teamsRef, where('organizationId', '==', profile.organizationId));
@@ -253,7 +466,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           const teams = querySnapshot.docs.map(doc => doc.data() as Team);
           setManagedTeamsData(teams);
         } catch (error) {
-          console.error('Erro ao carregar equipes da empresa:', error);
+          console.error('Erro ao carregar equipes da empresa (coordenador):', error);
         }
       } else if (profile.managedTeams && profile.managedTeams.length > 0) {
         const teams = await Promise.all(
@@ -587,6 +800,49 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   Configurar Metas
                 </button>
               )}
+
+              {(profile.role === 'manager' || profile.role === 'coordinator') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('org_tree');
+                    setSelectedTeamForMembers(null);
+                  }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
+                    activeTab === 'org_tree'
+                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Folder size={16} />
+                  Organograma / Árvore
+                </button>
+              )}
+
+              {profile.role === 'manager' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('transfers');
+                    setSelectedTeamForMembers(null);
+                  }}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
+                    activeTab === 'transfers'
+                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Bell size={16} />
+                    Notificações
+                  </div>
+                  {transferRequests.filter(r => r.status === 'pending').length > 0 && (
+                    <span className="w-5 h-5 rounded-full bg-rose-500 text-white font-black text-[9px] flex items-center justify-center animate-pulse shrink-0">
+                      {transferRequests.filter(r => r.status === 'pending').length}
+                    </span>
+                  )}
+                </button>
+              )}
             </nav>
           </div>
 
@@ -688,6 +944,23 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   </div>
                 </div>
 
+                {/* Campo de Busca */}
+                {!loadingMembers && teamMembers.length > 0 && (
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="Pesquisar membro por nome ou e-mail..."
+                      value={memberSearchQuery}
+                      onChange={(e) => {
+                        setMemberSearchQuery(e.target.value);
+                        setMemberCurrentPage(1);
+                      }}
+                      className="w-full bg-slate-900/60 border border-white/5 focus:border-primary/50 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all pl-10"
+                    />
+                    <MagnifyingGlass size={16} className="absolute left-3.5 top-3 text-slate-500" />
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   {loadingMembers ? (
                     <div className="text-center py-12">
@@ -697,36 +970,66 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     <div className="text-center py-12 text-slate-500 text-sm">
                       Nenhum membro nesta equipe ainda.
                     </div>
+                  ) : filteredTeamMembers.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500 text-sm">
+                      Nenhum membro encontrado para a busca "{memberSearchQuery}".
+                    </div>
                   ) : (
-                    teamMembers.map(member => (
-                      <div key={member.uid} className="flex items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-primary/80 font-bold">
-                            {member.displayName ? member.displayName[0].toUpperCase() : 'U'}
+                    <>
+                      {paginatedTeamMembers.map(member => (
+                        <div key={member.uid} className="flex items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-primary/80 font-bold">
+                              {member.displayName ? member.displayName[0].toUpperCase() : 'U'}
+                            </div>
+                            <div>
+                              <h4 className="text-white font-semibold text-sm">{member.displayName}</h4>
+                              <p className="text-[10px] text-slate-500">{member.email}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-white font-semibold text-sm">{member.displayName}</h4>
-                            <p className="text-[10px] text-slate-500">{member.email}</p>
-                          </div>
+                          {member.uid !== profile.uid && (
+                            <button 
+                              type="button"
+                              onClick={() => handleRemoveMember(member.uid, member.displayName)}
+                              className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all cursor-pointer"
+                              title="Remover da equipe"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                          {member.uid === profile.uid && (
+                            <span className="text-[9px] font-bold text-primary uppercase bg-primary/10 px-2 py-1 rounded-md flex items-center gap-1">
+                              <ShieldCheck size={12} />
+                              Supervisor
+                            </span>
+                          )}
                         </div>
-                        {member.uid !== profile.uid && (
-                          <button 
+                      ))}
+
+                      {totalMemberPages > 1 && (
+                        <div className="flex items-center justify-between pt-4 mt-2">
+                          <button
                             type="button"
-                            onClick={() => handleRemoveMember(member.uid, member.displayName)}
-                            className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all cursor-pointer"
-                            title="Remover da equipe"
+                            disabled={memberCurrentPage === 1}
+                            onClick={() => setMemberCurrentPage(prev => Math.max(1, prev - 1))}
+                            className="px-3 py-1.5 bg-slate-900 text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:text-white rounded-lg text-xs font-semibold transition-all border border-white/5"
                           >
-                            <Trash2 size={18} />
+                            Anterior
                           </button>
-                        )}
-                        {member.uid === profile.uid && (
-                          <span className="text-[9px] font-bold text-primary uppercase bg-primary/10 px-2 py-1 rounded-md flex items-center gap-1">
-                            <ShieldCheck size={12} />
-                            Supervisor
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                            Página {memberCurrentPage} de {totalMemberPages}
                           </span>
-                        )}
-                      </div>
-                    ))
+                          <button
+                            type="button"
+                            disabled={memberCurrentPage === totalMemberPages}
+                            onClick={() => setMemberCurrentPage(prev => Math.min(totalMemberPages, prev + 1))}
+                            className="px-3 py-1.5 bg-slate-900 text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:text-white rounded-lg text-xs font-semibold transition-all border border-white/5"
+                          >
+                            Próxima
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1249,6 +1552,406 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <p className="text-sm text-slate-400">Você não possui nenhuma equipe sob sua gerência direta para configurar metas.</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ABA: ORGANOGRAMA / ÁRVORE */}
+          {activeTab === 'org_tree' && (profile.role === 'manager' || profile.role === 'coordinator') && (
+            <div className="space-y-6 max-w-4xl">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Folder size={20} className="text-primary" />
+                  Estrutura Organizacional
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Visualize a árvore de gerência, supervisores e equipes. Gerentes podem solicitar a transferência de supervisores.
+                </p>
+              </div>
+
+              <div className="bg-slate-900/30 p-6 rounded-2xl border border-white/5 space-y-4">
+                {/* Lista de Gerentes (Nível 1) */}
+                {allUsers.filter(u => u.role === 'manager').map(manager => {
+                  const managerId = manager.uid;
+                  const isExpanded = !!expandedNodes[managerId];
+                  const managedSups = allUsers.filter(u => u.role === 'supervisor' && u.managerId === managerId);
+                  
+                  return (
+                    <div key={managerId} className="border border-white/5 rounded-xl bg-slate-950/40 overflow-hidden">
+                      <div 
+                        onClick={() => toggleNode(managerId)}
+                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <button type="button" className="text-slate-400">
+                            {isExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                          </button>
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                            {manager.displayName ? manager.displayName[0].toUpperCase() : 'G'}
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-white">{manager.displayName}</span>
+                            <span className="text-[10px] text-slate-500 ml-2 uppercase font-black tracking-wider">Gerente</span>
+                          </div>
+                        </div>
+                        <span className="text-xs text-slate-500 font-medium">{manager.email}</span>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="pl-8 pr-4 pb-4 space-y-3 border-t border-white/5 bg-slate-950/20 pt-3">
+                          {managedSups.length === 0 ? (
+                            <p className="text-xs text-slate-500 italic pl-6">Nenhum supervisor sob esta gerência.</p>
+                          ) : (
+                            managedSups.map(sup => {
+                              const supId = sup.uid;
+                              const isSupExpanded = !!expandedNodes[supId];
+                              const supTeams = allTeams.filter(t => t.supervisorId === supId);
+
+                              return (
+                                <div key={supId} className="border border-white/5 rounded-xl bg-slate-900/20 overflow-hidden">
+                                  <div 
+                                    onClick={() => toggleNode(supId)}
+                                    className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-all"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <button type="button" className="text-slate-400">
+                                        {isSupExpanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                                      </button>
+                                      <div className="w-7 h-7 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center font-bold text-xs">
+                                        {sup.displayName ? sup.displayName[0].toUpperCase() : 'S'}
+                                      </div>
+                                      <div>
+                                        <span className="text-xs font-semibold text-slate-200">{sup.displayName}</span>
+                                        <span className="text-[9px] text-slate-500 ml-2 uppercase font-black tracking-wider">Supervisor</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                                      {profile.role === 'manager' && managerId !== profile.uid && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setShowTransferModal(sup);
+                                            setTargetManagerId(managerId);
+                                          }}
+                                          className="px-2.5 py-1 bg-primary hover:bg-primary/80 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                                        >
+                                          Solicitar Transferência
+                                        </button>
+                                      )}
+                                      <span className="text-[10px] text-slate-500">{sup.email}</span>
+                                    </div>
+                                  </div>
+
+                                  {isSupExpanded && (
+                                    <div className="pl-8 pr-3 pb-3 space-y-2 border-t border-white/5 bg-slate-900/10 pt-2">
+                                      {supTeams.length === 0 ? (
+                                        <p className="text-[11px] text-slate-500 italic pl-5">Nenhuma equipe sob este supervisor.</p>
+                                      ) : (
+                                        supTeams.map(team => {
+                                          const teamId = team.id;
+                                          const isTeamExpanded = !!expandedNodes[teamId];
+                                          const teamOperators = allUsers.filter(u => u.role === 'member' && u.teamId === teamId);
+
+                                          return (
+                                            <div key={teamId} className="border border-white/5 rounded-lg bg-slate-950/20 overflow-hidden">
+                                              <div 
+                                                onClick={() => toggleNode(teamId)}
+                                                className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-white/5 transition-all"
+                                              >
+                                                <div className="flex items-center gap-2">
+                                                  <button type="button" className="text-slate-400">
+                                                    {isTeamExpanded ? <CaretDown size={10} /> : <CaretRight size={10} />}
+                                                  </button>
+                                                  <Users size={14} className="text-emerald-400" />
+                                                  <span className="text-[11px] font-semibold text-slate-300">Equipe: {team.name}</span>
+                                                </div>
+                                                <span className="text-[10px] text-slate-500">{teamOperators.length} operadores</span>
+                                              </div>
+
+                                              {isTeamExpanded && (
+                                                <div className="pl-6 pr-2 pb-2 space-y-1.5 border-t border-white/5 bg-slate-950/40 pt-1.5">
+                                                  {teamOperators.length === 0 ? (
+                                                    <p className="text-[10px] text-slate-500 italic pl-4">Nenhum operador nesta equipe.</p>
+                                                  ) : (
+                                                    teamOperators.map(op => (
+                                                      <div key={op.uid} className="flex items-center justify-between p-1.5 bg-slate-900/10 rounded border border-white/5">
+                                                        <div className="flex items-center gap-2">
+                                                          <div className="w-5 h-5 rounded-full bg-slate-800 text-[10px] flex items-center justify-center text-slate-400 font-bold">
+                                                            {op.displayName ? op.displayName[0].toUpperCase() : 'O'}
+                                                          </div>
+                                                          <span className="text-[10px] font-medium text-slate-400">{op.displayName}</span>
+                                                        </div>
+                                                        <span className="text-[9px] text-slate-500">{op.email}</span>
+                                                      </div>
+                                                    ))
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Supervisores não vinculados a nenhum gerente */}
+                {allUsers.filter(u => u.role === 'supervisor' && !u.managerId).length > 0 && (
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider ml-1">Supervisores Sem Gerente</h4>
+                    <div className="bg-slate-900/30 p-6 rounded-2xl border border-white/5 space-y-3">
+                      {allUsers.filter(u => u.role === 'supervisor' && !u.managerId).map(sup => {
+                        const supId = sup.uid;
+                        const isSupExpanded = !!expandedNodes[supId];
+                        const supTeams = allTeams.filter(t => t.supervisorId === supId);
+
+                        return (
+                          <div key={supId} className="border border-white/5 rounded-xl bg-slate-950/40 overflow-hidden">
+                            <div 
+                              onClick={() => toggleNode(supId)}
+                              className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <button type="button" className="text-slate-400">
+                                  {isSupExpanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                                </button>
+                                <div className="w-7 h-7 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-xs">
+                                  {sup.displayName ? sup.displayName[0].toUpperCase() : 'S'}
+                                </div>
+                                <div>
+                                  <span className="text-xs font-semibold text-slate-200">{sup.displayName}</span>
+                                  <span className="text-[9px] text-slate-500 ml-2 uppercase font-black tracking-wider">Supervisor</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                                {profile.role === 'manager' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setShowTransferModal(sup);
+                                      setTargetManagerId(profile.uid);
+                                    }}
+                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                                  >
+                                    Assumir Supervisão
+                                  </button>
+                                )}
+                                <span className="text-[10px] text-slate-500">{sup.email}</span>
+                              </div>
+                            </div>
+
+                            {isSupExpanded && (
+                              <div className="pl-8 pr-3 pb-3 space-y-2 border-t border-white/5 bg-slate-900/10 pt-2">
+                                {supTeams.length === 0 ? (
+                                  <p className="text-[11px] text-slate-500 italic pl-5">Nenhuma equipe sob este supervisor.</p>
+                                ) : (
+                                  supTeams.map(team => (
+                                    <div key={team.id} className="p-2.5 bg-slate-950/20 rounded-lg text-[11px] text-slate-300">
+                                      Equipe: {team.name}
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ABA: NOTIFICAÇÕES / TRANSFERÊNCIAS */}
+          {activeTab === 'transfers' && profile.role === 'manager' && (
+            <div className="space-y-6 max-w-2xl">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Bell size={20} className="text-primary" />
+                  Notificações de Transferência
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Aprove ou rejeite solicitações de outros gerentes querendo assumir a supervisão de colaboradores atualmente sob sua gestão.
+                </p>
+              </div>
+
+              {transferRequests.filter(r => r.status === 'pending').length === 0 ? (
+                <div className="text-center py-12 bg-slate-900/20 rounded-2xl border border-white/5 text-slate-500 text-sm">
+                  Nenhuma notificação pendente no momento.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transferRequests.filter(r => r.status === 'pending').map(req => (
+                    <div key={req.id} className="p-5 bg-slate-900/40 rounded-2xl border border-white/5 space-y-4 hover:border-white/10 transition-all">
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            O gerente <span className="text-primary font-bold">{req.fromManagerName}</span> solicitou a transferência do supervisor <span className="text-sky-400 font-bold">{req.supervisorName}</span> para a gerência dele.
+                          </p>
+                          <span className="text-[10px] text-slate-500 block mt-1">Solicitado em: {new Date(req.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
+                          <Bell size={20} />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 justify-end pt-2 border-t border-white/5">
+                        <button
+                          type="button"
+                          disabled={isProcessingTransfer}
+                          onClick={() => handleRejectRequest(req)}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-rose-400 font-bold rounded-xl transition-all disabled:opacity-50 text-xs border border-rose-500/10 cursor-pointer"
+                        >
+                          Recusar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isProcessingTransfer}
+                          onClick={() => handleAcceptRequest(req)}
+                          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-all disabled:opacity-50 text-xs shadow-lg shadow-emerald-500/10 cursor-pointer"
+                        >
+                          Aceitar Transferência
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Modal de confirmação da Transferência */}
+          {showTransferModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+              <div className="w-full max-w-md rounded-3xl border border-white/10 p-6 space-y-4 shadow-2xl bg-[#090d16] text-white">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                  <h4 className="text-base font-black flex items-center gap-1.5">
+                    <Globe size={18} className="text-primary" />
+                    Confirmar Transferência
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowTransferModal(null)}
+                    className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-300">
+                    Você está solicitando transferir o supervisor <span className="font-bold text-primary">{showTransferModal.displayName || showTransferModal.email.split('@')[0]}</span> para a sua gerência.
+                  </p>
+                  {targetManagerId === profile.uid ? (
+                    <p className="text-xs text-slate-400">
+                      Como este supervisor não possui gerente atualmente, a vinculação será efetuada imediatamente.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-400">
+                      Uma solicitação de aprovação será enviada para o gerente atual. A transferência ocorrerá assim que ele aprovar.
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowTransferModal(null)}
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isProcessingTransfer}
+                    onClick={async () => {
+                      if (targetManagerId === profile.uid) {
+                        setIsProcessingTransfer(true);
+                        if (profile.organizationId === 'sandbox-test') {
+                          const supervisor = sandboxService.getUser(showTransferModal.uid);
+                          if (supervisor) {
+                            sandboxService.setProfile({
+                              ...supervisor,
+                              managerId: profile.uid
+                            });
+                          }
+                          const teams = sandboxService.getTeams(profile.organizationId);
+                          teams.forEach(team => {
+                            if (team.supervisorId === showTransferModal.uid) {
+                              sandboxService.setTeam({
+                                ...team,
+                                managerId: profile.uid
+                              });
+                            }
+                          });
+                          showToast('Supervisor assumido com sucesso!', 'success');
+                        } else {
+                          try {
+                            await updateDoc(doc(db, 'users', showTransferModal.uid), {
+                              managerId: profile.uid
+                            });
+                            const teamsRef = collection(db, 'teams');
+                            const teamsSnap = await getDocs(query(teamsRef, where('supervisorId', '==', showTransferModal.uid)));
+                            const updatePromises = teamsSnap.docs.map(d => updateDoc(d.ref, { managerId: profile.uid }));
+                            await Promise.all(updatePromises);
+                            showToast('Supervisor assumido com sucesso no Firestore!', 'success');
+                          } catch (err) {
+                            console.error(err);
+                            showToast('Erro ao assumir supervisor.', 'error');
+                          }
+                        }
+                        setIsProcessingTransfer(false);
+                        setSandboxVersion(prev => prev + 1);
+                        setShowTransferModal(null);
+                      } else {
+                        const requestData: Omit<TransferRequest, 'id'> = {
+                          fromManagerId: profile.uid,
+                          fromManagerName: profile.displayName || profile.email.split('@')[0],
+                          toManagerId: targetManagerId,
+                          supervisorId: showTransferModal.uid,
+                          supervisorName: showTransferModal.displayName || showTransferModal.email.split('@')[0],
+                          status: 'pending',
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString()
+                        };
+
+                        setIsProcessingTransfer(true);
+                        if (profile.organizationId === 'sandbox-test') {
+                          const sandboxReq = {
+                            id: `sandbox-req-${Date.now()}`,
+                            ...requestData
+                          };
+                          sandboxService.createTransferRequest(sandboxReq);
+                          showToast('Solicitação enviada com sucesso na simulação!', 'success');
+                        } else {
+                          try {
+                            const reqRef = doc(collection(db, 'transfer_requests'));
+                            await setDoc(reqRef, requestData);
+                            showToast('Solicitação de transferência enviada com sucesso!', 'success');
+                          } catch (err) {
+                            console.error(err);
+                            showToast('Erro ao enviar solicitação.', 'error');
+                          }
+                        }
+                        setIsProcessingTransfer(false);
+                        setSandboxVersion(prev => prev + 1);
+                        setShowTransferModal(null);
+                      }
+                    }}
+                    className="px-4 py-2.5 bg-primary hover:bg-primary/80 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-primary/15 cursor-pointer"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

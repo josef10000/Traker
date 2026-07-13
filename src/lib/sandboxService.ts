@@ -36,6 +36,7 @@ class SandboxService {
   private backofficeClients: Record<string, BackOfficeClient> = {};
   private qaSettings: Record<string, QaSettings> = {};
   private invites: Record<string, Invite> = {};
+  private transferRequests: Record<string, any> = {};
 
 
   constructor() {
@@ -369,11 +370,28 @@ class SandboxService {
       teamId: invite.teamId || undefined,
       organizationId: invite.organizationId,
       createdAt: now,
-      managedTeams: invite.role === 'supervisor' && invite.teamId ? [invite.teamId] : undefined
+      managedTeams: invite.role === 'supervisor' && invite.teamId ? [invite.teamId] : undefined,
+      managerId: invite.invitedBy || null
     };
 
     this.users[uid] = newUser;
     this.notify();
+  }
+
+  public getTransferRequests(): any[] {
+    return Object.values(this.transferRequests);
+  }
+
+  public createTransferRequest(req: any): void {
+    this.transferRequests[req.id] = { ...req };
+    this.notify();
+  }
+
+  public updateTransferRequest(id: string, fields: Partial<any>): void {
+    if (this.transferRequests[id]) {
+      this.transferRequests[id] = { ...this.transferRequests[id], ...fields };
+      this.notify();
+    }
   }
 }
 

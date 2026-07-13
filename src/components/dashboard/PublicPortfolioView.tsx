@@ -303,7 +303,6 @@ export const PublicPortfolioView = () => {
                     <table className="min-w-full text-xs text-left">
                       <thead>
                         <tr className="bg-slate-950/40 text-[9px] text-slate-500 uppercase font-black tracking-widest border-b border-white/5">
-                          <th className="px-6 py-3">Carteira</th>
                           <th className="px-6 py-3">Analista</th>
                           <th className="px-6 py-3 text-right">Meta Recuperação</th>
                           <th className="px-6 py-3 text-right">Meta por Dia</th>
@@ -320,7 +319,6 @@ export const PublicPortfolioView = () => {
                           const progress = op.goal > 0 ? (op.partial / op.goal) * 100 : 0;
                           return (
                             <tr key={op.uid} className="hover:bg-white/[0.01] transition-colors leading-relaxed">
-                              <td className="px-6 py-3.5 text-slate-400">{op.portfolio || 'Sem Carteira'}</td>
                               <td className="px-6 py-3.5 font-bold text-white flex items-center gap-1.5">
                                 <User size={12} className="text-slate-500" />
                                 {op.displayName}

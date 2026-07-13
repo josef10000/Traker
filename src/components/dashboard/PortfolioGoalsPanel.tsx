@@ -50,7 +50,6 @@ export const PortfolioGoalsPanel = ({
 
   // Estados de edição inline
   const [editingUid, setEditingUid] = useState<string | null>(null);
-  const [tempPortfolio, setTempPortfolio] = useState('');
   const [tempGoal, setTempGoal] = useState('');
   const [tempObservation, setTempObservation] = useState('');
 
@@ -159,7 +158,6 @@ export const PortfolioGoalsPanel = ({
 
   const handleEditClick = (op: typeof operatorStats[0]) => {
     setEditingUid(op.uid);
-    setTempPortfolio(op.portfolio || 'Noverde Receptivo');
     setTempGoal(op.goal.toString());
     setTempObservation(op.observation || '');
   };
@@ -173,17 +171,15 @@ export const PortfolioGoalsPanel = ({
       if (sandboxUser) {
         sandboxService.setProfile({
           ...sandboxUser,
-          portfolio: tempPortfolio,
           monthlyGoal: goalVal,
           observation: tempObservation
         });
-        showToast('Meta e Carteira do Sandbox atualizadas!', 'success');
+        showToast('Meta do Sandbox atualizada!', 'success');
       }
     } else {
       try {
         const userRef = doc(db, 'users', uid);
         await updateDoc(userRef, {
-          portfolio: tempPortfolio,
           monthlyGoal: goalVal,
           observation: tempObservation
         });
@@ -222,7 +218,7 @@ export const PortfolioGoalsPanel = ({
       const worksheet = workbook.addWorksheet('Metas & Carteiras');
 
       // Título
-      worksheet.mergeCells('A1:J1');
+      worksheet.mergeCells('A1:I1');
       const titleCell = worksheet.getCell('A1');
       titleCell.value = 'TRACKER - COCKPIT DE METAS & CARTEIRAS';
       titleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -283,7 +279,7 @@ export const PortfolioGoalsPanel = ({
           : `EQUIPE: ${teamName.toUpperCase()}`;
 
         // Cabeçalho da Equipe
-        worksheet.mergeCells(`A${currentRow}:J${currentRow}`);
+        worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
         const groupHeader = worksheet.getCell(`A${currentRow}`);
         groupHeader.value = groupTitle;
         groupHeader.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -298,7 +294,7 @@ export const PortfolioGoalsPanel = ({
 
         // Cabeçalho de Colunas da Tabela
         const cols = [
-          'Carteira', 'Nome Analista', 'Meta Recuperação', 'Meta por dia', 
+          'Nome Analista', 'Meta Recuperação', 'Meta por dia', 
           'Parcial Recebido', 'Dispersão', '% Sobre a Meta', 'Projeção', 'Efetividade', 'Observação'
         ];
         worksheet.getRow(currentRow).values = cols;
@@ -316,7 +312,6 @@ export const PortfolioGoalsPanel = ({
         // Linhas de dados dos Analistas
         ops.forEach(op => {
           worksheet.getRow(currentRow).values = [
-            op.portfolio || 'Sem Carteira',
             op.displayName,
             op.goal,
             op.dailyGoal,
@@ -502,7 +497,6 @@ export const PortfolioGoalsPanel = ({
                 <table className="min-w-full text-xs text-left">
                   <thead>
                     <tr className="bg-slate-950/40 text-[9px] text-slate-500 uppercase font-black tracking-widest border-b border-white/5">
-                      <th className="px-6 py-3">Carteira</th>
                       <th className="px-6 py-3">Analista</th>
                       <th className="px-6 py-3 text-right">Meta Recuperação</th>
                       <th className="px-6 py-3 text-right">Meta por Dia</th>
@@ -521,24 +515,6 @@ export const PortfolioGoalsPanel = ({
                       const progress = op.goal > 0 ? (op.partial / op.goal) * 100 : 0;
                       return (
                         <tr key={op.uid} className="hover:bg-white/[0.02] transition-colors leading-relaxed">
-                          {/* Carteira */}
-                          <td className="px-6 py-3.5 font-medium text-slate-400">
-                            {isEditing ? (
-                              <select 
-                                value={tempPortfolio}
-                                onChange={(e) => setTempPortfolio(e.target.value)}
-                                className="bg-slate-900 border border-white/10 px-2 py-1 rounded text-xs text-white focus:outline-none focus:border-sky-500"
-                              >
-                                <option value="Noverde Receptivo">Noverde Receptivo</option>
-                                <option value="Noverde Variável">Noverde Variável</option>
-                                <option value="Noverde BNPL">Noverde BNPL</option>
-                                <option value="Pula Parcela + Ticket Alto">Pula Parcela + Ticket Alto</option>
-                                <option value="Noverde - FPD">Noverde - FPD</option>
-                              </select>
-                            ) : (
-                              op.portfolio || 'Sem Carteira'
-                            )}
-                          </td>
 
                           {/* Nome Analista */}
                           <td className="px-6 py-3.5 font-bold text-white flex items-center gap-1.5">

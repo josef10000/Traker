@@ -87,6 +87,19 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
   const inviteToken = generateSecureToken(12);
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // Expira em 48h
   
+  const userRef = doc(db, 'users', uid);
+  const userSnap = await getDoc(userRef);
+  let creatorManagerId: string | null = null;
+
+  if (userSnap.exists()) {
+    const userData = userSnap.data() as UserProfile;
+    if (userData.role === 'manager') {
+      creatorManagerId = uid;
+    } else if (userData.role === 'supervisor') {
+      creatorManagerId = userData.managerId || null;
+    }
+  }
+
   const teamData: Team = {
     id: teamId,
     name: teamName,
@@ -95,20 +108,16 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
     inviteTokenExpiresAt: expiresAt,
     organizationId,
     supervisorInviteToken: null,
+    managerId: creatorManagerId,
     createdAt: new Date().toISOString()
   };
 
   await setDoc(doc(db, 'teams', teamId), teamData);
 
-  const userRef = doc(db, 'users', uid);
-  const userSnap = await getDoc(userRef);
-
   if (userSnap.exists()) {
     const userData = userSnap.data() as UserProfile;
     if (userData.role === 'manager') {
-      // O Gerente não vira supervisor do time. A equipe é criada sem supervisorId
-      // e podemos deixar supervisorInviteToken nulo inicialmente ou criar um token
-      // Mas o supervisor se vincula pela organizacao inteira agora, o que é melhor!
+      // O Gerente não vira supervisor do time
     } else {
       // Criador é supervisor
       await updateDoc(doc(db, 'teams', teamId), {
@@ -134,6 +143,7 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
       teamId,
       organizationId,
       managedTeams: [teamId],
+      managerId: creatorManagerId,
       createdAt: new Date().toISOString()
     };
     await setDoc(userRef, userProfile);
@@ -546,7 +556,8 @@ export const acceptInvite = async (uid: string, token: string): Promise<void> =>
     teamId: inviteData.teamId || undefined,
     organizationId: inviteData.organizationId,
     createdAt: now,
-    managedTeams: inviteData.role === 'supervisor' && inviteData.teamId ? [inviteData.teamId] : undefined
+    managedTeams: inviteData.role === 'supervisor' && inviteData.teamId ? [inviteData.teamId] : undefined,
+    managerId: inviteData.invitedBy || null
   };
 
   await setDoc(doc(db, 'users', uid), userProfile);

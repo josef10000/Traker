@@ -41,7 +41,16 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
 
       // Carregar Equipes Gerenciadas
       let validTeams: Team[] = [];
-      if (profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'monitor') {
+      if (profile.role === 'manager') {
+        const allTeams = sandboxService.getTeams(profile.organizationId);
+        const mySupervisorsUids = sandboxService.getUsers(profile.organizationId)
+          .filter(u => u.role === 'supervisor' && u.managerId === profile.uid)
+          .map(u => u.uid);
+        validTeams = allTeams.filter(team => 
+          team.managerId === profile.uid || 
+          (team.supervisorId && mySupervisorsUids.includes(team.supervisorId))
+        );
+      } else if (profile.role === 'coordinator' || profile.role === 'monitor') {
         validTeams = sandboxService.getTeams(profile.organizationId);
       } else if (profile.managedTeams && profile.managedTeams.length > 0) {
         validTeams = profile.managedTeams
@@ -60,7 +69,9 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
       } else {
         // Obter todos os membros acessíveis
         let accessibleTeamIds: string[] = [];
-        if (profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'monitor') {
+        if (profile.role === 'manager') {
+          accessibleTeamIds = validTeams.map(t => t.id);
+        } else if (profile.role === 'coordinator' || profile.role === 'monitor') {
           accessibleTeamIds = sandboxService.getTeams(profile.organizationId).map(t => t.id);
         } else if (profile.managedTeams && profile.managedTeams.length > 0) {
           accessibleTeamIds = profile.managedTeams;
@@ -109,7 +120,24 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
       } else {
         try {
           let accessibleTeamIds: string[] = [];
-          if ((profile.role === 'manager' || profile.role === 'coordinator') && profile.organizationId) {
+          if (profile.role === 'manager' && profile.organizationId) {
+            const teamsRef = collection(db, 'teams');
+            const q = query(teamsRef, where('organizationId', '==', profile.organizationId));
+            const snap = await getDocs(q);
+            const allTeams = snap.docs.map(d => ({ id: d.id, ...d.data() } as Team));
+
+            const usersRef = collection(db, 'users');
+            const supsQ = query(usersRef, where('organizationId', '==', profile.organizationId), where('role', '==', 'supervisor'));
+            const supsSnap = await getDocs(supsQ);
+            const mySupervisorsUids = supsSnap.docs
+              .map(doc => doc.data() as UserProfile)
+              .filter(s => s.managerId === profile.uid)
+              .map(s => s.uid);
+
+            accessibleTeamIds = allTeams
+              .filter(team => team.managerId === profile.uid || (team.supervisorId && mySupervisorsUids.includes(team.supervisorId)))
+              .map(t => t.id);
+          } else if (profile.role === 'coordinator' && profile.organizationId) {
             const snap = await getDocs(query(collection(db, 'teams'), where('organizationId', '==', profile.organizationId)));
             accessibleTeamIds = snap.docs.map(d => d.id);
           } else if (profile.managedTeams && profile.managedTeams.length > 0) {
@@ -163,11 +191,23 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
       let validTeams: Team[] = [];
       try {
         if (profile.role === 'manager' && profile.organizationId) {
-          // Manager carrega todas as equipes da organização
           const teamsRef = collection(db, 'teams');
           const q = query(teamsRef, where('organizationId', '==', profile.organizationId));
           const snap = await getDocs(q);
-          validTeams = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+          const allTeams = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+
+          const usersRef = collection(db, 'users');
+          const supsQ = query(usersRef, where('organizationId', '==', profile.organizationId), where('role', '==', 'supervisor'));
+          const supsSnap = await getDocs(supsQ);
+          const mySupervisorsUids = supsSnap.docs
+            .map(doc => doc.data() as UserProfile)
+            .filter(s => s.managerId === profile.uid)
+            .map(s => s.uid);
+
+          validTeams = allTeams.filter(team => 
+            team.managerId === profile.uid || 
+            (team.supervisorId && mySupervisorsUids.includes(team.supervisorId))
+          );
         } else if (profile.managedTeams && profile.managedTeams.length > 0) {
           // Supervisor carrega as equipes gerenciadas
           const teams = await Promise.all(
