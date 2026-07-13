@@ -2195,6 +2195,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   selectedMonth={selectedMonth}
                   selectedYear={selectedYear}
                   showToast={showToast}
+                  selectedTeamId={selectedTeamId}
+                  supervisors={supervisors}
+                  managedTeamsData={managedTeamsData}
                 />
               )}
             </motion.div>

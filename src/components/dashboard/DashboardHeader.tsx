@@ -262,13 +262,13 @@ export const DashboardHeader = ({
                   )}
 
                   {/* Conciliar */}
-                  {profile.role !== 'manager' && (
+                  {(profile.role !== 'manager' || profile.organizationId === 'sandbox-test') && (
                     <button
                       onClick={() => {
                         setIsToolsOpen(false);
                         setIsReconciliationModalOpen(true);
                       }}
-                      disabled={selectedTeamId === 'all'}
+                      disabled={selectedTeamId === 'all' && profile.organizationId !== 'sandbox-test'}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
                         theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-955'
                       }`}

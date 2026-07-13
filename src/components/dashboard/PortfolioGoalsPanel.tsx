@@ -4,7 +4,7 @@ import {
   Calculator, 
   Calendar, 
   FileCsv as FileSpreadsheet, 
-  Printer, 
+  Link, 
   TrendUp, 
   User, 
   Note, 
@@ -28,6 +28,9 @@ interface PortfolioGoalsPanelProps {
   selectedMonth: number;
   selectedYear: number;
   showToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
+  selectedTeamId: string;
+  supervisors: UserProfile[];
+  managedTeamsData: any[]; // Team[]
 }
 
 export const PortfolioGoalsPanel = ({
@@ -36,7 +39,10 @@ export const PortfolioGoalsPanel = ({
   currentTeamMembers,
   selectedMonth,
   selectedYear,
-  showToast
+  showToast,
+  selectedTeamId,
+  supervisors,
+  managedTeamsData
 }: PortfolioGoalsPanelProps) => {
   // Configurações de dias úteis e trabalhados
   const [workingDays, setWorkingDays] = useState(23);
@@ -55,8 +61,6 @@ export const PortfolioGoalsPanel = ({
 
   // Lógica de cálculo por operador
   const operatorStats = useMemo(() => {
-    const remainingDays = Math.max(0, workingDays - workedDays);
-
     return operators.map(op => {
       // Valor Pago acumulado no mês
       const opAgreements = monthAgreements.filter(a => a.operatorId === op.uid && !a.isAdjustment);
@@ -95,10 +99,11 @@ export const PortfolioGoalsPanel = ({
     });
   }, [operators, monthAgreements, workingDays, workedDays]);
 
-  const portfoliosData = useMemo(() => {
+  // Agrupamento por Equipe
+  const teamsGroupedData = useMemo(() => {
     const groups: Record<string, any[]> = {};
     operatorStats.forEach(stat => {
-      const key = stat.portfolio || 'Sem Carteira';
+      const key = stat.teamId || 'Sem Equipe';
       if (!groups[key]) {
         groups[key] = [];
       }
@@ -170,6 +175,25 @@ export const PortfolioGoalsPanel = ({
     setEditingUid(null);
   };
 
+  // Copiar link público dinâmico
+  const handleCopyPublicLink = () => {
+    const baseUrl = window.location.origin;
+    const orgId = profile.organizationId;
+    const teamId = selectedTeamId;
+    const month = selectedMonth;
+    const year = selectedYear;
+    const shareUrl = `${baseUrl}/public/portfolio?orgId=${orgId}&teamId=${teamId}&month=${month}&year=${year}`;
+    
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        showToast('Link público copiado com sucesso! Compartilhe com a equipe.', 'success');
+      })
+      .catch((err) => {
+        console.error('Erro ao copiar link:', err);
+        showToast('Erro ao copiar link público.', 'error');
+      });
+  };
+
   // Exportar Excel Formatado com paleta do Tracker (Sky Blue & Slate)
   const handleExportExcel = async () => {
     try {
@@ -202,53 +226,45 @@ export const PortfolioGoalsPanel = ({
       worksheet.getCell('G3').font = { bold: true };
       worksheet.getCell('H3').value = workedDays;
 
-      worksheet.getCell('J3').value = `Faltam: ${Math.max(0, workingDays - workedDays)} dias`;
-      worksheet.getCell('J3').font = { italic: true };
+      worksheet.getCell('A4').value = 'Meta Consolidada:';
+      worksheet.getCell('A4').font = { bold: true };
+      worksheet.getCell('B4').value = totals.totalGoal;
+      worksheet.getCell('B4').numFmt = '"R$"#,##0.00';
 
-      // Linha de Resumo Geral
-      worksheet.getRow(5).values = [
-        'META RECUPERAÇÃO MÊS',
-        'ENTREGUE ACUMULADO',
-        'FALTAM',
-        '% SOBRE A META',
-        'PROJEÇÃO CONSOLIDADA',
-        '', '', '', '', ''
-      ];
-      worksheet.getRow(5).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      worksheet.getRow(5).eachCell((cell) => {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FF1E293B' } // Slate-800
-        };
-        cell.alignment = { horizontal: 'center' };
-      });
+      worksheet.getCell('D4').value = 'Total Recebido:';
+      worksheet.getCell('D4').font = { bold: true };
+      worksheet.getCell('E4').value = totals.totalPartial;
+      worksheet.getCell('E4').numFmt = '"R$"#,##0.00';
 
-      worksheet.getRow(6).values = [
-        totals.totalGoal,
-        totals.totalPartial,
-        totals.totalRemaining,
-        `${totals.progressPercent.toFixed(1)}%`,
-        totals.totalProjection,
-        '', '', '', '', ''
-      ];
-      worksheet.getRow(6).font = { bold: true, size: 12 };
-      worksheet.getRow(6).eachCell((cell, colNum) => {
-        if ([1,2,3,5].includes(colNum)) {
-          cell.numFmt = '"R$"#,##0.00';
-        }
-        cell.alignment = { horizontal: 'center' };
-      });
-      worksheet.getRow(6).height = 25;
+      worksheet.getCell('G4').value = 'Projeção Fechamento:';
+      worksheet.getCell('G4').font = { bold: true };
+      worksheet.getCell('H4').value = totals.totalProjection;
+      worksheet.getCell('H4').numFmt = '"R$"#,##0.00';
 
-      let currentRow = 8;
+      worksheet.getRow(3).font = { name: 'Segoe UI', size: 10 };
+      worksheet.getRow(4).font = { name: 'Segoe UI', size: 10 };
 
-      // Iterar e renderizar cada carteira
-      (Object.entries(portfoliosData) as [string, any[]][]).forEach(([portfolioName, ops]) => {
-        // Cabeçalho da Carteira
+      // Linha vazia de separação
+      worksheet.getRow(5).values = [];
+
+      let currentRow = 7;
+
+      // Iterar e renderizar cada Equipe
+      (Object.entries(teamsGroupedData) as [string, any[]][]).forEach(([teamId, ops]) => {
+        const teamInfo = managedTeamsData.find(t => t.id === teamId);
+        const teamName = teamInfo ? teamInfo.name : 'Sem Equipe';
+        const supervisorProfile = teamInfo ? supervisors.find(s => s.uid === teamInfo.supervisorId) : null;
+        const supervisorName = supervisorProfile ? supervisorProfile.displayName : 'Sem Supervisor';
+
+        const isManagerView = profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin';
+        const groupTitle = isManagerView 
+          ? `EQUIPE: ${teamName.toUpperCase()} (SUPERVISOR: ${supervisorName.toUpperCase()})` 
+          : `EQUIPE: ${teamName.toUpperCase()}`;
+
+        // Cabeçalho da Equipe
         worksheet.mergeCells(`A${currentRow}:J${currentRow}`);
         const groupHeader = worksheet.getCell(`A${currentRow}`);
-        groupHeader.value = portfolioName.toUpperCase();
+        groupHeader.value = groupTitle;
         groupHeader.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         groupHeader.fill = {
           type: 'pattern',
@@ -288,35 +304,32 @@ export const PortfolioGoalsPanel = ({
             `${(op.goal > 0 ? (op.partial / op.goal) * 100 : 0).toFixed(0)}%`,
             op.projection,
             `${op.effectiveness.toFixed(0)}%`,
-            op.observation
+            op.observation || ''
           ];
-          
-          // Formatação numérica
+
+          // Alinhamentos e Formatações
+          worksheet.getCell(`A${currentRow}`).alignment = { horizontal: 'left' };
+          worksheet.getCell(`B${currentRow}`).alignment = { horizontal: 'left' };
           worksheet.getCell(`C${currentRow}`).numFmt = '"R$"#,##0.00';
           worksheet.getCell(`D${currentRow}`).numFmt = '"R$"#,##0.00';
           worksheet.getCell(`E${currentRow}`).numFmt = '"R$"#,##0.00';
+          worksheet.getCell(`F${currentRow}`).alignment = { horizontal: 'center' };
+          worksheet.getCell(`G${currentRow}`).alignment = { horizontal: 'center' };
           worksheet.getCell(`H${currentRow}`).numFmt = '"R$"#,##0.00';
+          worksheet.getCell(`I${currentRow}`).alignment = { horizontal: 'center' };
+          worksheet.getCell(`J${currentRow}`).alignment = { horizontal: 'left' };
 
-          // Alinhamento
-          worksheet.getRow(currentRow).eachCell((cell, colNum) => {
-            cell.font = { size: 10 };
-            if ([3,4,5,8].includes(colNum)) {
-              cell.alignment = { horizontal: 'right' };
-            } else if ([6,7,9].includes(colNum)) {
-              cell.alignment = { horizontal: 'center' };
-            } else {
-              cell.alignment = { horizontal: 'left' };
-            }
-          });
-
+          worksheet.getRow(currentRow).font = { name: 'Segoe UI', size: 9 };
           currentRow++;
         });
 
-        currentRow += 1; // Espaço entre carteiras
+        // Linha em branco entre Equipes
+        worksheet.getRow(currentRow).values = [];
+        currentRow++;
       });
 
-      // Larguras das colunas
-      worksheet.columns.forEach((col) => {
+      // Configuração de largura das colunas
+      worksheet.columns.forEach(col => {
         col.width = 18;
       });
       worksheet.getColumn(2).width = 25; // Nome maior
@@ -347,7 +360,7 @@ export const PortfolioGoalsPanel = ({
             <Target size={24} className="text-sky-400" />
             Cockpit de Metas & Carteiras
           </h2>
-          <p className="text-xs text-slate-500 mt-1">Consolidado de metas, desvios proporcionais (dispersão) e projeções por carteira.</p>
+          <p className="text-xs text-slate-500 mt-1">Consolidado de metas, desvios proporcionais (dispersão) e projeções por equipe.</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -358,11 +371,11 @@ export const PortfolioGoalsPanel = ({
             Exportar Excel
           </button>
           <button 
-            onClick={() => window.print()}
+            onClick={handleCopyPublicLink}
             className="px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl transition-all flex items-center gap-2 text-xs active:scale-95 shadow-lg shadow-sky-500/20"
           >
-            <Printer size={16} />
-            Imprimir Relatório
+            <Link size={16} />
+            Compartilhar Link
           </button>
         </div>
       </div>
@@ -388,40 +401,29 @@ export const PortfolioGoalsPanel = ({
               <span className="text-sm font-bold text-sky-400 block mt-1">{formatCurrency(totals.totalGoal)}</span>
             </div>
             <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-              <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Entregue (Acumulado)</span>
+              <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Total Entregue</span>
               <span className="text-sm font-bold text-emerald-400 block mt-1">{formatCurrency(totals.totalPartial)}</span>
             </div>
             <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-              <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Projeção Consolidada</span>
-              <span className="text-sm font-bold text-amber-400 block mt-1">{formatCurrency(totals.totalProjection)}</span>
+              <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Atingido</span>
+              <span className="text-sm font-bold text-white block mt-1">{totals.progressPercent.toFixed(1)}%</span>
             </div>
           </div>
 
-          {/* Barra de Progresso da Meta */}
-          <div className="space-y-1.5 pt-2">
-            <div className="flex justify-between text-[10px] font-bold">
-              <span className="text-slate-400 uppercase">Progresso da Meta Mensal</span>
-              <span className="text-sky-400 font-black">{totals.progressPercent.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-white/5">
-              <div 
-                className="bg-gradient-to-r from-sky-500 to-sky-400 h-full rounded-full transition-all duration-500" 
-                style={{ width: `${Math.min(totals.progressPercent, 100)}%` }}
-              />
-            </div>
-            <p className="text-[9px] text-slate-500">Faltam recuperar <strong className="text-slate-400">{formatCurrency(totals.totalRemaining)}</strong> para atingir a meta consolidada.</p>
+          <div className="w-full bg-slate-950/80 h-2 rounded-full overflow-hidden border border-white/5">
+            <div 
+              className="bg-gradient-to-r from-sky-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
+              style={{ width: `${Math.min(totals.progressPercent, 100)}%` }}
+            />
           </div>
         </div>
 
-        {/* Inputs de Dias Úteis */}
-        <div className="glass-card p-6 rounded-3xl border border-white/5 space-y-4 flex flex-col justify-between">
+        {/* Parâmetros Temporais */}
+        <div className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col justify-between space-y-4">
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-3 bg-indigo-500 rounded-full"></div>
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-              Cronograma do Período (Dias)
-            </h3>
+            <Calendar size={16} className="text-sky-400" />
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Simulador de Período</h3>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">Dias Úteis</label>
@@ -449,168 +451,180 @@ export const PortfolioGoalsPanel = ({
         </div>
       </div>
 
-      {/* DETALHAMENTO DE CARTEIRAS */}
+      {/* DETALHAMENTO DE EQUIPES */}
       <div className="space-y-8">
-        {(Object.entries(portfoliosData) as [string, any[]][]).map(([portfolioName, ops]) => (
-          <div key={portfolioName} className="glass-card rounded-3xl border border-white/5 overflow-hidden">
-            {/* Header da Carteira */}
-            <div className="px-6 py-4 bg-sky-500/10 border-b border-sky-500/20 flex justify-between items-center">
-              <h4 className="text-xs font-bold text-sky-400 uppercase tracking-widest flex items-center gap-1.5">
-                📁 Carteira: {portfolioName}
-              </h4>
-              <span className="text-[9px] bg-sky-500/20 px-2 py-0.5 rounded-md text-sky-400 font-black uppercase tracking-wider">
-                {ops.length} {ops.length === 1 ? 'Analista' : 'Analistas'}
-              </span>
-            </div>
+        {(Object.entries(teamsGroupedData) as [string, any[]][]).map(([teamId, ops]) => {
+          const teamInfo = managedTeamsData.find(t => t.id === teamId);
+          const teamName = teamInfo ? teamInfo.name : 'Sem Equipe';
+          const supervisorProfile = teamInfo ? supervisors.find(s => s.uid === teamInfo.supervisorId) : null;
+          const supervisorName = supervisorProfile ? supervisorProfile.displayName : 'Sem Supervisor';
 
-            {/* Tabela de Analistas */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-xs text-left">
-                <thead>
-                  <tr className="bg-slate-950/40 text-[9px] text-slate-500 uppercase font-black tracking-widest border-b border-white/5">
-                    <th className="px-6 py-3">Carteira</th>
-                    <th className="px-6 py-3">Analista</th>
-                    <th className="px-6 py-3 text-right">Meta Recuperação</th>
-                    <th className="px-6 py-3 text-right">Meta por Dia</th>
-                    <th className="px-6 py-3 text-right">Parcial</th>
-                    <th className="px-6 py-3 text-center">Dispersão</th>
-                    <th className="px-6 py-3 text-center">% Meta</th>
-                    <th className="px-6 py-3 text-right">Projeção</th>
-                    <th className="px-6 py-3 text-center">Efetividade</th>
-                    <th className="px-6 py-3">Observação</th>
-                    <th className="px-6 py-3 text-center">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {ops.map(op => {
-                    const isEditing = editingUid === op.uid;
-                    const progress = op.goal > 0 ? (op.partial / op.goal) * 100 : 0;
-                    return (
-                      <tr key={op.uid} className="hover:bg-white/[0.02] transition-colors leading-relaxed">
-                        {/* Carteira */}
-                        <td className="px-6 py-3.5 font-medium text-slate-400">
-                          {isEditing ? (
-                            <select 
-                              value={tempPortfolio}
-                              onChange={(e) => setTempPortfolio(e.target.value)}
-                              className="bg-slate-900 border border-white/10 px-2 py-1 rounded text-xs text-white focus:outline-none focus:border-sky-500"
-                            >
-                              <option value="Noverde Receptivo">Noverde Receptivo</option>
-                              <option value="Noverde Variável">Noverde Variável</option>
-                              <option value="Noverde BNPL">Noverde BNPL</option>
-                              <option value="Pula Parcela + Ticket Alto">Pula Parcela + Ticket Alto</option>
-                              <option value="Noverde - FPD">Noverde - FPD</option>
-                            </select>
-                          ) : (
-                            op.portfolio || 'Sem Carteira'
-                          )}
-                        </td>
+          const isManagerView = profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin';
+          const headerTitle = isManagerView 
+            ? `Equipe: ${teamName} (Supervisor: ${supervisorName})` 
+            : `Equipe: ${teamName}`;
 
-                        {/* Nome Analista */}
-                        <td className="px-6 py-3.5 font-bold text-white flex items-center gap-1.5">
-                          <User size={12} className="text-slate-500" />
-                          {op.displayName}
-                        </td>
+          return (
+            <div key={teamId} className="glass-card rounded-3xl border border-white/5 overflow-hidden">
+              {/* Header da Equipe */}
+              <div className="px-6 py-4 bg-sky-500/10 border-b border-sky-500/20 flex justify-between items-center">
+                <h4 className="text-xs font-bold text-sky-400 uppercase tracking-widest flex items-center gap-1.5">
+                  📁 {headerTitle}
+                </h4>
+                <span className="text-[9px] bg-sky-500/20 px-2 py-0.5 rounded-md text-sky-400 font-black uppercase tracking-wider">
+                  {ops.length} {ops.length === 1 ? 'Analista' : 'Analistas'}
+                </span>
+              </div>
 
-                        {/* Meta Recuperação */}
-                        <td className="px-6 py-3.5 text-right font-semibold">
-                          {isEditing ? (
-                            <input 
-                              type="number"
-                              value={tempGoal}
-                              onChange={(e) => setTempGoal(e.target.value)}
-                              className="bg-slate-900 border border-white/10 px-2 py-1 rounded text-xs text-white text-right w-24 focus:outline-none focus:border-sky-500"
-                            />
-                          ) : (
-                            formatCurrency(op.goal)
-                          )}
-                        </td>
-
-                        {/* Meta por dia */}
-                        <td className="px-6 py-3.5 text-right font-medium text-slate-400">
-                          {formatCurrency(op.dailyGoal)}
-                        </td>
-
-                        {/* Parcial */}
-                        <td className="px-6 py-3.5 text-right font-bold text-emerald-400">
-                          {formatCurrency(op.partial)}
-                        </td>
-
-                        {/* Dispersão */}
-                        <td className="px-6 py-3.5 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                            op.dispersion >= 0 
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' 
-                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/25'
-                          }`}>
-                            {op.dispersion > 0 ? '+' : ''}{op.dispersion.toFixed(0)}%
-                          </span>
-                        </td>
-
-                        {/* % Sobre a Meta */}
-                        <td className="px-6 py-3.5 text-center font-bold text-white">
-                          {progress.toFixed(0)}%
-                        </td>
-
-                        {/* Projeção */}
-                        <td className="px-6 py-3.5 text-right font-bold text-amber-400">
-                          {formatCurrency(op.projection)}
-                        </td>
-
-                        {/* Efetividade */}
-                        <td className="px-6 py-3.5 text-center font-bold text-slate-300">
-                          {op.effectiveness.toFixed(0)}%
-                        </td>
-
-                        {/* Observação */}
-                        <td className="px-6 py-3.5 text-slate-400 max-w-[200px] truncate">
-                          {isEditing ? (
-                            <input 
-                              type="text"
-                              value={tempObservation}
-                              onChange={(e) => setTempObservation(e.target.value)}
-                              placeholder="Observações (ex: Callix)"
-                              className="bg-slate-900 border border-white/10 px-2 py-1 rounded text-xs text-white w-full focus:outline-none focus:border-sky-500"
-                            />
-                          ) : (
-                            op.observation || <span className="text-slate-600 italic">Sem notas</span>
-                          )}
-                        </td>
-
-                        {/* Ações */}
-                        <td className="px-6 py-3.5 text-center">
-                          {isEditing ? (
-                            <div className="flex items-center justify-center gap-1">
-                              <button 
-                                onClick={() => handleSave(op.uid)}
-                                className="p-1 bg-emerald-500 hover:bg-emerald-400 text-white rounded-md transition-colors"
+              {/* Tabela de Analistas */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-xs text-left">
+                  <thead>
+                    <tr className="bg-slate-950/40 text-[9px] text-slate-500 uppercase font-black tracking-widest border-b border-white/5">
+                      <th className="px-6 py-3">Carteira</th>
+                      <th className="px-6 py-3">Analista</th>
+                      <th className="px-6 py-3 text-right">Meta Recuperação</th>
+                      <th className="px-6 py-3 text-right">Meta por Dia</th>
+                      <th className="px-6 py-3 text-right">Parcial</th>
+                      <th className="px-6 py-3 text-center">Dispersão</th>
+                      <th className="px-6 py-3 text-center">% Meta</th>
+                      <th className="px-6 py-3 text-right">Projeção</th>
+                      <th className="px-6 py-3 text-center">Efetividade</th>
+                      <th className="px-6 py-3">Observação</th>
+                      <th className="px-6 py-3 text-center">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {ops.map(op => {
+                      const isEditing = editingUid === op.uid;
+                      const progress = op.goal > 0 ? (op.partial / op.goal) * 100 : 0;
+                      return (
+                        <tr key={op.uid} className="hover:bg-white/[0.02] transition-colors leading-relaxed">
+                          {/* Carteira */}
+                          <td className="px-6 py-3.5 font-medium text-slate-400">
+                            {isEditing ? (
+                              <select 
+                                value={tempPortfolio}
+                                onChange={(e) => setTempPortfolio(e.target.value)}
+                                className="bg-slate-900 border border-white/10 px-2 py-1 rounded text-xs text-white focus:outline-none focus:border-sky-500"
                               >
-                                <Check size={14} />
-                              </button>
+                                <option value="Noverde Receptivo">Noverde Receptivo</option>
+                                <option value="Noverde Variável">Noverde Variável</option>
+                                <option value="Noverde BNPL">Noverde BNPL</option>
+                                <option value="Pula Parcela + Ticket Alto">Pula Parcela + Ticket Alto</option>
+                                <option value="Noverde - FPD">Noverde - FPD</option>
+                              </select>
+                            ) : (
+                              op.portfolio || 'Sem Carteira'
+                            )}
+                          </td>
+
+                          {/* Nome Analista */}
+                          <td className="px-6 py-3.5 font-bold text-white flex items-center gap-1.5">
+                            <User size={12} className="text-slate-500" />
+                            {op.displayName}
+                          </td>
+
+                          {/* Meta Recuperação */}
+                          <td className="px-6 py-3.5 text-right font-semibold text-white">
+                            {isEditing ? (
+                              <input 
+                                type="number"
+                                value={tempGoal}
+                                onChange={(e) => setTempGoal(e.target.value)}
+                                className="bg-slate-900 border border-white/10 px-2 py-1 rounded text-xs text-white text-right w-24 focus:outline-none focus:border-sky-500"
+                              />
+                            ) : (
+                              formatCurrency(op.goal)
+                            )}
+                          </td>
+
+                          {/* Meta por dia */}
+                          <td className="px-6 py-3.5 text-right font-medium text-slate-400">
+                            {formatCurrency(op.dailyGoal)}
+                          </td>
+
+                          {/* Parcial */}
+                          <td className="px-6 py-3.5 text-right font-bold text-emerald-400">
+                            {formatCurrency(op.partial)}
+                          </td>
+
+                          {/* Dispersão */}
+                          <td className="px-6 py-3.5 text-center">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                              op.dispersion >= 0 
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' 
+                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/25'
+                            }`}>
+                              {op.dispersion > 0 ? '+' : ''}{op.dispersion.toFixed(0)}%
+                            </span>
+                          </td>
+
+                          {/* % Sobre a Meta */}
+                          <td className="px-6 py-3.5 text-center font-bold text-white">
+                            {progress.toFixed(0)}%
+                          </td>
+
+                          {/* Projeção */}
+                          <td className="px-6 py-3.5 text-right font-bold text-amber-400">
+                            {formatCurrency(op.projection)}
+                          </td>
+
+                          {/* Efetividade */}
+                          <td className="px-6 py-3.5 text-center font-bold text-slate-300">
+                            {op.effectiveness.toFixed(0)}%
+                          </td>
+
+                          {/* Observação */}
+                          <td className="px-6 py-3.5 text-slate-400 max-w-[200px] truncate">
+                            {isEditing ? (
+                              <input 
+                                type="text"
+                                value={tempObservation}
+                                onChange={(e) => setTempObservation(e.target.value)}
+                                placeholder="Observações"
+                                className="bg-slate-900 border border-white/10 px-2 py-1 rounded text-xs text-white w-full focus:outline-none focus:border-sky-500"
+                              />
+                            ) : (
+                              op.observation || <span className="text-slate-600 italic">Sem notas</span>
+                            )}
+                          </td>
+
+                          {/* Ações */}
+                          <td className="px-6 py-3.5 text-center">
+                            {isEditing ? (
+                              <div className="flex items-center justify-center gap-1">
+                                <button 
+                                  onClick={() => handleSave(op.uid)}
+                                  className="p-1 bg-emerald-500 hover:bg-emerald-400 text-white rounded-md transition-colors"
+                                >
+                                  <Check size={14} />
+                                </button>
+                                <button 
+                                  onClick={() => setEditingUid(null)}
+                                  className="p-1 bg-rose-500 hover:bg-rose-400 text-white rounded-md transition-colors"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
                               <button 
-                                onClick={() => setEditingUid(null)}
-                                className="p-1 bg-rose-500 hover:bg-rose-400 text-white rounded-md transition-colors"
+                                onClick={() => handleEditClick(op)}
+                                className="p-1 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-md transition-all active:scale-95"
                               >
-                                <X size={14} />
+                                <PencilSimple size={14} />
                               </button>
-                            </div>
-                          ) : (
-                            <button 
-                              onClick={() => handleEditClick(op)}
-                              className="p-1 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-md transition-all active:scale-95"
-                            >
-                              <PencilSimple size={14} />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

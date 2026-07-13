@@ -10,6 +10,7 @@ import { Dashboard } from './components/dashboard/Dashboard';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { Onboarding } from './components/auth/Onboarding';
 import { ProfileSettings } from './components/profile/ProfileSettings';
+import { PublicPortfolioView } from './components/dashboard/PublicPortfolioView';
 import { getUserProfile } from './lib/teams';
 import { UserProfile } from './types';
 import { sandboxService } from './lib/sandboxService';
@@ -179,6 +180,27 @@ export function AppContent() {
           </div>
         </motion.div>
       </div>
+    );
+  }
+
+  const isPublicRoute = window.location.pathname.startsWith('/public/');
+
+  if (isPublicRoute) {
+    return (
+      <>
+        <AnimatePresence>
+          {toast && (
+            <Toast 
+              message={toast.message} 
+              type={toast.type} 
+              onClose={() => setToast(null)} 
+            />
+          )}
+        </AnimatePresence>
+        <Routes>
+          <Route path="/public/portfolio" element={<PublicPortfolioView />} />
+        </Routes>
+      </>
     );
   }
 
