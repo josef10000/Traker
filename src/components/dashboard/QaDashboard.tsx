@@ -608,7 +608,7 @@ export const QaDashboard = ({
         >
           PDIs / Planos de Ação
         </button>
-        {isSuperUser && (
+        {profile.role === 'monitor' && (
           <button
             onClick={() => setQaSubTab('competences')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -669,7 +669,7 @@ export const QaDashboard = ({
             />
           )}
 
-          {qaSubTab === 'competences' && isSuperUser && (
+          {qaSubTab === 'competences' && profile.role === 'monitor' && (
             <CompetenceManager
               competences={competences}
               isSuperUser={isSuperUser}
