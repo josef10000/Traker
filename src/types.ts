@@ -59,6 +59,9 @@ export interface UserProfile {
   managedTeams?: string[]; // Para supervisores que gerenciam múltiplos times
   jobTitle?: string;
   theme?: 'dark' | 'sky' | 'purple';
+  portfolio?: string;
+  monthlyGoal?: number;
+  observation?: string;
   hasSeenTour?: boolean;
   acceptedTermsAt?: string; // Aceite da LGPD no primeiro login
   dashboardPreferences?: {

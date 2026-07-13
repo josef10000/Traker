@@ -50,6 +50,7 @@ import { DashboardHeader } from './DashboardHeader';
 import { SupportTab } from './SupportTab';
 import { StatsGrid } from './StatsGrid';
 import { BackOfficeTab } from './BackOfficeTab';
+import { PortfolioGoalsPanel } from './PortfolioGoalsPanel';
 import { AdvancedInsights } from './AdvancedInsights';
 import { AgreementsTable } from './AgreementsTable';
 import { TeamManagementTab } from './TeamManagementTab';
@@ -96,7 +97,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   // Abas do Dashboard
-  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support' | 'backoffice'>(() => {
+  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support' | 'backoffice' | 'portfolio'>(() => {
     return profile.role === 'backoffice' ? 'backoffice' : 'financial';
   });
   
@@ -2183,6 +2184,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     }}
                   />
                 </div>
+              )}
+
+              {/* CONTEÚDO DA ABA DE METAS E CARTEIRAS */}
+              {dashboardTab === 'portfolio' && (
+                <PortfolioGoalsPanel 
+                  profile={profile}
+                  monthAgreements={monthAgreements}
+                  currentTeamMembers={currentTeamMembers}
+                  selectedMonth={selectedMonth}
+                  selectedYear={selectedYear}
+                  showToast={showToast}
+                />
               )}
             </motion.div>
           </AnimatePresence>

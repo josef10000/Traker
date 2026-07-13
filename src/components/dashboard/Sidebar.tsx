@@ -8,7 +8,8 @@ import {
   Lifebuoy as SupportIcon,
   SignOut as LogOut,
   Building,
-  FileCsv as FileSpreadsheet
+  FileCsv as FileSpreadsheet,
+  Target
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
 
@@ -71,6 +72,13 @@ export const Sidebar = ({
       description: 'Administração de colaboradores e novos convites.',
       icon: TeamIcon,
       show: isSuperUser && profile.role !== 'monitor' && profile.role !== 'backoffice'
+    },
+    {
+      id: 'portfolio',
+      label: 'Metas & Carteiras',
+      description: 'Consolidado de metas, dispersões, projeções e exportações.',
+      icon: Target,
+      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'backoffice' || profile.role === 'super_admin'
     },
     {
       id: 'support',

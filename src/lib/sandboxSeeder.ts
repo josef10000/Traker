@@ -116,6 +116,28 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
 
   operatorNames.forEach((op, i) => {
     const uid = `sandbox-op-${i + 1}`;
+    
+    // Distribute portfolios and goals based on index
+    let portfolio = 'Noverde Receptivo';
+    let monthlyGoal = 210000;
+    
+    if (i >= 3 && i <= 4) {
+      portfolio = 'Noverde Variável';
+      monthlyGoal = 80000;
+    } else if (i >= 5 && i <= 7) {
+      portfolio = 'Noverde BNPL';
+      monthlyGoal = 5000;
+    } else if (i >= 8 && i <= 9) {
+      portfolio = 'Pula Parcela + Ticket Alto';
+      monthlyGoal = 10000;
+    } else if (i >= 10 && i <= 12) {
+      portfolio = 'Noverde - FPD';
+      monthlyGoal = 15000;
+    } else if (i >= 13) {
+      portfolio = 'Noverde Receptivo';
+      monthlyGoal = 270000;
+    }
+
     usersList.push({
       uid,
       email: `${op.name.toLowerCase().replace(' ', '.')}@sandbox.local`,
@@ -123,6 +145,8 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
       role: 'member',
       organizationId: orgId,
       teamId: op.team,
+      portfolio,
+      monthlyGoal,
       createdAt: now
     });
   });
