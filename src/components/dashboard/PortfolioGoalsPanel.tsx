@@ -124,6 +124,12 @@ export const PortfolioGoalsPanel = ({
       }
       groups[key].push(stat);
     });
+
+    // Ordenar cada grupo por faturamento (parcial) decrescente
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => b.partial - a.partial);
+    });
+
     return groups;
   }, [operatorStats]);
 
