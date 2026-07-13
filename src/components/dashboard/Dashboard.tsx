@@ -1754,7 +1754,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                   )}
                   {/* Agenda do Dia */}
-                  {!localHiddenCards.includes('agendaDoDia') && (
+                  {!localHiddenCards.includes('agendaDoDia') && (profile.role === 'member' || profile.role === 'backoffice') && (
                     <DailyAgendaSection
                       scheduledAgreements={filteredScheduledAgreements}
                       isLoading={isLoadingScheduled}
@@ -2079,7 +2079,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {dashboardTab === 'backoffice' && (
                 <div className="space-y-8">
                   {/* Agenda do Dia para o Back Office */}
-                  {!localHiddenCards.includes('agendaDoDia') && (
+                  {!localHiddenCards.includes('agendaDoDia') && (profile.role === 'member' || profile.role === 'backoffice') && (
                     <DailyAgendaSection
                       scheduledAgreements={filteredScheduledAgreements}
                       isLoading={isLoadingScheduled}
