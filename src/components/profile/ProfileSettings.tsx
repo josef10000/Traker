@@ -58,7 +58,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
   const [avatarStyle, setAvatarStyle] = useState(profile.avatarStyle || 'initials');
+  const [avatarSeed, setAvatarSeed] = useState(profile.avatarSeed || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSaveSuccess, setIsSaveSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers'>('profile');
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -100,6 +102,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       setDisplayName(profile.displayName || '');
       setJobTitle(profile.jobTitle || '');
       setAvatarStyle(profile.avatarStyle || 'initials');
+      setAvatarSeed(profile.avatarSeed || '');
+      setIsSaveSuccess(false);
       setActiveTab('profile');
       setSelectedTeamForMembers(null);
     }
@@ -518,13 +522,17 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           ...profile,
           displayName,
           jobTitle,
-          avatarStyle
+          avatarStyle,
+          avatarSeed
         });
+        setIsSaveSuccess(true);
+        setTimeout(() => setIsSaveSuccess(false), 2500);
         showToast('Perfil simulado atualizado com sucesso!', 'success');
         onUpdate({
           displayName,
           jobTitle,
-          avatarStyle
+          avatarStyle,
+          avatarSeed
         });
         return;
       }
@@ -533,13 +541,17 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       await updateDoc(userRef, {
         displayName,
         jobTitle,
-        avatarStyle
+        avatarStyle,
+        avatarSeed
       });
+      setIsSaveSuccess(true);
+      setTimeout(() => setIsSaveSuccess(false), 2500);
       showToast('Perfil atualizado com sucesso!', 'success');
       onUpdate({
         displayName,
         jobTitle,
-        avatarStyle
+        avatarStyle,
+        avatarSeed
       });
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
@@ -751,6 +763,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 displayName={profile.displayName}
                 email={profile.email}
                 avatarStyle={profile.avatarStyle}
+                avatarSeed={profile.avatarSeed}
+                theme={profile.theme}
                 size="md"
                 className="border-primary/20 text-primary bg-primary/10"
               />
@@ -930,14 +944,26 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
 
               <form onSubmit={handleSave} className="space-y-6">
                 {/* Pré-visualização do Avatar */}
-                <div className="flex flex-col items-center justify-center space-y-2 pb-2">
-                  <Avatar
-                    displayName={displayName}
-                    email={profile.email}
-                    avatarStyle={avatarStyle}
-                    size="xl"
-                    className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30"
-                  />
+                <div className="flex flex-col items-center justify-center space-y-3 pb-2">
+                  <div className="relative group">
+                    <Avatar
+                      displayName={displayName}
+                      email={profile.email}
+                      avatarStyle={avatarStyle}
+                      avatarSeed={avatarSeed}
+                      theme={profile.theme}
+                      size="xl"
+                      className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setAvatarSeed(Math.random().toString(36).substring(7))}
+                      className="absolute -bottom-1 -right-1 p-1.5 bg-primary hover:bg-primary/80 text-white rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
+                      title="Gerar Aleatório"
+                    >
+                      <Palette size={12} />
+                    </button>
+                  </div>
                   <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Pré-visualização do Avatar</span>
                 </div>
 
@@ -993,10 +1019,23 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="w-full flex items-center justify-center bg-primary hover:bg-primary/80 disabled:bg-primary/50 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-primary/20 active:scale-[0.98] cursor-pointer"
+                  className={`w-full flex items-center justify-center font-bold py-4 rounded-2xl transition-all shadow-xl active:scale-[0.98] cursor-pointer ${
+                    isSaveSuccess
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                      : 'bg-primary hover:bg-primary/80 disabled:bg-primary/50 text-white shadow-primary/20'
+                  }`}
                 >
-                  <Save size={20} className="mr-2" />
-                  {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                  {isSaveSuccess ? (
+                    <>
+                      <Check size={20} className="mr-2" />
+                      Alterações Salvas!
+                    </>
+                  ) : (
+                    <>
+                      <Save size={20} className="mr-2" />
+                      {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                    </>
+                  )}
                 </button>
               </form>
             </div>
@@ -1065,6 +1104,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                               displayName={member.displayName}
                               email={member.email}
                               avatarStyle={member.avatarStyle}
+                              avatarSeed={member.avatarSeed}
+                              theme={member.theme}
                               size="md"
                             />
                             <div>
@@ -1463,6 +1504,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                               displayName={op.displayName}
                               email={op.email}
                               avatarStyle={op.avatarStyle}
+                              avatarSeed={op.avatarSeed}
+                              theme={op.theme}
                               size="sm"
                             />
                               <div>
@@ -1516,6 +1559,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                   displayName={sup.displayName}
                                   email={sup.email}
                                   avatarStyle={sup.avatarStyle}
+                                  avatarSeed={sup.avatarSeed}
+                                  theme={sup.theme}
                                   size="md"
                                 />
                                 <div>

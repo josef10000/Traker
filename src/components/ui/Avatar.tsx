@@ -1,15 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface AvatarProps {
   displayName: string;
   email?: string;
   avatarStyle?: string;
+  avatarSeed?: string;
+  theme?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
-export function Avatar({ displayName, email, avatarStyle = 'initials', size = 'md', className = '' }: AvatarProps) {
+export function Avatar({ 
+  displayName, 
+  email, 
+  avatarStyle = 'initials', 
+  avatarSeed,
+  theme = 'dark',
+  size = 'md', 
+  className = '' 
+}: AvatarProps) {
   const [hasError, setHasError] = useState(false);
+
+  // Reinicia o estado de erro se a url do avatar mudar
+  useEffect(() => {
+    setHasError(false);
+  }, [avatarStyle, avatarSeed, email, displayName]);
 
   const sizeClasses = {
     xs: 'w-6 h-6 text-[10px]',
@@ -19,8 +34,19 @@ export function Avatar({ displayName, email, avatarStyle = 'initials', size = 'm
     xl: 'w-20 h-20 text-[24px]'
   };
 
-  const seed = encodeURIComponent(email || displayName || 'noverde');
-  const src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${seed}`;
+  const getThemeColors = (themeName?: string) => {
+    if (themeName === 'sky') return '0ea5e9,0284c7,38bdf8,bae6fd';
+    if (themeName === 'purple') return 'a855f7,7c3aed,c084fc,e9d5ff';
+    // default (dark/slate)
+    return '0f172a,1e293b,334155,475569';
+  };
+
+  // Se houver avatarSeed customizado, usa ele como seed principal para mudar a aparência.
+  // Caso contrário, cai de volta para o email ou displayName do colaborador.
+  const activeSeed = avatarSeed || email || displayName || 'noverde';
+  const seed = encodeURIComponent(activeSeed);
+  const colors = getThemeColors(theme);
+  const src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${seed}&backgroundColor=${colors}`;
 
   // Calcula iniciais para fallback
   const initials = displayName
@@ -39,7 +65,7 @@ export function Avatar({ displayName, email, avatarStyle = 'initials', size = 'm
         <img 
           src={src} 
           alt={displayName} 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover animate-in fade-in duration-200"
           onError={() => setHasError(true)}
         />
       ) : (

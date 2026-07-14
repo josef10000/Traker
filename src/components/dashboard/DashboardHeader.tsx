@@ -383,6 +383,8 @@ export const DashboardHeader = ({
                 displayName={profile.displayName}
                 email={profile.email}
                 avatarStyle={profile.avatarStyle}
+                avatarSeed={profile.avatarSeed}
+                theme={theme}
                 size="sm"
                 className="w-7 h-7 border-sky-500/20"
               />

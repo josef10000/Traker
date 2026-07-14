@@ -152,6 +152,8 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
                     displayName={member.displayName || member.email}
                     email={member.email}
                     avatarStyle={member.avatarStyle}
+                    avatarSeed={member.avatarSeed}
+                    theme={theme}
                     size="lg"
                     className="rounded-2xl"
                   />

@@ -41,6 +41,8 @@ import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay 
 import { CheckSquare, ShieldWarning, Trash } from '@phosphor-icons/react';
 import { sandboxService } from '../../lib/sandboxService';
 
+import { Avatar } from '../ui/Avatar';
+
 // Hooks customizados
 import { useAgreements } from '../../hooks/useAgreements';
 import { useTeamMembers } from '../../hooks/useTeamMembers';
@@ -1732,9 +1734,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   {selectedMemberId !== 'all' && (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
                       <div className="flex items-center gap-3.5">
-                        <div className="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-extrabold text-xs border border-sky-500/30">
-                          {currentTeamMembers.find(m => m.uid === selectedMemberId)?.displayName?.[0].toUpperCase() || 'O'}
-                        </div>
+                        {(() => {
+                          const m = currentTeamMembers.find(member => member.uid === selectedMemberId);
+                          return (
+                            <Avatar
+                              displayName={m?.displayName || 'Operador'}
+                              email={m?.email}
+                              avatarStyle={m?.avatarStyle}
+                              avatarSeed={m?.avatarSeed}
+                              theme={theme}
+                              size="sm"
+                              className="w-9 h-9 border-sky-500/30 text-sky-400 bg-sky-500/20"
+                            />
+                          );
+                        })()}
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-widest text-sky-500">Modo de Visualização Individual</p>
                           <p className="text-sm font-bold text-white mt-0.5">
