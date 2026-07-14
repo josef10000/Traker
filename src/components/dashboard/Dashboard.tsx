@@ -100,7 +100,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   // Abas do Dashboard
-  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support' | 'backoffice' | 'portfolio'>(() => {
+  const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support' | 'backoffice' | 'portfolio' | 'carga_acordos' | 'coordination'>(() => {
     if (profile.role === 'backoffice') return 'backoffice';
     if (profile.role === 'monitor') return 'qa';
     return 'financial';
@@ -2174,8 +2174,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 />
               )}
 
-              {/* CONTEÚDO DA ABA DE BACK OFFICE */}
-              {dashboardTab === 'backoffice' && (
+              {/* CONTEÚDO DA ABA DE BACK OFFICE / CARGA DE ACORDOS */}
+              {(dashboardTab === 'backoffice' || dashboardTab === 'carga_acordos') && (
                 <div className="space-y-8">
                   {/* Agenda do Dia para o Back Office */}
                   {!localHiddenCards.includes('agendaDoDia') && (profile.role === 'member' || profile.role === 'backoffice') && (
