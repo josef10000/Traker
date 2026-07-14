@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   User as UserIcon, 
   Briefcase, 
@@ -97,8 +97,10 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [effectivenessGoalInput, setEffectivenessGoalInput] = useState<number>(0);
   const [isSavingGoals, setIsSavingGoals] = useState(false);
 
+  const wasOpenRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
       setDisplayName(profile.displayName || '');
       setJobTitle(profile.jobTitle || '');
       setAvatarStyle(profile.avatarStyle || 'initials');
@@ -107,6 +109,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       setActiveTab('profile');
       setSelectedTeamForMembers(null);
     }
+    wasOpenRef.current = isOpen;
   }, [profile, isOpen]);
 
   useEffect(() => {
