@@ -38,7 +38,7 @@ import { logAudit } from '../../lib/audit';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
-import { CheckSquare, ShieldWarning, Trash } from '@phosphor-icons/react';
+import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch } from '@phosphor-icons/react';
 import { sandboxService } from '../../lib/sandboxService';
 
 import { Avatar } from '../ui/Avatar';
@@ -181,6 +181,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [profile?.role]);
 
   const [supervisors, setSupervisors] = useState<UserProfile[]>([]);
+  const [managers, setManagers] = useState<UserProfile[]>([]);
+  const [selectedOperatorToTransfer, setSelectedOperatorToTransfer] = useState<string>('');
+  const [selectedTargetTeamForTransfer, setSelectedTargetTeamForTransfer] = useState<string>('');
 
   // Carrega supervisores da organização (para gerente e coordenador)
   useEffect(() => {
@@ -217,6 +220,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
     loadSupervisors();
   }, [profile.role, profile.organizationId, profile.uid]);
 
+  // Carrega gerentes da organização (para coordenador)
+  useEffect(() => {
+    if (profile.role !== 'coordinator' || !profile.organizationId) return;
+
+    const loadManagers = async () => {
+      if (profile.organizationId === 'sandbox-test') {
+        const mans = sandboxService.getUsers(profile.organizationId).filter(u => u.role === 'manager');
+        setManagers(mans);
+        return;
+      }
+
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(
+          usersRef, 
+          where('organizationId', '==', profile.organizationId),
+          where('role', '==', 'manager')
+        );
+        const snap = await getDocs(q);
+        const mans = snap.docs.map(doc => doc.data() as UserProfile);
+        setManagers(mans);
+      } catch (err) {
+        console.error("Erro ao carregar gerentes:", err);
+      }
+    };
+
+    loadManagers();
+  }, [profile.role, profile.organizationId]);
+
   // 1. CARREGAMENTO DOS DADOS DE EQUIPES E MEMBROS VIA CUSTOM HOOK
   const {
     currentTeamMembers,
@@ -225,12 +257,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
     selectedMemberId,
     setSelectedMemberId,
     loading: teamLoading
-  } = useTeamMembers({ profile, selectedTeamId: selectedTeamId.startsWith('supervisor-') ? 'all' : selectedTeamId });
+  } = useTeamMembers({ 
+    profile, 
+    selectedTeamId: (selectedTeamId.startsWith('supervisor-') || selectedTeamId.startsWith('manager-')) ? 'all' : selectedTeamId 
+  });
 
   // Lista de Equipes para monitorar acordos
   const teamsToWatch = useMemo(() => {
     if (selectedTeamId === 'all') {
       return managedTeamsData.map(t => t.id);
+    }
+    if (selectedTeamId.startsWith('manager-')) {
+      const targetManagerId = selectedTeamId.replace('manager-', '');
+      return managedTeamsData
+        .filter(t => t.managerId === targetManagerId)
+        .map(t => t.id);
     }
     if (selectedTeamId.startsWith('supervisor-')) {
       const targetSupervisorId = selectedTeamId.replace('supervisor-', '');
@@ -240,6 +281,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
     return [selectedTeamId];
   }, [selectedTeamId, managedTeamsData]);
+
+  // Filtra operadores/membros da equipe de acordo com a seleção ativa (gerente, supervisor ou equipe)
+  const filteredTeamMembers = useMemo(() => {
+    if (selectedTeamId === 'all') {
+      return currentTeamMembers;
+    }
+    if (selectedTeamId.startsWith('manager-')) {
+      const targetManagerId = selectedTeamId.replace('manager-', '');
+      return currentTeamMembers.filter(m => {
+        const team = managedTeamsData.find(t => t.id === m.teamId);
+        return team?.managerId === targetManagerId;
+      });
+    }
+    if (selectedTeamId.startsWith('supervisor-')) {
+      const targetSupervisorId = selectedTeamId.replace('supervisor-', '');
+      return currentTeamMembers.filter(m => {
+        const team = managedTeamsData.find(t => t.id === m.teamId);
+        return team?.supervisorId === targetSupervisorId;
+      });
+    }
+    return currentTeamMembers.filter(m => m.teamId === selectedTeamId);
+  }, [selectedTeamId, currentTeamMembers, managedTeamsData]);
 
   // Escuta o histórico do cliente selecionado (LGPD e histórico global)
   useEffect(() => {
@@ -474,14 +537,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return () => unsubscribe();
   }, [profile.organizationId]);
 
-  // Escuta presenças diárias na aba de colaboradores
   useEffect(() => {
     const loadAttendances = async () => {
-      if (dashboardTab === 'people' && currentTeamMembers.length > 0) {
+      if (dashboardTab === 'people' && filteredTeamMembers.length > 0) {
         const todayStr = new Date().toISOString().split('T')[0];
         const statuses: Record<string, 'present' | 'late' | 'absent'> = {};
         
-        await Promise.all(currentTeamMembers.map(async (m) => {
+        await Promise.all(filteredTeamMembers.map(async (m) => {
           const att = await getAttendanceStatusForDay(m.uid, todayStr);
           if (att && att.attendanceStatus) {
             statuses[m.uid] = att.attendanceStatus;
@@ -494,7 +556,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
     };
     loadAttendances();
-  }, [dashboardTab, currentTeamMembers]);
+  }, [dashboardTab, filteredTeamMembers]);
 
   // Escuta conciliações financeiras
   useEffect(() => {
@@ -805,6 +867,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
       showToast('Erro ao carregar histórico.', 'error');
     } finally {
       setIsLoadingCollabHistory(false);
+    }
+  };
+
+  const handleDismissUser = async (uid: string, displayName: string, role: string) => {
+    const isSandbox = profile.organizationId === 'sandbox-test';
+    if (isSandbox) {
+      sandboxService.deleteUser(uid);
+      showToast(`Colaborador ${displayName} (${role === 'supervisor' ? 'Supervisor' : 'Operador'}) desligado com sucesso no Sandbox!`, 'success');
+      return;
+    }
+    
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+      showToast(`Colaborador ${displayName} desligado com sucesso!`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao desligar colaborador.', 'error');
+    }
+  };
+
+  const handleTransferOperator = async (operatorId: string, targetTeamId: string) => {
+    const isSandbox = profile.organizationId === 'sandbox-test';
+    const targetTeam = managedTeamsData.find(t => t.id === targetTeamId);
+    if (!targetTeam) return;
+    
+    if (isSandbox) {
+      sandboxService.updateUser(operatorId, { teamId: targetTeamId });
+      showToast(`Operador transferido com sucesso para a equipe ${targetTeam.name}!`, 'success');
+      return;
+    }
+    
+    try {
+      await updateDoc(doc(db, 'users', operatorId), { teamId: targetTeamId });
+      showToast(`Operador transferido com sucesso para a equipe ${targetTeam.name}!`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao transferir operador.', 'error');
     }
   };
 
@@ -1561,7 +1660,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const printOperatorRanking = useMemo(() => {
     if (selectedTeamId === 'all') return [];
-    const members = viewMode === 'personal' ? [profile] : currentTeamMembers;
+    const members = viewMode === 'personal' ? [profile] : filteredTeamMembers;
     if (members.length === 0) return [];
     
     return members.map(m => {
@@ -1583,7 +1682,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         effectiveness
       };
     }).sort((a, b) => b.totalPaid - a.totalPaid);
-  }, [selectedTeamId, viewMode, profile, currentTeamMembers, monthFilteredAgreements]);
+  }, [selectedTeamId, viewMode, profile, filteredTeamMembers, monthFilteredAgreements]);
 
   // 6. RENDERIZAÇÃO PRINCIPAL DO LAYOUT
   const toggleRevealCpf = (id: string, cpf: string) => {
@@ -1735,7 +1834,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
                       <div className="flex items-center gap-3.5">
                         {(() => {
-                          const m = currentTeamMembers.find(member => member.uid === selectedMemberId);
+                          const m = filteredTeamMembers.find(member => member.uid === selectedMemberId);
                           return (
                             <Avatar
                               displayName={m?.displayName || 'Operador'}
@@ -1751,7 +1850,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-widest text-sky-500">Modo de Visualização Individual</p>
                           <p className="text-sm font-bold text-white mt-0.5">
-                            Você está verificando os resultados de: <span className="text-sky-400">{currentTeamMembers.find(m => m.uid === selectedMemberId)?.displayName || 'Operador'}</span>
+                            Você está verificando os resultados de: <span className="text-sky-400">{filteredTeamMembers.find(m => m.uid === selectedMemberId)?.displayName || 'Operador'}</span>
                           </p>
                         </div>
                       </div>
@@ -1769,7 +1868,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       scheduledAgreements={filteredScheduledAgreements}
                       isLoading={isLoadingScheduled}
                       profile={profile}
-                      currentTeamMembers={currentTeamMembers}
+                      currentTeamMembers={filteredTeamMembers}
                       selectedMemberId={selectedMemberId}
                       setSelectedMemberId={setSelectedMemberId}
                       viewMode={viewMode}
@@ -1839,11 +1938,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </section>
                   )}
 
-                  {/* Metas, Produtividade e Ranking Operacional */}
-                  {viewMode === 'team' && selectedTeamId !== 'all' && currentTeamMembers.length > 0 && (
+                  {viewMode === 'team' && selectedTeamId !== 'all' && filteredTeamMembers.length > 0 && (
                     <TeamPerformance 
-                      agreements={monthFilteredAgreements.filter(a => a.teamId === selectedTeamId)}
-                      members={currentTeamMembers}
+                      agreements={monthFilteredAgreements.filter(a => teamsToWatch.includes(a.teamId))}
+                      members={filteredTeamMembers}
                       dailyGoal={dailyGoal}
                       qaScores={qaScores}
                       selectedMemberId={selectedMemberId}
@@ -2085,7 +2183,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       scheduledAgreements={filteredScheduledAgreements}
                       isLoading={isLoadingScheduled}
                       profile={profile}
-                      currentTeamMembers={currentTeamMembers}
+                      currentTeamMembers={filteredTeamMembers}
                       selectedMemberId={selectedMemberId}
                       setSelectedMemberId={setSelectedMemberId}
                       viewMode={viewMode}
@@ -2116,7 +2214,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <PortfolioGoalsPanel 
                   profile={profile}
                   monthAgreements={monthAgreements}
-                  currentTeamMembers={currentTeamMembers}
+                  currentTeamMembers={filteredTeamMembers}
                   selectedMonth={selectedMonth}
                   selectedYear={selectedYear}
                   showToast={showToast}
@@ -2124,6 +2222,275 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   supervisors={supervisors}
                   managedTeamsData={managedTeamsData}
                 />
+              )}
+
+              {/* CONTEÚDO DA ABA DE COORDENAÇÃO (COORDENADOR) */}
+              {dashboardTab === 'coordination' && profile.role === 'coordinator' && (
+                <div className="space-y-8">
+                  {/* Cabeçalho */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white/5 border border-white/5 rounded-3xl backdrop-blur-xl">
+                    <div>
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Handshake className="text-sky-400" size={24} weight="duotone" />
+                        Painel de Coordenação Geral
+                      </h2>
+                      <p className="text-xs text-slate-400 mt-1">Gerenciamento consolidado de performance, escalas diárias e movimentações organizacionais.</p>
+                    </div>
+                  </div>
+
+                  {/* 1. Painel Comparativo de Performance das Equipes */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Painel Comparativo de Equipes</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {managedTeamsData.map(team => {
+                        const teamAgreements = monthAgreements.filter(a => a.teamId === team.id);
+                        const paidAgreements = teamAgreements.filter(a => a.status === AgreementStatus.PAID);
+                        const totalProjected = teamAgreements.reduce((acc, curr) => acc + curr.value, 0);
+                        const totalPaid = paidAgreements.reduce((acc, curr) => acc + curr.value, 0);
+                        
+                        const effectiveness = totalProjected > 0 ? (totalPaid / totalProjected) * 100 : 0;
+                        const goal = team.monthlyGoal || 0;
+                        const goalPercent = goal > 0 ? Math.min((totalPaid / goal) * 100, 100) : 0;
+                        const supervisor = supervisors.find(s => s.uid === team.supervisorId);
+
+                        return (
+                          <div key={team.id} className="glass-card p-6 border border-white/5 hover:border-sky-500/30 transition-all group flex flex-col justify-between">
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="text-base font-bold text-white group-hover:text-sky-400 transition-colors">{team.name}</h4>
+                                  <p className="text-[10px] text-slate-500 mt-0.5">
+                                    Supervisor: <span className="text-slate-300 font-medium">{supervisor?.displayName || supervisor?.email.split('@')[0] || 'Não atribuído'}</span>
+                                  </p>
+                                </div>
+                                <span className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
+                                  effectiveness >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                }`}>
+                                  {effectiveness.toFixed(0)}% Efet.
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-[11px]">
+                                  <span className="text-slate-400">Progresso da Meta</span>
+                                  <span className="text-white font-bold">{goalPercent.toFixed(0)}%</span>
+                                </div>
+                                <div className="w-full bg-slate-950/60 rounded-full h-2 overflow-hidden border border-white/5">
+                                  <div 
+                                    className="bg-gradient-to-r from-sky-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
+                                    style={{ width: `${goalPercent}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5 text-xs">
+                              <div>
+                                <span className="text-[9px] uppercase tracking-widest text-slate-500 block">Recuperado</span>
+                                <span className="font-bold text-white block mt-0.5">R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] uppercase tracking-widest text-slate-500 block">Meta Mensal</span>
+                                <span className="font-bold text-slate-300 block mt-0.5">R$ {goal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. Escala Consolidada de Presença (Hoje) */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Escala diária de plantão e faltas</h3>
+                    <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
+                      {managedTeamsData.map(team => {
+                        const teamOps = filteredTeamMembers.filter(m => m.teamId === team.id && m.role === 'member');
+                        if (teamOps.length === 0) return null;
+
+                        return (
+                          <div key={team.id} className="space-y-3">
+                            <h4 className="text-xs font-bold text-sky-400 border-b border-white/5 pb-1 flex items-center gap-1.5">
+                              <Calendar size={14} weight="duotone" />
+                              {team.name}
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {teamOps.map(op => {
+                                const status = attendanceStatuses[op.uid] || 'present';
+                                return (
+                                  <div key={op.uid} className="flex items-center justify-between p-3 bg-slate-900/40 border border-white/5 rounded-2xl">
+                                    <div className="flex items-center gap-2.5">
+                                      <Avatar
+                                        displayName={op.displayName}
+                                        email={op.email}
+                                        avatarStyle={op.avatarStyle}
+                                        avatarSeed={op.avatarSeed}
+                                        theme={theme}
+                                        size="xs"
+                                      />
+                                      <div>
+                                        <span className="font-bold text-xs block text-white leading-tight">{op.displayName || op.email.split('@')[0]}</span>
+                                        <span className="text-[8px] text-slate-500">Operador</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => handleAttendanceChange(op.uid, op.displayName || op.email.split('@')[0], 'present')}
+                                        className={`px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold rounded-lg border transition-all cursor-pointer ${
+                                          status === 'present'
+                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                            : 'bg-transparent border-white/5 text-slate-500 hover:text-slate-300'
+                                        }`}
+                                      >
+                                        P
+                                      </button>
+                                      <button
+                                        onClick={() => handleAttendanceChange(op.uid, op.displayName || op.email.split('@')[0], 'late')}
+                                        className={`px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold rounded-lg border transition-all cursor-pointer ${
+                                          status === 'late'
+                                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                            : 'bg-transparent border-white/5 text-slate-500 hover:text-slate-300'
+                                        }`}
+                                      >
+                                        A
+                                      </button>
+                                      <button
+                                        onClick={() => handleAttendanceChange(op.uid, op.displayName || op.email.split('@')[0], 'absent')}
+                                        className={`px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold rounded-lg border transition-all cursor-pointer ${
+                                          status === 'absent'
+                                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                            : 'bg-transparent border-white/5 text-slate-500 hover:text-slate-300'
+                                        }`}
+                                      >
+                                        F
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 3. Central de Transferências & Desligamentos */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Transferências */}
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Central de Transferências</h3>
+                      <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">Selecionar Operador</label>
+                          <select
+                            value={selectedOperatorToTransfer}
+                            onChange={(e) => setSelectedOperatorToTransfer(e.target.value)}
+                            className="w-full bg-slate-950/80 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                          >
+                            <option value="">-- Selecionar Operador --</option>
+                            {filteredTeamMembers.filter(m => m.role === 'member').map(op => {
+                              const team = managedTeamsData.find(t => t.id === op.teamId);
+                              return (
+                                <option key={op.uid} value={op.uid}>
+                                  {op.displayName || op.email.split('@')[0]} (Equipe atual: {team?.name || 'Nenhuma'})
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">Selecionar Equipe Destino</label>
+                          <select
+                            value={selectedTargetTeamForTransfer}
+                            onChange={(e) => setSelectedTargetTeamForTransfer(e.target.value)}
+                            className="w-full bg-slate-950/80 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                          >
+                            <option value="">-- Selecionar Equipe --</option>
+                            {managedTeamsData.map(team => (
+                              <option key={team.id} value={team.id}>
+                                {team.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <button
+                          disabled={!selectedOperatorToTransfer || !selectedTargetTeamForTransfer}
+                          onClick={() => {
+                            handleTransferOperator(selectedOperatorToTransfer, selectedTargetTeamForTransfer);
+                            setSelectedOperatorToTransfer('');
+                            setSelectedTargetTeamForTransfer('');
+                          }}
+                          className="w-full flex items-center justify-center gap-2 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-800 disabled:text-slate-600 active:scale-98 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+                        >
+                          <UserSwitch size={16} />
+                          Transferir Operador
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Desligamentos */}
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Opção de Desligamento (Offboarding)</h3>
+                      <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-4">
+                        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-start gap-3">
+                          <ShieldWarning size={20} className="text-rose-400 shrink-0 mt-0.5" />
+                          <div className="text-[11px] text-rose-300">
+                            <strong className="block font-bold">Atenção Coordenador:</strong>
+                            O desligamento removerá o colaborador do time e da organização. Esta ação é definitiva na simulação e na produção.
+                          </div>
+                        </div>
+
+                        <div className="max-h-[220px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                          {/* Lista de Supervisores */}
+                          {supervisors.map(sup => (
+                            <div key={sup.uid} className="flex items-center justify-between p-2.5 bg-slate-900/40 border border-white/5 rounded-xl text-xs">
+                              <div>
+                                <span className="font-bold text-white block">{sup.displayName || sup.email.split('@')[0]}</span>
+                                <span className="text-[9px] text-purple-400 uppercase tracking-wider font-extrabold">Supervisor</span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Tem certeza que deseja desligar o Supervisor ${sup.displayName || sup.email}?`)) {
+                                    handleDismissUser(sup.uid, sup.displayName || sup.email.split('@')[0], 'supervisor');
+                                  }
+                                }}
+                                className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg text-[9px] uppercase tracking-wider font-extrabold border border-rose-500/20 transition-all cursor-pointer"
+                              >
+                                Desligar
+                              </button>
+                            </div>
+                          ))}
+
+                          {/* Lista de Operadores */}
+                          {filteredTeamMembers.filter(m => m.role === 'member').map(op => {
+                            const team = managedTeamsData.find(t => t.id === op.teamId);
+                            return (
+                              <div key={op.uid} className="flex items-center justify-between p-2.5 bg-slate-900/40 border border-white/5 rounded-xl text-xs">
+                                <div>
+                                  <span className="font-bold text-white block">{op.displayName || op.email.split('@')[0]}</span>
+                                  <span className="text-[9px] text-slate-500">Operador • Equipe: {team?.name || 'Nenhuma'}</span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Tem certeza que deseja desligar o Operador ${op.displayName || op.email}?`)) {
+                                      handleDismissUser(op.uid, op.displayName || op.email.split('@')[0], 'member');
+                                    }
+                                  }}
+                                  className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg text-[9px] uppercase tracking-wider font-extrabold border border-rose-500/20 transition-all cursor-pointer"
+                                >
+                                  Desligar
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </motion.div>
           </AnimatePresence>
@@ -2156,7 +2523,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-slate-600">
             <p><strong>Visão:</strong> {viewMode === 'personal' ? 'Pessoal' : 'Equipe'}</p>
             <p><strong>Equipe:</strong> {selectedTeamId === 'all' ? 'Todas' : (managedTeamsData.find(t => t.id === selectedTeamId)?.name || 'Equipe Selecionada')}</p>
-            <p><strong>Operador:</strong> {selectedMemberId === 'all' ? 'Todos' : (currentTeamMembers.find(m => m.uid === selectedMemberId)?.displayName || 'Selecionado')}</p>
+            <p><strong>Operador:</strong> {selectedMemberId === 'all' ? 'Todos' : (filteredTeamMembers.find(m => m.uid === selectedMemberId)?.displayName || 'Selecionado')}</p>
             <p><strong>Filtro Status:</strong> {filterStatus === 'all' ? 'Todos' : filterStatus === 'paid' ? 'Pago' : filterStatus === 'waiting' ? 'Aguardando' : 'Quebrado'}</p>
           </div>
         </div>
@@ -2392,6 +2759,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         selectedTeamId={selectedTeamId}
         showToast={showToast}
         supervisors={supervisors}
+        managers={managers}
 
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
@@ -2465,12 +2833,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         isPeopleReportOpen={isPeopleReportOpen}
         setIsPeopleReportOpen={setIsPeopleReportOpen}
-        currentTeamMembers={currentTeamMembers}
+        currentTeamMembers={filteredTeamMembers}
 
         isTeamSelectorOpen={isTeamSelectorOpen}
         setIsTeamSelectorOpen={setIsTeamSelectorOpen}
         managedTeamsData={managedTeamsData}
         setSelectedTeamId={setSelectedTeamId}
+        managers={managers}
       />
 
       {/* Modal Personalizado de Confirmação de Exclusão de Acordo */}

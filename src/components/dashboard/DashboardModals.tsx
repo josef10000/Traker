@@ -110,6 +110,7 @@ export interface DashboardModalsProps {
   managedTeamsData: Team[];
   setSelectedTeamId: (teamId: string) => void;
   supervisors?: UserProfile[];
+  managers?: UserProfile[];
 }
 
 export const DashboardModals: React.FC<DashboardModalsProps> = ({
@@ -192,6 +193,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
   managedTeamsData,
   setSelectedTeamId,
   supervisors,
+  managers,
 }) => {
   return (
     <>
@@ -329,6 +331,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         onSelectTeam={setSelectedTeamId}
         supervisors={supervisors}
         profileRole={profile.role}
+        managers={managers}
       />
     </>
   );

@@ -39,6 +39,20 @@ export const Sidebar = ({
       show: profile.role === 'backoffice'
     },
     {
+      id: 'carga_acordos',
+      label: 'Carga de Acordos',
+      description: 'Suba planilhas e registre seus acordos no sistema.',
+      icon: FileSpreadsheet,
+      show: profile.role === 'supervisor' || profile.role === 'member'
+    },
+    {
+      id: 'coordination',
+      label: 'Coordenação',
+      description: 'Painel comparativo de performance, escala consolidada e central de transferências.',
+      icon: TeamIcon,
+      show: profile.role === 'coordinator'
+    },
+    {
       id: 'financial',
       label: 'Painel Financeiro',
       description: 'Faturamento, metas e acordos de hoje.',

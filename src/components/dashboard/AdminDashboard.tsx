@@ -56,7 +56,7 @@ interface AdminDashboardProps {
   profile: UserProfile;
   onLogoutSuccess: () => void;
   showToast: (message: string, type?: ToastType) => void;
-  onStartSimulation: (role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice') => void;
+  onStartSimulation: (role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' | 'coordinator') => void;
 }
 
 export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation }: AdminDashboardProps) => {
@@ -146,7 +146,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     };
   }, []);
 
-  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice', forceProvision = false) => {
+  const handleSimulateRole = async (role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' | 'coordinator', forceProvision = false) => {
     setIsProvisioningSandbox(true);
     try {
       const sandboxOrgId = 'sandbox-test';
@@ -711,6 +711,18 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     title="Entrar como Back Office (Modo Simulação)"
                   >
                     Entrar como Back Office
+                  </button>
+                  <button
+                    onClick={() => handleSimulateRole('coordinator', false)}
+                    disabled={isProvisioningSandbox}
+                    className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-purple-500/10 border-purple-500/20 text-purple-300 hover:bg-purple-500/20'
+                        : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                    }`}
+                    title="Entrar como Coordenador (Modo Simulação)"
+                  >
+                    Entrar como Coordenador
                   </button>
                 </div>
                 <button

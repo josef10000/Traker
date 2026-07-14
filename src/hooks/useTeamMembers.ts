@@ -208,6 +208,9 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
             team.managerId === profile.uid || 
             (team.supervisorId && mySupervisorsUids.includes(team.supervisorId))
           );
+        } else if (profile.role === 'coordinator' && profile.organizationId) {
+          const snap = await getDocs(query(collection(db, 'teams'), where('organizationId', '==', profile.organizationId)));
+          validTeams = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
         } else if (profile.managedTeams && profile.managedTeams.length > 0) {
           // Supervisor carrega as equipes gerenciadas
           const teams = await Promise.all(

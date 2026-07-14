@@ -62,14 +62,14 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
   // 2. Times
   const teamsList: Team[] = [
     // Supervisor 1 (Carlos)
-    { id: 'team-fenix', name: 'Time Fênix', supervisorId: 'sandbox-supervisor-a1', inviteToken: 'tok-fenix', organizationId: orgId, monthlyGoal: 80000, effectivenessGoal: 85, createdAt: now },
-    { id: 'team-dragao', name: 'Time Dragão', supervisorId: 'sandbox-supervisor-a1', inviteToken: 'tok-dragao', organizationId: orgId, monthlyGoal: 70000, effectivenessGoal: 80, createdAt: now },
+    { id: 'team-fenix', name: 'Time Fênix', supervisorId: 'sandbox-supervisor-a1', inviteToken: 'tok-fenix', organizationId: orgId, monthlyGoal: 80000, effectivenessGoal: 85, managerId: 'sandbox-manager-a', createdAt: now },
+    { id: 'team-dragao', name: 'Time Dragão', supervisorId: 'sandbox-supervisor-a1', inviteToken: 'tok-dragao', organizationId: orgId, monthlyGoal: 70000, effectivenessGoal: 80, managerId: 'sandbox-manager-a', createdAt: now },
     // Supervisor 2 (Amanda)
-    { id: 'team-aguia', name: 'Time Águia', supervisorId: 'sandbox-supervisor-a2', inviteToken: 'tok-aguia', organizationId: orgId, monthlyGoal: 90000, effectivenessGoal: 88, createdAt: now },
-    { id: 'team-falcao', name: 'Time Falcão', supervisorId: 'sandbox-supervisor-a2', inviteToken: 'tok-falcao', organizationId: orgId, monthlyGoal: 85000, effectivenessGoal: 85, createdAt: now },
+    { id: 'team-aguia', name: 'Time Águia', supervisorId: 'sandbox-supervisor-a2', inviteToken: 'tok-aguia', organizationId: orgId, monthlyGoal: 90000, effectivenessGoal: 88, managerId: 'sandbox-manager-a', createdAt: now },
+    { id: 'team-falcao', name: 'Time Falcão', supervisorId: 'sandbox-supervisor-a2', inviteToken: 'tok-falcao', organizationId: orgId, monthlyGoal: 85000, effectivenessGoal: 85, managerId: 'sandbox-manager-a', createdAt: now },
     // Supervisor 3 (Roberto)
-    { id: 'team-lobo', name: 'Time Lobo', supervisorId: 'sandbox-supervisor-b1', inviteToken: 'tok-lobo', organizationId: orgId, monthlyGoal: 65000, effectivenessGoal: 82, createdAt: now },
-    { id: 'team-tigre', name: 'Time Tigre', supervisorId: 'sandbox-supervisor-b1', inviteToken: 'tok-tigre', organizationId: orgId, monthlyGoal: 75000, effectivenessGoal: 84, createdAt: now }
+    { id: 'team-lobo', name: 'Time Lobo', supervisorId: 'sandbox-supervisor-b1', inviteToken: 'tok-lobo', organizationId: orgId, monthlyGoal: 65000, effectivenessGoal: 82, managerId: 'sandbox-manager-b', createdAt: now },
+    { id: 'team-tigre', name: 'Time Tigre', supervisorId: 'sandbox-supervisor-b1', inviteToken: 'tok-tigre', organizationId: orgId, monthlyGoal: 75000, effectivenessGoal: 84, managerId: 'sandbox-manager-b', createdAt: now }
   ];
 
   teamsList.forEach(t => {
@@ -83,12 +83,12 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
     { uid: 'sandbox-manager-b', email: 'beatrice.gerente@sandbox.local', displayName: 'Beatrice (Gerente B)', role: 'manager', organizationId: orgId, createdAt: now },
     
     // Coordenadores
-    { uid: 'sandbox-coordinator-a', email: 'carolina.coordenador@sandbox.local', displayName: 'Carolina (Coordenador)', role: 'coordinator', organizationId: orgId, createdAt: now },
+    { uid: 'sandbox-coordinator-a', email: 'mariana.coordenadora@sandbox.local', displayName: 'Mariana (Coordenadora)', role: 'coordinator', organizationId: orgId, createdAt: now },
     
     // Supervisores
-    { uid: 'sandbox-supervisor-a1', email: 'carlos.supervisor@sandbox.local', displayName: 'Carlos (Supervisor A1)', role: 'supervisor', organizationId: orgId, managedTeams: ['team-fenix', 'team-dragao'], teamId: 'team-fenix', createdAt: now },
-    { uid: 'sandbox-supervisor-a2', email: 'amanda.supervisor@sandbox.local', displayName: 'Amanda (Supervisor A2)', role: 'supervisor', organizationId: orgId, managedTeams: ['team-aguia', 'team-falcao'], teamId: 'team-aguia', createdAt: now },
-    { uid: 'sandbox-supervisor-b1', email: 'roberto.supervisor@sandbox.local', displayName: 'Roberto (Supervisor B1)', role: 'supervisor', organizationId: orgId, managedTeams: ['team-lobo', 'team-tigre'], teamId: 'team-lobo', createdAt: now },
+    { uid: 'sandbox-supervisor-a1', email: 'carlos.supervisor@sandbox.local', displayName: 'Carlos (Supervisor A1)', role: 'supervisor', organizationId: orgId, managedTeams: ['team-fenix', 'team-dragao'], teamId: 'team-fenix', managerId: 'sandbox-manager-a', createdAt: now },
+    { uid: 'sandbox-supervisor-a2', email: 'amanda.supervisor@sandbox.local', displayName: 'Amanda (Supervisor A2)', role: 'supervisor', organizationId: orgId, managedTeams: ['team-aguia', 'team-falcao'], teamId: 'team-aguia', managerId: 'sandbox-manager-a', createdAt: now },
+    { uid: 'sandbox-supervisor-b1', email: 'roberto.supervisor@sandbox.local', displayName: 'Roberto (Supervisor B1)', role: 'supervisor', organizationId: orgId, managedTeams: ['team-lobo', 'team-tigre'], teamId: 'team-lobo', managerId: 'sandbox-manager-b', createdAt: now },
     
     // Monitor & Backoffice
     { uid: 'sandbox-user-monitor', email: 'monitor@sandbox.local', displayName: 'Monitor de Qualidade', role: 'monitor', organizationId: orgId, createdAt: now },

@@ -201,6 +201,18 @@ class SandboxService {
     this.notify();
   }
 
+  public updateUser(uid: string, fields: Partial<UserProfile>): void {
+    if (this.users[uid]) {
+      this.users[uid] = { ...this.users[uid], ...fields };
+      this.notify();
+    }
+  }
+
+  public deleteUser(uid: string): void {
+    delete this.users[uid];
+    this.notify();
+  }
+
   public addQaCompetence(competence: QaCompetence): void {
     this.qaCompetences[competence.id] = { ...competence };
     this.notify();
