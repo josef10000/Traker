@@ -2383,37 +2383,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-4">
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">Selecionar Operador</label>
-                          <select
+                          <CustomSelect 
                             value={selectedOperatorToTransfer}
-                            onChange={(e) => setSelectedOperatorToTransfer(e.target.value)}
-                            className="w-full bg-slate-950/80 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                          >
-                            <option value="">-- Selecionar Operador --</option>
-                            {filteredTeamMembers.filter(m => m.role === 'member').map(op => {
+                            onChange={(val) => setSelectedOperatorToTransfer(val)}
+                            placeholder="-- Selecionar Operador --"
+                            options={filteredTeamMembers.filter(m => m.role === 'member').map(op => {
                               const team = managedTeamsData.find(t => t.id === op.teamId);
-                              return (
-                                <option key={op.uid} value={op.uid}>
-                                  {op.displayName || op.email.split('@')[0]} (Equipe atual: {team?.name || 'Nenhuma'})
-                                </option>
-                              );
+                              return {
+                                value: op.uid,
+                                label: `${op.displayName || op.email.split('@')[0]} (Equipe atual: ${team?.name || 'Nenhuma'})`
+                              };
                             })}
-                          </select>
+                          />
                         </div>
 
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">Selecionar Equipe Destino</label>
-                          <select
+                          <CustomSelect 
                             value={selectedTargetTeamForTransfer}
-                            onChange={(e) => setSelectedTargetTeamForTransfer(e.target.value)}
-                            className="w-full bg-slate-950/80 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                          >
-                            <option value="">-- Selecionar Equipe --</option>
-                            {managedTeamsData.map(team => (
-                              <option key={team.id} value={team.id}>
-                                {team.name}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(val) => setSelectedTargetTeamForTransfer(val)}
+                            placeholder="-- Selecionar Equipe --"
+                            options={managedTeamsData.map(team => ({
+                              value: team.id,
+                              label: team.name
+                            }))}
+                          />
                         </div>
 
                         <button
