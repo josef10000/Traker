@@ -1558,7 +1558,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                           type="number"
                           value={monthlyGoalInput}
                           onChange={(e) => setMonthlyGoalInput(parseFloat(e.target.value) || 0)}
-                          className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
+                          className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white font-bold"
                         />
                       </div>
 
@@ -1570,7 +1570,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                           type="number"
                           value={effectivenessGoalInput}
                           onChange={(e) => setEffectivenessGoalInput(parseFloat(e.target.value) || 0)}
-                          className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
+                          className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white font-bold"
                         />
                       </div>
                     </div>
@@ -1776,7 +1776,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                       setShowTransferModal(sup);
                                       setTargetManagerId(profile.uid);
                                     }}
-                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-lg text-[10px] uppercase tracking-wider transition-all cursor-pointer"
                                   >
                                     Assumir Supervisão
                                   </button>

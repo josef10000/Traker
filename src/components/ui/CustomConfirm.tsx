@@ -27,7 +27,7 @@ export function CustomConfirm({
   const accentColor = type === 'danger' 
     ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/10' 
     : type === 'warning' 
-    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/10 font-black' 
+    ? 'bg-amber-500 hover:bg-amber-400 text-white shadow-amber-500/10 font-bold' 
     : 'bg-sky-500 hover:bg-sky-400 text-white shadow-sky-500/10';
 
   const iconColor = type === 'danger' 
