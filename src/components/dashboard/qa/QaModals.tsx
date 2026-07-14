@@ -250,7 +250,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                     placeholder="Ex: CALL-89472"
                     value={evalCallId}
                     onChange={(e) => setEvalCallId(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl outline-none text-xs ${
+                    className={`w-full px-4 py-3 rounded-xl border outline-none text-xs transition-all placeholder:text-slate-500/60 focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                       theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
@@ -264,7 +264,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                     placeholder="Ex: PROT-99238"
                     value={evalProtocol}
                     onChange={(e) => setEvalProtocol(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl outline-none text-xs ${
+                    className={`w-full px-4 py-3 rounded-xl border outline-none text-xs transition-all placeholder:text-slate-500/60 focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                       theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
@@ -278,7 +278,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                     placeholder="Ex: https://callcenter.com/audio.mp3"
                     value={evalCallLink}
                     onChange={(e) => setEvalCallLink(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl outline-none text-xs ${
+                    className={`w-full px-4 py-3 rounded-xl border outline-none text-xs transition-all placeholder:text-slate-500/60 focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                       theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
@@ -332,7 +332,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                   placeholder="Escreva pontos de melhoria observados e elogios técnicos..."
                   value={evalFeedback}
                   onChange={(e) => setEvalFeedback(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl outline-none text-xs resize-none ${
+                  className={`w-full px-4 py-3 rounded-xl border outline-none text-xs resize-none transition-all placeholder:text-slate-500/60 focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                     theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 />
@@ -381,7 +381,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                         value={pdiDueDate}
                         onChange={(e) => setPdiDueDate(e.target.value)}
                         min={new Date().toISOString().split('T')[0]}
-                        className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs ${
+                        className={`w-full px-4 py-2.5 rounded-xl border outline-none text-xs transition-all focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                           theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200 dark:color-scheme-dark' : 'bg-white border-slate-200 text-slate-900'
                         }`}
                       />
@@ -395,7 +395,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                         placeholder="Ex: Fazer escuta diária de 3 calls exemplares de colegas; aplicar técnica de contorno de objeção da dilação..."
                         value={pdiActionPlan}
                         onChange={(e) => setPdiActionPlan(e.target.value)}
-                        className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs resize-none ${
+                        className={`w-full px-4 py-2.5 rounded-xl border outline-none text-xs resize-none transition-all placeholder:text-slate-500/60 focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                           theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-900'
                         }`}
                       />
@@ -453,7 +453,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                   required
                   value={cycleDays}
                   onChange={(e) => setCycleDays(parseInt(e.target.value))}
-                  className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs ${
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none text-xs transition-all focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                     theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 />
@@ -469,7 +469,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                   required
                   value={pdiDays}
                   onChange={(e) => setPdiDays(parseInt(e.target.value))}
-                  className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs ${
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none text-xs transition-all focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                     theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 />
