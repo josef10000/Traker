@@ -18,6 +18,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
+import { CustomSelect } from '../ui/CustomSelect';
 import { markStatsStale } from '../../lib/statsCache';
 import { 
   Agreement, 
@@ -1458,10 +1459,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleAnonimizeClient = async (cpf: string) => {
-    if (!window.confirm('Tem certeza que deseja aplicar o Direito ao Esquecimento? Isso anonimizará permanentemente o nome do cliente e deletará dados pessoais sob a LGPD.')) {
-      return;
-    }
-    
     try {
       const agreementsToAnon = monthAgreements.filter(a => a.clientCpf === cpf);
       for (const a of agreementsToAnon) {
@@ -1665,32 +1662,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* Controles do Painel Financeiro e Seletores de Data */}
                 <div className="flex flex-wrap items-center gap-3">
                   {/* Seletores de Mês e Ano */}
-                  <div className={`flex p-1 rounded-xl border shadow-sm mr-2 ${
-                    theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
-                  }`}>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                      className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-2 transition-colors ${
-                        theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
-                      }`}
-                    >
-                      {MONTHS.map((month, index) => (
-                        <option key={month} value={index} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{month}</option>
-                      ))}
-                    </select>
-                    <div className={`w-[1px] h-4 my-auto ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-2 transition-colors ${
-                        theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
-                      }`}
-                    >
-                      {getYearRange().map(year => (
-                        <option key={year} value={year} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{year}</option>
-                      ))}
-                    </select>
+                  <div className="flex gap-2 mr-2">
+                    <div className="w-32">
+                      <CustomSelect 
+                        value={String(selectedMonth)}
+                        onChange={(val) => setSelectedMonth(parseInt(val, 10))}
+                        className="py-1.5 px-3 text-[10px] font-black uppercase tracking-widest"
+                        options={MONTHS.map((month, index) => ({ value: String(index), label: month }))}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <CustomSelect 
+                        value={String(selectedYear)}
+                        onChange={(val) => setSelectedYear(parseInt(val, 10))}
+                        className="py-1.5 px-3 text-[10px] font-black uppercase tracking-widest"
+                        options={getYearRange().map(year => ({ value: String(year), label: String(year) }))}
+                      />
+                    </div>
                   </div>
 
                   <button
@@ -2023,32 +2011,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {/* Filtro Compacto de Período */}
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Período:</span>
-                      <div className={`flex p-1 rounded-xl border shadow-sm ${
-                        theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
-                      }`}>
-                        <select
-                          value={selectedMonth}
-                          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                          className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-1 transition-colors ${
-                            theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
-                          }`}
-                        >
-                          {MONTHS.map((month, index) => (
-                            <option key={month} value={index} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{month}</option>
-                          ))}
-                        </select>
-                        <div className={`w-[1px] h-3 my-auto ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
-                        <select
-                          value={selectedYear}
-                          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                          className={`bg-transparent text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer px-3 py-1 transition-colors ${
-                            theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-900'
-                          }`}
-                        >
-                          {getYearRange().map(year => (
-                            <option key={year} value={year} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{year}</option>
-                          ))}
-                        </select>
+                      <div className="flex gap-2">
+                        <div className="w-32">
+                          <CustomSelect 
+                            value={String(selectedMonth)}
+                            onChange={(val) => setSelectedMonth(parseInt(val, 10))}
+                            className="py-1 px-2.5 text-[10px] font-black uppercase tracking-widest"
+                            options={MONTHS.map((month, index) => ({ value: String(index), label: month }))}
+                          />
+                        </div>
+                        <div className="w-24">
+                          <CustomSelect 
+                            value={String(selectedYear)}
+                            onChange={(val) => setSelectedYear(parseInt(val, 10))}
+                            className="py-1 px-2.5 text-[10px] font-black uppercase tracking-widest"
+                            options={getYearRange().map(year => ({ value: String(year), label: String(year) }))}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

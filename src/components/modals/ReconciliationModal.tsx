@@ -18,6 +18,7 @@ import {
 } from '@phosphor-icons/react';
 import { formatCurrency } from '../../utils/masks';
 import { Agreement, AgreementStatus, AgreementOrigin, AgreementType, AgreementCategory } from '../../types';
+import { CustomConfirm } from '../ui/CustomConfirm';
 
 interface ReconciliationModalProps {
   isOpen: boolean;
@@ -69,6 +70,18 @@ export const ReconciliationModal = ({
   onCreateAgreement
 }: ReconciliationModalProps) => {
   const [activeTab, setActiveTab] = useState<'manual' | 'spreadsheet'>('manual');
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   
   // Tab 1 States
   const [inputValue, setInputValue] = useState('');
@@ -491,10 +504,16 @@ export const ReconciliationModal = ({
                     <button 
                       type="button"
                       onClick={() => {
-                        if (window.confirm("Deseja realmente apagar o saldo conciliado? Isso também excluirá todos os acordos de ajuste vinculados.")) {
-                          onSave(null, currentOfficialEffectiveness || null);
-                          onClose();
-                        }
+                        setConfirmDialog({
+                          isOpen: true,
+                          title: "Apagar Saldo Conciliado",
+                          message: "Deseja realmente apagar o saldo conciliado? Isso também excluirá todos os acordos de ajuste vinculados.",
+                          type: 'danger',
+                          onConfirm: () => {
+                            onSave(null, currentOfficialEffectiveness || null);
+                            onClose();
+                          }
+                        });
                       }}
                       className="w-full mt-2 py-2.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 font-bold rounded-xl border border-rose-500/20 transition-all text-[10px] flex items-center justify-center gap-1.5 active:scale-95"
                     >
@@ -578,10 +597,16 @@ export const ReconciliationModal = ({
                     <button 
                       type="button"
                       onClick={() => {
-                        if (window.confirm("Deseja realmente apagar a efetividade oficial conciliada?")) {
-                          onSave(currentOfficialValue || null, null);
-                          onClose();
-                        }
+                        setConfirmDialog({
+                          isOpen: true,
+                          title: "Apagar Efetividade Conciliada",
+                          message: "Deseja realmente apagar a efetividade oficial conciliada?",
+                          type: 'danger',
+                          onConfirm: () => {
+                            onSave(currentOfficialValue || null, null);
+                            onClose();
+                          }
+                        });
                       }}
                       className="w-full mt-2 py-2.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 font-bold rounded-xl border border-rose-500/20 transition-all text-[10px] flex items-center justify-center gap-1.5 active:scale-95"
                     >
@@ -669,10 +694,16 @@ export const ReconciliationModal = ({
               {(currentOfficialValue > 0 || currentOfficialEffectiveness > 0) && (
                 <button 
                   onClick={() => {
-                    if (window.confirm("Tem certeza que deseja apagar ambas as conciliações salvas? Isso também removerá todos os ajustes automáticos gerados.")) {
-                      onClear();
-                      onClose();
-                    }
+                    setConfirmDialog({
+                      isOpen: true,
+                      title: "Apagar Ambas as Conciliações",
+                      message: "Tem certeza que deseja apagar ambas as conciliações salvas? Isso também removerá todos os ajustes automáticos gerados.",
+                      type: 'danger',
+                      onConfirm: () => {
+                        onClear();
+                        onClose();
+                      }
+                    });
                   }}
                   className="w-full py-3.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 font-bold rounded-xl border border-rose-500/20 transition-all text-xs flex items-center justify-center gap-2 mb-2"
                 >
@@ -846,9 +877,13 @@ export const ReconciliationModal = ({
                       </div>
                       <button 
                         onClick={() => {
-                          if (window.confirm(`Deseja realmente excluir este ajuste de saldo de ${formatCurrency(adj.value)}?`)) {
-                            onDeleteAdjustment(adj.id);
-                          }
+                          setConfirmDialog({
+                            isOpen: true,
+                            title: "Excluir Ajuste de Saldo",
+                            message: `Deseja realmente excluir este ajuste de saldo de ${formatCurrency(adj.value)}?`,
+                            type: 'danger',
+                            onConfirm: () => onDeleteAdjustment(adj.id)
+                          });
                         }}
                         className="p-2 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white rounded-xl transition-all border border-rose-500/10 hover:border-transparent active:scale-95"
                         title="Excluir Ajuste"
@@ -863,6 +898,15 @@ export const ReconciliationModal = ({
           )}
         </div>
       </motion.div>
+
+      <CustomConfirm 
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type={confirmDialog.type}
+        onConfirm={confirmDialog.onConfirm}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

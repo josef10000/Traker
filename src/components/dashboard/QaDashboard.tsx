@@ -10,6 +10,7 @@ import { PdiManager } from './qa/PdiManager';
 import { CompetenceManager } from './qa/CompetenceManager';
 import { QaModals } from './qa/QaModals';
 import { Plus, CircleNotch as Loader2, Warning as AlertTriangle } from '@phosphor-icons/react';
+import { CustomConfirm } from '../ui/CustomConfirm';
 
 interface QaDashboardProps {
   profile: UserProfile;
@@ -37,6 +38,7 @@ export const QaDashboard = ({
   const [evaluations, setEvaluations] = useState<QaEvaluation[]>([]);
   const [pdis, setPdis] = useState<Pdi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [compToDelete, setCompToDelete] = useState<string | null>(null);
 
   // Estados de Ciclos e Operador Selecionado
   const [selectedOperatorId, setSelectedOperatorId] = useState<string | 'all'>('all');
@@ -279,12 +281,15 @@ export const QaDashboard = ({
     }
   };
 
-  const handleDeleteComp = async (id: string) => {
+  const handleDeleteComp = (id: string) => {
     if (profile.role !== 'monitor') {
       showToast('Apenas o Monitor de Qualidade pode excluir competências.', 'error');
       return;
     }
-    if (!confirm('Deseja realmente excluir esta competência?')) return;
+    setCompToDelete(id);
+  };
+
+  const executeDeleteComp = async (id: string) => {
     if (profile.organizationId === 'sandbox-test') {
       sandboxService.deleteQaCompetence(id);
       showToast('Competência do Sandbox excluída da memória!', 'success');
@@ -706,6 +711,18 @@ export const QaDashboard = ({
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
         onSaveSettings={handleSaveSettings}
+      />
+      <CustomConfirm 
+        isOpen={compToDelete !== null}
+        title="Excluir Competência"
+        message="Deseja realmente excluir esta competência? Isso removerá a competência das novas avaliações de QA."
+        type="danger"
+        onConfirm={() => {
+          if (compToDelete) {
+            executeDeleteComp(compToDelete);
+          }
+        }}
+        onClose={() => setCompToDelete(null)}
       />
     </div>
   );

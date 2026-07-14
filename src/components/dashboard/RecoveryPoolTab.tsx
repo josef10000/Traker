@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { Agreement, AgreementStatus, Team, UserProfile } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { OriginBadge } from './OriginBadge';
+import { CustomSelect } from '../ui/CustomSelect';
 import { ShieldWarning as ShieldAlert, Download, CheckSquare, Square, Eye, EyeClosed as EyeOff, Play, Users, Calendar, Question as HelpCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { ExportCpfModal } from '../modals/ExportCpfModal';
 import { logAudit } from '../../lib/audit';
@@ -225,46 +226,45 @@ export const RecoveryPoolTab = ({
         <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
           <div className="flex flex-wrap gap-3">
             {/* Equipe */}
-            <select
-              value={filterTeam}
-              onChange={(e) => setFilterTeam(e.target.value)}
-              className={`border text-xs font-bold px-4 py-2.5 rounded-xl outline-none cursor-pointer ${
-                theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'
-              }`}
-            >
-              <option value="all" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Todas as Equipes</option>
-              {managedTeamsData.map(t => (
-                <option key={t.id} value={t.id} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{t.name}</option>
-              ))}
-            </select>
+            <div className="w-44">
+              <CustomSelect 
+                value={filterTeam}
+                onChange={(val) => setFilterTeam(val)}
+                placeholder="Todas as Equipes"
+                options={[
+                  { value: "all", label: "Todas as Equipes" },
+                  ...managedTeamsData.map(t => ({ value: t.id, label: t.name }))
+                ]}
+              />
+            </div>
 
-            {/* Tipo de Acordo */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className={`border text-xs font-bold px-4 py-2.5 rounded-xl outline-none cursor-pointer ${
-                theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'
-              }`}
-            >
-              <option value="all" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Todos os Tipos</option>
-              <option value="quitacao" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Quitação</option>
-              <option value="parcelamento" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Parcelamento</option>
-              <option value="parcela_atrasada" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Parcela Atrasada</option>
-              <option value="antecipacao" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Antecipação</option>
-            </select>
+            <div className="w-44">
+              <CustomSelect 
+                value={filterType}
+                onChange={(val) => setFilterType(val)}
+                placeholder="Todos os Tipos"
+                options={[
+                  { value: "all", label: "Todos os Tipos" },
+                  { value: "quitacao", label: "Quitação" },
+                  { value: "parcelamento", label: "Parcelamento" },
+                  { value: "parcela_atrasada", label: "Parcela Atrasada" },
+                  { value: "antecipacao", label: "Antecipação" }
+                ]}
+              />
+            </div>
 
-            {/* Categoria */}
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className={`border text-xs font-bold px-4 py-2.5 rounded-xl outline-none cursor-pointer ${
-                theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'
-              }`}
-            >
-              <option value="all" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Todas as Categorias</option>
-              <option value="fixa" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Fixa</option>
-              <option value="variavel" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Variável</option>
-            </select>
+            <div className="w-44">
+              <CustomSelect 
+                value={filterCategory}
+                onChange={(val) => setFilterCategory(val)}
+                placeholder="Todas as Categorias"
+                options={[
+                  { value: "all", label: "Todas as Categorias" },
+                  { value: "fixa", label: "Fixa" },
+                  { value: "variavel", label: "Variável" }
+                ]}
+              />
+            </div>
           </div>
 
           <div className="flex gap-2">

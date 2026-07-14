@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { X, CircleNotch as Loader2, Printer, Calendar as CalendarDays, Check, Warning as AlertTriangle, WarningCircle as AlertCircle, FileText } from '@phosphor-icons/react';
 import { CollaborationNote, UserProfile } from '../../types';
 import { getOrganizationNotesReport } from '../../lib/notes';
+import { CustomSelect } from '../ui/CustomSelect';
 
 interface PeopleReportModalProps {
   isOpen: boolean;
@@ -146,25 +147,21 @@ export const PeopleReportModal = ({
             <span className="text-xs font-bold text-slate-300">Selecione o Período:</span>
           </div>
           
-          <select 
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-emerald-500 transition-all text-xs text-white"
-          >
-            {monthsList.map(m => (
-              <option key={m.value} value={m.value} className="bg-slate-900">{m.label}</option>
-            ))}
-          </select>
+          <div className="w-40">
+            <CustomSelect 
+              value={String(selectedMonth)}
+              onChange={(val) => setSelectedMonth(Number(val))}
+              options={monthsList.map(m => ({ value: String(m.value), label: m.label }))}
+            />
+          </div>
 
-          <select 
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-emerald-500 transition-all text-xs text-white"
-          >
-            {[2025, 2026, 2027, 2028].map(y => (
-              <option key={y} value={y} className="bg-slate-900">{y}</option>
-            ))}
-          </select>
+          <div className="w-28">
+            <CustomSelect 
+              value={String(selectedYear)}
+              onChange={(val) => setSelectedYear(Number(val))}
+              options={[2025, 2026, 2027, 2028].map(y => ({ value: String(y), label: String(y) }))}
+            />
+          </div>
         </div>
 
         {/* Conteúdo Imprimível do Relatório */}

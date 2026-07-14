@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, QaCompetence, Pdi } from '../../../types';
 import { Compass, Plus } from '@phosphor-icons/react';
+import { CustomSelect } from '../../ui/CustomSelect';
 
 interface QaModalsProps {
   theme: 'light' | 'dark';
@@ -230,19 +231,15 @@ export const QaModals: React.FC<QaModalsProps> = ({
                 {/* Operador */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Selecionar Operador *</label>
-                  <select
-                    required
+                  <CustomSelect 
                     value={evalOperatorId}
-                    onChange={(e) => setEvalOperatorId(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl outline-none text-xs cursor-pointer ${
-                      theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  >
-                    <option value="" disabled>Escolha o colaborador...</option>
-                    {currentTeamMembers.map(m => (
-                      <option key={m.uid} value={m.uid} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{m.displayName || m.email.split('@')[0]}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setEvalOperatorId(val)}
+                    placeholder="Escolha o colaborador..."
+                    options={currentTeamMembers.map(m => ({
+                      value: m.uid,
+                      label: m.displayName || m.email.split('@')[0]
+                    }))}
+                  />
                 </div>
 
                 {/* ID Ligacao */}
@@ -365,19 +362,15 @@ export const QaModals: React.FC<QaModalsProps> = ({
                   }`}>
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-slate-500 uppercase">Foco de Melhoria (Competência) *</label>
-                      <select
-                        required={suggestPdi}
+                      <CustomSelect 
                         value={pdiCompetenceId}
-                        onChange={(e) => setPdiCompetenceId(e.target.value)}
-                        className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs cursor-pointer ${
-                          theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-900'
-                        }`}
-                      >
-                        <option value="" disabled>Selecione a competência...</option>
-                        {competences.map(c => (
-                          <option key={c.id} value={c.id} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>{c.name}</option>
-                        ))}
-                      </select>
+                        onChange={(val) => setPdiCompetenceId(val)}
+                        placeholder="Selecione a competência..."
+                        options={competences.map(c => ({
+                          value: c.id,
+                          label: c.name
+                        }))}
+                      />
                     </div>
 
                     <div className="space-y-1">

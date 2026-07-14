@@ -47,6 +47,8 @@ import {
 import { auth, db } from '../../lib/firebase';
 import { Organization, UserProfile, Team } from '../../types';
 import { logAudit } from '../../lib/audit';
+import { CustomSelect } from '../ui/CustomSelect';
+import { CustomConfirm } from '../ui/CustomConfirm';
 
 import { ToastType } from '../ui/Toast';
 
@@ -71,6 +73,18 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [deletingProgress, setDeletingProgress] = useState('');
   const [isProvisioningSandbox, setIsProvisioningSandbox] = useState(false);
@@ -701,9 +715,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 </div>
                 <button
                   onClick={() => {
-                    if (window.confirm("Isso apagará e recriará todos os dados (acordos, equipes, usuários) da empresa fictícia sandbox-test. Deseja continuar?")) {
-                      handleSimulateRole('manager', true);
-                    }
+                    setConfirmDialog({
+                      isOpen: true,
+                      title: "Recriar Banco de Dados Fictício",
+                      message: "Isso apagará e recriará todos os dados (acordos, equipes, usuários) da empresa fictícia sandbox-test. Deseja continuar?",
+                      type: 'danger',
+                      onConfirm: () => handleSimulateRole('manager', true)
+                    });
                   }}
                   disabled={isProvisioningSandbox}
                   className={`px-4 py-2 rounded-xl border transition-all text-xs uppercase font-bold active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 ${
@@ -970,19 +988,17 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               <div className="p-8 space-y-5 overflow-y-auto custom-scrollbar">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Plano SaaS</label>
-                  <select 
-                    value={editPlan}
-                    onChange={(e) => setEditPlan(e.target.value as Organization['plan'])}
-                    className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none appearance-none select-custom-arrow ${
-                      theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                    }`}
-                  >
-                    <option value="free">Plano Free</option>
-                    <option value="starter">Plano Starter</option>
-                    <option value="pro">Plano Pro</option>
-                    <option value="enterprise">Plano Enterprise</option>
-                    <option value="custom">Plano Customizado</option>
-                  </select>
+                    <CustomSelect 
+                      value={editPlan}
+                      onChange={(val) => setEditPlan(val as Organization['plan'])}
+                      options={[
+                        { value: 'free', label: 'Plano Free' },
+                        { value: 'starter', label: 'Plano Starter' },
+                        { value: 'pro', label: 'Plano Pro' },
+                        { value: 'enterprise', label: 'Plano Enterprise' },
+                        { value: 'custom', label: 'Plano Customizado' }
+                      ]}
+                    />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1026,16 +1042,14 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Status</label>
-                  <select 
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as Organization['status'])}
-                    className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none appearance-none select-custom-arrow ${
-                      theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                    }`}
-                  >
-                    <option value="active">Empresa Ativa</option>
-                    <option value="inactive">Empresa Suspensa/Inativa</option>
-                  </select>
+                    <CustomSelect 
+                      value={editStatus}
+                      onChange={(val) => setEditStatus(val as Organization['status'])}
+                      options={[
+                        { value: 'active', label: 'Empresa Ativa' },
+                        { value: 'inactive', label: 'Empresa Suspensa/Inativa' }
+                      ]}
+                    />
                 </div>
 
                 <div className={`border-t pt-4 space-y-4 ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
@@ -1175,19 +1189,17 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Plano SaaS</label>
-                    <select 
+                    <CustomSelect 
                       value={newOrgPlan}
-                      onChange={(e) => handlePlanChange(e.target.value as Organization['plan'])}
-                      className={`w-full border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none appearance-none select-custom-arrow ${
-                        theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                      }`}
-                    >
-                      <option value="free">Plano Free</option>
-                      <option value="starter">Plano Starter</option>
-                      <option value="pro">Plano Pro</option>
-                      <option value="enterprise">Plano Enterprise</option>
-                      <option value="custom">Plano Customizado</option>
-                    </select>
+                      onChange={(val) => handlePlanChange(val as Organization['plan'])}
+                      options={[
+                        { value: 'free', label: 'Plano Free' },
+                        { value: 'starter', label: 'Plano Starter' },
+                        { value: 'pro', label: 'Plano Pro' },
+                        { value: 'enterprise', label: 'Plano Enterprise' },
+                        { value: 'custom', label: 'Plano Customizado' }
+                      ]}
+                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -1321,6 +1333,15 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           </div>
         )}
       </AnimatePresence>
+
+      <CustomConfirm 
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type={confirmDialog.type}
+        onConfirm={confirmDialog.onConfirm}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

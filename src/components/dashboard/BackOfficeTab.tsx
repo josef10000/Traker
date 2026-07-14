@@ -46,6 +46,8 @@ import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
 import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
+import { CustomSelect } from '../ui/CustomSelect';
+import { CustomConfirm } from '../ui/CustomConfirm';
 import ExcelJS from 'exceljs';
 
 interface BackOfficeTabProps {
@@ -72,6 +74,19 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   const [editingHeader, setEditingHeader] = useState<string | null>(null);
   const [newHeaderName, setNewHeaderName] = useState('');
   const [isSavingHeader, setIsSavingHeader] = useState(false);
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Estados para Clientes da Importação Selecionada
   const [clients, setClients] = useState<BackOfficeClient[]>([]);
@@ -537,8 +552,6 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
 
   // Excluir importação inteira e todos os seus clientes
   const handleDeleteImport = async (importId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta planilha e todos os seus clientes tratados? Esta ação não pode ser desfeita.')) return;
-
     if (profile.organizationId === 'sandbox-test') {
       sandboxService.deleteBackofficeImport(importId);
       showToast('Planilha e dados vinculados removidos da memória do Sandbox.', 'success');
@@ -944,26 +957,30 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-1 max-w-md">
-            <select
+            <CustomSelect 
               value={selectedImportId}
-              onChange={(e) => setSelectedImportId(e.target.value)}
-              className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold outline-none cursor-pointer ${
-                theme === 'dark' 
-                  ? 'bg-slate-950 border-slate-800 text-white focus:border-purple-500' 
-                  : 'bg-white border-slate-200 text-slate-900 focus:border-purple-500'
-              }`}
-            >
-              <option value="all">-- Nenhuma Planilha Selecionada --</option>
-              {imports.map(imp => (
-                <option key={imp.id} value={imp.id}>
-                  {imp.fileName} ({new Date(imp.createdAt).toLocaleDateString('pt-BR')} - {imp.validRows} cli)
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedImportId(val)}
+              placeholder="-- Nenhuma Planilha Selecionada --"
+              options={[
+                { value: "all", label: "-- Nenhuma Planilha Selecionada --" },
+                ...imports.map(imp => ({
+                  value: imp.id,
+                  label: `${imp.fileName} (${new Date(imp.createdAt).toLocaleDateString('pt-BR')} - ${imp.validRows} cli)`
+                }))
+              ]}
+            />
 
             {selectedImportId !== 'all' && (
               <button
-                onClick={() => handleDeleteImport(selectedImportId)}
+                onClick={() => {
+                  setConfirmDialog({
+                    isOpen: true,
+                    title: "Excluir Planilha",
+                    message: "Tem certeza que deseja excluir esta planilha e todos os seus clientes tratados? Esta ação não pode ser desfeita.",
+                    type: 'danger',
+                    onConfirm: () => handleDeleteImport(selectedImportId)
+                  });
+                }}
                 className={`p-2.5 rounded-xl border transition-colors hover:text-rose-500 cursor-pointer ${
                   theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
                 }`}
@@ -1259,16 +1276,12 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 <label className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
                   Nome do Cliente <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <CustomSelect 
                   value={columnMapping.clientName}
-                  onChange={(e) => setColumnMapping(prev => ({ ...prev, clientName: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold outline-none cursor-pointer ${
-                    theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-50 border-slate-250 text-slate-900'
-                  }`}
-                >
-                  <option value="">-- Selecione --</option>
-                  {excelHeaders.map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
+                  onChange={(val) => setColumnMapping(prev => ({ ...prev, clientName: val }))}
+                  placeholder="-- Selecione --"
+                  options={[{ value: "", label: "-- Selecione --" }, ...excelHeaders.map(h => ({ value: h, label: h }))]}
+                />
               </div>
 
               {/* CPF */}
@@ -1276,16 +1289,12 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 <label className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
                   CPF/CNPJ do Cliente <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <CustomSelect 
                   value={columnMapping.clientCpf}
-                  onChange={(e) => setColumnMapping(prev => ({ ...prev, clientCpf: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold outline-none cursor-pointer ${
-                    theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-50 border-slate-250 text-slate-900'
-                  }`}
-                >
-                  <option value="">-- Selecione --</option>
-                  {excelHeaders.map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
+                  onChange={(val) => setColumnMapping(prev => ({ ...prev, clientCpf: val }))}
+                  placeholder="-- Selecione --"
+                  options={[{ value: "", label: "-- Selecione --" }, ...excelHeaders.map(h => ({ value: h, label: h }))]}
+                />
               </div>
 
               {/* Valor */}
@@ -1293,16 +1302,12 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 <label className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
                   Valor Devido <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <CustomSelect 
                   value={columnMapping.value}
-                  onChange={(e) => setColumnMapping(prev => ({ ...prev, value: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold outline-none cursor-pointer ${
-                    theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-50 border-slate-250 text-slate-900'
-                  }`}
-                >
-                  <option value="">-- Selecione --</option>
-                  {excelHeaders.map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
+                  onChange={(val) => setColumnMapping(prev => ({ ...prev, value: val }))}
+                  placeholder="-- Selecione --"
+                  options={[{ value: "", label: "-- Selecione --" }, ...excelHeaders.map(h => ({ value: h, label: h }))]}
+                />
               </div>
 
               {/* Vencimento */}
@@ -1310,16 +1315,12 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 <label className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
                   Data de Vencimento <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <CustomSelect 
                   value={columnMapping.dueDate}
-                  onChange={(e) => setColumnMapping(prev => ({ ...prev, dueDate: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold outline-none cursor-pointer ${
-                    theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-50 border-slate-250 text-slate-900'
-                  }`}
-                >
-                  <option value="">-- Selecione --</option>
-                  {excelHeaders.map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
+                  onChange={(val) => setColumnMapping(prev => ({ ...prev, dueDate: val }))}
+                  placeholder="-- Selecione --"
+                  options={[{ value: "", label: "-- Selecione --" }, ...excelHeaders.map(h => ({ value: h, label: h }))]}
+                />
               </div>
             </div>
 
@@ -1431,6 +1432,15 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
           </div>
         </div>
       )}
+
+      <CustomConfirm 
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type={confirmDialog.type}
+        onConfirm={confirmDialog.onConfirm}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

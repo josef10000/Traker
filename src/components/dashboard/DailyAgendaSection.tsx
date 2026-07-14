@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Clock, Phone, Play, Copy, Calendar, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { Agreement, UserProfile } from '../../types';
+import { CustomSelect } from '../ui/CustomSelect';
 
 interface DailyAgendaSectionProps {
   scheduledAgreements: Agreement[];
@@ -110,20 +111,20 @@ export const DailyAgendaSection = ({
             theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
           }`}>
             <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Filtrar Agenda:</span>
-            <select
-              value={selectedMemberId}
-              onChange={(e) => setSelectedMemberId(e.target.value)}
-              className={`bg-transparent text-xs font-bold outline-none border-none cursor-pointer transition-colors ${
-                theme === 'dark' ? 'text-slate-200 hover:text-white' : 'text-slate-700 hover:text-slate-900'
-              }`}
-            >
-              <option value="all" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Todos os Operadores</option>
-              {currentTeamMembers.map(member => (
-                <option key={member.uid} value={member.uid} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
-                  {member.displayName || member.email.split('@')[0]}
-                </option>
-              ))}
-            </select>
+            <div className="w-48">
+              <CustomSelect 
+                value={selectedMemberId}
+                onChange={(val) => setSelectedMemberId(val)}
+                placeholder="Todos os Operadores"
+                options={[
+                  { value: "all", label: "Todos os Operadores" },
+                  ...currentTeamMembers.map(member => ({
+                    value: member.uid,
+                    label: member.displayName || member.email.split('@')[0]
+                  }))
+                ]}
+              />
+            </div>
           </div>
         )}
       </div>

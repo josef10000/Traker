@@ -5,6 +5,7 @@ import { Agreement, AgreementStatus, AgreementType } from '../../types';
 import { OriginBadge } from '../dashboard/OriginBadge';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { logAudit } from '../../lib/audit';
+import { CustomConfirm } from '../ui/CustomConfirm';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const HistoryModal = ({
   organizationId
 }: HistoryModalProps) => {
   const [isRevealed, setIsRevealed] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (isRevealed) {
@@ -180,12 +182,7 @@ export const HistoryModal = ({
            {onAnonimize && isSupervisor && clientCpf && (
              <button
                type="button"
-               onClick={() => {
-                 if (window.confirm("Atenção: Ao anonimizar este cliente, o CPF, Nome e Telefone dele serão permanentemente removidos/alterados para dados genéricos em todos os acordos associados no sistema. Esta ação cumpre o Direito ao Esquecimento da LGPD e NÃO pode ser desfeita. Deseja continuar?")) {
-                   onAnonimize(clientCpf);
-                   handleClose();
-                 }
-               }}
+               onClick={() => setIsConfirmOpen(true)}
                className="text-[10px] text-rose-500 hover:text-rose-400 font-bold uppercase tracking-wider flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-rose-500/10 border border-rose-500/20"
                title="Anonimizar dados do cliente (Direito ao Esquecimento — LGPD)"
              >
@@ -194,6 +191,20 @@ export const HistoryModal = ({
            )}
         </div>
       </motion.div>
+
+      <CustomConfirm 
+         isOpen={isConfirmOpen}
+         title="Direito ao Esquecimento (LGPD)"
+         message="Atenção: Ao anonimizar este cliente, o CPF, Nome e Telefone dele serão permanentemente removidos/alterados para dados genéricos em todos os acordos associados no sistema. Esta ação cumpre o Direito ao Esquecimento da LGPD e NÃO pode ser desfeita. Deseja continuar?"
+         type="danger"
+         onConfirm={() => {
+           if (clientCpf && onAnonimize) {
+             onAnonimize(clientCpf);
+             handleClose();
+           }
+         }}
+         onClose={() => setIsConfirmOpen(false)}
+       />
     </div>
   );
 };

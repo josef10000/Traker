@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, AgreementStatus } from '../../types';
+import { CustomSelect } from '../ui/CustomSelect';
 import { 
   Lifebuoy, 
   PaperPlane, 
@@ -441,33 +442,31 @@ export const SupportTab = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Categoria</label>
-                <select
+                <CustomSelect 
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none text-xs appearance-none select-custom-arrow cursor-pointer ${
-                    theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                  }`}
-                >
-                  <option value="Financeiro" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Financeiro</option>
-                  <option value="Dúvida" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Dúvida</option>
-                  <option value="Erro" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Erro / Bug</option>
-                  <option value="Sugestão" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Sugestão</option>
-                  <option value="Outros" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Outros</option>
-                </select>
+                  onChange={(val) => setCategory(val)}
+                  placeholder="Selecione a categoria..."
+                  options={[
+                    { value: "Financeiro", label: "Financeiro" },
+                    { value: "Dúvida", label: "Dúvida" },
+                    { value: "Erro", label: "Erro / Bug" },
+                    { value: "Sugestão", label: "Sugestão" },
+                    { value: "Outros", label: "Outros" }
+                  ]}
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Prioridade</label>
-                <select
+                <CustomSelect 
                   value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none text-xs appearance-none select-custom-arrow cursor-pointer ${
-                    theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                  }`}
-                >
-                  <option value="baixa" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Baixa</option>
-                  <option value="media" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Média</option>
-                  <option value="alta" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Alta</option>
-                </select>
+                  onChange={(val) => setPriority(val)}
+                  placeholder="Selecione a prioridade..."
+                  options={[
+                    { value: "baixa", label: "Baixa" },
+                    { value: "media", label: "Média" },
+                    { value: "alta", label: "Alta" }
+                  ]}
+                />
               </div>
             </div>
 

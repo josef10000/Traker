@@ -26,6 +26,8 @@ import {
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest } from '../../types';
+import { CustomSelect } from '../ui/CustomSelect';
+import { CustomConfirm } from '../ui/CustomConfirm';
 import { 
   getTeamData, 
   deleteTeam, 
@@ -56,6 +58,18 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers'>('profile');
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Árvore Organizacional e Transferências
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
@@ -528,24 +542,32 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     }
   };
 
-  const handleDeleteTeam = async (teamId: string, teamName: string) => {
-    if (confirm(`Tem certeza que deseja excluir a equipe "${teamName}"? Esta ação não pode ser desfeita.`)) {
-      try {
-        if (profile.organizationId === 'sandbox-test') {
-          // No Sandbox, apenas deletar em memória
-          sandboxService.deleteTeam(teamId);
-          setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
-          showToast('Equipe excluída do Sandbox com sucesso!', 'success');
-          onUpdate({});
-          return;
-        }
-        await deleteTeam(profile.uid, teamId);
+  const handleDeleteTeam = (teamId: string, teamName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Excluir Equipe",
+      message: `Tem certeza que deseja excluir a equipe "${teamName}"? Esta ação não pode ser desfeita.`,
+      type: 'danger',
+      onConfirm: () => executeDeleteTeam(teamId)
+    });
+  };
+
+  const executeDeleteTeam = async (teamId: string) => {
+    try {
+      if (profile.organizationId === 'sandbox-test') {
+        // No Sandbox, apenas deletar em memória
+        sandboxService.deleteTeam(teamId);
         setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
-        showToast('Equipe excluída com sucesso!', 'success');
+        showToast('Equipe excluída do Sandbox com sucesso!', 'success');
         onUpdate({});
-      } catch (error) {
-        showToast('Erro ao excluir equipe.', 'error');
+        return;
       }
+      await deleteTeam(profile.uid, teamId);
+      setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
+      showToast('Equipe excluída com sucesso!', 'success');
+      onUpdate({});
+    } catch (error) {
+      showToast('Erro ao excluir equipe.', 'error');
     }
   };
 
@@ -618,21 +640,29 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     }
   };
 
-  const handleRevokeInvite = async (inviteId: string) => {
-    if (confirm('Deseja revogar e cancelar este convite? O link associado não funcionará mais.')) {
-      try {
-        if (profile.organizationId === 'sandbox-test') {
-          sandboxService.revokeInvite(inviteId);
-          showToast('Convite simulado revogado!', 'success');
-        } else {
-          await revokeInvite(inviteId);
-          showToast('Convite revogado com sucesso!', 'success');
-        }
-        loadInvites();
-        onUpdate({});
-      } catch (e) {
-        showToast('Erro ao revogar convite.', 'error');
+  const handleRevokeInvite = (inviteId: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Revogar Convite",
+      message: "Deseja revogar e cancelar este convite? O link associado não funcionará mais.",
+      type: 'danger',
+      onConfirm: () => executeRevokeInvite(inviteId)
+    });
+  };
+
+  const executeRevokeInvite = async (inviteId: string) => {
+    try {
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.revokeInvite(inviteId);
+        showToast('Convite simulado revogado!', 'success');
+      } else {
+        await revokeInvite(inviteId);
+        showToast('Convite revogado com sucesso!', 'success');
       }
+      loadInvites();
+      onUpdate({});
+    } catch (e) {
+      showToast('Erro ao revogar convite.', 'error');
     }
   };
 
@@ -666,24 +696,32 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     }
   };
 
-  const handleRemoveMember = async (memberUid: string, memberName: string) => {
-    if (confirm(`Remover ${memberName} desta equipe?`)) {
-      try {
-        if (profile.organizationId === 'sandbox-test') {
-          const user = sandboxService.getUser(memberUid);
-          if (user) {
-            sandboxService.setProfile({ ...user, teamId: '' });
-          }
-          setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
-          showToast('Membro removido no Sandbox com sucesso!', 'success');
-          return;
+  const handleRemoveMember = (memberUid: string, memberName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Remover Membro da Equipe",
+      message: `Remover ${memberName} desta equipe?`,
+      type: 'danger',
+      onConfirm: () => executeRemoveMember(memberUid)
+    });
+  };
+
+  const executeRemoveMember = async (memberUid: string) => {
+    try {
+      if (profile.organizationId === 'sandbox-test') {
+        const user = sandboxService.getUser(memberUid);
+        if (user) {
+          sandboxService.setProfile({ ...user, teamId: '' });
         }
-        await removeTeamMember(memberUid);
         setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
-        showToast('Membro removido com sucesso!', 'success');
-      } catch (error) {
-        showToast('Erro ao remover membro.', 'error');
+        showToast('Membro removido no Sandbox com sucesso!', 'success');
+        return;
       }
+      await removeTeamMember(memberUid);
+      setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
+      showToast('Membro removido com sucesso!', 'success');
+    } catch (error) {
+      showToast('Erro ao remover membro.', 'error');
     }
   };
 
@@ -1146,44 +1184,46 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                         <div className="w-full md:w-44">
                           <label className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">Cargo</label>
                           {profile.role === 'supervisor' ? (
-                            <select
+                            <CustomSelect 
                               value={row.role}
-                              onChange={(e) => handleInviteRowChange(idx, 'role', e.target.value as UserRole)}
-                              className="w-full px-4 py-2 border border-slate-850 bg-slate-950 text-white rounded-xl text-xs outline-none focus:border-primary transition-all cursor-pointer"
-                            >
-                              <option value="member" className="bg-slate-950 text-white">Operador</option>
-                              <option value="backoffice" className="bg-slate-950 text-white">BackOffice</option>
-                            </select>
+                              onChange={(val) => handleInviteRowChange(idx, 'role', val as UserRole)}
+                              className="py-2 text-xs"
+                              options={[
+                                { value: "member", label: "Operador" },
+                                { value: "backoffice", label: "BackOffice" }
+                              ]}
+                            />
                           ) : (
-                            <select
+                            <CustomSelect 
                               value={row.role}
-                              onChange={(e) => handleInviteRowChange(idx, 'role', e.target.value as UserRole)}
-                              className="w-full px-4 py-2 border border-slate-850 bg-slate-950 text-white rounded-xl text-xs outline-none focus:border-primary transition-all cursor-pointer"
-                            >
-                              <option value="member" className="bg-slate-950 text-white">Operador</option>
-                              <option value="supervisor" className="bg-slate-950 text-white">Supervisor</option>
-                              <option value="backoffice" className="bg-slate-950 text-white">BackOffice</option>
-                              <option value="coordinator" className="bg-slate-950 text-white">Coordenador</option>
-                              <option value="monitor" className="bg-slate-950 text-white">Monitor/QA</option>
-                              <option value="manager" className="bg-slate-950 text-white">Gerente</option>
-                            </select>
+                              onChange={(val) => handleInviteRowChange(idx, 'role', val as UserRole)}
+                              className="py-2 text-xs"
+                              options={[
+                                { value: "member", label: "Operador" },
+                                { value: "supervisor", label: "Supervisor" },
+                                { value: "backoffice", label: "BackOffice" },
+                                { value: "coordinator", label: "Coordenador" },
+                                { value: "monitor", label: "Monitor/QA" },
+                                { value: "manager", label: "Gerente" }
+                              ]}
+                            />
                           )}
                         </div>
 
                         {/* Equipe */}
                         <div className="w-full md:w-44">
                           <label className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">Equipe</label>
-                          <select
+                          <CustomSelect 
                             disabled={!showTeamSelector}
-                            value={row.teamId}
-                            onChange={(e) => handleInviteRowChange(idx, 'teamId', e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-850 bg-slate-950 text-white rounded-xl text-xs outline-none focus:border-primary transition-all disabled:opacity-30 cursor-pointer"
-                          >
-                            <option value="" className="bg-slate-950 text-slate-500">Sem equipe</option>
-                            {managedTeamsData.map(team => (
-                              <option key={team.id} value={team.id} className="bg-slate-950 text-white">{team.name}</option>
-                            ))}
-                          </select>
+                            value={row.teamId || ''}
+                            onChange={(val) => handleInviteRowChange(idx, 'teamId', val)}
+                            className="py-2 text-xs"
+                            placeholder="Sem equipe"
+                            options={[
+                              { value: "", label: "Sem equipe" },
+                              ...managedTeamsData.map(team => ({ value: team.id, label: team.name }))
+                            ]}
+                          />
                         </div>
 
                         {/* Ação de Remover */}
@@ -1392,20 +1432,18 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                 </span>
                               </div>
                               
-                              <select
-                                value={op.teamId || ''}
-                                onChange={(e) => {
-                                  const newTeamId = e.target.value;
-                                  const updatedUser = { ...op, teamId: newTeamId };
-                                  sandboxService.setProfile(updatedUser);
-                                  showToast(`Operador ${op.displayName} movido para ${managedTeamsData.find(t => t.id === newTeamId)?.name}!`, 'success');
-                                }}
-                                className="bg-slate-900 border border-slate-850 text-white rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-primary cursor-pointer hover:border-slate-700 transition-all"
-                              >
-                                {managedTeamsData.map(t => (
-                                  <option key={t.id} value={t.id}>{t.name}</option>
-                                ))}
-                              </select>
+                              <div className="w-44">
+                                <CustomSelect 
+                                  value={op.teamId || ''}
+                                  onChange={(val) => {
+                                    const updatedUser = { ...op, teamId: val };
+                                    sandboxService.setProfile(updatedUser);
+                                    showToast(`Operador ${op.displayName} movido para ${managedTeamsData.find(t => t.id === val)?.name}!`, 'success');
+                                  }}
+                                  className="py-1.5 text-xs"
+                                  options={managedTeamsData.map(t => ({ value: t.id, label: t.name }))}
+                                />
+                              </div>
                             </div>
                           </div>
                         );
@@ -1503,15 +1541,12 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     {/* Seletor de Equipe */}
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Selecione a Equipe</label>
-                      <select
+                      <CustomSelect 
                         value={selectedGoalTeamId}
-                        onChange={(e) => handleGoalTeamChange(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-slate-200"
-                      >
-                        {managedTeamsData.map(team => (
-                          <option key={team.id} value={team.id}>{team.name}</option>
-                        ))}
-                      </select>
+                        onChange={(val) => handleGoalTeamChange(val)}
+                        placeholder="Selecione a equipe..."
+                        options={managedTeamsData.map(team => ({ value: team.id, label: team.name }))}
+                      />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2025,6 +2060,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           </div>
         </div>
       )}
+      <CustomConfirm 
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type={confirmDialog.type}
+        onConfirm={confirmDialog.onConfirm}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { X } from '@phosphor-icons/react';
 import { Agreement, AgreementOrigin, AgreementStatus, AgreementType, AgreementCategory, UserProfile } from '../../types';
 import { formatCPF, maskCPF } from '../../utils/masks';
+import { CustomSelect } from '../ui/CustomSelect';
 
 interface AgreementModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const AgreementModal = ({
     editingAgreement?.status === AgreementStatus.SCHEDULED ? 'schedule' : 'agreement'
   );
   const [agreementType, setAgreementType] = useState<string>(editingAgreement?.type || '');
+  const [agreementOrigin, setAgreementOrigin] = useState<string>(editingAgreement?.origin || '');
   const [hasEntry, setHasEntry] = useState<boolean>(editingAgreement?.hasEntry ?? false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -219,20 +221,20 @@ export const AgreementModal = ({
                   {/* Tipo de Acordo */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Tipo de Acordo *</label>
-                    <select 
+                    <CustomSelect 
                       required={mode === 'agreement'}
                       name="type"
                       value={agreementType}
-                      onChange={(e) => { setAgreementType(e.target.value); setHasEntry(false); }}
-                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-white backdrop-blur-sm select-custom-arrow"
-                    >
-                      <option value="" disabled>Selecione o tipo...</option>
-                      <option value="quitacao">Quitação</option>
-                      <option value="parcelamento">Parcelamento</option>
-                      <option value="parcela_atrasada">Parcela Atrasada</option>
-                      <option value="parcela_atual">Parcela Atual</option>
-                      <option value="antecipacao">Antecipação</option>
-                    </select>
+                      onChange={(val) => { setAgreementType(val); setHasEntry(false); }}
+                      placeholder="Selecione o tipo..."
+                      options={[
+                        { value: "quitacao", label: "Quitação" },
+                        { value: "parcelamento", label: "Parcelamento" },
+                        { value: "parcela_atrasada", label: "Parcela Atrasada" },
+                        { value: "parcela_atual", label: "Parcela Atual" },
+                        { value: "antecipacao", label: "Antecipação" }
+                      ]}
+                    />
                   </div>
 
                   {/* Valor — label muda se for parcelamento com entrada */}
@@ -376,20 +378,21 @@ export const AgreementModal = ({
             {/* Origem */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Origem do Atendimento *</label>
-              <select 
+              <CustomSelect 
                 required
                 name="origin"
-                defaultValue={editingAgreement?.origin || ""}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all appearance-none outline-none text-white backdrop-blur-sm select-custom-arrow"
-              >
-                <option value="" disabled>Selecione uma origem...</option>
-                <option value={AgreementOrigin.SALESFORCE}>Salesforce</option>
-                <option value={AgreementOrigin.OKTOR}>Oktor</option>
-                <option value={AgreementOrigin.CALLIX}>Callix</option>
-                <option value={AgreementOrigin.WHATSAPP}>WhatsApp</option>
-                <option value={AgreementOrigin.WEBPHONE}>Webphone</option>
-                <option value={AgreementOrigin.QUITE_DIGITAL}>Quite Digital</option>
-              </select>
+                value={agreementOrigin}
+                onChange={(val) => setAgreementOrigin(val)}
+                placeholder="Selecione uma origem..."
+                options={[
+                  { value: AgreementOrigin.SALESFORCE, label: "Salesforce" },
+                  { value: AgreementOrigin.OKTOR, label: "Oktor" },
+                  { value: AgreementOrigin.CALLIX, label: "Callix" },
+                  { value: AgreementOrigin.WHATSAPP, label: "WhatsApp" },
+                  { value: AgreementOrigin.WEBPHONE, label: "Webphone" },
+                  { value: AgreementOrigin.QUITE_DIGITAL, label: "Quite Digital" }
+                ]}
+              />
             </div>
 
             {mode === 'agreement' && (
