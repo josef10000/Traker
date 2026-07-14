@@ -28,6 +28,7 @@ import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest } from '../../types';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
+import { Avatar } from '../ui/Avatar';
 import { 
   getTeamData, 
   deleteTeam, 
@@ -56,6 +57,7 @@ interface ProfileSettingsProps {
 export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast }: ProfileSettingsProps) {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
+  const [avatarStyle, setAvatarStyle] = useState(profile.avatarStyle || 'initials');
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers'>('profile');
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -97,6 +99,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     if (isOpen) {
       setDisplayName(profile.displayName || '');
       setJobTitle(profile.jobTitle || '');
+      setAvatarStyle(profile.avatarStyle || 'initials');
       setActiveTab('profile');
       setSelectedTeamForMembers(null);
     }
@@ -514,12 +517,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
         sandboxService.setProfile({
           ...profile,
           displayName,
-          jobTitle
+          jobTitle,
+          avatarStyle
         });
         showToast('Perfil simulado atualizado com sucesso!', 'success');
         onUpdate({
           displayName,
-          jobTitle
+          jobTitle,
+          avatarStyle
         });
         return;
       }
@@ -527,12 +532,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       const userRef = doc(db, 'users', profile.uid);
       await updateDoc(userRef, {
         displayName,
-        jobTitle
+        jobTitle,
+        avatarStyle
       });
       showToast('Perfil atualizado com sucesso!', 'success');
       onUpdate({
         displayName,
-        jobTitle
+        jobTitle,
+        avatarStyle
       });
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
@@ -740,9 +747,13 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
         <div className="w-full md:w-64 border-r border-white/5 bg-slate-950/40 p-6 flex flex-col justify-between shrink-0">
           <div className="space-y-6 flex-1 flex flex-col">
             <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-sm shrink-0">
-                {profile.displayName ? profile.displayName[0].toUpperCase() : 'U'}
-              </div>
+              <Avatar
+                displayName={profile.displayName}
+                email={profile.email}
+                avatarStyle={profile.avatarStyle}
+                size="md"
+                className="border-primary/20 text-primary bg-primary/10"
+              />
               <div className="min-w-0 flex-1">
                 <h4 className="text-xs font-black text-white uppercase tracking-widest leading-none truncate" title={profile.displayName}>
                   {profile.displayName}
@@ -918,6 +929,18 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               </div>
 
               <form onSubmit={handleSave} className="space-y-6">
+                {/* Pré-visualização do Avatar */}
+                <div className="flex flex-col items-center justify-center space-y-2 pb-2">
+                  <Avatar
+                    displayName={displayName}
+                    email={profile.email}
+                    avatarStyle={avatarStyle}
+                    size="xl"
+                    className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30"
+                  />
+                  <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Pré-visualização do Avatar</span>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Nome Completo</label>
@@ -947,6 +970,24 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* Seletor de Estilo de Avatar */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Estilo do Avatar (DiceBear)</label>
+                  <CustomSelect
+                    value={avatarStyle}
+                    onChange={(val) => setAvatarStyle(val)}
+                    placeholder="Selecione o estilo do avatar..."
+                    options={[
+                      { value: 'initials', label: 'Iniciais (Profissional)' },
+                      { value: 'bottts', label: 'Robôs (Moderno)' },
+                      { value: 'adventurer', label: 'Aventureiros (Amigável)' },
+                      { value: 'lorelei', label: 'Rostos Minimalistas (Limpo)' },
+                      { value: 'fun-emoji', label: 'Emojis Divertidos (Descontraído)' },
+                      { value: 'pixel-art', label: 'Pixel Art (Retrô)' }
+                    ]}
+                  />
                 </div>
 
                 <button
@@ -1020,9 +1061,12 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       {paginatedTeamMembers.map(member => (
                         <div key={member.uid} className="flex items-center justify-between p-4 bg-slate-900/40 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-primary/80 font-bold">
-                              {member.displayName ? member.displayName[0].toUpperCase() : 'U'}
-                            </div>
+                            <Avatar
+                              displayName={member.displayName}
+                              email={member.email}
+                              avatarStyle={member.avatarStyle}
+                              size="md"
+                            />
                             <div>
                               <h4 className="text-white font-semibold text-sm">{member.displayName}</h4>
                               <p className="text-[10px] text-slate-500">{member.email}</p>
@@ -1415,9 +1459,12 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                         return (
                           <div key={op.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-950 border border-slate-900 rounded-2xl gap-3">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-primary font-bold text-sm">
-                                {op.displayName ? op.displayName[0].toUpperCase() : 'U'}
-                              </div>
+                            <Avatar
+                              displayName={op.displayName}
+                              email={op.email}
+                              avatarStyle={op.avatarStyle}
+                              size="sm"
+                            />
                               <div>
                                 <p className="text-sm font-bold text-white">{op.displayName}</p>
                                 <p className="text-[10px] text-slate-400">{op.email}</p>
@@ -1465,9 +1512,12 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                           <div key={sup.uid} className="flex flex-col p-5 bg-slate-950 border border-slate-900 rounded-3xl gap-4">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-primary font-bold text-sm">
-                                  {sup.displayName ? sup.displayName[0].toUpperCase() : 'U'}
-                                </div>
+                                <Avatar
+                                  displayName={sup.displayName}
+                                  email={sup.email}
+                                  avatarStyle={sup.avatarStyle}
+                                  size="md"
+                                />
                                 <div>
                                   <p className="text-sm font-bold text-white">{sup.displayName}</p>
                                   <p className="text-[10px] text-slate-400">{sup.email}</p>

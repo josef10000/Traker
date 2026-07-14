@@ -5,6 +5,7 @@ import { db } from '../../lib/firebase';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency } from '../../utils/masks';
 import { CustomSelect } from '../ui/CustomSelect';
+import { Avatar } from '../ui/Avatar';
 
 interface TeamManagementTabProps {
   profile: UserProfile;
@@ -147,11 +148,13 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
               >
                 {/* Info Colaborador e Performance */}
                 <div className="flex items-start gap-4 flex-1 w-full">
-                  <div className={`p-3.5 border rounded-2xl shrink-0 ${
-                    theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-500'
-                  }`}>
-                    <UserIcon size={24} />
-                  </div>
+                  <Avatar
+                    displayName={member.displayName || member.email}
+                    email={member.email}
+                    avatarStyle={member.avatarStyle}
+                    size="lg"
+                    className="rounded-2xl"
+                  />
                   <div className="space-y-1 flex-1">
                     <h4 className={`font-bold text-base leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                       {member.displayName || member.email.split('@')[0]}

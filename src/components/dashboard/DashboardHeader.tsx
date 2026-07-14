@@ -18,6 +18,7 @@ import {
   Gear
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
+import { Avatar } from '../ui/Avatar';
 import { ToastType } from '../ui/Toast';
 import { useDesignMode } from '../../hooks/useDesignMode';
 import { query, collection, where, getDocs } from 'firebase/firestore';
@@ -377,8 +378,14 @@ export const DashboardHeader = ({
                 {profile.jobTitle || 'Operador'}
               </span>
             </div>
-            <div className="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500 border border-sky-500/20 shrink-0 relative">
-              <UserIcon size={14} />
+            <div className="relative shrink-0">
+              <Avatar
+                displayName={profile.displayName}
+                email={profile.email}
+                avatarStyle={profile.avatarStyle}
+                size="sm"
+                className="w-7 h-7 border-sky-500/20"
+              />
               {notificationCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse border border-[#090d16]" />
               )}

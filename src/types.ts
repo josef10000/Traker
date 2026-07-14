@@ -72,6 +72,7 @@ export interface UserProfile {
   lastQaDate?: string;
   nextQaDate?: string;
   qaCycleStatus?: 'pending' | 'evaluated';
+  avatarStyle?: string;
 }
 
 export interface QaSettings {
