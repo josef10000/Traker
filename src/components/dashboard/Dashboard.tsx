@@ -99,7 +99,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   // Abas do Dashboard
   const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support' | 'backoffice' | 'portfolio'>(() => {
-    return profile.role === 'backoffice' ? 'backoffice' : 'financial';
+    if (profile.role === 'backoffice') return 'backoffice';
+    if (profile.role === 'monitor') return 'qa';
+    return 'financial';
   });
   
   // Visualização e Seleção de Equipes
@@ -1632,7 +1634,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               onSupportTabClick={() => setDashboardTab('support')}
               theme={theme}
               supervisors={supervisors}
-              onLogoClick={() => setDashboardTab(profile.role === 'backoffice' ? 'backoffice' : 'financial')}
+              onLogoClick={() => {
+                if (profile.role === 'backoffice') setDashboardTab('backoffice');
+                else if (profile.role === 'monitor') setDashboardTab('qa');
+                else setDashboardTab('financial');
+              }}
             />
           )}
 

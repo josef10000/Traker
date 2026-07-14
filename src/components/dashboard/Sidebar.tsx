@@ -43,14 +43,14 @@ export const Sidebar = ({
       label: 'Painel Financeiro',
       description: 'Faturamento, metas e acordos de hoje.',
       icon: ChartLine,
-      show: profile.role !== 'monitor'
+      show: profile.role !== 'monitor' && profile.role !== 'backoffice'
     },
     {
       id: 'recovery',
       label: 'Recuperação',
       description: 'Gestão de promessas de pagamento e renegociação.',
       icon: RecoveryIcon,
-      show: profile.role !== 'monitor'
+      show: profile.role !== 'monitor' && profile.role !== 'backoffice'
     },
     {
       id: 'qa',
@@ -64,7 +64,7 @@ export const Sidebar = ({
       label: 'BI & Analytics',
       description: 'Relatórios estratégicos e gráficos de desempenho.',
       icon: BiIcon,
-      show: profile.role !== 'backoffice'
+      show: profile.role !== 'backoffice' && profile.role !== 'monitor'
     },
     {
       id: 'people',
@@ -78,7 +78,7 @@ export const Sidebar = ({
       label: 'Metas & Carteiras',
       description: 'Consolidado de metas, dispersões, projeções e exportações.',
       icon: Target,
-      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'backoffice' || profile.role === 'super_admin'
+      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin'
     },
     {
       id: 'support',
