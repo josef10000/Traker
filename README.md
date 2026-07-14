@@ -31,23 +31,29 @@ A plataforma conta com 5 níveis de controle de permissões dinâmicos (Roles):
    - Gerenciamento reativo de todas as organizações e controle de planos (`free`, `starter`, `pro`, `enterprise`, `custom`).
    - Simulação de cargos em ambiente de Testes Sandbox com provisionamento automático de dados de demonstração.
    - Ferramenta de exclusão em lote (chunking reativo de 400 em 400 documentos no Firestore para evitar limites do SDK).
-2. **👔 Gerente (Manager - Gestor da Organização)**:
+ 2. **🧭 Coordenador (Coordinator - Gestor Geral da Operação)**:
+   - Painel comparativo de performance consolidada de todas as equipes (Metas vs Recuperado).
+   - Filtro de árvore em 3 níveis (Gerente -> Supervisor -> Equipe) para controle de performance.
+   - Escala consolidada de presença interativa de todos os operadores da operação.
+   - Central de Transferências para movimentar operadores entre equipes em tempo real.
+   - Acesso a desligamentos (offboarding) de operadores e supervisores.
+ 3. **👔 Gerente (Manager - Gestor da Organização)**:
    - Visualização macro de todas as equipes da empresa e do ranking consolidado de performance.
    - Autonomia para criar e remover equipes dentro dos limites estabelecidos pelo plano.
    - Acesso exclusivo a relatórios corporativos consolidados de operadores.
    - Configurações avançadas e segurança administrativa (bloqueio automático de conciliações e alterações individuais de acordos).
-3. **👥 Supervisor (Gestor de Equipe)**:
+ 4. **👥 Supervisor (Gestor de Equipe)**:
    - Acompanhamento de metas do seu time e conciliação de saldo (Tracker vs Salesforce/Teams).
    - Gestão de presença diária de agentes, adição de notas privadas e visualização de históricos comportamentais da equipe.
    - Criação, edição e exclusão de acordos da sua equipe.
-4. **🎯 Monitor de Qualidade (Monitor - Auditoria de QA & PDI)**:
+ 5. **🎯 Monitor de Qualidade (Monitor - Auditoria de QA & PDI)**:
    - Avaliação e auditoria de operadores com base em competências editáveis da empresa.
    - Acesso exclusivo a painéis analíticos de radar de competências.
    - Autonomia para criar, monitorar e concluir PDIs focados para desenvolvimento comportamental.
-5. **👤 Operador (Colaborador que Atende)**:
+ 6. **👤 Operador (Colaborador que Atende)**:
    - Registro e consulta de acordos individuais e visualização da meta diária pessoal.
    - Modo de conferência rápida (Checklist / Botão "Verificar") para focar na checagem de CPFs de clientes pendentes de pagamento.
-6. **📊 Back Office (Tratador / Auditor de Planilhas)**:
+ 7. **📊 Back Office (Tratador / Auditor de Planilhas)**:
    - Acesso exclusivo a painéis de tratamento de planilhas locais para processar e higienizar clientes.
    - Autonomia para mapear colunas, ler dados, adicionar notas e realizar a exportação consolidada sem acessar informações de QA, BI ou metas financeiras.
    - Cargo visualmente editável pelo supervisor/gerente no painel de equipe.
