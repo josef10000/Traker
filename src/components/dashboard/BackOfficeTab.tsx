@@ -139,7 +139,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         setIsLoadingImports(true);
         let list = sandboxService.getBackofficeImports(profile.organizationId);
         if (profile.role === 'supervisor' || profile.role === 'member') {
-          list = list.filter(imp => imp.createdBy === profile.uid);
+          list = list.filter(imp => imp.importedBy === profile.uid);
         }
         setImports(list);
         setIsLoadingImports(false);
@@ -163,7 +163,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       const list: BackOfficeImport[] = [];
       snapshot.forEach((d) => {
         const data = d.data();
-        if (profile.role === 'backoffice' || data.createdBy === profile.uid) {
+        if (profile.role === 'backoffice' || data.importedBy === profile.uid) {
           list.push({ id: d.id, ...data } as BackOfficeImport);
         }
       });

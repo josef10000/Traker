@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { X, Users, Globe, ChevronDown, ChevronRight } from '@phosphor-icons/react';
+import { X, Users, Globe, CaretDown, CaretRight } from '@phosphor-icons/react';
 import { Team, UserProfile } from '../../types';
 
 interface TeamSelectorModalProps {
@@ -112,7 +112,7 @@ export const TeamSelectorModal = ({
                         onClick={() => toggleManager(manager.uid)}
                         className="flex items-center gap-2 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-1 text-left"
                       >
-                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        {isExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
                         <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-purple-400 font-bold text-xs">
                           {manager.displayName ? manager.displayName[0].toUpperCase() : 'G'}
                         </div>
@@ -151,7 +151,7 @@ export const TeamSelectorModal = ({
                                   onClick={() => toggleSupervisor(sup.uid)}
                                   className="flex items-center gap-2 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-1 text-left"
                                 >
-                                  {isSupExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                  {isSupExpanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
                                   <div className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center text-sky-400 font-bold text-xs">
                                     {sup.displayName ? sup.displayName[0].toUpperCase() : 'S'}
                                   </div>

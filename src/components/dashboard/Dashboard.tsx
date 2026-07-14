@@ -2839,7 +2839,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         setIsTeamSelectorOpen={setIsTeamSelectorOpen}
         managedTeamsData={managedTeamsData}
         setSelectedTeamId={setSelectedTeamId}
-        managers={managers}
       />
 
       {/* Modal Personalizado de Confirmação de Exclusão de Acordo */}
