@@ -28,6 +28,12 @@ export const AgreementModal = ({
   const [agreementType, setAgreementType] = useState<string>(editingAgreement?.type || '');
   const [agreementOrigin, setAgreementOrigin] = useState<string>(editingAgreement?.origin || '');
   const [hasEntry, setHasEntry] = useState<boolean>(editingAgreement?.hasEntry ?? false);
+  const [category, setCategory] = useState<AgreementCategory>(editingAgreement?.category || AgreementCategory.FIXA);
+  const [initialStatus, setInitialStatus] = useState<AgreementStatus>(
+    editingAgreement?.status && editingAgreement.status !== AgreementStatus.SCHEDULED 
+      ? editingAgreement.status 
+      : AgreementStatus.WAITING
+  );
   const [formError, setFormError] = useState<string | null>(null);
 
   const canEditCpf = !editingAgreement || 
@@ -402,21 +408,47 @@ export const AgreementModal = ({
                   <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">O acordo é *</label>
                   <div className="grid grid-cols-2 gap-4">
                     <label className="relative flex flex-col cursor-pointer group">
-                      <input type="radio" name="category" value={AgreementCategory.FIXA} defaultChecked={!editingAgreement || editingAgreement.category === AgreementCategory.FIXA} className="peer hidden" />
-                      <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all backdrop-blur-sm">
-                        <div className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center peer-checked:border-sky-500 group-hover:border-slate-600 transition-all">
-                          <div className="w-2.5 h-2.5 rounded-full bg-sky-500 scale-0 peer-checked:scale-100 transition-all" />
+                      <input 
+                        type="radio" 
+                        name="category" 
+                        value={AgreementCategory.FIXA} 
+                        checked={category === AgreementCategory.FIXA} 
+                        onChange={() => setCategory(AgreementCategory.FIXA)}
+                        className="peer hidden" 
+                      />
+                      <div className={`flex items-center gap-3 p-4 rounded-xl border transition-all backdrop-blur-sm ${
+                        category === AgreementCategory.FIXA ? 'border-sky-500/50 bg-sky-500/5' : 'border-white/10 bg-white/5'
+                      }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          category === AgreementCategory.FIXA ? 'border-sky-500 bg-sky-500/10' : 'border-slate-700 bg-transparent'
+                        }`}>
+                          {category === AgreementCategory.FIXA && <div className="w-2.5 h-2.5 rounded-full bg-sky-500" />}
                         </div>
-                        <span className="text-xs font-bold text-slate-300 peer-checked:text-white uppercase tracking-wider">Fixa</span>
+                        <span className={`text-xs font-bold uppercase tracking-wider transition-colors ${
+                          category === AgreementCategory.FIXA ? 'text-white' : 'text-slate-400'
+                        }`}>Fixa</span>
                       </div>
                     </label>
                     <label className="relative flex flex-col cursor-pointer group">
-                      <input type="radio" name="category" value={AgreementCategory.VARIAVEL} defaultChecked={editingAgreement?.category === AgreementCategory.VARIAVEL} className="peer hidden" />
-                      <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all backdrop-blur-sm">
-                        <div className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center peer-checked:border-sky-500 group-hover:border-slate-600 transition-all">
-                          <div className="w-2.5 h-2.5 rounded-full bg-sky-500 scale-0 peer-checked:scale-100 transition-all" />
+                      <input 
+                        type="radio" 
+                        name="category" 
+                        value={AgreementCategory.VARIAVEL} 
+                        checked={category === AgreementCategory.VARIAVEL} 
+                        onChange={() => setCategory(AgreementCategory.VARIAVEL)}
+                        className="peer hidden" 
+                      />
+                      <div className={`flex items-center gap-3 p-4 rounded-xl border transition-all backdrop-blur-sm ${
+                        category === AgreementCategory.VARIAVEL ? 'border-sky-500/50 bg-sky-500/5' : 'border-white/10 bg-white/5'
+                      }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          category === AgreementCategory.VARIAVEL ? 'border-sky-500 bg-sky-500/10' : 'border-slate-700 bg-transparent'
+                        }`}>
+                          {category === AgreementCategory.VARIAVEL && <div className="w-2.5 h-2.5 rounded-full bg-sky-500" />}
                         </div>
-                        <span className="text-xs font-bold text-slate-300 peer-checked:text-white uppercase tracking-wider">Variável</span>
+                        <span className={`text-xs font-bold uppercase tracking-wider transition-colors ${
+                          category === AgreementCategory.VARIAVEL ? 'text-white' : 'text-slate-400'
+                        }`}>Variável</span>
                       </div>
                     </label>
                   </div>
@@ -427,25 +459,51 @@ export const AgreementModal = ({
                   <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Status Inicial</label>
                   <div className="grid grid-cols-2 gap-4">
                     <label className="relative flex flex-col cursor-pointer group">
-                      <input type="radio" name="initialStatus" value={AgreementStatus.WAITING} defaultChecked={!editingAgreement || editingAgreement.status === AgreementStatus.WAITING} className="peer hidden" />
-                      <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 peer-checked:border-sky-500/50 peer-checked:bg-sky-500/5 transition-all backdrop-blur-sm">
-                        <div className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center peer-checked:border-sky-500 group-hover:border-slate-600 transition-all">
-                          <div className="w-2.5 h-2.5 rounded-full bg-sky-500 scale-0 peer-checked:scale-100 transition-all" />
+                      <input 
+                        type="radio" 
+                        name="initialStatus" 
+                        value={AgreementStatus.WAITING} 
+                        checked={initialStatus === AgreementStatus.WAITING} 
+                        onChange={() => setInitialStatus(AgreementStatus.WAITING)}
+                        className="peer hidden" 
+                      />
+                      <div className={`flex items-center gap-3 p-4 rounded-xl border transition-all backdrop-blur-sm ${
+                        initialStatus === AgreementStatus.WAITING ? 'border-sky-500/50 bg-sky-500/5' : 'border-white/10 bg-white/5'
+                      }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          initialStatus === AgreementStatus.WAITING ? 'border-sky-500 bg-sky-500/10' : 'border-slate-700 bg-transparent'
+                        }`}>
+                          {initialStatus === AgreementStatus.WAITING && <div className="w-2.5 h-2.5 rounded-full bg-sky-500" />}
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-300 peer-checked:text-white uppercase tracking-wider">Pendente</span>
+                          <span className={`text-xs font-bold uppercase tracking-wider transition-colors ${
+                            initialStatus === AgreementStatus.WAITING ? 'text-white' : 'text-slate-400'
+                          }`}>Pendente</span>
                           <span className="text-[9px] text-slate-500 font-medium">Aguardando pagamento</span>
                         </div>
                       </div>
                     </label>
                     <label className="relative flex flex-col cursor-pointer group">
-                      <input type="radio" name="initialStatus" value={AgreementStatus.PAID} defaultChecked={editingAgreement?.status === AgreementStatus.PAID} className="peer hidden" />
-                      <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/5 peer-checked:border-emerald-500/50 peer-checked:bg-emerald-500/5 transition-all backdrop-blur-sm">
-                        <div className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center peer-checked:border-emerald-500 group-hover:border-slate-600 transition-all">
-                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 scale-0 peer-checked:scale-100 transition-all" />
+                      <input 
+                        type="radio" 
+                        name="initialStatus" 
+                        value={AgreementStatus.PAID} 
+                        checked={initialStatus === AgreementStatus.PAID} 
+                        onChange={() => setInitialStatus(AgreementStatus.PAID)}
+                        className="peer hidden" 
+                      />
+                      <div className={`flex items-center gap-3 p-4 rounded-xl border transition-all backdrop-blur-sm ${
+                        initialStatus === AgreementStatus.PAID ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/10 bg-white/5'
+                      }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          initialStatus === AgreementStatus.PAID ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-700 bg-transparent'
+                        }`}>
+                          {initialStatus === AgreementStatus.PAID && <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />}
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-300 peer-checked:text-white uppercase tracking-wider">Já Pago</span>
+                          <span className={`text-xs font-bold uppercase tracking-wider transition-colors ${
+                            initialStatus === AgreementStatus.PAID ? 'text-white' : 'text-slate-400'
+                          }`}>Já Pago</span>
                           <span className="text-[9px] text-slate-500 font-medium">Registrar como efetivado</span>
                         </div>
                       </div>
