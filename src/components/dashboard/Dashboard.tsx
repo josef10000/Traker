@@ -151,7 +151,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [collabNotesHistory, setCollabNotesHistory] = useState<CollaborationNote[]>([]);
   const [isLoadingCollabHistory, setIsLoadingCollabHistory] = useState(false);
   const [quickNotesText, setQuickNotesText] = useState<Record<string, string>>({});
-  const [attendanceStatuses, setAttendanceStatuses] = useState<Record<string, 'present' | 'late' | 'absent'>>({});
+  const [attendanceStatuses, setAttendanceStatuses] = useState<Record<string, 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | ''>>({});
 
   // Histórico de Cliente CPF e Conciliações
   const [selectedClientCpf, setSelectedClientCpf] = useState<string | null>(null);
@@ -603,7 +603,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const loadAttendances = async () => {
       if (dashboardTab === 'people' && filteredTeamMembers.length > 0) {
         const todayStr = new Date().toISOString().split('T')[0];
-        const statuses: Record<string, 'present' | 'late' | 'absent'> = {};
+        const statuses: Record<string, 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | ''> = {};
         
         await Promise.all(filteredTeamMembers.map(async (m) => {
           const att = await getAttendanceStatusForDay(m.uid, todayStr);
@@ -864,26 +864,76 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleAttendanceChange = async (collaboratorId: string, collaboratorName: string, status: 'present' | 'late' | 'absent') => {
+  const handleAttendanceChange = async (
+    collaboratorId: string,
+    collaboratorName: string,
+    status: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | ''
+  ) => {
     if (!profile.organizationId) return;
     
-    setAttendanceStatuses(prev => ({ ...prev, [collaboratorId]: status }));
+    setAttendanceStatuses(prev => ({ ...prev, [collaboratorId]: status || 'present' }));
 
     try {
+      const todayStr = new Date().toISOString().split('T')[0];
       const dateFormatted = new Date().toLocaleDateString('pt-BR');
-      const statusLabels = { present: 'Presente', late: 'Atrasado', absent: 'Falta' };
+      const statusLabels = { 
+        present: 'Presente', 
+        late: 'Atrasado', 
+        absent: 'Falta',
+        early_departure: 'Saída Antecipada',
+        day_off: 'Day Off',
+        vacation: 'Férias',
+        '': 'Limpar'
+      };
       
-      await addCollaborationNote({
-        organizationId: profile.organizationId,
-        collaboratorId,
-        creatorId: profile.uid,
-        creatorName: profile.displayName || profile.email.split('@')[0],
-        type: 'attendance',
-        content: `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`,
-        attendanceStatus: status
+      let existingNotes: CollaborationNote[] = [];
+      if (profile.organizationId === 'sandbox-test') {
+        existingNotes = sandboxService.getCollaborationNotes(collaboratorId);
+      } else {
+        const q = query(
+          collection(db, 'collaboration_notes'),
+          where('collaboratorId', '==', collaboratorId),
+          where('type', '==', 'attendance')
+        );
+        const querySnapshot = await getDocs(q);
+        existingNotes = querySnapshot.docs.map(doc => doc.data() as CollaborationNote);
+      }
+
+      const targetDate = new Date(todayStr);
+      const dayNotes = existingNotes.filter(note => {
+        const noteDate = new Date(note.createdAt);
+        return (
+          noteDate.getUTCFullYear() === targetDate.getUTCFullYear() &&
+          noteDate.getUTCMonth() === targetDate.getUTCMonth() &&
+          noteDate.getUTCDate() === targetDate.getUTCDate()
+        );
       });
+
+      if (profile.organizationId === 'sandbox-test') {
+        dayNotes.forEach(dn => {
+          sandboxService.deleteCollaborationNote(dn.id);
+        });
+      } else {
+        const batch = writeBatch(db);
+        dayNotes.forEach(dn => {
+          batch.delete(doc(db, 'collaboration_notes', dn.id));
+        });
+        await batch.commit();
+      }
+
+      if (status !== '' && status !== 'present') {
+        await addCollaborationNote({
+          organizationId: profile.organizationId,
+          collaboratorId,
+          creatorId: profile.uid,
+          creatorName: profile.displayName || profile.email.split('@')[0],
+          type: 'attendance',
+          content: `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`,
+          attendanceStatus: status
+        });
+      }
       
-      showToast(`Presença de ${collaboratorName} atualizada para ${statusLabels[status]}!`, 'success');
+      showToast(`Presença de ${collaboratorName} atualizada para ${statusLabels[status || 'present']}!`, 'success');
     } catch (error) {
       console.error(error);
       showToast('Erro ao registrar presença.', 'error');

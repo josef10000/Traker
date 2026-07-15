@@ -10,11 +10,11 @@ import { Avatar } from '../ui/Avatar';
 interface TeamManagementTabProps {
   profile: UserProfile;
   currentTeamMembers: UserProfile[];
-  attendanceStatuses: Record<string, 'present' | 'late' | 'absent'>;
+  attendanceStatuses: Record<string, 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | ''>;
   quickNotesText: Record<string, string>;
   setQuickNotesText: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   handleAddNote: (uid: string, name: string) => void;
-  handleAttendanceChange: (uid: string, name: string, status: 'present' | 'late' | 'absent') => void;
+  handleAttendanceChange: (uid: string, name: string, status: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '') => void;
   handleOpenHistory: (member: UserProfile) => void;
   setIsPeopleReportOpen: (open: boolean) => void;
   agreements: Agreement[];
