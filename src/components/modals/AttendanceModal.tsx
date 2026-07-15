@@ -27,12 +27,31 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const [status, setStatus] = useState<'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | ''>(currentStatus);
   const [lateDuration, setLateDuration] = useState(currentLateDuration);
   const [absenceReason, setAbsenceReason] = useState(currentAbsenceReason);
+  const [selectedHours, setSelectedHours] = useState(0);
+  const [selectedMinutes, setSelectedMinutes] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
       setStatus(currentStatus);
       setLateDuration(currentLateDuration);
       setAbsenceReason(currentAbsenceReason);
+
+      let hrs = 0;
+      let mins = 0;
+      if (currentLateDuration) {
+        const matchHhMm = currentLateDuration.match(/^(\d{1,2}):(\d{2})$/);
+        if (matchHhMm) {
+          hrs = parseInt(matchHhMm[1], 10);
+          mins = parseInt(matchHhMm[2], 10);
+        } else {
+          const matchH = currentLateDuration.match(/(\d+)\s*h/i);
+          const matchM = currentLateDuration.match(/(\d+)\s*m/i);
+          if (matchH) hrs = parseInt(matchH[1], 10);
+          if (matchM) mins = parseInt(matchM[1], 10);
+        }
+      }
+      setSelectedHours(hrs);
+      setSelectedMinutes(mins);
     }
   }, [isOpen, currentStatus, currentLateDuration, currentAbsenceReason]);
 
@@ -44,12 +63,23 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     year: 'numeric'
   });
 
+  const getFormattedTime = (h: number, m: number, currentStatus: string) => {
+    if (currentStatus === 'late') {
+      if (h === 0) return `${m}m`;
+      return `${h}h ${m}m`;
+    }
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalDuration = (status === 'late' || status === 'early_departure')
+      ? getFormattedTime(selectedHours, selectedMinutes, status)
+      : '';
     onSave(
       status,
-      status === 'late' ? lateDuration : '',
-      (status === 'absent' || status === 'early_departure' || status === 'day_off') ? absenceReason : ''
+      finalDuration,
+      (status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late') ? absenceReason : ''
     );
     onClose();
   };
@@ -179,20 +209,140 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
           {/* Conditional Inputs */}
           {status === 'late' && (
-            <div className="space-y-2 animate-fadeIn">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Tempo de Atraso</label>
-              <input
-                type="text"
-                required
-                value={lateDuration}
-                onChange={(e) => setLateDuration(e.target.value)}
-                placeholder="Ex: 1 hora, 30 minutos, 2h 15m"
-                className={`w-full px-4 py-3 rounded-xl text-xs font-medium border transition-all outline-hidden ${
-                  theme === 'dark'
-                    ? 'bg-slate-950/60 border-white/10 text-white focus:border-amber-500/60'
-                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-amber-500'
-                }`}
-              />
+            <div className="space-y-4 animate-fadeIn">
+              <div className={`p-4 rounded-2xl border flex flex-col items-center gap-4 ${
+                theme === 'dark' ? 'bg-slate-950/40 border-white/5' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center gap-2 self-start">
+                  <Clock size={16} className="text-amber-400" />
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    Tempo de Atraso
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {/* Horas */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedHours(prev => (prev + 1) % 24)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center border hover:scale-105 active:scale-95 transition-all text-sm font-bold cursor-pointer ${
+                        theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      +
+                    </button>
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black border font-mono ${
+                      theme === 'dark' ? 'bg-slate-900 border-white/5 text-white' : 'bg-white border-slate-200 text-slate-800'
+                    }`}>
+                      {String(selectedHours).padStart(2, '0')}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedHours(prev => (prev - 1 + 24) % 24)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center border hover:scale-105 active:scale-95 transition-all text-sm font-bold cursor-pointer ${
+                        theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      -
+                    </button>
+                  </div>
+
+                  <span className="text-2xl font-black text-slate-500 animate-pulse">:</span>
+
+                  {/* Minutos */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMinutes(prev => (prev + 5) % 60)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center border hover:scale-105 active:scale-95 transition-all text-sm font-bold cursor-pointer ${
+                        theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      +
+                    </button>
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black border font-mono ${
+                      theme === 'dark' ? 'bg-slate-900 border-white/5 text-white' : 'bg-white border-slate-200 text-slate-800'
+                    }`}>
+                      {String(selectedMinutes).padStart(2, '0')}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMinutes(prev => (prev - 5 + 60) % 60)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center border hover:scale-105 active:scale-95 transition-all text-sm font-bold cursor-pointer ${
+                        theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      -
+                    </button>
+                  </div>
+                </div>
+
+                {/* Ajustes rápidos */}
+                <div className="flex gap-2 justify-center mt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const total = selectedHours * 60 + selectedMinutes + 15;
+                      setSelectedHours(Math.floor(total / 60) % 24);
+                      setSelectedMinutes(total % 60);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer hover:scale-105 transition-all ${
+                      theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-300 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    +15m
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const total = selectedHours * 60 + selectedMinutes + 30;
+                      setSelectedHours(Math.floor(total / 60) % 24);
+                      setSelectedMinutes(total % 60);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer hover:scale-105 transition-all ${
+                      theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-300 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    +30m
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHours(prev => (prev + 1) % 24)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer hover:scale-105 transition-all ${
+                      theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-300 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    +1h
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedHours(0);
+                      setSelectedMinutes(0);
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold border border-rose-500/20 bg-rose-500/5 text-rose-400 cursor-pointer hover:scale-105 transition-all"
+                  >
+                    Zerar
+                  </button>
+                </div>
+              </div>
+
+              {/* Justificativa */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Observação / Motivo do Atraso</label>
+                <textarea
+                  value={absenceReason}
+                  onChange={(e) => setAbsenceReason(e.target.value)}
+                  placeholder="Ex: Trânsito intenso, problema de conexão, etc."
+                  rows={2}
+                  className={`w-full px-4 py-3 rounded-xl text-xs font-medium border transition-all outline-hidden resize-none ${
+                    theme === 'dark'
+                      ? 'bg-slate-950/60 border-white/10 text-white focus:border-amber-500/60'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-amber-500'
+                  }`}
+                />
+              </div>
             </div>
           )}
 
@@ -215,20 +365,144 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
           )}
 
           {status === 'early_departure' && (
-            <div className="space-y-2 animate-fadeIn">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Motivo / Horário de Saída</label>
-              <textarea
-                required
-                value={absenceReason}
-                onChange={(e) => setAbsenceReason(e.target.value)}
-                placeholder="Ex: Consulta médica às 14h, mal estar, etc."
-                rows={3}
-                className={`w-full px-4 py-3 rounded-xl text-xs font-medium border transition-all outline-hidden resize-none ${
-                  theme === 'dark'
-                    ? 'bg-slate-950/60 border-white/10 text-white focus:border-purple-500/60'
-                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-purple-500'
-                }`}
-              />
+            <div className="space-y-4 animate-fadeIn">
+              <div className={`p-4 rounded-2xl border flex flex-col items-center gap-4 ${
+                theme === 'dark' ? 'bg-slate-950/40 border-white/5' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center gap-2 self-start">
+                  <Clock size={16} className="text-purple-400" />
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    Horário de Saída
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {/* Horas */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedHours(prev => (prev + 1) % 24)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center border hover:scale-105 active:scale-95 transition-all text-sm font-bold cursor-pointer ${
+                        theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      +
+                    </button>
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black border font-mono ${
+                      theme === 'dark' ? 'bg-slate-900 border-white/5 text-white' : 'bg-white border-slate-200 text-slate-800'
+                    }`}>
+                      {String(selectedHours).padStart(2, '0')}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedHours(prev => (prev - 1 + 24) % 24)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center border hover:scale-105 active:scale-95 transition-all text-sm font-bold cursor-pointer ${
+                        theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      -
+                    </button>
+                  </div>
+
+                  <span className="text-2xl font-black text-slate-500 animate-pulse">:</span>
+
+                  {/* Minutos */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMinutes(prev => (prev + 5) % 60)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center border hover:scale-105 active:scale-95 transition-all text-sm font-bold cursor-pointer ${
+                        theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      +
+                    </button>
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black border font-mono ${
+                      theme === 'dark' ? 'bg-slate-900 border-white/5 text-white' : 'bg-white border-slate-200 text-slate-800'
+                    }`}>
+                      {String(selectedMinutes).padStart(2, '0')}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMinutes(prev => (prev - 5 + 60) % 60)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center border hover:scale-105 active:scale-95 transition-all text-sm font-bold cursor-pointer ${
+                        theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      -
+                    </button>
+                  </div>
+                </div>
+
+                {/* Ajustes rápidos */}
+                <div className="flex gap-2 justify-center mt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedHours(12);
+                      setSelectedMinutes(0);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer hover:scale-105 transition-all ${
+                      theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    12:00
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedHours(14);
+                      setSelectedMinutes(0);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer hover:scale-105 transition-all ${
+                      theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    14:00
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedHours(16);
+                      setSelectedMinutes(0);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer hover:scale-105 transition-all ${
+                      theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    16:00
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedHours(17);
+                      setSelectedMinutes(30);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer hover:scale-105 transition-all ${
+                      theme === 'dark' ? 'border-white/5 bg-slate-900 text-slate-350 hover:bg-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    17:30
+                  </button>
+                </div>
+              </div>
+
+              {/* Justificativa */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Observação / Motivo da Saída</label>
+                <textarea
+                  required
+                  value={absenceReason}
+                  onChange={(e) => setAbsenceReason(e.target.value)}
+                  placeholder="Ex: Consulta médica, mal estar, etc."
+                  rows={2}
+                  className={`w-full px-4 py-3 rounded-xl text-xs font-medium border transition-all outline-hidden resize-none ${
+                    theme === 'dark'
+                      ? 'bg-slate-950/60 border-white/10 text-white focus:border-purple-500/60'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-purple-500'
+                  }`}
+                />
+              </div>
             </div>
           )}
 

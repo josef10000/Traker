@@ -1004,7 +1004,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         let content = `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`;
         if (status === 'late' && lateDuration) {
           content += ` (${lateDuration} de atraso)`;
-        } else if ((status === 'absent' || status === 'early_departure' || status === 'day_off') && absenceReason) {
+        } else if (status === 'early_departure' && lateDuration) {
+          content += ` (Saída às ${lateDuration})`;
+        }
+        if ((status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late') && absenceReason) {
           content += ` (Motivo: ${absenceReason})`;
         }
 
@@ -1018,8 +1021,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           type: 'attendance',
           content,
           attendanceStatus: status,
-          lateDuration: status === 'late' ? lateDuration : undefined,
-          absenceReason: (status === 'absent' || status === 'early_departure' || status === 'day_off') ? absenceReason : undefined,
+          lateDuration: (status === 'late' || status === 'early_departure') ? lateDuration : undefined,
+          absenceReason: (status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late') ? absenceReason : undefined,
           createdAt: targetDateObj.toISOString()
         });
       }

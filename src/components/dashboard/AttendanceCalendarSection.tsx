@@ -167,6 +167,16 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                     const events = getDayEvents(collab, day.dateStr);
                     
                     const getAutomaticStatus = (dateStr: string) => {
+                      const parts = dateStr.split('-');
+                      const year = parseInt(parts[0], 10);
+                      const month = parseInt(parts[1], 10) - 1;
+                      const dayVal = parseInt(parts[2], 10);
+                      const dateObj = new Date(year, month, dayVal);
+                      const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                      if (isWeekend) {
+                        return '';
+                      }
+
                       const today = new Date();
                       const yyyy = today.getFullYear();
                       const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -258,6 +268,9 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                                 </span>
                                 {status === 'late' && note && note.lateDuration && (
                                   <span className="block text-white font-medium mt-0.5">Tempo: {note.lateDuration}</span>
+                                )}
+                                {status === 'early_departure' && note && note.lateDuration && (
+                                  <span className="block text-white font-medium mt-0.5">Saída: {note.lateDuration}</span>
                                 )}
                                 {(status === 'absent' || status === 'early_departure' || status === 'day_off') && note && note.absenceReason && (
                                   <span className="block text-white font-medium mt-0.5">Motivo: {note.absenceReason}</span>
