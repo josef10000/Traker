@@ -26,7 +26,7 @@ import {
   CaretLeft,
   Info
 } from '@phosphor-icons/react';
-import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest, CollaborationNote, CalendarEvent } from '../../types';
 import { sandboxService } from '../../lib/sandboxService';
@@ -47,7 +47,6 @@ import {
   revokeInvite
 } from '../../lib/teams';
 import { ToastType } from '../ui/Toast';
-import { sandboxService } from '../../lib/sandboxService';
 
 
 interface ProfileSettingsProps {

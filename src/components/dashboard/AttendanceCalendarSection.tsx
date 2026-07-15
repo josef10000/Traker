@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, CaretLeft, CaretRight, Info } from '@phosphor-icons/react';
 import { UserProfile, CollaborationNote, CalendarEvent } from '../../types';
-import { Avatar } from './Avatar';
+import { Avatar } from '../ui/Avatar';
 
 interface AttendanceCalendarSectionProps {
   collaborators: UserProfile[];
