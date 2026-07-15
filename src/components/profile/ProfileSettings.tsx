@@ -21,11 +21,16 @@ import {
   CaretDown,
   Folder,
   FolderOpen,
-  Bell
+  Bell,
+  Calendar,
+  CaretLeft,
+  Info
 } from '@phosphor-icons/react';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest } from '../../types';
+import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest, CollaborationNote, CalendarEvent } from '../../types';
+import { sandboxService } from '../../lib/sandboxService';
+import { getCollaborationNotes } from '../../lib/notes';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 import { Avatar } from '../ui/Avatar';
@@ -61,7 +66,61 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [avatarSeed, setAvatarSeed] = useState(profile.avatarSeed || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers' | 'schedule'>('profile');
+  
+  // Novos estados e effect para aba "Minha Escala"
+  const [scheduleDate, setScheduleDate] = useState(new Date());
+  const [scheduleNotes, setScheduleNotes] = useState<CollaborationNote[]>([]);
+  const [scheduleEvents, setScheduleEvents] = useState<CalendarEvent[]>([]);
+
+  useEffect(() => {
+    if (activeTab !== 'schedule' || !profile.uid || !profile.organizationId) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      const handleUpdate = () => {
+        const notes = sandboxService.getCollaborationNotes(profile.uid)
+          .filter(n => n.type === 'attendance');
+        const events = sandboxService.getCalendarEvents('sandbox-test')
+          .filter(e => {
+            if (e.targetType === 'team') return e.targetId === profile.teamId;
+            return e.targetId === profile.uid;
+          });
+        setScheduleNotes(notes);
+        setScheduleEvents(events);
+      };
+      const unsubscribe = sandboxService.subscribe(handleUpdate);
+      handleUpdate();
+      return () => unsubscribe();
+    } else {
+      const qNotes = query(
+        collection(db, 'collaboration_notes'),
+        where('collaboratorId', '==', profile.uid),
+        where('type', '==', 'attendance')
+      );
+      const unsubNotes = onSnapshot(qNotes, (snap) => {
+        const notes = snap.docs.map(doc => doc.data() as CollaborationNote);
+        setScheduleNotes(notes);
+      });
+
+      const qEvents = query(
+        collection(db, 'calendar_events'),
+        where('organizationId', '==', profile.organizationId)
+      );
+      const unsubEvents = onSnapshot(qEvents, (snap) => {
+        const events = snap.docs.map(doc => doc.data() as CalendarEvent)
+          .filter(e => {
+            if (e.targetType === 'team') return e.targetId === profile.teamId;
+            return e.targetId === profile.uid;
+          });
+        setScheduleEvents(events);
+      });
+
+      return () => {
+        unsubNotes();
+        unsubEvents();
+      };
+    }
+  }, [activeTab, profile.uid, profile.organizationId, profile.teamId]);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -798,6 +857,24 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 Meu Perfil
               </button>
 
+              {(profile.role === 'member' || profile.role === 'supervisor' || profile.role === 'backoffice') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('schedule');
+                    setSelectedTeamForMembers(null);
+                  }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
+                    activeTab === 'schedule'
+                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Calendar size={16} />
+                  Minha Escala
+                </button>
+              )}
+
               {showAdminTabs && (
                 <>
                   <button
@@ -936,6 +1013,181 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           >
             <X size={20} />
           </button>
+
+          {/* ABA: MINHA ESCALA */}
+          {activeTab === 'schedule' && (
+            <div className="space-y-6 max-w-3xl animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-white">Minha Escala</h3>
+                  <p className="text-xs text-slate-400 mt-1">Acompanhe suas presenças, atrasos, faltas e avisos da coordenação.</p>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => setScheduleDate(new Date(scheduleDate.getFullYear(), scheduleDate.getMonth() - 1, 1))}
+                    className="p-2 rounded-xl border border-white/5 hover:bg-white/5 text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    <CaretLeft size={16} />
+                  </button>
+                  <span className="text-xs font-bold capitalize px-3 py-1 min-w-[120px] text-center text-white">
+                    {scheduleDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setScheduleDate(new Date(scheduleDate.getFullYear(), scheduleDate.getMonth() + 1, 1))}
+                    className="p-2 rounded-xl border border-white/5 hover:bg-white/5 text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    <CaretRight size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Grade de Calendário (Grade de Domingo a Sábado) */}
+              <div className="border border-white/5 bg-slate-900/40 rounded-3xl p-6 space-y-4">
+                <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-black uppercase tracking-widest text-slate-500 pb-2 border-b border-white/5">
+                  <div>Dom</div>
+                  <div>Seg</div>
+                  <div>Ter</div>
+                  <div>Qua</div>
+                  <div>Qui</div>
+                  <div>Sex</div>
+                  <div>Sáb</div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {(() => {
+                    const y = scheduleDate.getFullYear();
+                    const m = scheduleDate.getMonth();
+                    const firstDayIndex = new Date(y, m, 1).getDay();
+                    const totalDays = new Date(y, m + 1, 0).getDate();
+
+                    const slots = [];
+                    // Adicionar slots vazios para alinhar o primeiro dia
+                    for (let i = 0; i < firstDayIndex; i++) {
+                      slots.push(<div key={`blank-${i}`} className="aspect-square bg-transparent rounded-2xl border border-transparent" />);
+                    }
+
+                    // Adicionar os dias do mês
+                    for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
+                      const dayStr = String(dayNum).padStart(2, '0');
+                      const monthStr = String(m + 1).padStart(2, '0');
+                      const dateStr = `${y}-${monthStr}-${dayStr}`;
+                      const targetDate = new Date(dateStr);
+
+                      // Buscar presenças
+                      const dayNote = scheduleNotes.find(note => {
+                        const noteDate = new Date(note.createdAt);
+                        return (
+                          noteDate.getUTCFullYear() === targetDate.getUTCFullYear() &&
+                          noteDate.getUTCMonth() === targetDate.getUTCMonth() &&
+                          noteDate.getUTCDate() === targetDate.getUTCDate()
+                        );
+                      });
+
+                      // Buscar eventos
+                      const dayEvents = scheduleEvents.filter(e => e.date === dateStr);
+                      const hasEvent = dayEvents.length > 0;
+                      const eventText = hasEvent ? dayEvents.map(e => e.title).join(', ') : '';
+
+                      const status = dayNote?.attendanceStatus || '';
+
+                      slots.push(
+                        <div
+                          key={`day-${dayNum}`}
+                          className={`aspect-square rounded-2xl border p-2 flex flex-col justify-between transition-all group relative overflow-hidden ${
+                            status === 'present'
+                              ? 'bg-emerald-500/10 border-emerald-500/30'
+                              : status === 'late'
+                                ? 'bg-amber-500/10 border-amber-500/30'
+                                : status === 'absent'
+                                  ? 'bg-rose-500/10 border-rose-500/30'
+                                  : 'bg-slate-950/40 border-white/5'
+                          }`}
+                        >
+                          {/* Número do Dia */}
+                          <span className={`text-xs font-bold ${
+                            status === 'present'
+                              ? 'text-emerald-400'
+                              : status === 'late'
+                                ? 'text-amber-400'
+                                : status === 'absent'
+                                  ? 'text-rose-400'
+                                  : 'text-slate-400'
+                          }`}>
+                            {dayNum}
+                          </span>
+
+                          {/* Indicador de Tipo de Evento / Presencial */}
+                          {hasEvent && (
+                            <span className="text-[7px] font-black uppercase tracking-wider px-1 py-0.5 rounded-sm bg-sky-500/20 text-sky-400 border border-sky-500/20 truncate w-full text-center">
+                              {dayEvents[0].title.split(' ').slice(1).join(' ') || dayEvents[0].title}
+                            </span>
+                          )}
+
+                          {/* Hover Tooltip */}
+                          {(dayNote || hasEvent) && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-30 p-2.5 rounded-xl border border-white/10 bg-slate-950 text-slate-300 text-[9px] leading-relaxed shadow-xl w-44 pointer-events-none transition-all">
+                              {hasEvent && (
+                                <div className="mb-1">
+                                  <span className="font-bold text-sky-400 block">📅 Aviso:</span>
+                                  <span className="text-white block font-medium">{eventText}</span>
+                                </div>
+                              )}
+                              {dayNote && (
+                                <div>
+                                  <span className="font-bold text-slate-400 block">Presença:</span>
+                                  <span className={`font-extrabold ${
+                                    status === 'present' ? 'text-emerald-400' : status === 'late' ? 'text-amber-400' : 'text-rose-400'
+                                  }`}>
+                                    {status === 'present' ? 'Presente' : status === 'late' ? 'Atrasado' : 'Falta'}
+                                  </span>
+                                  {status === 'late' && dayNote.lateDuration && (
+                                    <span className="block text-white font-medium mt-0.5">Tempo: {dayNote.lateDuration}</span>
+                                  )}
+                                  {status === 'absent' && dayNote.absenceReason && (
+                                    <span className="block text-white font-medium mt-0.5">Motivo: {dayNote.absenceReason}</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return slots;
+                  })()}
+                </div>
+              </div>
+
+              {/* Legenda */}
+              <div className="flex flex-wrap items-center justify-between gap-4 p-4 border border-white/5 bg-slate-900/10 rounded-2xl text-[10px] text-slate-400 font-medium">
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 inline-block" />
+                    <strong className="text-emerald-400">Presente</strong>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-amber-500/10 border border-amber-500/30 inline-block" />
+                    <strong className="text-amber-400">Atrasado</strong>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-rose-500/10 border border-rose-500/30 inline-block" />
+                    <strong className="text-rose-400">Falta</strong>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="px-1.5 py-0.5 rounded-sm bg-sky-500/20 text-sky-400 border border-sky-500/20 text-[7px] font-black inline-block uppercase leading-none">Presencial</span>
+                    Aviso da Coordenação
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Info size={12} className="text-slate-500" />
+                  <span>Passe o mouse por cima das marcações para ver detalhes de atrasos ou faltas.</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ABA: MEU PERFIL */}
           {activeTab === 'profile' && (

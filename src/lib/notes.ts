@@ -9,12 +9,15 @@ import {
 import { db } from './firebase';
 import { CollaborationNote } from '../types';
 import { generateSecureToken } from './teams';
+import { sandboxService } from './sandboxService';
+
+const isSandbox = (id: string) => id.includes('sandbox') || id === 'sandbox-test';
 
 export const addCollaborationNote = async (
-  noteData: Omit<CollaborationNote, 'id' | 'createdAt'>
+  noteData: Omit<CollaborationNote, 'id' | 'createdAt'> & { createdAt?: string }
 ): Promise<string> => {
   const noteId = `note-${generateSecureToken(9)}`;
-  const now = new Date().toISOString();
+  const now = noteData.createdAt || new Date().toISOString();
   
   const note: CollaborationNote = {
     id: noteId,
@@ -22,11 +25,19 @@ export const addCollaborationNote = async (
     createdAt: now
   };
 
+  if (isSandbox(noteData.organizationId) || isSandbox(noteData.collaboratorId)) {
+    sandboxService.addCollaborationNote(note);
+    return noteId;
+  }
+
   await setDoc(doc(db, 'collaboration_notes', noteId), note);
   return noteId;
 };
 
 export const getCollaborationNotes = async (collaboratorId: string): Promise<CollaborationNote[]> => {
+  if (isSandbox(collaboratorId)) {
+    return sandboxService.getCollaborationNotes(collaboratorId);
+  }
   try {
     const notesRef = collection(db, 'collaboration_notes');
     const q = query(
@@ -49,6 +60,23 @@ export const getAttendanceStatusForDay = async (
   collaboratorId: string, 
   dateStr: string // Formato YYYY-MM-DD
 ): Promise<CollaborationNote | null> => {
+  if (isSandbox(collaboratorId)) {
+    const notes = sandboxService.getCollaborationNotes(collaboratorId);
+    const dayNotes = notes.filter(note => {
+      if (note.type !== 'attendance') return false;
+      // Tratar datas de forma independente de fuso horário
+      const noteDate = new Date(note.createdAt);
+      const targetDate = new Date(dateStr);
+      return (
+        noteDate.getUTCFullYear() === targetDate.getUTCFullYear() &&
+        noteDate.getUTCMonth() === targetDate.getUTCMonth() &&
+        noteDate.getUTCDate() === targetDate.getUTCDate()
+      );
+    });
+    if (dayNotes.length === 0) return null;
+    dayNotes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return dayNotes[0];
+  }
   try {
     const notesRef = collection(db, 'collaboration_notes');
     const q = query(
@@ -85,6 +113,9 @@ export const getAttendanceStatusForDay = async (
 export const getOrganizationNotesReport = async (
   orgId: string
 ): Promise<CollaborationNote[]> => {
+  if (isSandbox(orgId)) {
+    return sandboxService.getCollaborationNotesReport(orgId);
+  }
   try {
     const notesRef = collection(db, 'collaboration_notes');
     const q = query(

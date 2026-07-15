@@ -14,7 +14,9 @@ import {
   BackOfficeClient,
   QaSettings,
   Invite,
-  UserRole
+  UserRole,
+  CollaborationNote,
+  CalendarEvent
 } from '../types';
 import { generateSandboxSeeds } from './sandboxSeeder';
 
@@ -37,6 +39,8 @@ class SandboxService {
   private qaSettings: Record<string, QaSettings> = {};
   private invites: Record<string, Invite> = {};
   private transferRequests: Record<string, any> = {};
+  private collaborationNotes: Record<string, CollaborationNote> = {};
+  private calendarEvents: Record<string, CalendarEvent> = {};
 
 
   constructor() {
@@ -76,6 +80,8 @@ class SandboxService {
     this.backofficeClients = seeds.backofficeClients;
     this.qaSettings = seeds.qaSettings;
     this.invites = seeds.invites;
+    this.collaborationNotes = {};
+    this.calendarEvents = {};
 
     this.notify();
   }
@@ -421,6 +427,44 @@ class SandboxService {
       this.transferRequests[id] = { ...this.transferRequests[id], ...fields };
       this.notify();
     }
+  }
+
+  // --- MÉTODOS DE COLLABORATION NOTES ---
+  public getCollaborationNotes(collaboratorId: string): CollaborationNote[] {
+    return Object.values(this.collaborationNotes)
+      .filter(n => n.collaboratorId === collaboratorId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public getCollaborationNotesReport(orgId: string): CollaborationNote[] {
+    return Object.values(this.collaborationNotes)
+      .filter(n => n.organizationId === orgId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public addCollaborationNote(note: CollaborationNote): void {
+    this.collaborationNotes[note.id] = { ...note };
+    this.notify();
+  }
+
+  public deleteCollaborationNote(id: string): void {
+    delete this.collaborationNotes[id];
+    this.notify();
+  }
+
+  // --- MÉTODOS DE CALENDAR EVENTS ---
+  public getCalendarEvents(orgId: string): CalendarEvent[] {
+    return Object.values(this.calendarEvents).filter(e => e.organizationId === orgId);
+  }
+
+  public addCalendarEvent(event: CalendarEvent): void {
+    this.calendarEvents[event.id] = { ...event };
+    this.notify();
+  }
+
+  public deleteCalendarEvent(id: string): void {
+    delete this.calendarEvents[id];
+    this.notify();
   }
 }
 

@@ -199,6 +199,8 @@ export interface CollaborationNote {
   type: 'note' | 'attendance';
   content: string;
   attendanceStatus?: 'present' | 'late' | 'absent';
+  lateDuration?: string;
+  absenceReason?: string;
   createdAt: string;
 }
 
@@ -298,4 +300,15 @@ export interface TransferRequest {
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  organizationId: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  targetType: 'team' | 'individual';
+  targetId: string; // teamId ou collaboratorId
+  createdBy: string;
+  createdAt: string;
 }

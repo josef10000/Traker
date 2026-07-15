@@ -30,7 +30,8 @@ import {
   Team,
   Reconciliation,
   CollaborationNote,
-  QaEvaluation
+  QaEvaluation,
+  CalendarEvent
 } from '../../types';
 import { removeTeamMember, getTeamMembers } from '../../lib/teams';
 import { formatCurrency, maskCPF } from '../../utils/masks';
@@ -38,10 +39,13 @@ import { logAudit } from '../../lib/audit';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
-import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch } from '@phosphor-icons/react';
+import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus } from '@phosphor-icons/react';
 import { sandboxService } from '../../lib/sandboxService';
 
 import { Avatar } from '../ui/Avatar';
+import { AttendanceModal } from '../modals/AttendanceModal';
+import { CalendarEventModal } from '../modals/CalendarEventModal';
+import { AttendanceCalendarSection } from './AttendanceCalendarSection';
 
 // Hooks customizados
 import { useAgreements } from '../../hooks/useAgreements';
@@ -167,6 +171,64 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [cpfToConfirm, setCpfToConfirm] = useState<{ id: string; cpf: string; actionType: 'reveal' | 'copy' } | null>(null);
   const [agreementIdToDelete, setAgreementIdToDelete] = useState<string | null>(null);
   const [dontShowLgpdAgain, setDontShowLgpdAgain] = useState(false);
+
+  // Novos estados para Coordenação e Calendários
+  const [activeTeamDrillDown, setActiveTeamDrillDown] = useState<string | null>(null);
+  const [allCollaborationNotes, setAllCollaborationNotes] = useState<CollaborationNote[]>([]);
+  const [allCalendarEvents, setAllCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [attendanceModalData, setAttendanceModalData] = useState<{ collab: UserProfile; dateStr: string; note?: CollaborationNote } | null>(null);
+  const [isCalendarEventModalOpen, setIsCalendarEventModalOpen] = useState(false);
+
+  // Escuta todas as anotações/presenças da organização
+  useEffect(() => {
+    if (!profile.organizationId) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      const handleSandboxUpdate = () => {
+        const notes = sandboxService.getCollaborationNotesReport('sandbox-test');
+        setAllCollaborationNotes(notes);
+      };
+      const unsubscribe = sandboxService.subscribe(handleSandboxUpdate);
+      handleSandboxUpdate();
+      return () => unsubscribe();
+    } else {
+      const q = query(
+        collection(db, 'collaboration_notes'),
+        where('organizationId', '==', profile.organizationId)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const notes = snapshot.docs.map(doc => doc.data() as CollaborationNote);
+        setAllCollaborationNotes(notes);
+      });
+      return () => unsubscribe();
+    }
+  }, [profile.organizationId]);
+
+  // Escuta todos os eventos de calendário da organização
+  useEffect(() => {
+    if (!profile.organizationId) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      const handleSandboxUpdate = () => {
+        const events = sandboxService.getCalendarEvents('sandbox-test');
+        setAllCalendarEvents(events);
+      };
+      const unsubscribe = sandboxService.subscribe(handleSandboxUpdate);
+      handleSandboxUpdate();
+      return () => unsubscribe();
+    } else {
+      const q = query(
+        collection(db, 'calendar_events'),
+        where('organizationId', '==', profile.organizationId)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const events = snapshot.docs.map(doc => doc.data() as CalendarEvent);
+        setAllCalendarEvents(events);
+      });
+      return () => unsubscribe();
+    }
+  }, [profile.organizationId]);
 
   // Seleção reativa de aba padrão para monitores e backoffice
   useEffect(() => {
@@ -825,6 +887,162 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } catch (error) {
       console.error(error);
       showToast('Erro ao registrar presença.', 'error');
+    }
+  };
+
+  const handleCellClick = (collab: UserProfile, dateStr: string, currentNote?: CollaborationNote) => {
+    setAttendanceModalData({ collab, dateStr, note: currentNote });
+    setIsAttendanceModalOpen(true);
+  };
+
+  const handleSaveAttendance = async (
+    status: 'present' | 'late' | 'absent' | '',
+    lateDuration: string,
+    absenceReason: string
+  ) => {
+    if (!attendanceModalData || !profile.organizationId) return;
+    const { collab, dateStr } = attendanceModalData;
+
+    try {
+      const dateFormatted = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
+      const statusLabels = { present: 'Presente', late: 'Atrasado', absent: 'Falta', '': 'Limpar' };
+
+      let existingNotes: CollaborationNote[] = [];
+      if (profile.organizationId === 'sandbox-test') {
+        existingNotes = sandboxService.getCollaborationNotes(collab.uid);
+      } else {
+        const q = query(
+          collection(db, 'collaboration_notes'),
+          where('collaboratorId', '==', collab.uid),
+          where('type', '==', 'attendance')
+        );
+        const querySnapshot = await getDocs(q);
+        existingNotes = querySnapshot.docs.map(doc => doc.data() as CollaborationNote);
+      }
+
+      const targetDate = new Date(dateStr);
+      const dayNotes = existingNotes.filter(note => {
+        const noteDate = new Date(note.createdAt);
+        return (
+          noteDate.getUTCFullYear() === targetDate.getUTCFullYear() &&
+          noteDate.getUTCMonth() === targetDate.getUTCMonth() &&
+          noteDate.getUTCDate() === targetDate.getUTCDate()
+        );
+      });
+
+      if (profile.organizationId === 'sandbox-test') {
+        dayNotes.forEach(dn => {
+          sandboxService.deleteCollaborationNote(dn.id);
+        });
+      } else {
+        const batch = writeBatch(db);
+        dayNotes.forEach(dn => {
+          batch.delete(doc(db, 'collaboration_notes', dn.id));
+        });
+        await batch.commit();
+      }
+
+      if (status !== '') {
+        let content = `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`;
+        if (status === 'late' && lateDuration) {
+          content += ` (${lateDuration} de atraso)`;
+        } else if (status === 'absent' && absenceReason) {
+          content += ` (Motivo: ${absenceReason})`;
+        }
+
+        const targetDateObj = new Date(dateStr + 'T12:00:00');
+
+        await addCollaborationNote({
+          organizationId: profile.organizationId,
+          collaboratorId: collab.uid,
+          creatorId: profile.uid,
+          creatorName: profile.displayName || profile.email.split('@')[0],
+          type: 'attendance',
+          content,
+          attendanceStatus: status,
+          lateDuration: status === 'late' ? lateDuration : undefined,
+          absenceReason: status === 'absent' ? absenceReason : undefined,
+          createdAt: targetDateObj.toISOString()
+        });
+      }
+
+      showToast(`Presença de ${collab.displayName || collab.email.split('@')[0]} salva para o dia ${dateFormatted}!`, 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao salvar presença.', 'error');
+    }
+  };
+
+  const handleSaveCalendarEvent = async (
+    title: string,
+    date: string,
+    targetType: 'team' | 'individual',
+    targetId: string,
+    selectedCollaboratorIds: string[]
+  ) => {
+    if (!profile.organizationId) return;
+
+    try {
+      const now = new Date().toISOString();
+
+      if (targetType === 'team') {
+        const eventId = `event-${Math.random().toString(36).substring(2, 11)}`;
+        const event: CalendarEvent = {
+          id: eventId,
+          organizationId: profile.organizationId,
+          title,
+          date,
+          targetType: 'team',
+          targetId,
+          createdBy: profile.uid,
+          createdAt: now
+        };
+
+        if (profile.organizationId === 'sandbox-test') {
+          sandboxService.addCalendarEvent(event);
+        } else {
+          await setDoc(doc(db, 'calendar_events', eventId), event);
+        }
+      } else {
+        if (profile.organizationId === 'sandbox-test') {
+          selectedCollaboratorIds.forEach(collabId => {
+            const eventId = `event-${Math.random().toString(36).substring(2, 11)}`;
+            const event: CalendarEvent = {
+              id: eventId,
+              organizationId: profile.organizationId,
+              title,
+              date,
+              targetType: 'individual',
+              targetId: collabId,
+              createdBy: profile.uid,
+              createdAt: now
+            };
+            sandboxService.addCalendarEvent(event);
+          });
+        } else {
+          const batch = writeBatch(db);
+          selectedCollaboratorIds.forEach(collabId => {
+            const eventId = `event-${Math.random().toString(36).substring(2, 11)}`;
+            const event: CalendarEvent = {
+              id: eventId,
+              organizationId: profile.organizationId,
+              title,
+              date,
+              targetType: 'individual',
+              targetId: collabId,
+              createdBy: profile.uid,
+              createdAt: now
+            };
+            batch.set(doc(db, 'calendar_events', eventId), event);
+          });
+          await batch.commit();
+        }
+      }
+
+      showToast('Evento agendado com sucesso no calendário!', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Erro ao agendar evento.', 'error');
     }
   };
 
@@ -2277,152 +2495,216 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {dashboardTab === 'coordination' && profile.role === 'coordinator' && (
                 <div className="space-y-8">
                   {/* Cabeçalho */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white/5 border border-white/5 rounded-3xl backdrop-blur-xl">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white/5 border border-white/5 rounded-3xl backdrop-blur-xl animate-fadeIn">
                     <div>
                       <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         <Handshake className="text-sky-400" size={24} weight="duotone" />
-                        Painel de Coordenação Geral
+                        {activeTeamDrillDown ? `Detalhamento: ${managedTeamsData.find(t => t.id === activeTeamDrillDown)?.name}` : 'Painel de Coordenação Geral'}
                       </h2>
-                      <p className="text-xs text-slate-400 mt-1">Gerenciamento consolidado de performance, escalas diárias e movimentações organizacionais.</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {activeTeamDrillDown 
+                          ? 'Visualização individual de metas, faturamento e calendário mensal da equipe.' 
+                          : 'Gerenciamento consolidado de performance, escalas diárias e movimentações organizacionais.'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {activeTeamDrillDown && (
+                        <button
+                          onClick={() => setActiveTeamDrillDown(null)}
+                          className="flex items-center gap-1.5 py-2 px-4 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border border-white/5"
+                        >
+                          <ArrowLeft size={16} />
+                          Voltar para Equipes
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setIsCalendarEventModalOpen(true)}
+                        className="flex items-center gap-1.5 py-2 px-4 bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+                      >
+                        <CalendarPlus size={16} />
+                        Agendar Evento/Presença
+                      </button>
                     </div>
                   </div>
 
-                  {/* 1. Painel Comparativo de Performance das Equipes */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Painel Comparativo de Equipes</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {managedTeamsData.map(team => {
-                        const teamAgreements = monthAgreements.filter(a => a.teamId === team.id);
-                        const paidAgreements = teamAgreements.filter(a => a.status === AgreementStatus.PAID);
-                        const totalProjected = teamAgreements.reduce((acc, curr) => acc + curr.value, 0);
-                        const totalPaid = paidAgreements.reduce((acc, curr) => acc + curr.value, 0);
-                        
-                        const effectiveness = totalProjected > 0 ? (totalPaid / totalProjected) * 100 : 0;
-                        const goal = team.monthlyGoal || 0;
-                        const goalPercent = goal > 0 ? Math.min((totalPaid / goal) * 100, 100) : 0;
-                        const supervisor = supervisors.find(s => s.uid === team.supervisorId);
+                  {activeTeamDrillDown ? (
+                    // --- VISÃO DRILL-DOWN DA EQUIPE ---
+                    <>
+                      {/* Performance dos Colaboradores */}
+                      <div className="space-y-4 animate-fadeIn">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Performance dos Colaboradores</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {(() => {
+                            const team = managedTeamsData.find(t => t.id === activeTeamDrillDown);
+                            if (!team) return null;
 
-                        return (
-                          <div key={team.id} className="glass-card p-6 border border-white/5 hover:border-sky-500/30 transition-all group flex flex-col justify-between">
-                            <div className="space-y-4">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h4 className="text-base font-bold text-white group-hover:text-sky-400 transition-colors">{team.name}</h4>
-                                  <p className="text-[10px] text-slate-500 mt-0.5">
-                                    Supervisor: <span className="text-slate-300 font-medium">{supervisor?.displayName || supervisor?.email.split('@')[0] || 'Não atribuído'}</span>
-                                  </p>
-                                </div>
-                                <span className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
-                                  effectiveness >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                }`}>
-                                  {effectiveness.toFixed(0)}% Efet.
-                                </span>
-                              </div>
+                            const teamOps = filteredTeamMembers.filter(m => m.teamId === team.id && (m.role === 'member' || m.role === 'backoffice' || m.role === 'supervisor'));
+                            const activeOps = teamOps.filter(m => m.role === 'member');
+                            const teamGoal = team.monthlyGoal || 0;
+                            // Dividir a meta igualmente entre os operadores ativos
+                            const individualGoal = activeOps.length > 0 ? teamGoal / activeOps.length : teamGoal;
 
-                              <div className="space-y-2">
-                                <div className="flex justify-between text-[11px]">
-                                  <span className="text-slate-400">Progresso da Meta</span>
-                                  <span className="text-white font-bold">{goalPercent.toFixed(0)}%</span>
-                                </div>
-                                <div className="w-full bg-slate-950/60 rounded-full h-2 overflow-hidden border border-white/5">
-                                  <div 
-                                    className="bg-gradient-to-r from-sky-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
-                                    style={{ width: `${goalPercent}%` }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
+                            return teamOps.map(op => {
+                              const opAgreements = monthAgreements.filter(a => a.createdBy === op.uid);
+                              const paidAgreements = opAgreements.filter(a => a.status === AgreementStatus.PAID);
+                              const totalProjected = opAgreements.reduce((acc, curr) => acc + curr.value, 0);
+                              const totalPaid = paidAgreements.reduce((acc, curr) => acc + curr.value, 0);
+                              
+                              const effectiveness = totalProjected > 0 ? (totalPaid / totalProjected) * 100 : 0;
+                              const goal = op.role === 'member' ? individualGoal : 0;
+                              const goalPercent = goal > 0 ? Math.min((totalPaid / goal) * 100, 100) : 0;
+                              const roleLabel = op.role === 'supervisor' ? 'Supervisor' : op.role === 'backoffice' ? 'Back Office' : 'Operador';
 
-                            <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5 text-xs">
-                              <div>
-                                <span className="text-[9px] uppercase tracking-widest text-slate-500 block">Recuperado</span>
-                                <span className="font-bold text-white block mt-0.5">R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                              </div>
-                              <div>
-                                <span className="text-[9px] uppercase tracking-widest text-slate-500 block">Meta Mensal</span>
-                                <span className="font-bold text-slate-300 block mt-0.5">R$ {goal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* 2. Escala Consolidada de Presença (Hoje) */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Escala diária de plantão e faltas</h3>
-                    <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
-                      {managedTeamsData.map(team => {
-                        const teamOps = filteredTeamMembers.filter(m => m.teamId === team.id && m.role === 'member');
-                        if (teamOps.length === 0) return null;
-
-                        return (
-                          <div key={team.id} className="space-y-3">
-                            <h4 className="text-xs font-bold text-sky-400 border-b border-white/5 pb-1 flex items-center gap-1.5">
-                              <Calendar size={14} weight="duotone" />
-                              {team.name}
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {teamOps.map(op => {
-                                const status = attendanceStatuses[op.uid] || 'present';
-                                return (
-                                  <div key={op.uid} className="flex items-center justify-between p-3 bg-slate-900/40 border border-white/5 rounded-2xl">
-                                    <div className="flex items-center gap-2.5">
-                                      <Avatar
-                                        displayName={op.displayName}
-                                        email={op.email}
-                                        avatarStyle={op.avatarStyle}
-                                        avatarSeed={op.avatarSeed}
-                                        theme={theme}
-                                        size="xs"
-                                      />
-                                      <div>
-                                        <span className="font-bold text-xs block text-white leading-tight">{op.displayName || op.email.split('@')[0]}</span>
-                                        <span className="text-[8px] text-slate-500">Operador</span>
+                              return (
+                                <div key={op.uid} className="glass-card p-6 border border-white/5 hover:border-sky-500/30 transition-all group flex flex-col justify-between">
+                                  <div className="space-y-4">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex items-center gap-3">
+                                        <Avatar
+                                          displayName={op.displayName}
+                                          email={op.email}
+                                          avatarStyle={op.avatarStyle}
+                                          avatarSeed={op.avatarSeed}
+                                          theme={theme}
+                                          size="sm"
+                                        />
+                                        <div>
+                                          <h4 className="text-sm font-bold text-white group-hover:text-sky-400 transition-colors">{op.displayName || op.email.split('@')[0]}</h4>
+                                          <p className="text-[10px] text-slate-500 mt-0.5">{roleLabel}</p>
+                                        </div>
                                       </div>
+                                      <span className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
+                                        effectiveness >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                      }`}>
+                                        {effectiveness.toFixed(0)}% Efet.
+                                      </span>
                                     </div>
-                                    <div className="flex gap-1">
-                                      <button
-                                        onClick={() => handleAttendanceChange(op.uid, op.displayName || op.email.split('@')[0], 'present')}
-                                        className={`px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold rounded-lg border transition-all cursor-pointer ${
-                                          status === 'present'
-                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                            : 'bg-transparent border-white/5 text-slate-500 hover:text-slate-300'
-                                        }`}
-                                      >
-                                        P
-                                      </button>
-                                      <button
-                                        onClick={() => handleAttendanceChange(op.uid, op.displayName || op.email.split('@')[0], 'late')}
-                                        className={`px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold rounded-lg border transition-all cursor-pointer ${
-                                          status === 'late'
-                                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                                            : 'bg-transparent border-white/5 text-slate-500 hover:text-slate-300'
-                                        }`}
-                                      >
-                                        A
-                                      </button>
-                                      <button
-                                        onClick={() => handleAttendanceChange(op.uid, op.displayName || op.email.split('@')[0], 'absent')}
-                                        className={`px-2 py-1 text-[8px] uppercase tracking-wider font-extrabold rounded-lg border transition-all cursor-pointer ${
-                                          status === 'absent'
-                                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                            : 'bg-transparent border-white/5 text-slate-500 hover:text-slate-300'
-                                        }`}
-                                      >
-                                        F
-                                      </button>
+
+                                    {op.role === 'member' && (
+                                      <div className="space-y-2">
+                                        <div className="flex justify-between text-[11px]">
+                                          <span className="text-slate-400">Progresso da Meta</span>
+                                          <span className="text-white font-bold">{goalPercent.toFixed(0)}%</span>
+                                        </div>
+                                        <div className="w-full bg-slate-950/60 rounded-full h-2 overflow-hidden border border-white/5">
+                                          <div 
+                                            className="bg-gradient-to-r from-sky-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
+                                            style={{ width: `${goalPercent}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5 text-xs">
+                                    <div>
+                                      <span className="text-[9px] uppercase tracking-widest text-slate-500 block">Recuperado</span>
+                                      <span className="font-bold text-white block mt-0.5">R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-[9px] uppercase tracking-widest text-slate-500 block">{op.role === 'member' ? 'Meta Individual' : 'Papel'}</span>
+                                      <span className="font-bold text-slate-300 block mt-0.5">
+                                        {op.role === 'member' 
+                                          ? `R$ ${goal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+                                          : roleLabel}
+                                      </span>
                                     </div>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Calendário Mensal da Equipe */}
+                      {(() => {
+                        const team = managedTeamsData.find(t => t.id === activeTeamDrillDown);
+                        if (!team) return null;
+                        const teamOps = filteredTeamMembers.filter(m => m.teamId === team.id && (m.role === 'member' || m.role === 'supervisor' || m.role === 'backoffice'));
+                        
+                        return (
+                          <AttendanceCalendarSection
+                            collaborators={teamOps}
+                            notes={allCollaborationNotes}
+                            calendarEvents={allCalendarEvents}
+                            onCellClick={handleCellClick}
+                            theme={theme}
+                          />
                         );
-                      })}
-                    </div>
-                  </div>
+                      })()}
+                    </>
+                  ) : (
+                    // --- VISÃO CONSOLIDADA DE TODAS AS EQUIPES ---
+                    <>
+                      {/* Painel Comparativo de Equipes */}
+                      <div className="space-y-4 animate-fadeIn">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Painel Comparativo de Equipes</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {managedTeamsData.map(team => {
+                            const teamAgreements = monthAgreements.filter(a => a.teamId === team.id);
+                            const paidAgreements = teamAgreements.filter(a => a.status === AgreementStatus.PAID);
+                            const totalProjected = teamAgreements.reduce((acc, curr) => acc + curr.value, 0);
+                            const totalPaid = paidAgreements.reduce((acc, curr) => acc + curr.value, 0);
+                            
+                            const effectiveness = totalProjected > 0 ? (totalPaid / totalProjected) * 100 : 0;
+                            const goal = team.monthlyGoal || 0;
+                            const goalPercent = goal > 0 ? Math.min((totalPaid / goal) * 100, 100) : 0;
+                            const supervisor = supervisors.find(s => s.uid === team.supervisorId);
+
+                            return (
+                              <div 
+                                key={team.id} 
+                                onClick={() => setActiveTeamDrillDown(team.id)}
+                                className="glass-card p-6 border border-white/5 hover:border-sky-500/40 hover:bg-white/[0.02] transition-all group flex flex-col justify-between cursor-pointer"
+                              >
+                                <div className="space-y-4">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <h4 className="text-base font-bold text-white group-hover:text-sky-400 transition-colors">{team.name}</h4>
+                                      <p className="text-[10px] text-slate-500 mt-0.5">
+                                        Supervisor: <span className="text-slate-300 font-medium">{supervisor?.displayName || supervisor?.email.split('@')[0] || 'Não atribuído'}</span>
+                                      </p>
+                                    </div>
+                                    <span className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
+                                      effectiveness >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                    }`}>
+                                      {effectiveness.toFixed(0)}% Efet.
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between text-[11px]">
+                                      <span className="text-slate-400">Progresso da Meta</span>
+                                      <span className="text-white font-bold">{goalPercent.toFixed(0)}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-950/60 rounded-full h-2 overflow-hidden border border-white/5">
+                                      <div 
+                                        className="bg-gradient-to-r from-sky-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
+                                        style={{ width: `${goalPercent}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/5 text-xs">
+                                  <div>
+                                    <span className="text-[9px] uppercase tracking-widest text-slate-500 block">Recuperado</span>
+                                    <span className="font-bold text-white block mt-0.5">R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] uppercase tracking-widest text-slate-500 block">Meta Mensal</span>
+                                    <span className="font-bold text-slate-300 block mt-0.5">R$ {goal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* 3. Central de Transferências & Desligamentos */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -2920,6 +3202,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
+      {isAttendanceModalOpen && attendanceModalData && (
+        <AttendanceModal
+          isOpen={isAttendanceModalOpen}
+          onClose={() => {
+            setIsAttendanceModalOpen(false);
+            setAttendanceModalData(null);
+          }}
+          collaboratorName={attendanceModalData.collab.displayName || attendanceModalData.collab.email.split('@')[0]}
+          dateStr={attendanceModalData.dateStr}
+          currentStatus={attendanceModalData.note?.attendanceStatus || ''}
+          currentLateDuration={attendanceModalData.note?.lateDuration || ''}
+          currentAbsenceReason={attendanceModalData.note?.absenceReason || ''}
+          onSave={handleSaveAttendance}
+          theme={theme}
+        />
+      )}
+
+      {isCalendarEventModalOpen && (
+        <CalendarEventModal
+          isOpen={isCalendarEventModalOpen}
+          onClose={() => setIsCalendarEventModalOpen(false)}
+          teams={managedTeamsData}
+          collaborators={filteredTeamMembers.filter(m => m.role === 'member' || m.role === 'supervisor' || m.role === 'backoffice')}
+          onSave={handleSaveCalendarEvent}
+          theme={theme}
+        />
+      )}
       {/* Modal Personalizado de Consentimento LGPD para Revelação/Cópia de CPF */}
       {cpfToConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
