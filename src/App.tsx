@@ -104,10 +104,14 @@ export function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (profile?.theme) {
-      document.documentElement.setAttribute('data-theme', profile.theme);
+    // Prioridade: localStorage (toggle do usuário) > profile.theme do Firestore > dark (padrão)
+    const savedTheme = localStorage.getItem('tracker-theme') as 'dark' | 'light' | null;
+    const resolvedTheme = savedTheme || profile?.theme || 'dark';
+    document.documentElement.setAttribute('data-theme', resolvedTheme);
+    if (resolvedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.classList.remove('dark');
     }
   }, [profile?.theme]);
 

@@ -15,7 +15,9 @@ import {
   Sparkle,
   ArrowsClockwise,
   Lifebuoy,
-  Gear
+  Gear,
+  Moon,
+  Sun
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 import { Avatar } from '../ui/Avatar';
@@ -50,6 +52,8 @@ interface DashboardHeaderProps {
   /** Callback para ativar a aba de suporte */
   onSupportTabClick: () => void;
   theme?: 'light' | 'dark';
+  /** Callback para alternar entre dark e light mode */
+  onToggleTheme?: () => void;
   supervisors?: UserProfile[];
   onLogoClick?: () => void;
 }
@@ -74,6 +78,7 @@ export const DashboardHeader = ({
   organizationName,
   onSupportTabClick,
   theme = 'dark',
+  onToggleTheme,
   supervisors,
   onLogoClick
 }: DashboardHeaderProps) => {
@@ -245,6 +250,21 @@ export const DashboardHeader = ({
               className={isRefreshing ? 'animate-spin' : ''}
             />
           </button>
+
+          {/* Botão Toggle de Tema ☀️/🌙 */}
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              className={`p-2 rounded-xl transition-all border shrink-0 cursor-pointer active:scale-95 ${
+                theme === 'dark'
+                  ? 'bg-white/5 border-white/10 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10'
+                  : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-200'
+              }`}
+              title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+            >
+              {theme === 'dark' ? <Sun size={16} weight="duotone" /> : <Moon size={16} weight="duotone" />}
+            </button>
+          )}
 
           {/* Dropdown de Ferramentas / Ações */}
           <div className="relative shrink-0" ref={toolsMenuRef}>

@@ -41,6 +41,7 @@ import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
 import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus } from '@phosphor-icons/react';
 import { sandboxService } from '../../lib/sandboxService';
+import { useTheme } from '../../hooks/useTheme';
 
 import { Avatar } from '../ui/Avatar';
 import { AttendanceModal } from '../modals/AttendanceModal';
@@ -85,13 +86,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onSettingsClick, 
   showToast 
 }) => {
-  // Modo escuro fixo
-  const theme = 'dark';
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.documentElement.classList.add('dark');
-  }, []);
+  // Tema (dark/light) — reativo, persistido em localStorage
+  const { theme, toggleTheme } = useTheme();
 
 
   // Configurações e Filtros de Data/Status/Busca
@@ -2067,6 +2063,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               organizationName={organizationName}
               onSupportTabClick={() => setDashboardTab('support')}
               theme={theme}
+              onToggleTheme={toggleTheme}
               supervisors={supervisors}
               onLogoClick={() => {
                 if (profile.role === 'backoffice') setDashboardTab('backoffice');

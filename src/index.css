@@ -29,28 +29,36 @@
 }
 
 :root, [data-theme='light'] {
-  --slate-50: #f8f9fa; /* background */
-  --slate-100: #f3f4f5; /* surface-container-low */
-  --slate-200: #c2c6d6; /* outline-variant */
-  --slate-300: #bdc7dc; /* secondary-fixed-dim */
-  --slate-400: #727785; /* outline */
-  --slate-500: #555f71; /* secondary */
-  --slate-600: #424754; /* on-surface-variant */
-  --slate-700: #3d4759; /* on-secondary-fixed-variant */
-  --slate-800: #191c1d; /* on-surface */
-  --slate-900: #edeeef; /* surface-container */
-  --slate-950: #ffffff; /* surface-container-lowest */
+  /* Remapeamento da paleta slate para o light mode */
+  --slate-50: #F1F4F9;   /* page background — exato do mockup */
+  --slate-100: #f8fafc;  /* surface-container-low */
+  --slate-200: #E2E8F0;  /* card borders — exato do mockup */
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;  /* muted text */
+  --slate-500: #64748b;  /* secondary text */
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;  /* primary text dark */
+  --slate-900: #f8fafc;  /* light grey surface */
+  --slate-950: #ffffff;  /* white surface/cards */
 
-  --primary-color: #004aa6;
-  --bg-color: #f8f9fa;
-  --surface-color: #ffffff;
-  --border-color: #c2c6d6;
+  --primary-color: #2D9C95;  /* teal do botão "Novo Acordo" — exato do mockup */
+  --bg-color: #F1F4F9;        /* page background */
+  --surface-color: #ffffff;   /* cards e sidebar */
+  --border-color: #E2E8F0;    /* bordas de card */
   --card-bg: #ffffff;
-  --text-main: #191c1d;
-  --text-muted: #555f71;
-  --glass-surface: rgba(255, 255, 255, 0.85);
-  --glass-border: #c2c6d6;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --glass-surface: rgba(255, 255, 255, 0.97);
+  --glass-border: #E2E8F0;
+
+  /* Cores semânticas extras do mockup */
+  --modal-primary: #2a7eb0;
+  --icon-circle-bg: #1e6091;
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
 }
+
 
 [data-theme='dark'] {
   --slate-50: #020617; /* no escuro, slate-50 herda bg-color do dark */
@@ -143,6 +151,15 @@ option {
   color: white !important;
 }
 
+[data-theme='light'] select {
+  color-scheme: light;
+}
+
+[data-theme='light'] option {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+
 [data-theme='purple'] option {
   background-color: #1c1917 !important;
 }
@@ -158,6 +175,11 @@ option {
   background-position: right 1rem center;
   background-size: 1.25em;
   padding-right: 2.5rem;
+}
+
+/* Light mode: seta escura para selects */
+[data-theme='light'] .select-custom-arrow {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%231e293b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
 }
 
 

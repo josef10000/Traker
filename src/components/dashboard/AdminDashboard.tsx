@@ -28,6 +28,7 @@ import {
   Moon
 } from '@phosphor-icons/react';
 import { useDesignMode } from '../../hooks/useDesignMode';
+import { useTheme } from '../../hooks/useTheme';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
 import { regenerateManagerInviteToken, generateSecureToken } from '../../lib/teams';
@@ -60,13 +61,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation }: AdminDashboardProps) => {
-  const theme = 'dark';
-  const toggleTheme = () => {};
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    localStorage.setItem('tracker-theme', 'dark');
-  }, []);
+  const { theme, toggleTheme } = useTheme();
 
   const [designMode, setDesignMode] = useDesignMode();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -551,6 +546,18 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Botão Toggle de Tema ☀️/🌙 */}
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-xl transition-all border cursor-pointer active:scale-95 ${
+                theme === 'dark'
+                  ? 'bg-white/5 border-white/10 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10'
+                  : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-200'
+              }`}
+              title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+            >
+              {theme === 'dark' ? <Sun size={16} weight="duotone" /> : <Moon size={16} weight="duotone" />}
+            </button>
             <button 
               onClick={handleLogout}
               className={`flex items-center gap-2 border px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${
@@ -563,6 +570,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               Sair do Painel
             </button>
           </div>
+
         </div>
       </header>
 
