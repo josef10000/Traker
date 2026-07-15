@@ -112,7 +112,9 @@ export const HistoryModal = ({
                       ? 'bg-emerald-500/5 border-emerald-500/10' 
                       : item.status === AgreementStatus.BROKEN 
                         ? 'bg-rose-500/5 border-rose-500/10' 
-                        : 'bg-slate-800/20 border-slate-800'
+                        : item.status === AgreementStatus.RECOVERED
+                          ? 'bg-teal-500/5 border-teal-500/10'
+                          : 'bg-slate-800/20 border-slate-800'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-3">
@@ -127,6 +129,8 @@ export const HistoryModal = ({
                         <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-500 text-white px-2 py-0.5 rounded">PAGO</span>
                       ) : item.status === AgreementStatus.BROKEN ? (
                         <span className="text-[10px] font-black uppercase tracking-widest bg-rose-500 text-white px-2 py-0.5 rounded">QUEBRADO</span>
+                      ) : item.status === AgreementStatus.RECOVERED ? (
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-teal-500 text-white px-2 py-0.5 rounded">RECUPERADO</span>
                       ) : (
                         <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500 text-white px-2 py-0.5 rounded">AGUARDANDO</span>
                       )}

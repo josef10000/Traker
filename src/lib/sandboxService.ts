@@ -175,6 +175,23 @@ class SandboxService {
     this.notify();
   }
 
+  public resolveBrokenAgreements(orgId: string, clientCpf: string): void {
+    let changed = false;
+    Object.keys(this.agreements).forEach(id => {
+      const a = this.agreements[id];
+      if (a.organizationId === orgId && a.clientCpf === clientCpf && a.status === AgreementStatus.BROKEN) {
+        this.agreements[id] = {
+          ...a,
+          status: AgreementStatus.RECOVERED
+        };
+        changed = true;
+      }
+    });
+    if (changed) {
+      this.notify();
+    }
+  }
+
   public deleteTeam(id: string): void {
     delete this.teams[id];
     this.notify();

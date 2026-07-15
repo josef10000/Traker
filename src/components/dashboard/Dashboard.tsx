@@ -1107,7 +1107,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         monthlyGoal: newGoal,
         effectivenessGoal: newEffGoal
       });
-
       setMonthlyGoal(newGoal);
       setEffectivenessGoal(newEffGoal);
       setIsGoalModalOpen(false);
@@ -1115,6 +1114,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } catch (error) {
       console.error(error);
       showToast('Erro ao atualizar metas', 'error');
+    }
+  };
+
+  const resolveBrokenAgreementsForCpf = async (clientCpf: string) => {
+    if (!clientCpf || !profile.organizationId) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.resolveBrokenAgreements(profile.organizationId, clientCpf);
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, 'agreements'),
+        where('organizationId', '==', profile.organizationId),
+        where('clientCpf', '==', clientCpf),
+        where('status', '==', AgreementStatus.BROKEN)
+      );
+      const querySnap = await getDocs(q);
+      if (!querySnap.empty) {
+        const batch = writeBatch(db);
+        querySnap.docs.forEach(docSnap => {
+          batch.update(docSnap.ref, {
+            status: AgreementStatus.RECOVERED,
+            recoveredAt: new Date().toISOString(),
+            recoveredBy: profile.uid
+          });
+        });
+        await batch.commit();
+      }
+    } catch (err) {
+      console.error("Erro ao resolver acordos quebrados anteriores:", err);
     }
   };
 
@@ -1153,6 +1184,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
             sandboxService.updateBackofficeClientStatus(payload.backOfficeClientIdRef, 'treated');
           }
         }
+
+        const targetStatus = data.status || (editingAgreement ? editingAgreement.status : AgreementStatus.WAITING);
+        if (targetStatus !== AgreementStatus.BROKEN) {
+          const clientCpf = data.clientCpf || (editingAgreement && editingAgreement.clientCpf);
+          if (clientCpf) {
+            resolveBrokenAgreementsForCpf(clientCpf);
+          }
+        }
+
         setIsModalOpen(false);
         setEditingAgreement(null);
         doMarkStale();
@@ -1217,6 +1257,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           await logAudit('FORCE_COLLISION', { cpf: data.clientCpf, agreementId: id }, profile.displayName || '', profile.organizationId);
         }
       }
+
+      const targetStatus = data.status || (editingAgreement ? editingAgreement.status : AgreementStatus.WAITING);
+      if (targetStatus !== AgreementStatus.BROKEN) {
+        const clientCpf = data.clientCpf || (editingAgreement && editingAgreement.clientCpf);
+        if (clientCpf) {
+          await resolveBrokenAgreementsForCpf(clientCpf);
+        }
+      }
+
       setIsModalOpen(false);
       setEditingAgreement(null);
       doMarkStale();

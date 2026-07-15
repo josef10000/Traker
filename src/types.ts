@@ -2,7 +2,8 @@ export enum AgreementStatus {
   WAITING = 'waiting',
   PAID = 'paid',
   BROKEN = 'broken',
-  SCHEDULED = 'scheduled'
+  SCHEDULED = 'scheduled',
+  RECOVERED = 'recovered'
 }
 
 export enum AgreementOrigin {
