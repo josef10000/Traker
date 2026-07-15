@@ -159,7 +159,9 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                       <span className="font-bold text-xs block text-white leading-tight truncate">{collab.displayName || collab.email.split('@')[0]}</span>
                       <span className="text-[9px] text-slate-500">{roleLabel}</span>
                     </div>
-                                {/* Dias do Mês */}
+                  </td>
+
+                  {/* Dias do Mês */}
                   {daysArray.map(day => {
                     const note = getDayNote(collab.uid, day.dateStr);
                     const events = getDayEvents(collab, day.dateStr);
