@@ -198,7 +198,7 @@ export interface CollaborationNote {
   creatorName: string;
   type: 'note' | 'attendance';
   content: string;
-  attendanceStatus?: 'present' | 'late' | 'absent';
+  attendanceStatus?: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '';
   lateDuration?: string;
   absenceReason?: string;
   createdAt: string;

@@ -1090,7 +1090,25 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       const hasEvent = dayEvents.length > 0;
                       const eventText = hasEvent ? dayEvents.map(e => e.title).join(', ') : '';
 
-                      const status = dayNote?.attendanceStatus || '';
+                      const getAutomaticStatus = (dateStr: string) => {
+                        const today = new Date();
+                        const yyyy = today.getFullYear();
+                        const mm = String(today.getMonth() + 1).padStart(2, '0');
+                        const dd = String(today.getDate()).padStart(2, '0');
+                        const todayStr = `${yyyy}-${mm}-${dd}`;
+
+                        if (dateStr < todayStr) {
+                          return 'present';
+                        }
+                        if (dateStr === todayStr) {
+                          if (today.getHours() >= 10) {
+                            return 'present';
+                          }
+                        }
+                        return '';
+                      };
+
+                      const status = dayNote?.attendanceStatus || getAutomaticStatus(dateStr);
 
                       slots.push(
                         <div
@@ -1102,7 +1120,13 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                 ? 'bg-amber-500/10 border-amber-500/30'
                                 : status === 'absent'
                                   ? 'bg-rose-500/10 border-rose-500/30'
-                                  : 'bg-slate-950/40 border-white/5'
+                                  : status === 'early_departure'
+                                    ? 'bg-purple-500/10 border-purple-500/30'
+                                    : status === 'day_off'
+                                      ? 'bg-slate-500/10 border-slate-550/25'
+                                      : status === 'vacation'
+                                        ? 'bg-blue-500/10 border-blue-500/30'
+                                        : 'bg-slate-950/40 border-white/5'
                           }`}
                         >
                           {/* Número do Dia */}
@@ -1113,7 +1137,13 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                 ? 'text-amber-400'
                                 : status === 'absent'
                                   ? 'text-rose-400'
-                                  : 'text-slate-400'
+                                  : status === 'early_departure'
+                                    ? 'text-purple-400'
+                                    : status === 'day_off'
+                                      ? 'text-slate-400'
+                                      : status === 'vacation'
+                                        ? 'text-blue-400'
+                                        : 'text-slate-400'
                           }`}>
                             {dayNum}
                           </span>
@@ -1126,7 +1156,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                           )}
 
                           {/* Hover Tooltip */}
-                          {(dayNote || hasEvent) && (
+                          {(dayNote || hasEvent || status === 'present') && (
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-30 p-2.5 rounded-xl border border-white/10 bg-slate-950 text-slate-300 text-[9px] leading-relaxed shadow-xl w-44 pointer-events-none transition-all">
                               {hasEvent && (
                                 <div className="mb-1">
@@ -1134,18 +1164,27 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                   <span className="text-white block font-medium">{eventText}</span>
                                 </div>
                               )}
-                              {dayNote && (
+                              {(dayNote || status === 'present') && (
                                 <div>
                                   <span className="font-bold text-slate-400 block">Presença:</span>
                                   <span className={`font-extrabold ${
-                                    status === 'present' ? 'text-emerald-400' : status === 'late' ? 'text-amber-400' : 'text-rose-400'
+                                    status === 'present' ? 'text-emerald-400' :
+                                    status === 'late' ? 'text-amber-400' :
+                                    status === 'absent' ? 'text-rose-400' :
+                                    status === 'early_departure' ? 'text-purple-400' :
+                                    status === 'day_off' ? 'text-slate-400' : 'text-blue-400'
                                   }`}>
-                                    {status === 'present' ? 'Presente' : status === 'late' ? 'Atrasado' : 'Falta'}
+                                    {status === 'present' && 'Presente'}
+                                    {status === 'late' && 'Atrasado'}
+                                    {status === 'absent' && 'Falta'}
+                                    {status === 'early_departure' && 'Saída Antecipada'}
+                                    {status === 'day_off' && 'Day Off'}
+                                    {status === 'vacation' && 'Férias'}
                                   </span>
-                                  {status === 'late' && dayNote.lateDuration && (
+                                  {status === 'late' && dayNote && dayNote.lateDuration && (
                                     <span className="block text-white font-medium mt-0.5">Tempo: {dayNote.lateDuration}</span>
                                   )}
-                                  {status === 'absent' && dayNote.absenceReason && (
+                                  {(status === 'absent' || status === 'early_departure' || status === 'day_off') && dayNote && dayNote.absenceReason && (
                                     <span className="block text-white font-medium mt-0.5">Motivo: {dayNote.absenceReason}</span>
                                   )}
                                 </div>
@@ -1162,7 +1201,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
 
               {/* Legenda */}
               <div className="flex flex-wrap items-center justify-between gap-4 p-4 border border-white/5 bg-slate-900/10 rounded-2xl text-[10px] text-slate-400 font-medium">
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4 flex-1">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 inline-block" />
                     <strong className="text-emerald-400">Presente</strong>
@@ -1174,6 +1213,18 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-md bg-rose-500/10 border border-rose-500/30 inline-block" />
                     <strong className="text-rose-400">Falta</strong>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-purple-500/10 border border-purple-500/30 inline-block" />
+                    <strong className="text-purple-400">Saída Antecipada</strong>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-slate-500/10 border border-slate-550/30 inline-block" />
+                    <strong className="text-slate-400">Day Off</strong>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-blue-500/10 border border-blue-500/30 inline-block" />
+                    <strong className="text-blue-400">Férias</strong>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="px-1.5 py-0.5 rounded-sm bg-sky-500/20 text-sky-400 border border-sky-500/20 text-[7px] font-black inline-block uppercase leading-none">Presencial</span>

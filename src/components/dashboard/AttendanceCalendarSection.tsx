@@ -159,13 +159,30 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                       <span className="font-bold text-xs block text-white leading-tight truncate">{collab.displayName || collab.email.split('@')[0]}</span>
                       <span className="text-[9px] text-slate-500">{roleLabel}</span>
                     </div>
-                  </td>
-
-                  {/* Dias do Mês */}
+                                {/* Dias do Mês */}
                   {daysArray.map(day => {
                     const note = getDayNote(collab.uid, day.dateStr);
                     const events = getDayEvents(collab, day.dateStr);
-                    const status = note?.attendanceStatus || '';
+                    
+                    const getAutomaticStatus = (dateStr: string) => {
+                      const today = new Date();
+                      const yyyy = today.getFullYear();
+                      const mm = String(today.getMonth() + 1).padStart(2, '0');
+                      const dd = String(today.getDate()).padStart(2, '0');
+                      const todayStr = `${yyyy}-${mm}-${dd}`;
+
+                      if (dateStr < todayStr) {
+                        return 'present';
+                      }
+                      if (dateStr === todayStr) {
+                        if (today.getHours() >= 10) {
+                          return 'present';
+                        }
+                      }
+                      return '';
+                    };
+
+                    const status = note?.attendanceStatus || getAutomaticStatus(day.dateStr);
                     const hasEvent = events.length > 0;
                     const eventTitle = hasEvent ? events.map(e => e.title).join(', ') : '';
 
@@ -190,9 +207,15 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                                 ? 'bg-amber-500 text-slate-950 border-amber-400'
                                 : status === 'absent'
                                   ? 'bg-rose-500 text-white border-rose-400'
-                                  : 'bg-slate-800/40 border-slate-700/30 text-transparent hover:border-slate-500'
+                                  : status === 'early_departure'
+                                    ? 'bg-purple-500 text-white border-purple-400'
+                                    : status === 'day_off'
+                                      ? 'bg-slate-500/30 text-slate-400 border-slate-500/50'
+                                      : status === 'vacation'
+                                        ? 'bg-blue-500 text-white border-blue-400'
+                                        : 'bg-slate-800/40 border-slate-700/30 text-transparent hover:border-slate-500'
                           }`}>
-                            {status === 'present' ? 'P' : status === 'late' ? 'A' : status === 'absent' ? 'F' : ''}
+                            {status === 'present' ? 'P' : status === 'late' ? 'A' : status === 'absent' ? 'F' : status === 'early_departure' ? 'S' : status === 'day_off' ? 'D' : status === 'vacation' ? 'V' : ''}
                           </span>
 
                           {/* Selo visual de Evento Agendado */}
@@ -202,7 +225,7 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                         </div>
 
                         {/* Tooltip Dinâmico */}
-                        {(note || hasEvent) && (
+                        {(note || hasEvent || status === 'present') && (
                           <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-30 p-2.5 rounded-xl border text-[9px] leading-relaxed shadow-xl w-44 pointer-events-none transition-all ${
                             theme === 'dark'
                               ? 'bg-slate-950 border-white/10 text-slate-300'
@@ -214,18 +237,27 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                                 <span className="text-white block font-medium">{eventTitle}</span>
                               </div>
                             )}
-                            {note && (
+                            {(note || status === 'present') && (
                               <div>
                                 <span className="font-bold text-slate-400 block">Presença:</span>
                                 <span className={`font-extrabold ${
-                                  status === 'present' ? 'text-emerald-400' : status === 'late' ? 'text-amber-400' : 'text-rose-400'
+                                  status === 'present' ? 'text-emerald-400' :
+                                  status === 'late' ? 'text-amber-400' :
+                                  status === 'absent' ? 'text-rose-400' :
+                                  status === 'early_departure' ? 'text-purple-400' :
+                                  status === 'day_off' ? 'text-slate-400' : 'text-blue-400'
                                 }`}>
-                                  {status === 'present' ? 'Presente' : status === 'late' ? 'Atrasado' : 'Falta'}
+                                  {status === 'present' && 'Presente'}
+                                  {status === 'late' && 'Atrasado'}
+                                  {status === 'absent' && 'Falta'}
+                                  {status === 'early_departure' && 'Saída Antecipada'}
+                                  {status === 'day_off' && 'Day Off'}
+                                  {status === 'vacation' && 'Férias'}
                                 </span>
-                                {status === 'late' && note.lateDuration && (
+                                {status === 'late' && note && note.lateDuration && (
                                   <span className="block text-white font-medium mt-0.5">Tempo: {note.lateDuration}</span>
                                 )}
-                                {status === 'absent' && note.absenceReason && (
+                                {(status === 'absent' || status === 'early_departure' || status === 'day_off') && note && note.absenceReason && (
                                   <span className="block text-white font-medium mt-0.5">Motivo: {note.absenceReason}</span>
                                 )}
                               </div>
@@ -258,8 +290,20 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
             <strong className="text-slate-300">F</strong> - Falta (Justificada)
           </span>
           <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-500 border border-purple-400 inline-block" />
+            <strong className="text-slate-300">S</strong> - Saída Antecipada
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-500/50 border border-slate-500/50 inline-block" />
+            <strong className="text-slate-300">D</strong> - Day Off
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-blue-400 inline-block" />
+            <strong className="text-slate-300">V</strong> - Férias
+          </span>
+          <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 border border-sky-300 inline-block" />
-            Evento Agendado (Ex: Presencial)
+            Evento Agendado
           </span>
         </div>
         <div className="flex items-center gap-1">

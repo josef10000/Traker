@@ -15,7 +15,7 @@ O **Tracker SaaS** é uma solução corporativa completa de alta performance (Mu
 * **🛡️ Compliance LGPD Nativo (Audit Chain Criptográfica)**: Protege dados pessoais sensíveis através de mascaramento de CPF no formato `***.***.*89-01`, controle rígido de revelação temporária (10 segundos) e clipboard seguro. Toda ação crítica (visualização, exportação, exclusão) é registrada em uma **Cadeia de Auditoria Criptográfica** encadeada sequencialmente via hashes SHA-256 no Firestore (bloco anterior vinculado ao atual), garantindo a imutabilidade e rastreabilidade absoluta dos acessos para conformidade LGPD avançada (B2B/Enterprise).
 * **🎯 Gestão de Metas e Performance Dinâmica**: Acompanhamento em tempo real das metas da organização e individuais com o cálculo automático de **Meta Diária Dinâmica** calibrada reativamente pelos dias úteis restantes no mês e valores já liquidados.
 * **📊 Inteligência & Insights Avançados**: Gráficos analíticos de produtividade por turnos, funil de atingimento, projeções matemáticas de fim de mês e distribuição horária do time para identificar picos de produtividade.
-* **👥 Gestão de Colaboradores & Clima comportamental**: Apontamento e monitoramento de presença diária (Presente, Atrasado, Falta) e controle de notas comportamentais privadas com histórico consolidado e relatórios executivos para RH/Supervisão.
+* **👥 Gestão de Colaboradores & Clima comportamental**: Apontamento e monitoramento de presença diária automática (estado natural sem persistência no banco, gerado automaticamente para o dia corrente após as 10h da manhã), novos status operacionais (Saída Antecipada, Day Off, Férias), agendamento de eventos/avisos gerais pela coordenação, controle de notas comportamentais privadas com histórico consolidado e relatórios executivos para RH/Supervisão. Cada colaborador possui sua aba de "Minha Escala" no perfil pessoal.
 * **📄 Relatórios PDF Corporativos Premium**: Sistema com CSS de impressão otimizado que transforma o painel operacional em um relatório executivo minimalista de alto contraste pronto para reuniões com CNPJ, rankings de operadores e parecer técnico.
 * **🎨 Modo Visual Premium Switchable**: Possibilidade de alternar instantaneamente entre o **Modo Clássico** e o **Modo Premium** (com base em um estilo visual ultra-premium, glassmorphism rico com filetes de brilho interno, ícones em relevo metálico 3D e micro-gráficos exibidos na face frontal dos cartões). A escolha é persistida de forma reativa localmente no navegador e está acessível em todos os perfis e inclusive no Sandbox.
 * **🌓 Tema Claro Sólido (Estilo Salesforce) & Tema Escuro Profundo**: Design corporativo limpo baseado em tokens dinâmicos HSL para alternância suave de temas. O tema claro oferece uma interface de alto contraste (branco sólido com escrita preta) projetada para longas sessões de trabalho, enquanto o tema escuro mantém a estética clássica e futurista do painel original.
@@ -32,13 +32,14 @@ A plataforma conta com 5 níveis de controle de permissões dinâmicos (Roles):
    - Simulação de cargos em ambiente de Testes Sandbox com provisionamento automático de dados de demonstração.
    - Ferramenta de exclusão em lote (chunking reativo de 400 em 400 documentos no Firestore para evitar limites do SDK).
  2. **🧭 Coordenador (Coordinator - Gestor Geral da Operação)**:
-   - Painel comparativo de performance consolidada de todas as equipes (Metas vs Recuperado).
+   - Painel comparativo de performance consolidada de todas as equipes (Metas vs Recuperado) com drill-down detalhado por time, re-cálculo de metas individuais proporcionais, busca de colaboradores e paginação (5 por página).
    - Filtro de árvore em 3 níveis (Gerente -> Supervisor -> Equipe) para controle de performance.
-   - Escala consolidada de presença interativa de todos os operadores da operação.
+   - Escala consolidada de presença interativa de todos os operadores da operação através de uma matriz horizontal mensal com cores e tooltips para novos status (Presença Automática, Atrasado, Falta, Saída Antecipada, Day Off e Férias).
+   - Agendamento de eventos e avisos gerais no calendário (Ex: Presencial, Treinamento).
    - Central de Transferências para movimentar operadores entre equipes em tempo real.
    - Acesso a desligamentos (offboarding) de operadores e supervisores.
  3. **👔 Gerente (Manager - Gestor da Organização)**:
-   - Visualização macro de todas as equipes da empresa e do ranking consolidado de performance.
+   - Visualização macro de todas as equipes da empresa e do ranking consolidado de performance, com busca de colaboradores e paginação na gestão de equipes.
    - Autonomia para criar e remover equipes dentro dos limites estabelecidos pelo plano.
    - Acesso exclusivo a relatórios corporativos consolidados de operadores.
    - Configurações avançadas e segurança administrativa (bloqueio automático de conciliações e alterações individuais de acordos).

@@ -896,7 +896,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleSaveAttendance = async (
-    status: 'present' | 'late' | 'absent' | '',
+    status: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '',
     lateDuration: string,
     absenceReason: string
   ) => {
@@ -905,7 +905,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     try {
       const dateFormatted = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
-      const statusLabels = { present: 'Presente', late: 'Atrasado', absent: 'Falta', '': 'Limpar' };
+      const statusLabels = { 
+        present: 'Presente', 
+        late: 'Atrasado', 
+        absent: 'Falta', 
+        early_departure: 'Saída Antecipada', 
+        day_off: 'Day Off', 
+        vacation: 'Férias', 
+        '': 'Limpar' 
+      };
 
       let existingNotes: CollaborationNote[] = [];
       if (profile.organizationId === 'sandbox-test') {
@@ -942,11 +950,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         await batch.commit();
       }
 
-      if (status !== '') {
+      if (status !== '' && status !== 'present') {
         let content = `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`;
         if (status === 'late' && lateDuration) {
           content += ` (${lateDuration} de atraso)`;
-        } else if (status === 'absent' && absenceReason) {
+        } else if ((status === 'absent' || status === 'early_departure' || status === 'day_off') && absenceReason) {
           content += ` (Motivo: ${absenceReason})`;
         }
 
@@ -961,7 +969,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           content,
           attendanceStatus: status,
           lateDuration: status === 'late' ? lateDuration : undefined,
-          absenceReason: status === 'absent' ? absenceReason : undefined,
+          absenceReason: (status === 'absent' || status === 'early_departure' || status === 'day_off') ? absenceReason : undefined,
           createdAt: targetDateObj.toISOString()
         });
       }

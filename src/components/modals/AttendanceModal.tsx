@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, Check, UserMinus, Trash } from '@phosphor-icons/react';
+import { X, Clock, Check, UserMinus, SignOut, Coffee, Airplane } from '@phosphor-icons/react';
 
 interface AttendanceModalProps {
   isOpen: boolean;
   onClose: () => void;
   collaboratorName: string;
   dateStr: string; // Formato YYYY-MM-DD
-  currentStatus?: 'present' | 'late' | 'absent' | '';
+  currentStatus?: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '';
   currentLateDuration?: string;
   currentAbsenceReason?: string;
-  onSave: (status: 'present' | 'late' | 'absent' | '', lateDuration: string, absenceReason: string) => void;
+  onSave: (status: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '', lateDuration: string, absenceReason: string) => void;
   theme: 'light' | 'dark';
 }
 
@@ -24,7 +24,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   onSave,
   theme
 }) => {
-  const [status, setStatus] = useState<'present' | 'late' | 'absent' | ''>(currentStatus);
+  const [status, setStatus] = useState<'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | ''>(currentStatus);
   const [lateDuration, setLateDuration] = useState(currentLateDuration);
   const [absenceReason, setAbsenceReason] = useState(currentAbsenceReason);
 
@@ -46,7 +46,11 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(status, status === 'late' ? lateDuration : '', status === 'absent' ? absenceReason : '');
+    onSave(
+      status,
+      status === 'late' ? lateDuration : '',
+      (status === 'absent' || status === 'early_departure' || status === 'day_off') ? absenceReason : ''
+    );
     onClose();
   };
 
@@ -60,10 +64,11 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h3 className="text-lg font-bold">Registrar Presença</h3>
+            <h3 className="text-lg font-bold">Registrar Escala / Presença</h3>
             <p className="text-xs text-slate-400 mt-1">{collaboratorName} • {dateFormatted}</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className={`p-1.5 rounded-lg border transition-all hover:scale-105 active:scale-95 cursor-pointer ${
               theme === 'dark'
@@ -84,7 +89,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 type="button"
                 onClick={() => setStatus('present')}
                 className={`flex items-center justify-center gap-2 p-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                  status === 'present'
+                  status === 'present' || status === ''
                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-black shadow-lg shadow-emerald-500/5'
                     : theme === 'dark'
                       ? 'bg-slate-950/40 border-white/5 text-slate-400 hover:bg-white/5'
@@ -92,7 +97,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 }`}
               >
                 <Check size={16} />
-                Presente
+                Presente (Padrão)
               </button>
 
               <button
@@ -127,17 +132,47 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setStatus('')}
+                onClick={() => setStatus('early_departure')}
                 className={`flex items-center justify-center gap-2 p-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                  status === ''
-                    ? 'bg-slate-500/10 text-slate-400 border-slate-500/30 font-black shadow-lg shadow-slate-500/5'
+                  status === 'early_departure'
+                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/30 font-black shadow-lg shadow-purple-500/5'
                     : theme === 'dark'
                       ? 'bg-slate-950/40 border-white/5 text-slate-400 hover:bg-white/5'
                       : 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <Trash size={16} />
-                Limpar
+                <SignOut size={16} />
+                Saída Antecipada
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStatus('day_off')}
+                className={`flex items-center justify-center gap-2 p-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                  status === 'day_off'
+                    ? 'bg-slate-500/15 text-slate-400 border-slate-550/30 font-black shadow-lg shadow-slate-500/5'
+                    : theme === 'dark'
+                      ? 'bg-slate-950/40 border-white/5 text-slate-400 hover:bg-white/5'
+                      : 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Coffee size={16} />
+                Day Off
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStatus('vacation')}
+                className={`flex items-center justify-center gap-2 p-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                  status === 'vacation'
+                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 font-black shadow-lg shadow-blue-500/5'
+                    : theme === 'dark'
+                      ? 'bg-slate-950/40 border-white/5 text-slate-400 hover:bg-white/5'
+                      : 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Airplane size={16} />
+                Férias
               </button>
             </div>
           </div>
@@ -174,6 +209,41 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                   theme === 'dark'
                     ? 'bg-slate-950/60 border-white/10 text-white focus:border-rose-500/60'
                     : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-rose-500'
+                }`}
+              />
+            </div>
+          )}
+
+          {status === 'early_departure' && (
+            <div className="space-y-2 animate-fadeIn">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Motivo / Horário de Saída</label>
+              <textarea
+                required
+                value={absenceReason}
+                onChange={(e) => setAbsenceReason(e.target.value)}
+                placeholder="Ex: Consulta médica às 14h, mal estar, etc."
+                rows={3}
+                className={`w-full px-4 py-3 rounded-xl text-xs font-medium border transition-all outline-hidden resize-none ${
+                  theme === 'dark'
+                    ? 'bg-slate-950/60 border-white/10 text-white focus:border-purple-500/60'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-purple-500'
+                }`}
+              />
+            </div>
+          )}
+
+          {status === 'day_off' && (
+            <div className="space-y-2 animate-fadeIn">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Justificativa do Day Off (Opcional)</label>
+              <textarea
+                value={absenceReason}
+                onChange={(e) => setAbsenceReason(e.target.value)}
+                placeholder="Ex: Folga de feriado trabalhado, folga de banco de horas, etc."
+                rows={2}
+                className={`w-full px-4 py-3 rounded-xl text-xs font-medium border transition-all outline-hidden resize-none ${
+                  theme === 'dark'
+                    ? 'bg-slate-950/60 border-white/10 text-white focus:border-slate-550'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-slate-400'
                 }`}
               />
             </div>
