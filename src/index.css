@@ -698,6 +698,166 @@ option {
 }
 
 /* =====================================================
+   CARDS: NÚMEROS VISÍVEIS, BORDAS DEFINIDAS, NEGRITO
+   ===================================================== */
+
+/* Borda dos cards mais escura e definida */
+[data-theme='light'] .glass-card {
+  border: 1.5px solid #94a3b8 !important;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.06) !important;
+}
+
+[data-theme='light'] .glass-card:hover {
+  border: 1.5px solid #64748b !important;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.12) !important;
+  transform: none !important;
+}
+
+/* Números principais dos StatCards: pretos, grandes, em negrito */
+[data-theme='light'] .glass-card h3,
+[data-theme='light'] .glass-card h2,
+[data-theme='light'] .glass-card h1 {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+
+/* Valores monetários e números (geralmente em h3/p.text-2xl) */
+[data-theme='light'] .glass-card .text-2xl,
+[data-theme='light'] .glass-card .text-3xl,
+[data-theme='light'] .glass-card .text-xl {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+/* Títulos dos cards (label acima do número) */
+[data-theme='light'] .glass-card .text-\[9px\],
+[data-theme='light'] .glass-card .text-\[10px\],
+[data-theme='light'] .glass-card .text-\[11px\],
+[data-theme='light'] .glass-card .text-xs,
+[data-theme='light'] .glass-card .text-sm {
+  color: #334155 !important;
+  font-weight: 700 !important;
+}
+
+/* Subtítulos dos cards */
+[data-theme='light'] .glass-card .text-slate-500,
+[data-theme='light'] .glass-card .text-slate-400 {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+/* text-white/50 e variantes nos cards */
+[data-theme='light'] .glass-card [class*="text-white"] {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+/* Borda dos premium-card também mais escura */
+[data-theme='light'] .premium-card {
+  border: 1.5px solid #94a3b8 !important;
+}
+
+/* =====================================================
+   NOME DA EMPRESA: LEGÍVEL E EM NEGRITO
+   ===================================================== */
+
+[data-theme='light'] h1.text-slate-900,
+[data-theme='light'] h1.text-white,
+[data-theme='light'] h1[class*="font-black"],
+[data-theme='light'] h1[class*="font-bold"] {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+/* Header principal: garantir que todo texto seja visível */
+[data-theme='light'] header h1,
+[data-theme='light'] header h2,
+[data-theme='light'] header h3 {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+[data-theme='light'] header p,
+[data-theme='light'] header span:not([class*="bg-"]) {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+/* =====================================================
+   NEGRITO GERAL: TÍTULOS, LABELS, SUBTÍTULOS NO LIGHT
+   ===================================================== */
+
+/* Todos os títulos de seção */
+[data-theme='light'] h1:not([class*="text-"]):not([class*="bg-"]),
+[data-theme='light'] h2:not([class*="text-"]):not([class*="bg-"]),
+[data-theme='light'] h3:not([class*="text-"]):not([class*="bg-"]) {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+/* Spans e labels que eram claros demais */
+[data-theme='light'] .uppercase.tracking-widest,
+[data-theme='light'] .uppercase.tracking-wider,
+[data-theme='light'] .uppercase.font-black,
+[data-theme='light'] .uppercase.font-bold {
+  font-weight: 800 !important;
+  color: #334155 !important;
+}
+
+/* =====================================================
+   TOUR DRIVER.JS: LIGHT MODE
+   ===================================================== */
+
+/* Popover do driver.js: fundo branco, texto preto */
+[data-theme='light'] #driver-popover-content,
+[data-theme='light'] .driver-popover {
+  background-color: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 0.15) !important;
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .driver-popover-title {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+[data-theme='light'] .driver-popover-description {
+  color: #334155 !important;
+  font-weight: 500 !important;
+}
+
+[data-theme='light'] .driver-popover-footer {
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .driver-popover-progress-text {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme='light'] .driver-popover-prev-btn {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .driver-popover-next-btn,
+[data-theme='light'] .driver-popover-done-btn {
+  background: #2D9C95 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+[data-theme='light'] .driver-popover-arrow-side-top::after,
+[data-theme='light'] .driver-popover-arrow-side-bottom::after,
+[data-theme='light'] .driver-popover-arrow-side-left::after,
+[data-theme='light'] .driver-popover-arrow-side-right::after {
+  border-color: #ffffff transparent transparent transparent !important;
+}
+
+/* =====================================================
    FIM DO LIGHT MODE
    ===================================================== */
 
@@ -1060,4 +1220,43 @@ option {
 }
 
 
+/* =====================================================
+   DRIVER.JS TOUR: OVERRIDES GLOBAIS (funciona mesmo 
+   sem escopo de data-theme pois driver.js injeta em body)
+   ===================================================== */
 
+html[data-theme='light'] .driver-popover-content,
+html[data-theme='light'] .driver-popover {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 25px 50px rgb(0 0 0 / 0.18) !important;
+}
+
+html[data-theme='light'] .driver-popover-title {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  font-size: 1rem !important;
+}
+
+html[data-theme='light'] .driver-popover-description {
+  color: #334155 !important;
+}
+
+html[data-theme='light'] .driver-popover-navigation-btns button {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme='light'] .driver-popover-next-btn,
+html[data-theme='light'] .driver-popover-done-btn {
+  background: #2D9C95 !important;
+  color: #ffffff !important;
+  border-color: #2D9C95 !important;
+}
+
+html[data-theme='light'] .driver-popover-progress-text {
+  color: #64748b !important;
+}
