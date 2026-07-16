@@ -308,6 +308,141 @@ option {
   display: none;
 }
 
+/* =====================================================
+   LIGHT MODE — CLÁSSICO LIMPO (Baseado nas imagens)
+   Neutraliza TODAS as regras do premium design mode.
+   Fundo #f8fafc, cards brancos, sombras suaves.
+   ===================================================== */
+
+/* Variáveis base - sobrescreve premium com !important */
+[data-theme='light'] {
+  --bg-color: #f8fafc !important;
+  --surface-color: #ffffff !important;
+  --text-main: #0f172a !important;
+  --text-muted: #64748b !important;
+  --glass-surface: rgba(255, 255, 255, 0.97) !important;
+  --glass-border: #e2e8f0 !important;
+  --border-color: #e2e8f0 !important;
+  --card-bg: #ffffff !important;
+  --primary-color: #2D9C95 !important;
+}
+
+/* Body: fundo claro, sem gradientes/texturas premium */
+[data-theme='light'] body {
+  background-color: #f8fafc !important;
+  background-image: none !important;
+  color: #0f172a !important;
+}
+
+/* Glass cards: branco sólido com sombra suave (sem glassmorphism) */
+[data-theme='light'] .glass-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04) !important;
+}
+
+[data-theme='light'] .glass-card::before {
+  display: none !important;
+}
+
+[data-theme='light'] .glass-card:hover {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08) !important;
+  transform: none !important;
+}
+
+/* Premium cards: branco sólido no light */
+[data-theme='light'] .premium-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06) !important;
+  background: #ffffff !important;
+}
+
+[data-theme='light'] .premium-card::before {
+  display: none !important;
+}
+
+[data-theme='light'] .premium-card:hover {
+  transform: none !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08) !important;
+}
+
+/* Premium icon box: clean no light */
+[data-theme='light'] .premium-icon-box {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme='light'] .premium-icon-box::after {
+  display: none !important;
+}
+
+/* Modais: branco puro */
+[data-theme='light'] div[role="dialog"] > div,
+[data-theme='light'] .bg-slate-900.rounded-3xl,
+[data-theme='light'] .bg-slate-950.rounded-3xl {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15) !important;
+}
+
+/* Fundo desfocado de modais no light */
+[data-theme='light'] div.fixed.inset-0.bg-black\/80,
+[data-theme='light'] div.fixed.inset-0.bg-slate-950\/80 {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* Tabelas: clean */
+[data-theme='light'] thead tr {
+  background-color: #f8fafc !important;
+}
+
+[data-theme='light'] tr.border-b {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .data-row:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Barra de abas no light */
+[data-theme='light'] div.flex.flex-wrap.bg-slate-950 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  backdrop-filter: none !important;
+}
+
+/* Scrollbar no light */
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1 !important;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8 !important;
+}
+
+/* Botões que o premium muda para dourado: restaurar no light */
+[data-theme='light'] .bg-sky-500,
+[data-theme='light'] button[class*="bg-sky-"] {
+  background: initial;
+  color: initial;
+  box-shadow: initial;
+  border: initial;
+  text-shadow: initial;
+}
+
+/* =====================================================
+   FIM DO LIGHT MODE
+   ===================================================== */
+
 /* --- ESTILO PREMIUM (VISUAL ULTRA-PREMIUM) --- */
 
 [data-design-mode='premium'] {
