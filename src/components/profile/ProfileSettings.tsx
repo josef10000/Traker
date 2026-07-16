@@ -814,7 +814,6 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       {/* Modal Container */}
       <div 
         className="w-full max-w-5xl h-[85vh] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row bg-[#090d16] text-white relative"
-        style={{ backgroundColor: '#090d16' }}
       >
         {/* Coluna da Esquerda (Menu de Abas) */}
         <div className="w-full md:w-64 border-r border-white/5 bg-slate-950/40 p-6 flex flex-col justify-between shrink-0">
