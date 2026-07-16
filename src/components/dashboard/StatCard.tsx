@@ -46,13 +46,24 @@ export const StatCard = ({
     }
   }, [isFlipped, id]);
 
+  // Ícone: fundo sólido em gradiente, ícone branco, sombra colorida
   const colorClasses = {
-    primary: 'bg-primary/10 text-primary border-primary/20',
-    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    sky: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-    indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+    primary: 'bg-gradient-to-br from-sky-600 to-sky-400 text-white border-sky-400 shadow-sky-500/50',
+    emerald: 'bg-gradient-to-br from-emerald-600 to-emerald-400 text-white border-emerald-400 shadow-emerald-500/50',
+    rose: 'bg-gradient-to-br from-rose-600 to-pink-500 text-white border-rose-400 shadow-rose-500/50',
+    amber: 'bg-gradient-to-br from-amber-600 to-amber-400 text-white border-amber-400 shadow-amber-500/50',
+    sky: 'bg-gradient-to-br from-blue-600 to-sky-400 text-white border-sky-400 shadow-sky-500/50',
+    indigo: 'bg-gradient-to-br from-indigo-700 to-purple-500 text-white border-indigo-400 shadow-indigo-500/50'
+  };
+
+  // Sombra colorida do card correspondente à cor do ícone
+  const cardColorShadows: Record<string, string> = {
+    primary: '0 6px 24px rgba(14, 165, 233, 0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    emerald: '0 6px 24px rgba(16, 185, 129, 0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    rose:    '0 6px 24px rgba(244, 63,  94,  0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    amber:   '0 6px 24px rgba(245, 158, 11,  0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    sky:     '0 6px 24px rgba(14,  165, 233, 0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    indigo:  '0 6px 24px rgba(99,  102, 241, 0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
   };
 
   const chartColors = {
@@ -216,7 +227,7 @@ export const StatCard = ({
       >
         {/* Face Frontal */}
         <div className="absolute inset-0 backface-hidden preserve-3d">
-          <div className={`glass-card h-full p-5 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden preserve-3d border border-slate-200 dark:border-white/10`}>
+          <div className={`glass-card h-full p-5 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden preserve-3d border border-slate-200 dark:border-white/10`} style={{ boxShadow: cardColorShadows[color] }}>
             <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] -mr-8 -mt-8 rounded-full blur-2xl group-hover:opacity-[0.07] transition-all" />
             
             <div className="flex justify-between items-start mb-4 preserve-3d">
@@ -250,7 +261,10 @@ export const StatCard = ({
 
         {/* Face Traseira */}
         <div className="absolute inset-0 backface-hidden rotate-y-180 preserve-3d">
-          <div className={`glass-card h-full p-5 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden border border-slate-200 dark:border-white/10 preserve-3d`}>
+          <div
+              className={`glass-card h-full p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden border border-slate-200 dark:border-white/10 preserve-3d`}
+              style={{ boxShadow: cardColorShadows[color] }}
+            >
             <div className="flex justify-between items-center mb-1 preserve-3d" style={{ transform: 'translateZ(20px)' }}>
               <p className="text-[9px] font-black text-slate-500 dark:text-white/50 uppercase tracking-[0.2em]">Visão Analítica</p>
               <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-glow`} style={{ backgroundColor: chartColors[color], boxShadow: `0 0 10px ${chartColors[color]}` }} />
