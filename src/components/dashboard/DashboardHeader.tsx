@@ -153,7 +153,7 @@ export const DashboardHeader = ({
       <div className={`max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 transition-all duration-300 ${
         theme === 'dark' 
           ? '' 
-          : 'bg-white border border-[#e2e8f0] rounded-[2rem] p-4 shadow-sm'
+          : 'bg-white border border-slate-100 rounded-2xl p-4 shadow-sm'
       }`}>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div 
@@ -167,8 +167,8 @@ export const DashboardHeader = ({
             />
           </div>
           <div className="flex-1">
-            <h1 className={`text-xl font-black tracking-tight leading-none italic uppercase ${
-              theme === 'dark' ? 'text-white' : 'text-slate-900'
+            <h1 className={`text-xl font-bold tracking-wide leading-none italic uppercase ${
+              theme === 'dark' ? 'text-white' : 'text-slate-800'
             }`}>
               {organizationName || 'Tracker'}
             </h1>
@@ -213,7 +213,7 @@ export const DashboardHeader = ({
               }
             }}
             className={`relative flex items-center px-3 py-1.5 rounded-xl border focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all shrink-0 max-w-[160px] ${
-              theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-white border-[#e2e8f0]'
+              theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
             }`}
           >
             <input 
@@ -241,12 +241,12 @@ export const DashboardHeader = ({
           <button
             onClick={onRefreshData}
             disabled={isRefreshing}
-            className={`p-2 rounded-xl transition-all border shrink-0 cursor-pointer active:scale-95 ${
+            className={`transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center justify-center ${
               isRefreshing
-                ? 'text-primary bg-primary/10 border-primary/20 cursor-wait'
+                ? 'text-primary bg-primary/10 border-primary/20 cursor-wait w-10 h-10 rounded-full'
                 : theme === 'dark'
-                  ? 'border-transparent text-slate-500 hover:text-primary hover:bg-primary/10'
-                  : 'bg-white border-[#e2e8f0] text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'p-2 rounded-xl border-transparent text-slate-500 hover:text-primary hover:bg-primary/10'
+                  : 'w-10 h-10 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-750 bg-white'
             }`}
             title={`Atualizar dados do mês (Atualizado: ${formatLastRefreshed(lastRefreshed)})`}
           >
@@ -261,10 +261,10 @@ export const DashboardHeader = ({
           {onToggleTheme && (
             <button
               onClick={onToggleTheme}
-              className={`p-2 rounded-xl transition-all border shrink-0 cursor-pointer active:scale-95 ${
+              className={`transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center justify-center ${
                 theme === 'dark'
-                  ? 'bg-white/5 border-white/10 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10'
-                  : 'bg-white border-[#e2e8f0] text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'p-2 rounded-xl bg-white/5 border-white/10 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10'
+                  : 'w-10 h-10 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-750 bg-white'
               }`}
               title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
             >
@@ -282,12 +282,12 @@ export const DashboardHeader = ({
                 e.stopPropagation();
                 setIsToolsOpen(!isToolsOpen);
               }}
-              className={`p-2 rounded-xl border transition-all cursor-pointer active:scale-95 ${
+              className={`transition-all border cursor-pointer active:scale-95 flex items-center justify-center ${
                 isToolsOpen
-                  ? 'bg-primary/15 border-primary/30 text-primary'
+                  ? 'w-10 h-10 rounded-full bg-primary/15 border-primary/30 text-primary'
                   : theme === 'dark'
-                    ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
-                    : 'bg-white border-[#e2e8f0] text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'p-2 rounded-xl bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                    : 'w-10 h-10 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-750 bg-white'
               }`}
               title="Ações e Ferramentas SaaS"
             >
@@ -389,8 +389,10 @@ export const DashboardHeader = ({
           {/* Perfil Menu */}
           <div 
             id="user-profile-menu"
-            className={`flex items-center gap-2.5 px-3 py-1.5 border rounded-xl cursor-pointer transition-all group shrink-0 active:scale-[0.98] ${
-              theme === 'dark' ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-[#e2e8f0] bg-white hover:bg-slate-50'
+            className={`flex items-center gap-2.5 cursor-pointer transition-all group shrink-0 active:scale-[0.98] ${
+              theme === 'dark' 
+                ? 'px-3 py-1.5 border border-white/10 bg-white/5 hover:bg-white/10 rounded-xl' 
+                : 'pl-4 border-l border-slate-200 bg-transparent'
             }`}
             onClick={onSettingsClick}
           >
@@ -425,8 +427,10 @@ export const DashboardHeader = ({
           {/* Sair */}
           <button 
             onClick={() => setIsConfirmLogoutOpen(true)}
-            className={`p-2.5 rounded-xl border transition-all shrink-0 cursor-pointer active:scale-95 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 ${
-              theme === 'dark' ? 'border-transparent text-slate-500' : 'bg-white border-[#e2e8f0] text-slate-700 hover:bg-slate-50'
+            className={`transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center justify-center hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 ${
+              theme === 'dark' 
+                ? 'p-2.5 rounded-xl border-transparent text-slate-500' 
+                : 'w-10 h-10 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-750 bg-white'
             }`}
             title="Sair do Sistema"
           >
