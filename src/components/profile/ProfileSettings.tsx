@@ -24,7 +24,8 @@ import {
   Bell,
   Calendar,
   CaretLeft,
-  Info
+  Info,
+  Calculator
 } from '@phosphor-icons/react';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -58,7 +59,7 @@ interface ProfileSettingsProps {
   onUpdate: (updatedData?: any) => void;
   onCreateTeam: () => void;
   showToast: (message: string, type?: ToastType) => void;
-  theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark' | 'sky' | 'purple';
 }
 
 export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast, theme = 'dark' }: ProfileSettingsProps) {

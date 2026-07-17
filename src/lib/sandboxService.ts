@@ -86,9 +86,49 @@ class SandboxService {
     this.invites = seeds.invites;
     this.collaborationNotes = {};
     this.calendarEvents = {};
-    this.notifications = {};
-    this.monthlyPayments = {};
-    this.transferRequests = {}; // Limpar também as solicitações de transferência se necessário
+    this.transferRequests = {};
+
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const mockPaymentId = `sandbox-op-1_${currentMonth}_${currentYear}`;
+    
+    // Simula pagamento liberado
+    this.monthlyPayments = {
+      [mockPaymentId]: {
+        id: mockPaymentId,
+        userId: 'sandbox-op-1',
+        userName: 'Ana Souza',
+        role: 'member',
+        teamId: 'team-fenix',
+        organizationId: 'sandbox-test',
+        month: currentMonth,
+        year: currentYear,
+        baseValue: 3500,
+        totalDays: new Date(currentYear, currentMonth, 0).getDate(),
+        missedDays: 3,
+        excusedDays: 1,
+        excusedDates: [`${currentYear}-${String(currentMonth).padStart(2, '0')}-05`],
+        deductedValue: 3266.67,
+        status: 'released',
+        releasedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    };
+
+    // Simula notificação correspondente
+    const mockNotificationId = `sandbox-notification-${Date.now()}`;
+    this.notifications = {
+      [mockNotificationId]: {
+        id: mockNotificationId,
+        userId: 'sandbox-op-1',
+        title: 'Fechamento PJ Liberado',
+        message: `Seu fechamento de prestação de serviços referente a ${currentMonth}/${currentYear} está disponível. Valor: R$ 3.266,67.`,
+        type: 'payment_released',
+        referenceId: mockPaymentId,
+        read: false,
+        createdAt: new Date().toISOString()
+      }
+    };
 
     this.notify();
   }
@@ -228,6 +268,11 @@ class SandboxService {
 
   public setProfile(profile: UserProfile): void {
     this.users[profile.uid] = { ...profile };
+    this.notify();
+  }
+
+  public setOrganization(org: Organization): void {
+    this.organizations[org.id] = { ...org };
     this.notify();
   }
 
