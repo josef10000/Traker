@@ -156,7 +156,7 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                       size="xs"
                     />
                     <div className="truncate max-w-[150px]">
-                      <span className="font-bold text-xs block text-white leading-tight truncate">{collab.displayName || collab.email.split('@')[0]}</span>
+                      <span className={`font-bold text-xs block leading-tight truncate ${theme === 'dark' ? 'text-white' : 'text-slate-850'}`}>{collab.displayName || collab.email.split('@')[0]}</span>
                       <span className="text-[9px] text-slate-500">{roleLabel}</span>
                     </div>
                   </td>
@@ -214,9 +214,9 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                         <div className="flex flex-col items-center justify-center gap-1.5 py-1">
                           <span className={`w-3 h-3 rounded-full flex items-center justify-center text-[7px] font-black border transition-all ${
                             status === 'present'
-                              ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                              ? 'bg-emerald-500 text-white border-emerald-400'
                               : status === 'late'
-                                ? 'bg-amber-500 text-slate-950 border-amber-400'
+                                ? 'bg-amber-500 text-white border-amber-400'
                                 : status === 'absent'
                                   ? 'bg-rose-500 text-white border-rose-400'
                                   : status === 'early_departure'
