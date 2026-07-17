@@ -173,7 +173,7 @@ export const DashboardHeader = ({
               {(profile.role === 'manager' || profile.role === 'coordinator' || (profile.managedTeams && profile.managedTeams.length > 1)) ? (
                 <button 
                   onClick={() => setIsTeamSelectorOpen(true)}
-                  className="flex items-center gap-1.5 text-[10px] text-sky-500 dark:text-sky-400 uppercase tracking-widest font-bold hover:text-sky-600 dark:hover:text-sky-300 transition-colors group"
+                  className="flex items-center gap-1.5 text-[10px] text-primary dark:text-primary uppercase tracking-widest font-bold hover:opacity-80 transition-colors group"
                 >
                   {selectedTeamId === 'all' 
                     ? 'Visão Macro (Todas)' 
@@ -208,7 +208,7 @@ export const DashboardHeader = ({
                 showToast('Digite um CPF com 11 dígitos.', 'error');
               }
             }}
-            className={`relative flex items-center px-3 py-1.5 rounded-xl border focus-within:border-sky-500/50 focus-within:ring-2 focus-within:ring-sky-500/10 transition-all shrink-0 max-w-[160px] ${
+            className={`relative flex items-center px-3 py-1.5 rounded-xl border focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all shrink-0 max-w-[160px] ${
               theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
             }`}
           >
@@ -228,7 +228,7 @@ export const DashboardHeader = ({
                 theme === 'dark' ? 'text-slate-200 placeholder-slate-600' : 'text-slate-900 placeholder-slate-400'
               }`}
             />
-            <button type="submit" className="text-slate-400 dark:text-slate-500 hover:text-sky-500 dark:hover:text-sky-400 transition-colors p-0.5 cursor-pointer">
+            <button type="submit" className="text-slate-400 dark:text-slate-500 hover:text-primary transition-colors p-0.5 cursor-pointer">
               <Search size={14} />
             </button>
           </form>
@@ -239,8 +239,8 @@ export const DashboardHeader = ({
             disabled={isRefreshing}
             className={`p-2 rounded-xl transition-all border shrink-0 cursor-pointer active:scale-95 ${
               isRefreshing
-                ? 'text-sky-500 bg-sky-500/10 border-sky-500/20 cursor-wait'
-                : `border-transparent ${theme === 'dark' ? 'text-slate-500 hover:text-sky-400 hover:bg-sky-500/10' : 'text-slate-400 hover:text-sky-600 hover:bg-sky-50'}`
+                ? 'text-primary bg-primary/10 border-primary/20 cursor-wait'
+                : `border-transparent ${theme === 'dark' ? 'text-slate-500 hover:text-primary hover:bg-primary/10' : 'text-slate-400 hover:text-primary hover:bg-slate-50'}`
             }`}
             title={`Atualizar dados do mês (Atualizado: ${formatLastRefreshed(lastRefreshed)})`}
           >
@@ -278,8 +278,8 @@ export const DashboardHeader = ({
               }}
               className={`p-2 rounded-xl border transition-all cursor-pointer active:scale-95 ${
                 isToolsOpen
-                  ? 'bg-sky-500/15 border-sky-500/30 text-sky-500'
-                  : `${theme === 'dark' ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-slate-100 border-slate-200 text-slate-655 hover:text-slate-900 hover:bg-slate-200'}`
+                  ? 'bg-primary/15 border-primary/30 text-primary'
+                  : `${theme === 'dark' ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'}`
               }`}
               title="Ações e Ferramentas SaaS"
             >
@@ -387,7 +387,7 @@ export const DashboardHeader = ({
             onClick={onSettingsClick}
           >
             <div className="flex flex-col items-end">
-              <span className={`text-xs font-bold group-hover:text-sky-500 transition-colors leading-none ${
+              <span className={`text-xs font-bold group-hover:text-primary transition-colors leading-none ${
                 theme === 'dark' ? 'text-white' : 'text-slate-800'
               }`}>
                 {profile.displayName.split(' ')[0]}
@@ -406,7 +406,7 @@ export const DashboardHeader = ({
                 avatarSeed={profile.avatarSeed}
                 theme={theme}
                 size="sm"
-                className="w-7 h-7 border-sky-500/20"
+                className="w-7 h-7 border-primary/20"
               />
               {notificationCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse border border-[#090d16]" />

@@ -107,12 +107,12 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                     return theme === 'dark' ? 'bg-rose-500/5 border-l-rose-500/50' : 'bg-rose-50/50 border-l-rose-500';
                   }
                   if (isCheckedToday) {
-                    return theme === 'dark' ? 'bg-sky-500/5 border-l-sky-500/50' : 'bg-sky-50/50 border-l-sky-500';
+                    return theme === 'dark' ? 'bg-primary/5 border-l-primary/50' : 'bg-primary/5 border-l-primary';
                   }
                   if (isMorning) {
                     return theme === 'dark' 
-                      ? 'hover:bg-sky-500/5 border-l-sky-500/40 bg-slate-900/20' 
-                      : 'hover:bg-slate-50 border-l-sky-500/40 bg-slate-50/30';
+                      ? 'hover:bg-primary/5 border-l-primary/40 bg-slate-900/20' 
+                      : 'hover:bg-slate-50 border-l-primary/40 bg-slate-50/30';
                   }
                   return theme === 'dark' 
                     ? 'hover:bg-amber-500/5 border-l-amber-500/30 bg-slate-900/40' 
@@ -135,7 +135,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                           {agreement.notes && (
                             <MessageSquare 
                               size={12} 
-                              className="text-sky-400 cursor-help shrink-0" 
+                              className="text-primary cursor-help shrink-0" 
                               title={agreement.notes}
                             />
                           )}

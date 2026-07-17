@@ -40,7 +40,7 @@ export const StatsGrid = ({
         {onHelpClick && (
           <button
             onClick={onHelpClick}
-            className="flex items-center gap-1 text-[9px] text-sky-500 dark:text-sky-400 uppercase tracking-widest font-black hover:underline cursor-pointer"
+            className="flex items-center gap-1 text-[9px] text-primary uppercase tracking-widest font-black hover:underline cursor-pointer"
           >
             <span>Dúvidas sobre os KPIs? Abrir Central de Ajuda</span>
           </button>

@@ -26,6 +26,19 @@
   --color-slate-800: var(--slate-800);
   --color-slate-900: var(--slate-900);
   --color-slate-950: var(--slate-950);
+
+  /* Map sky palette dynamically to primary-color variable for unified styling */
+  --color-sky-50: color-mix(in srgb, var(--primary-color) 8%, transparent);
+  --color-sky-100: color-mix(in srgb, var(--primary-color) 15%, transparent);
+  --color-sky-200: color-mix(in srgb, var(--primary-color) 30%, transparent);
+  --color-sky-300: color-mix(in srgb, var(--primary-color) 50%, transparent);
+  --color-sky-400: var(--primary-color);
+  --color-sky-500: var(--primary-color);
+  --color-sky-600: var(--primary-color);
+  --color-sky-700: var(--primary-color);
+  --color-sky-800: var(--primary-color);
+  --color-sky-900: var(--primary-color);
+  --color-sky-950: var(--primary-color);
 }
 
 :root, [data-theme='light'] {

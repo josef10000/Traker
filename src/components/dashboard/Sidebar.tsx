@@ -111,7 +111,7 @@ export const Sidebar = ({
       {/* Topo / Logo Centralizada com Efeito de Vidro */}
       <div className="p-5 flex justify-center border-b border-white/5 shrink-0">
         <div 
-          className="p-2.5 rounded-2xl flex items-center justify-center bg-gradient-to-br from-sky-500/20 to-sky-500/5 border border-sky-500/25 shadow-lg shadow-sky-500/10 backdrop-blur-md text-sky-400 group relative"
+          className="p-2.5 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/25 shadow-lg shadow-primary/10 backdrop-blur-md text-primary group relative"
         >
           <Building size={20} weight="duotone" className="animate-pulse" />
           
@@ -150,7 +150,7 @@ export const Sidebar = ({
                 {/* Ícone Glassmorphism */}
                 <div className={`glass-icon-container p-2.5 rounded-xl transition-all duration-300 ${
                   isActive
-                    ? 'bg-sky-500/15 border border-sky-500/30 text-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.15)]'
+                    ? 'bg-primary/15 border border-primary/30 text-primary shadow-[0_0_15px_var(--primary-color)]'
                     : 'bg-white/5 border border-white/5 text-slate-400 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/10'
                 }`}>
                   <Icon size={18} weight={isActive ? 'duotone' : 'regular'} className="shrink-0" />
