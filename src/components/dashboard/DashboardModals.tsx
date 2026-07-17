@@ -111,7 +111,7 @@ export interface DashboardModalsProps {
   setSelectedTeamId: (teamId: string) => void;
   supervisors?: UserProfile[];
   managers?: UserProfile[];
-  theme?: 'light' | 'dark';
+  theme?: string;
 }
 
 export const DashboardModals: React.FC<DashboardModalsProps> = ({

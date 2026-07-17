@@ -17,7 +17,7 @@ interface HistoryModalProps {
   isSupervisor?: boolean;
   onAnonimize?: (cpf: string) => void;
   organizationId?: string;
-  theme?: 'light' | 'dark';
+  theme?: string;
 }
 
 export const HistoryModal = ({ 
