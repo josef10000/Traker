@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Avaliações Realizadas - Legal Compliance Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Manrope:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#e1e2ed",
+                      "surface-container-low": "#f3f3fe",
+                      "surface": "#FFFFFF",
+                      "on-tertiary-fixed-variant": "#7d2d00",
+                      "surface-bright": "#faf8ff",
+                      "inverse-primary": "#b4c5ff",
+                      "on-primary": "#ffffff",
+                      "divider": "#F3F4F6",
+                      "primary-container": "#2563eb",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "secondary": "#505f76",
+                      "warning-amber": "#F59E0B",
+                      "on-tertiary-fixed": "#360f00",
+                      "tertiary-fixed-dim": "#ffb596",
+                      "primary-fixed": "#dbe1ff",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-error-container": "#93000a",
+                      "success-emerald": "#10B981",
+                      "outline-variant": "#c3c6d7",
+                      "on-secondary-container": "#54647a",
+                      "tertiary": "#943700",
+                      "on-background": "#191b23",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-error": "#ffffff",
+                      "tertiary-fixed": "#ffdbcd",
+                      "surface-dim": "#d9d9e5",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-container": "#ffede6",
+                      "on-surface": "#191b23",
+                      "error-container": "#ffdad6",
+                      "error": "#ba1a1a",
+                      "tertiary-container": "#bc4800",
+                      "secondary-container": "#d0e1fb",
+                      "background": "#F8F9FA",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-container": "#ededf9",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed": "#d3e4fe",
+                      "inverse-surface": "#2e3039",
+                      "surface-tint": "#0053db",
+                      "surface-container-high": "#e7e7f3",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-container": "#eeefff",
+                      "primary": "#004ac6",
+                      "on-primary-fixed": "#00174b",
+                      "inverse-on-surface": "#f0f0fb",
+                      "text-main": "#1F2937",
+                      "surface-container-highest": "#e1e2ed",
+                      "on-surface-variant": "#434655",
+                      "alert-red": "#EF4444",
+                      "on-secondary-fixed": "#0b1c30",
+                      "outline": "#737686"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "stack-lg": "2.5rem",
+                      "container-max-width": "800px",
+                      "margin-page": "2rem",
+                      "stack-sm": "0.5rem",
+                      "stack-md": "1.5rem",
+                      "gutter": "1.5rem"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Manrope", "sans-serif"],
+                      "body-md": ["Inter", "sans-serif"],
+                      "label-sm": ["Inter", "sans-serif"],
+                      "label-bold": ["Inter", "sans-serif"],
+                      "headline-md": ["Manrope", "sans-serif"],
+                      "body-lg": ["Inter", "sans-serif"],
+                      "headline-lg-mobile": ["Manrope", "sans-serif"]
+              },
+              "fontSize": {
+                      "headline-lg": ["30px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "label-bold": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+              },
+              "boxShadow": {
+                'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #F8F9FA;
+            font-family: 'Inter', sans-serif;
+            color: #191b23;
+        }
+        h1, h2, h3, h4, h5, h6, .font-headline-lg, .font-headline-md, .font-headline-lg-mobile {
+            font-family: 'Manrope', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+             font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom scrollbar for horizontal overflow */
+        .overflow-x-auto::-webkit-scrollbar {
+            height: 8px;
+        }
+        .overflow-x-auto::-webkit-scrollbar-track {
+            background: #F3F4F6;
+            border-radius: 4px;
+        }
+        .overflow-x-auto::-webkit-scrollbar-thumb {
+            background: #c3c6d7;
+            border-radius: 4px;
+        }
+        .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+            background: #737686;
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-inverse-surface shadow-sm dark:shadow-none flex justify-between items-center w-full px-margin-page py-4 max-w-full docked full-width top-0 z-50 sticky">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">Legal Compliance Hub</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant/10 transition-colors p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant/10 transition-colors p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">language</span>
+</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface border-r border-divider flat no shadows fixed left-0 top-[76px] h-[calc(100vh-76px)] flex flex-col p-4 w-64 hidden md:flex z-40 overflow-y-auto">
+<div class="mb-8 px-2">
+<div class="font-headline-md text-headline-md text-primary mb-1">Compliance</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Versão 2.4.0</div>
+</div>
+<ul class="space-y-2 flex-1">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-label-bold text-label-bold">Termos</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-bold text-label-bold">Privacidade</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">cookie</span>
+<span class="font-label-bold text-label-bold">Cookies</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-lg active:scale-[0.98] duration-200" href="#">
+<span class="material-symbols-outlined fill">verified_user</span>
+<span class="font-label-bold text-label-bold">LGPD</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content -->
+<main class="flex-1 w-full md:pl-64 flex flex-col min-h-full">
+<div class="p-margin-page flex-1 max-w-[1400px] mx-auto w-full">
+<!-- Page Header & Tabs -->
+<div class="mb-stack-lg">
+<h1 class="font-headline-lg text-headline-lg text-text-main mb-6 hidden md:block">Gestão de Qualidade</h1>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-main mb-6 md:hidden">Gestão de Qualidade</h1>
+<div class="flex flex-wrap gap-2 md:gap-4 border border-divider rounded-full p-1 bg-surface w-fit mb-stack-md shadow-sm">
+<button class="px-4 py-2 font-label-bold text-label-bold text-on-surface-variant rounded-full hover:bg-surface-variant transition-colors">Visão Geral QA</button>
+<button class="px-4 py-2 font-label-bold text-label-bold text-primary bg-primary-fixed rounded-full shadow-sm">Avaliações Realizadas</button>
+<button class="px-4 py-2 font-label-bold text-label-bold text-on-surface-variant rounded-full hover:bg-surface-variant transition-colors">PDIs / Planos de Ação</button>
+<button class="px-4 py-2 font-label-bold text-label-bold text-on-surface-variant rounded-full hover:bg-surface-variant transition-colors">Competências</button>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="bg-surface rounded-xl shadow-soft border border-divider overflow-hidden">
+<!-- Table Actions/Filters Header (Optional, but good practice) -->
+<div class="p-4 border-b border-divider flex justify-between items-center bg-surface-bright">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-10 pr-4 py-2 rounded-lg border border-outline-variant bg-surface focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-text-main w-64" placeholder="Buscar operador ou ID..." type="text"/>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg text-secondary font-label-bold text-label-bold hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+                            Filtros
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[1000px]">
+<thead>
+<tr class="border-b border-divider bg-surface-bright">
+<th class="py-4 px-6 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Data</th>
+<th class="py-4 px-6 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Operador</th>
+<th class="py-4 px-6 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Mídia / Protocolo</th>
+<th class="py-4 px-6 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider text-center">Nota</th>
+<th class="py-4 px-6 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Competências Chave</th>
+<th class="py-4 px-6 font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Feedback do Monitor</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-divider">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="py-5 px-6 font-body-md text-body-md text-secondary">21/07/2026</td>
+<td class="py-5 px-6 font-label-bold text-label-bold text-text-main">Daniela Silva</td>
+<td class="py-5 px-6">
+<div class="font-body-md text-body-md text-secondary">ID: REC-100010</div>
+<div class="font-label-sm text-label-sm text-outline">Prot: PROT-20260010</div>
+</td>
+<td class="py-5 px-6 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full border border-warning-amber text-warning-amber font-label-bold text-label-bold bg-warning-amber/5">
+                                            82%
+                                        </span>
+</td>
+<td class="py-5 px-6">
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Argumentação: 82</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Processos e Sistemas: 81</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Compliance &amp; LGPD: 90</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Empatia &amp; Escuta: 86</span>
+</div>
+</td>
+<td class="py-5 px-6 font-body-md text-body-md text-secondary italic max-w-xs truncate" title='"Avaliação de monitoria #3. Atendimento sob..."'>
+                                        "Avaliação de monitoria #3. Atendimento sob..."
+                                    </td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="py-5 px-6 font-body-md text-body-md text-secondary">21/07/2026</td>
+<td class="py-5 px-6 font-label-bold text-label-bold text-text-main">Gabriel Alves</td>
+<td class="py-5 px-6">
+<div class="font-body-md text-body-md text-secondary">ID: REC-100019</div>
+<div class="font-label-sm text-label-sm text-outline">Prot: PROT-20260019</div>
+</td>
+<td class="py-5 px-6 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full border border-success-emerald text-success-emerald font-label-bold text-label-bold bg-success-emerald/5">
+                                            87%
+                                        </span>
+</td>
+<td class="py-5 px-6">
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Argumentação: 85</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Processos e Sistemas: 86</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Compliance &amp; LGPD: 90</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Empatia &amp; Escuta: 91</span>
+</div>
+</td>
+<td class="py-5 px-6 font-body-md text-body-md text-secondary italic max-w-xs truncate" title='"Avaliação de monitoria #3. Atendimento sob..."'>
+                                        "Avaliação de monitoria #3. Atendimento sob..."
+                                    </td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="py-5 px-6 font-body-md text-body-md text-secondary">21/07/2026</td>
+<td class="py-5 px-6 font-label-bold text-label-bold text-text-main">Julia Martins</td>
+<td class="py-5 px-6">
+<div class="font-body-md text-body-md text-secondary">ID: REC-100028</div>
+<div class="font-label-sm text-label-sm text-outline">Prot: PROT-20260028</div>
+</td>
+<td class="py-5 px-6 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full border border-success-emerald text-success-emerald font-label-bold text-label-bold bg-success-emerald/5">
+                                            91%
+                                        </span>
+</td>
+<td class="py-5 px-6">
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Argumentação: 92</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Processos e Sistemas: 90</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Compliance &amp; LGPD: 92</span>
+<span class="inline-flex items-center px-2 py-1 rounded border border-outline-variant/50 bg-surface-container-low font-label-sm text-label-sm text-secondary">Empatia &amp; Escuta: 90</span>
+</div>
+</td>
+<td class="py-5 px-6 font-body-md text-body-md text-secondary italic max-w-xs truncate" title='"Avaliação de monitoria #3. Atendimento sob..."'>
+                                        "Avaliação de monitoria #3. Atendimento sob..."
+                                    </td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="p-4 border-t border-divider bg-surface-bright flex justify-between items-center text-sm">
+<span class="font-body-md text-body-md text-secondary">Mostrando 1 a 3 de 45 registros</span>
+<div class="flex items-center gap-2">
+<button class="p-1 rounded text-outline-variant hover:bg-surface-variant transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-md bg-primary-fixed text-primary font-label-bold text-label-bold flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded-md hover:bg-surface-variant text-secondary font-label-bold text-label-bold flex items-center justify-center transition-colors">2</button>
+<button class="w-8 h-8 rounded-md hover:bg-surface-variant text-secondary font-label-bold text-label-bold flex items-center justify-center transition-colors">3</button>
+<span class="text-outline">...</span>
+<button class="p-1 rounded text-secondary hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-inverse-surface border-t border-divider flat no shadows w-full py-8 px-margin-page flex justify-between items-center mt-stack-lg mt-auto">
+<div class="font-body-md text-body-md text-on-surface-variant">
+                    © 2024 Legal Compliance Hub. Todos os direitos reservados.
+                </div>
+<div class="flex gap-6">
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacidade</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Ajuda</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Contato</a>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

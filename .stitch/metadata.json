@@ -1,0 +1,106 @@
+{
+  "name": "projects/8605836864319428832",
+  "title": "Light Mode tracker",
+  "visibility": "PUBLIC",
+  "createTime": "2026-07-15T18:56:48.206483Z",
+  "updateTime": "2026-07-17T14:51:16.967265Z",
+  "projectType": "TEXT_TO_UI_PRO",
+  "thumbnailScreenshot": {
+    "name": "projects/8605836864319428832/files/53ab14edde8747d4b4bbe97f3e4c4921",
+    "downloadUrl": "https://lh3.googleusercontent.com/aida/AP1WRLvHz31VNnycokFppK-YBNsdPR8zbe0gNrBNQKSKZTBHEEacK3nbOA3SUW82dm5cqNpH1gJ-OZBg7EpjIdP-e26hRltHvsPbGpKbgNzj1QbAx6GV_9iP1YomHIl89Tgz_wsx_cMaOoQveOwMTe3xULKUfQ9jsMgd8QfhQb6oKsPiskvuKOIXgORnzw8O4RE94ZELfhSjPT4ebngDa5he-ZMuzUALBIdOdMa0SnFiC8SsUgGj08ENVm5H-sI"
+  },
+  "origin": "STITCH",
+  "deviceType": "DESKTOP",
+  "designTheme": {},
+  "screens": {
+    "4ee65b9534054e57a7344b732ff158c7": {
+      "id": "4ee65b9534054e57a7344b732ff158c7",
+      "label": "Avaliações Realizadas - Premium Light Mode",
+      "dimensions": {
+        "width": 2560,
+        "height": 2446
+      }
+    },
+    "113081fd59334cb2af7683a5c9605a90": {
+      "id": "113081fd59334cb2af7683a5c9605a90",
+      "label": "Heatmap Mensal - Premium Light Mode",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "3895d337dda64b22ab4360760f681393": {
+      "id": "3895d337dda64b22ab4360760f681393",
+      "label": "Debt Collection Table",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "2b74c99c3cf74f5196a1fc0471905dd1": {
+      "id": "2b74c99c3cf74f5196a1fc0471905dd1",
+      "label": "Modern Flat Light Mode Dashboard - Final Polish",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "188c783d5f7c422da1d3355fcbcc2ad1": {
+      "id": "188c783d5f7c422da1d3355fcbcc2ad1",
+      "label": "Light Mode Customize View Modal",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "683ebb9dcffc41c0afb8762a541d89de": {
+      "id": "683ebb9dcffc41c0afb8762a541d89de",
+      "label": "Termos de Uso e Política de Privacidade - Premium Light",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "1924b78c9c0b42f9bbcbcde59d95d244": {
+      "id": "1924b78c9c0b42f9bbcbcde59d95d244",
+      "label": "BI & Analytics Strategic - Premium Light Mode",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "81009fcf41574945a1649b2634275c21": {
+      "id": "81009fcf41574945a1649b2634275c21",
+      "label": "Operational Dashboard - Final Polish",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "fc9d47a65f0a4487b4aba206caea713c": {
+      "id": "fc9d47a65f0a4487b4aba206caea713c",
+      "label": "PDIs / Planos de Ação - Premium Light Mode",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "1e1103266a0b4ea694d2751f2eb30bef": {
+      "id": "1e1103266a0b4ea694d2751f2eb30bef",
+      "label": "Tratamento de Planilhas - Premium Light Mode",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    },
+    "c536fd733e4f44caa939fb445c5eab22": {
+      "id": "c536fd733e4f44caa939fb445c5eab22",
+      "label": "Dashboard de Operadores - Premium Light Mode",
+      "dimensions": {
+        "width": 2560,
+        "height": 2048
+      }
+    }
+  },
+  "Last Sync Time": "2026-07-17T18:34:07.356Z"
+}

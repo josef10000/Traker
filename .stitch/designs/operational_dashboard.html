@@ -1,0 +1,372 @@
+<!DOCTYPE html><html lang="pt-br"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Dashboard Operacional - Empresa de Teste</title>
+<!-- Google Fonts: Inter for professional UI look -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            'dash-bg': '#F1F4F9',
+            'sidebar-bg': '#FFFFFF',
+            'teal-primary': '#2D9C95',
+            'card-border': '#E2E8F0',
+            'accent-green': '#22C55E',
+            'accent-red': '#EF4444',
+            'accent-blue': '#3B82F6',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-layout">
+    body {
+      background-color: #F1F4F9;
+      color: #334155;
+    }
+    .kpi-card {
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .sidebar-icon-active {
+      background-color: #F1F5F9;
+      color: #334155;
+    }
+    .pill-shadow {
+      box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+    }
+    /* Specific gradients for icon containers */
+    .icon-bg-blue { background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); }
+    .icon-bg-green { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+    .icon-bg-pink { background: linear-gradient(135deg, #EC4899 0%, #BE185D 100%); }
+    .icon-bg-teal { background: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%); }
+    .icon-bg-maroon { background: linear-gradient(135deg, #991B1B 0%, #7F1D1D 100%); }
+    .icon-bg-navy { background: linear-gradient(135deg, #1E3A8A 0%, #172554 100%); }
+    .icon-bg-purple { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%); }
+    .icon-bg-rose { background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%); }
+  </style>
+</head>
+<body class="flex min-h-screen">
+<!-- BEGIN: Sidebar -->
+<aside class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-8 shrink-0" data-purpose="main-navigation">
+<!-- Logo -->
+<div class="w-12 h-12 bg-teal-700 rounded-full flex items-center justify-center mb-4">
+<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<!-- Nav Icons -->
+<nav class="flex flex-col gap-6">
+<button class="p-3 rounded-xl hover:bg-gray-100 text-gray-400" title="Home">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<button class="p-3 rounded-xl hover:bg-gray-100 text-gray-400" title="Inbox">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<button class="p-3 rounded-xl hover:bg-gray-100 text-gray-400" title="Back">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<button class="p-3 rounded-xl hover:bg-gray-100 text-gray-400" title="Security">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<button class="p-3 rounded-xl sidebar-icon-active" title="Stats">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</nav>
+</aside>
+<!-- END: Sidebar -->
+<main class="flex-1 flex flex-col overflow-y-auto">
+<!-- BEGIN: TopHeader -->
+<header class="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-10" data-purpose="header-bar">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-gray-900 uppercase">Empresa de Teste (Sandbox)</h1>
+<p class="text-[10px] text-gray-400 font-medium tracking-widest uppercase">Dashboard Operacional</p>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Search -->
+<div class="relative group">
+<input class="bg-gray-100 border-none rounded-full py-2 pl-4 pr-10 text-sm focus:ring-2 focus:ring-teal-500 w-64 transition-all" placeholder="Buscar CPF..." type="text">
+<svg class="w-4 h-4 text-gray-400 absolute right-4 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center bg-teal-700 text-white rounded-xl shadow-sm"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+<button class="w-10 h-10 flex items-center justify-center bg-gray-100 text-gray-500 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+<!-- User Profile -->
+<div class="flex items-center gap-3 pl-4 border-l border-gray-200">
+<div class="text-right">
+<p class="text-sm font-bold text-gray-800">Ana</p>
+<p class="text-[10px] text-gray-400 font-semibold uppercase">Operador</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm">HU</div>
+<button class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+<!-- Add New Agreement Button -->
+<button class="bg-teal-700 hover:bg-teal-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-teal-900/20 text-sm font-semibold transition-colors">
+<span class="text-lg">+</span> Novo Acordo
+        </button>
+</div>
+</header>
+<!-- END: TopHeader -->
+<div class="p-8">
+<!-- BEGIN: SummaryBar -->
+<div class="bg-white/60 border border-gray-200 rounded-3xl p-6 flex flex-wrap items-center gap-6 mb-4" data-purpose="dashboard-controls">
+<div class="bg-white border border-gray-100 px-6 py-4 rounded-full flex items-center gap-4 shadow-sm">
+<span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total do Mês (Pago)</span>
+<span class="text-teal-600 font-black text-xl">R$ 41.423,00</span>
+</div>
+<div class="bg-white border border-gray-100 px-6 py-4 rounded-full flex items-center gap-4 shadow-sm">
+<span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Meta do Mês</span>
+<span class="text-amber-500 font-black text-xl">R$ 80.000,00</span>
+</div>
+<div class="flex-grow"></div>
+<div class="flex items-center gap-3">
+<select class="bg-white border-gray-200 rounded-full px-4 py-2 text-sm font-semibold text-gray-600 focus:ring-teal-500">
+<option>JULHO</option>
+</select>
+<select class="bg-white border-gray-200 rounded-full px-4 py-2 text-sm font-semibold text-gray-600 focus:ring-teal-500">
+<option>2026</option>
+</select>
+<button class="bg-gray-200 hover:bg-gray-300 text-gray-600 px-6 py-2 rounded-full text-sm font-bold transition-colors">Personalizar</button>
+<button class="bg-gray-200 hover:bg-gray-300 text-gray-600 px-6 py-2 rounded-full text-sm font-bold transition-colors">Modo TV</button>
+</div>
+</div>
+<!-- END: SummaryBar -->
+<!-- BEGIN: KPIGrid -->
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-[12px] font-bold text-gray-400 uppercase tracking-[0.2em]">Painel de Indicadores</h2>
+<a class="text-[10px] font-bold text-gray-800 uppercase tracking-wider underline" href="#">Dúvidas sobre os KPIs? Abrir Central de Ajuda</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-purpose="metrics-grid">
+<!-- Card 1: Total Projetado -->
+<div class="kpi-card bg-white rounded-[40px] p-8 border border-card-border relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-2 h-full bg-blue-500/20"></div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-start mb-10">
+<div class="w-12 h-12 icon-bg-blue rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.242.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path><path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.514 1.31c.356.412.96.813 1.741 1.054V15a1 1 0 102 0v-.092c.838-.139 1.587-.444 2.132-.805 1.027-.68 1.868-1.748 1.868-3.103 0-1.145-.772-1.928-1.588-2.47a4.535 4.535 0 00-1.412-.662V5.411c.33.13.562.29.73.458a1 1 0 101.414-1.414c-.502-.502-1.228-.863-2.144-1.054V5z" fill-rule="evenodd"></path></svg>
+</div>
+<button class="text-gray-300 hover:text-gray-500 transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[11px] font-bold text-gray-400 uppercase mb-1">Total Projetado</p>
+<p class="text-2xl font-black text-gray-800">R$ 88.640,00</p>
+</div>
+<div class="w-24 h-12">
+<svg class="w-full h-full text-blue-800" preserveAspectRatio="none" viewBox="0 0 100 40">
+<path d="M0,35 L20,35 L30,35 L40,35 L50,35 L55,25 L60,40 L65,5 L70,35 L80,35 L100,35" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Produtividade -->
+<div class="kpi-card bg-white rounded-[40px] p-8 border border-card-border relative overflow-hidden">
+<div class="absolute top-0 left-0 w-2 h-full bg-emerald-500/20"></div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 icon-bg-green rounded-2xl flex items-center justify-center text-white shadow-lg shadow-green-500/30">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div class="bg-gray-100 rounded-full px-3 py-1 text-[10px] font-bold text-gray-700 flex items-center gap-1">
+                EFET. DIA: <span class="text-emerald-600">50.0%</span>
+</div>
+<button class="text-gray-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[11px] font-bold text-gray-400 uppercase mb-1">Produtividade Diá...</p>
+<p class="text-2xl font-black text-gray-800">R$ 41.423,00</p>
+<p class="text-[10px] text-gray-400 font-bold mt-1">6 ACORDOS PAGOS NO PERÍ..</p>
+</div>
+<div class="flex gap-1 h-12 items-end">
+<div class="w-1.5 h-4 bg-emerald-700/40 rounded-full"></div>
+<div class="w-1.5 h-6 bg-emerald-700/60 rounded-full"></div>
+<div class="w-1.5 h-8 bg-emerald-700/80 rounded-full"></div>
+<div class="w-1.5 h-10 bg-emerald-700 rounded-full"></div>
+<div class="w-1.5 h-7 bg-emerald-700/70 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Falta para Meta -->
+<div class="kpi-card bg-white rounded-[40px] p-8 border border-card-border relative overflow-hidden">
+<div class="absolute top-0 left-0 w-2 h-full bg-pink-500/20"></div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-start mb-10">
+<div class="w-12 h-12 icon-bg-pink rounded-2xl flex items-center justify-center text-white shadow-lg shadow-pink-500/30">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<button class="text-gray-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[11px] font-bold text-gray-400 uppercase mb-1">Falta para Meta</p>
+<p class="text-2xl font-black text-gray-800">R$ 38.577,00</p>
+<p class="text-[10px] text-gray-400 font-bold mt-1">51.8% ATINGIDO</p>
+</div>
+<div class="relative flex items-center justify-center">
+<svg class="w-12 h-12 rotate-[-90deg]">
+<circle class="text-gray-100" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-pink-700" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" stroke-dasharray="125.6" stroke-dashoffset="60" stroke-linecap="round" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4: Projeção P/ Mês -->
+<div class="kpi-card bg-white rounded-[40px] p-8 border border-card-border relative overflow-hidden">
+<div class="absolute top-0 left-0 w-2 h-full bg-teal-500/20"></div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-start mb-10">
+<div class="w-12 h-12 icon-bg-teal rounded-2xl flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<button class="text-gray-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[11px] font-bold text-gray-400 uppercase mb-1">Projeção P/ Mês</p>
+<p class="text-2xl font-black text-gray-800">R$ 85.607,53</p>
+<p class="text-[10px] text-gray-400 font-bold mt-1 uppercase">Baseado no ritmo atual</p>
+</div>
+<div class="w-24 h-12">
+<svg class="w-full h-full text-teal-800" preserveAspectRatio="none" viewBox="0 0 100 40">
+<path d="M0,35 L20,35 L25,20 L30,35 L55,35 L60,15 L65,35 L80,35 L100,35" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 5: Valores Vencidos -->
+<div class="kpi-card bg-white rounded-[40px] p-8 border border-card-border relative overflow-hidden">
+<div class="absolute top-0 left-0 w-2 h-full bg-red-800/20"></div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-start mb-10">
+<div class="w-12 h-12 icon-bg-maroon rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-900/30">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<button class="text-gray-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[11px] font-bold text-gray-400 uppercase mb-1">Valores Vencidos</p>
+<p class="text-2xl font-black text-gray-800">R$ 15.495,00</p>
+<p class="text-[10px] text-gray-400 font-bold mt-1 uppercase">3 Acordos não pagos até...</p>
+</div>
+<div class="w-[2px] h-10 bg-gray-200"></div>
+</div>
+</div>
+</div>
+<!-- Card 6: Vencendo Hoje -->
+<div class="kpi-card bg-white rounded-[40px] p-8 border border-card-border relative overflow-hidden">
+<div class="absolute top-0 left-0 w-2 h-full bg-blue-900/20"></div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-start mb-10">
+<div class="w-12 h-12 icon-bg-navy rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-900/30">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<button class="text-gray-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[11px] font-bold text-gray-400 uppercase mb-1">Vencendo Hoje</p>
+<p class="text-2xl font-black text-gray-800">R$ 17.414,00</p>
+<p class="text-[10px] text-gray-400 font-bold mt-1 uppercase">3 Acordos pendentes p/ ...</p>
+</div>
+<div class="w-[2px] h-10 bg-gray-200"></div>
+</div>
+</div>
+</div>
+<!-- Card 7: Volume de Registros -->
+<div class="kpi-card bg-white rounded-[40px] p-8 border border-card-border relative overflow-hidden">
+<div class="absolute top-0 left-0 w-2 h-full bg-indigo-500/20"></div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-start mb-10">
+<div class="w-12 h-12 icon-bg-purple rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<button class="text-gray-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[11px] font-bold text-gray-400 uppercase mb-1">Volume de Regist...</p>
+<p class="text-2xl font-black text-gray-800">3</p>
+<p class="text-[10px] text-gray-400 font-bold mt-1 uppercase">Acordos cadastrados h...</p>
+</div>
+<div class="w-24 h-12">
+<svg class="w-full h-full text-black" preserveAspectRatio="none" viewBox="0 0 100 40">
+<path d="M0,35 L20,35 L40,35 L45,25 L50,10 L55,40 L60,35 L80,35 L100,35" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 8: Ticket Médio -->
+<div class="kpi-card bg-white rounded-[40px] p-8 border border-card-border relative overflow-hidden">
+<div class="absolute top-0 left-0 w-2 h-full bg-rose-500/20"></div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-start mb-10">
+<div class="w-12 h-12 icon-bg-rose rounded-2xl flex items-center justify-center text-white shadow-lg shadow-rose-500/30">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<button class="text-gray-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[11px] font-bold text-gray-400 uppercase mb-1">Ticket Médio</p>
+<p class="text-2xl font-black text-gray-800">R$ 5.540,00</p>
+<p class="text-[10px] text-gray-400 font-bold mt-1 uppercase">Média por acordo regist...</p>
+</div>
+<div class="flex gap-1 h-12 items-end">
+<div class="w-1.5 h-3 bg-rose-700/30 rounded-full"></div>
+<div class="w-1.5 h-6 bg-rose-700/50 rounded-full"></div>
+<div class="w-1.5 h-9 bg-rose-700/70 rounded-full"></div>
+<div class="w-1.5 h-12 bg-rose-700 rounded-full"></div>
+<div class="w-1.5 h-7 bg-rose-700/60 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- END: KPIGrid -->
+</div>
+</main>
+</body></html>
