@@ -788,7 +788,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
           const val = info.getValue();
           if (isName) {
             return (
-              <span className={`font-black ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
+              <span className={`font-black ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
                 {String(val || '')}
               </span>
             );
@@ -1009,7 +1009,11 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="px-5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 cursor-pointer"
+            className={`px-5 py-2.5 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              theme === 'dark' 
+                ? 'bg-gradient-to-r from-orange-600 to-amber-500 shadow-md shadow-orange-500/20' 
+                : 'bg-primary shadow-md shadow-primary/20'
+            }`}
           >
             <UploadSimple size={16} />
             Subir Planilha
@@ -1026,7 +1030,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
             <FileSpreadsheet size={48} />
           </div>
           <div className="space-y-1 max-w-sm">
-            <h4 className={`font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
+            <h4 className={`font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
               Nenhuma planilha ativa
             </h4>
             <p className="text-xs text-slate-500">
@@ -1069,8 +1073,8 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                       onClick={() => setStatusFilter(st)}
                       className={`px-3 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
                         statusFilter === st
-                          ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-white'
+                          ? (theme === 'dark' ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-sm' : 'bg-primary text-white shadow-sm')
+                          : (theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-850')
                       }`}
                     >
                       {st === 'all' ? 'Tudo' : (st === 'pending' ? 'Pendente' : (st === 'treated' ? 'Tratado' : 'Ignorado'))}
@@ -1152,7 +1156,11 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               </button>
               <button
                 onClick={handleDownloadUpdated}
-                className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-md shadow-orange-500/10 flex items-center gap-1.5 cursor-pointer"
+                className={`px-4 py-2 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer ${
+                  theme === 'dark' 
+                    ? 'bg-gradient-to-r from-orange-600 to-amber-500 shadow-md shadow-orange-500/10' 
+                    : 'bg-primary shadow-md shadow-primary/10'
+                }`}
               >
                 <FileArrowDown size={14} />
                 Baixar Planilha
@@ -1351,7 +1359,11 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               <button
                 onClick={handleConfirmImport}
                 disabled={isUploading}
-                className="flex-1 py-2.5 bg-gradient-to-r from-orange-600 to-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`flex-1 py-2.5 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  theme === 'dark' 
+                    ? 'bg-gradient-to-r from-orange-600 to-amber-500 shadow-md shadow-orange-500/20' 
+                    : 'bg-primary shadow-md shadow-primary/20'
+                }`}
               >
                 {isUploading ? (
                   <>
@@ -1427,7 +1439,11 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               <button
                 onClick={handleAddNote}
                 disabled={isSavingNote || !newNoteText.trim()}
-                className="absolute bottom-3 right-3 p-2 bg-gradient-to-r from-orange-600 to-amber-500 text-white rounded-xl hover:opacity-90 transition-all shadow shadow-orange-500/10 cursor-pointer disabled:opacity-40"
+                className={`absolute bottom-3 right-3 p-2 text-white rounded-xl hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 ${
+                  theme === 'dark' 
+                    ? 'bg-gradient-to-r from-orange-600 to-amber-500 shadow shadow-orange-500/10' 
+                    : 'bg-primary shadow shadow-primary/10'
+                }`}
               >
                 {isSavingNote ? <Spinner size={14} className="animate-spin" /> : <PaperPlaneTilt size={14} />}
               </button>
