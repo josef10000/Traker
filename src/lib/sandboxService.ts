@@ -16,7 +16,9 @@ import {
   Invite,
   UserRole,
   CollaborationNote,
-  CalendarEvent
+  CalendarEvent,
+  AppNotification,
+  MonthlyPayment
 } from '../types';
 import { generateSandboxSeeds } from './sandboxSeeder';
 
@@ -41,6 +43,8 @@ class SandboxService {
   private transferRequests: Record<string, any> = {};
   private collaborationNotes: Record<string, CollaborationNote> = {};
   private calendarEvents: Record<string, CalendarEvent> = {};
+  private notifications: Record<string, AppNotification> = {};
+  private monthlyPayments: Record<string, MonthlyPayment> = {};
 
 
   constructor() {
@@ -82,6 +86,9 @@ class SandboxService {
     this.invites = seeds.invites;
     this.collaborationNotes = {};
     this.calendarEvents = {};
+    this.notifications = {};
+    this.monthlyPayments = {};
+    this.transferRequests = {}; // Limpar também as solicitações de transferência se necessário
 
     this.notify();
   }
@@ -341,7 +348,7 @@ class SandboxService {
   }
 
   public createInvitesInBulk(
-    invitesData: Array<{ email: string; role: UserRole; teamId: string | null }>,
+    invitesData: Array<{ email: string; role: UserRole; teamId: string | null; monthlyServiceValue?: number }>,
     orgId: string,
     invitedBy: string
   ): Invite[] {
@@ -362,7 +369,8 @@ class SandboxService {
         token,
         invitedBy,
         createdAt: now,
-        expiresAt
+        expiresAt,
+        monthlyServiceValue: data.monthlyServiceValue || undefined
       };
 
       this.invites[id] = invite;
@@ -406,7 +414,8 @@ class SandboxService {
       organizationId: invite.organizationId,
       createdAt: now,
       managedTeams: invite.role === 'supervisor' && invite.teamId ? [invite.teamId] : undefined,
-      managerId: invite.invitedBy || null
+      managerId: invite.invitedBy || null,
+      monthlyServiceValue: invite.monthlyServiceValue || undefined
     };
 
     this.users[uid] = newUser;
@@ -465,6 +474,70 @@ class SandboxService {
   public deleteCalendarEvent(id: string): void {
     delete this.calendarEvents[id];
     this.notify();
+  }
+
+  // --- MÉTODOS DE NOTIFICAÇÕES DO SANDBOX ---
+  public getNotifications(userId: string): AppNotification[] {
+    return Object.values(this.notifications)
+      .filter(n => n.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public createNotification(data: Omit<AppNotification, 'id' | 'read' | 'createdAt'>): AppNotification {
+    const id = `sandbox-notification-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const notification: AppNotification = {
+      ...data,
+      id,
+      read: false,
+      createdAt: new Date().toISOString()
+    };
+    this.notifications[id] = notification;
+    this.notify();
+    return notification;
+  }
+
+  public markNotificationAsRead(id: string): void {
+    if (this.notifications[id]) {
+      this.notifications[id].read = true;
+      this.notify();
+    }
+  }
+
+  public markAllNotificationsAsRead(userId: string): void {
+    Object.values(this.notifications)
+      .filter(n => n.userId === userId)
+      .forEach(n => {
+        n.read = true;
+      });
+    this.notify();
+  }
+
+  // --- MÉTODOS DE PAGAMENTOS PJ DO SANDBOX ---
+  public getMonthlyPayments(orgId: string): MonthlyPayment[] {
+    return Object.values(this.monthlyPayments).filter(p => p.organizationId === orgId);
+  }
+
+  public getMonthlyPayment(id: string): MonthlyPayment | undefined {
+    return this.monthlyPayments[id];
+  }
+
+  public addMonthlyPayment(payment: MonthlyPayment): void {
+    this.monthlyPayments[payment.id] = { ...payment };
+    this.notify();
+  }
+
+  public updateMonthlyPaymentStatus(id: string, status: 'released' | 'invoice_issued' | 'contested', notes?: string, invoiceIssuedAt?: string): void {
+    if (this.monthlyPayments[id]) {
+      this.monthlyPayments[id].status = status;
+      if (notes !== undefined) {
+        this.monthlyPayments[id].contestationText = notes;
+      }
+      if (invoiceIssuedAt !== undefined) {
+        this.monthlyPayments[id].invoiceIssuedAt = invoiceIssuedAt;
+      }
+      this.monthlyPayments[id].updatedAt = new Date().toISOString();
+      this.notify();
+    }
   }
 }
 

@@ -17,15 +17,17 @@ import {
   Lifebuoy,
   Gear,
   Moon,
-  Sun
+  Sun,
+  Bell
 } from '@phosphor-icons/react';
-import { UserProfile, Team } from '../../types';
+import { UserProfile, Team, AppNotification } from '../../types';
 import { Avatar } from '../ui/Avatar';
 import { ToastType } from '../ui/Toast';
 import { useDesignMode } from '../../hooks/useDesignMode';
-import { query, collection, where, getDocs } from 'firebase/firestore';
+import { query, collection, where, getDocs, onSnapshot, writeBatch } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
+import { markNotificationAsRead } from '../../lib/notifications';
 
 interface DashboardHeaderProps {
   profile: UserProfile;
@@ -56,6 +58,7 @@ interface DashboardHeaderProps {
   onToggleTheme?: () => void;
   supervisors?: UserProfile[];
   onLogoClick?: () => void;
+  onViewPayment?: (paymentId: string) => void;
 }
 
 export const DashboardHeader = ({
@@ -80,52 +83,97 @@ export const DashboardHeader = ({
   theme = 'dark',
   onToggleTheme,
   supervisors,
-  onLogoClick
+  onLogoClick,
+  onViewPayment
 }: DashboardHeaderProps) => {
   const [designMode, setDesignMode] = useDesignMode();
   const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
-    if (profile.role !== 'manager') return;
+    if (!profile.uid) return;
 
-    const loadNotifications = async () => {
-      if (profile.organizationId === 'sandbox-test') {
-        const count = sandboxService.getTransferRequests
-          ? sandboxService.getTransferRequests().filter((r: any) => r.toManagerId === profile.uid && r.status === 'pending').length
-          : 0;
-        setNotificationCount(count);
-        return;
-      }
-
-      try {
-        const q = query(
-          collection(db, 'transfer_requests'),
-          where('toManagerId', '==', profile.uid),
-          where('status', '==', 'pending')
-        );
-        const snap = await getDocs(q);
-        setNotificationCount(snap.size);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    loadNotifications();
-    
-    // Se for sandbox, subscreve ao service
     if (profile.organizationId === 'sandbox-test') {
+      const loadNotifications = () => {
+        const list = sandboxService.getNotifications(profile.uid);
+        
+        // Simular notificações de transferências pendentes para gerentes no sandbox
+        const transferNotifications = profile.role === 'manager' && sandboxService.getTransferRequests
+          ? sandboxService.getTransferRequests().filter((r: any) => r.toManagerId === profile.uid && r.status === 'pending').map((r: any) => ({
+              id: r.id,
+              userId: profile.uid,
+              title: 'Solicitação de Transferência',
+              message: `${r.fromManagerName} solicitou a transferência do supervisor ${r.supervisorName}.`,
+              type: 'transfer_requested' as const,
+              read: false,
+              createdAt: r.createdAt
+            }))
+          : [];
+        
+        const combined = [...list, ...transferNotifications].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setNotifications(combined);
+        setNotificationCount(combined.filter(n => !n.read).length);
+      };
+      
+      loadNotifications();
       const unsubscribe = sandboxService.subscribe(loadNotifications);
+      return () => unsubscribe();
+    } else {
+      // Firebase Real: Escuta notificações em tempo real
+      const q = query(
+        collection(db, 'notifications'),
+        where('userId', '==', profile.uid)
+      );
+      
+      const unsubscribe = onSnapshot(q, (snap) => {
+        const list = snap.docs.map(doc => doc.data() as AppNotification);
+        setNotifications(list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setNotificationCount(list.filter(n => !n.read).length);
+      });
+
       return () => unsubscribe();
     }
   }, [profile.uid, profile.role, profile.organizationId]);
 
+  const handleMarkAsRead = async (notificationId: string) => {
+    const isSandbox = profile.organizationId === 'sandbox-test';
+    if (notificationId.startsWith('sandbox-req-') || notificationId.startsWith('sandbox-notification-')) {
+      sandboxService.markNotificationAsRead(notificationId);
+      return;
+    }
+
+    try {
+      await markNotificationAsRead(notificationId, isSandbox);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleNotificationClick = async (notif: AppNotification) => {
+    await handleMarkAsRead(notif.id);
+    setIsNotificationsOpen(false);
+    
+    if (notif.type === 'payment_released' && notif.referenceId) {
+      if (onViewPayment) {
+        onViewPayment(notif.referenceId);
+      }
+    } else if (notif.type === 'transfer_requested' || notif.type === 'invoice_issued' || notif.type === 'contested') {
+      onSettingsClick(); // Abre as configurações, onde os detalhes são exibidos
+    }
+  };
+
   const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
         setIsToolsOpen(false);
+      }
+      if (notificationsMenuRef.current && !notificationsMenuRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -271,6 +319,121 @@ export const DashboardHeader = ({
               {theme === 'dark' ? <Sun size={16} weight="duotone" /> : <Moon size={16} weight="duotone" />}
             </button>
           )}
+
+          {/* Sino de Notificações */}
+          <div className="relative shrink-0" ref={notificationsMenuRef}>
+            <button
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              className={`transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                isNotificationsOpen
+                  ? 'w-10 h-10 rounded-full bg-primary/15 border-primary/30 text-primary'
+                  : theme === 'dark'
+                    ? 'p-2 rounded-xl bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                    : 'w-10 h-10 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-750 bg-white'
+              }`}
+              title="Notificações"
+            >
+              <Bell size={18} weight={notificationCount > 0 ? "fill" : "duotone"} className={notificationCount > 0 ? 'text-primary' : ''} />
+              {notificationCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
+                  {notificationCount}
+                </span>
+              )}
+            </button>
+
+            {/* Menu Suspenso de Notificações */}
+            <AnimatePresence>
+              {isNotificationsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  className={`absolute right-0 mt-2 w-80 backdrop-blur-2xl border rounded-2xl p-2 shadow-2xl z-50 space-y-1 ${
+                    theme === 'dark' ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
+                  }`}
+                >
+                  <div className={`px-3 py-1.5 flex justify-between items-center border-b mb-1 ${
+                    theme === 'dark' ? 'border-white/5' : 'border-slate-100'
+                  }`}>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${
+                      theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                    }`}>
+                      Notificações
+                    </span>
+                    {notificationCount > 0 && (
+                      <button
+                        onClick={() => {
+                          const isSandbox = profile.organizationId === 'sandbox-test';
+                          if (isSandbox) {
+                            sandboxService.markAllNotificationsAsRead(profile.uid);
+                          } else {
+                            // Firestore
+                            const markAll = async () => {
+                              try {
+                                const q = query(
+                                  collection(db, 'notifications'), 
+                                  where('userId', '==', profile.uid), 
+                                  where('read', '==', false)
+                                );
+                                const snap = await getDocs(q);
+                                const batch = writeBatch(db);
+                                snap.docs.forEach(d => batch.update(d.ref, { read: true }));
+                                await batch.commit();
+                              } catch (err) {
+                                console.error(err);
+                              }
+                            };
+                            markAll();
+                          }
+                        }}
+                        className="text-[9px] font-black text-primary uppercase tracking-wider hover:opacity-85"
+                      >
+                        Limpar tudo
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-64 overflow-y-auto space-y-1">
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-6 text-slate-500 text-xs italic">
+                        Nenhuma notificação por enquanto.
+                      </div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleNotificationClick(notif)}
+                          className={`p-3 rounded-xl text-left cursor-pointer transition-all active:scale-[0.98] border ${
+                            notif.read
+                              ? theme === 'dark'
+                                ? 'bg-transparent border-transparent text-slate-400'
+                                : 'bg-transparent border-transparent text-slate-500'
+                              : theme === 'dark'
+                                ? 'bg-white/5 border-white/5 text-white'
+                                : 'bg-slate-50 border-slate-100 text-slate-800'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-xs font-bold leading-tight">{notif.title}</span>
+                            {!notif.read && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1" />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-1 leading-snug">{notif.message}</p>
+                          <span className="text-[8px] text-slate-550 block mt-1.5 font-mono">
+                            {new Date(notif.createdAt).toLocaleDateString('pt-BR', {
+                              day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Dropdown de Ferramentas / Ações */}
           <div className="relative shrink-0" ref={toolsMenuRef}>

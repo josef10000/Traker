@@ -2065,6 +2065,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               theme={theme}
               onToggleTheme={toggleTheme}
               supervisors={supervisors}
+              onViewPayment={(paymentId) => {
+                onSettingsClick();
+              }}
               onLogoClick={() => {
                 if (profile.role === 'backoffice') setDashboardTab('backoffice');
                 else if (profile.role === 'monitor') setDashboardTab('qa');

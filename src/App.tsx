@@ -392,6 +392,7 @@ export function AppContent() {
               navigate('/create-team');
             }}
             showToast={showToast}
+            theme={simulatedProfile.theme || 'dark'}
           />
         </>
       );
@@ -496,6 +497,7 @@ export function AppContent() {
             navigate('/create-team');
           }}
           showToast={showToast}
+          theme={profile.theme || 'dark'}
         />
       )}
     </>

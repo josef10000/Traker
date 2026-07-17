@@ -31,9 +31,11 @@ import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest, CollaborationNote, CalendarEvent } from '../../types';
 import { sandboxService } from '../../lib/sandboxService';
 import { getCollaborationNotes } from '../../lib/notes';
+import { createNotification } from '../../lib/notifications';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 import { Avatar } from '../ui/Avatar';
+import { ClosingPjSection } from './ClosingPjSection';
 import { 
   getTeamData, 
   deleteTeam, 
@@ -56,16 +58,17 @@ interface ProfileSettingsProps {
   onUpdate: (updatedData?: any) => void;
   onCreateTeam: () => void;
   showToast: (message: string, type?: ToastType) => void;
+  theme?: 'light' | 'dark';
 }
 
-export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast }: ProfileSettingsProps) {
+export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast, theme = 'dark' }: ProfileSettingsProps) {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
   const [avatarStyle, setAvatarStyle] = useState(profile.avatarStyle || 'initials');
   const [avatarSeed, setAvatarSeed] = useState(profile.avatarSeed || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers' | 'schedule'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers' | 'schedule' | 'closing_pj'>('profile');
   
   // Novos estados e effect para aba "Minha Escala"
   const [scheduleDate, setScheduleDate] = useState(new Date());
@@ -294,17 +297,32 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     };
 
     setIsProcessingTransfer(true);
-    if (profile.organizationId === 'sandbox-test') {
+    const isSandbox = profile.organizationId === 'sandbox-test';
+    if (isSandbox) {
       const sandboxReq = {
         id: `sandbox-req-${Date.now()}`,
         ...requestData
       };
       sandboxService.createTransferRequest(sandboxReq);
+      createNotification({
+        userId: targetManagerId,
+        title: 'Solicitação de Transferência',
+        message: `${profile.displayName || profile.email.split('@')[0]} solicitou a transferência do supervisor ${requestData.supervisorName}.`,
+        type: 'transfer_requested',
+        referenceId: sandboxReq.id
+      }, true);
       showToast('Solicitação de transferência criada na simulação!', 'success');
     } else {
       try {
         const reqRef = doc(collection(db, 'transfer_requests'));
         await setDoc(reqRef, requestData);
+        await createNotification({
+          userId: targetManagerId,
+          title: 'Solicitação de Transferência',
+          message: `${profile.displayName || profile.email.split('@')[0]} solicitou a transferência do supervisor ${requestData.supervisorName}.`,
+          type: 'transfer_requested',
+          referenceId: reqRef.id
+        }, false);
         showToast('Solicitação de transferência enviada com sucesso!', 'success');
       } catch (err) {
         console.error(err);
@@ -423,8 +441,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   // Estados de gerenciamento de convites
   const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(false);
-  const [inviteRows, setInviteRows] = useState<Array<{ email: string; role: UserRole; teamId: string }>>([
-    { email: '', role: 'member', teamId: '' }
+  const [inviteRows, setInviteRows] = useState<Array<{ email: string; role: UserRole; teamId: string; monthlyServiceValue?: number }>>([
+    { email: '', role: 'member', teamId: '', monthlyServiceValue: 0 }
   ]);
   const [generatedInvites, setGeneratedInvites] = useState<Invite[] | null>(null);
   const [isGeneratingInvites, setIsGeneratingInvites] = useState(false);
@@ -654,7 +672,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   // --- AÇÕES DO FORMULÁRIO DINÂMICO DE CONVITES ---
 
   const handleAddInviteRow = () => {
-    setInviteRows(prev => [...prev, { email: '', role: 'member', teamId: '' }]);
+    setInviteRows(prev => [...prev, { email: '', role: 'member', teamId: '', monthlyServiceValue: 0 }]);
   };
 
   const handleRemoveInviteRow = (index: number) => {
@@ -662,10 +680,10 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     setInviteRows(prev => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleInviteRowChange = (index: number, field: 'email' | 'role' | 'teamId', value: string) => {
+  const handleInviteRowChange = (index: number, field: 'email' | 'role' | 'teamId' | 'monthlyServiceValue', value: string) => {
     setInviteRows(prev => prev.map((row, idx) => {
       if (idx !== index) return row;
-      const updatedRow = { ...row, [field]: value };
+      const updatedRow = { ...row, [field]: field === 'monthlyServiceValue' ? (Number(value) || 0) : value };
       
       // Se mudar a role para um cargo que não tem equipe (manager, coordinator, monitor), limpa o time
       if (field === 'role' && !['member', 'supervisor', 'backoffice'].includes(value)) {
@@ -689,7 +707,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       const invitesPayload = inviteRows.map(row => ({
         email: row.email.trim().toLowerCase(),
         role: row.role,
-        teamId: row.teamId || null
+        teamId: row.teamId || null,
+        monthlyServiceValue: ['member', 'backoffice'].includes(row.role) ? (row.monthlyServiceValue || 0) : undefined
       }));
 
       let list: Invite[] = [];
@@ -960,6 +979,24 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 >
                   <Folder size={16} />
                   Organograma / Árvore
+                </button>
+              )}
+
+              {(profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'member' || profile.role === 'backoffice') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('closing_pj');
+                    setSelectedTeamForMembers(null);
+                  }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
+                    activeTab === 'closing_pj'
+                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Calculator size={16} />
+                  {['coordinator', 'manager'].includes(profile.role) ? 'Fechamento PJ' : 'Minhas Prestações PJ'}
                 </button>
               )}
 
@@ -1628,6 +1665,21 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                           />
                         </div>
 
+                        {/* Valor da Prestação PJ */}
+                        {['member', 'backoffice'].includes(row.role) && (
+                          <div className="w-full md:w-36">
+                            <label className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">Prestação (R$)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="3000"
+                              value={row.monthlyServiceValue || ''}
+                              onChange={(e) => handleInviteRowChange(idx, 'monthlyServiceValue', e.target.value)}
+                              className="w-full px-4 py-2 border border-slate-850 bg-slate-950 text-white rounded-xl text-xs outline-none focus:border-primary transition-all placeholder:text-white/10"
+                            />
+                          </div>
+                        )}
+
                         {/* Ação de Remover */}
                         {inviteRows.length > 1 && (
                           <button
@@ -1692,6 +1744,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                           <th className="p-3">E-mail</th>
                           <th className="p-3">Cargo</th>
                           <th className="p-3">Equipe</th>
+                          <th className="p-3">Prestação PJ</th>
                           <th className="p-3">Expira em</th>
                           <th className="p-3 text-center">Ações</th>
                         </tr>
@@ -1714,6 +1767,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                 {inv.role === 'member' ? 'Operador' : inv.role}
                               </td>
                               <td className="p-3 text-slate-400">{teamName}</td>
+                              <td className="p-3 text-slate-400">
+                                {inv.monthlyServiceValue ? `R$ ${inv.monthlyServiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                              </td>
                               <td className="p-3 text-slate-500">{expirationDate}</td>
                               <td className="p-3">
                                 <div className="flex items-center justify-center gap-1.5">
@@ -2220,6 +2276,15 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
             </div>
           )}
 
+          {/* ABA: FECHAMENTO PJ */}
+          {activeTab === 'closing_pj' && (
+            <ClosingPjSection 
+              profile={profile}
+              theme={theme}
+              showToast={showToast}
+            />
+          )}
+
           {/* ABA: NOTIFICAÇÕES / TRANSFERÊNCIAS */}
           {activeTab === 'transfers' && profile.role === 'manager' && (
             <div className="space-y-6 max-w-2xl">
@@ -2374,17 +2439,32 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                         };
 
                         setIsProcessingTransfer(true);
-                        if (profile.organizationId === 'sandbox-test') {
+                        const isSandbox = profile.organizationId === 'sandbox-test';
+                        if (isSandbox) {
                           const sandboxReq = {
                             id: `sandbox-req-${Date.now()}`,
                             ...requestData
                           };
                           sandboxService.createTransferRequest(sandboxReq);
+                          createNotification({
+                            userId: targetManagerId,
+                            title: 'Solicitação de Transferência',
+                            message: `${profile.displayName || profile.email.split('@')[0]} solicitou a transferência do supervisor ${requestData.supervisorName}.`,
+                            type: 'transfer_requested',
+                            referenceId: sandboxReq.id
+                          }, true);
                           showToast('Solicitação enviada com sucesso na simulação!', 'success');
                         } else {
                           try {
                             const reqRef = doc(collection(db, 'transfer_requests'));
                             await setDoc(reqRef, requestData);
+                            await createNotification({
+                              userId: targetManagerId,
+                              title: 'Solicitação de Transferência',
+                              message: `${profile.displayName || profile.email.split('@')[0]} solicitou a transferência do supervisor ${requestData.supervisorName}.`,
+                              type: 'transfer_requested',
+                              referenceId: reqRef.id
+                            }, false);
                             showToast('Solicitação de transferência enviada com sucesso!', 'success');
                           } catch (err) {
                             console.error(err);

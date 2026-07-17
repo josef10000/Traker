@@ -48,6 +48,10 @@ export interface Organization {
   coordinatorInviteToken?: string | null;
   monitorInviteToken?: string | null;
   createdAt: string;
+  closingConfig?: {
+    enabled: boolean;
+    closingDay: number;
+  };
 }
 
 export interface UserProfile {
@@ -62,6 +66,7 @@ export interface UserProfile {
   theme?: 'dark' | 'sky' | 'purple';
   portfolio?: string;
   monthlyGoal?: number;
+  monthlyServiceValue?: number; // Valor da prestação PJ mensal
   observation?: string;
   hasSeenTour?: boolean;
   managerId?: string | null;
@@ -288,6 +293,7 @@ export interface Invite {
   invitedBy: string;
   createdAt: string;
   expiresAt: string;
+  monthlyServiceValue?: number; // Valor da prestação PJ mensal
 }
 
 export interface TransferRequest {
@@ -310,5 +316,38 @@ export interface CalendarEvent {
   targetType: 'team' | 'individual';
   targetId: string; // teamId ou collaboratorId
   createdBy: string;
+  createdAt: string;
+}
+
+export interface MonthlyPayment {
+  id: string;                    // Formato: userId_month_year
+  userId: string;
+  userName: string;
+  role: 'member' | 'backoffice';
+  teamId: string;
+  organizationId: string;
+  month: number;                 // 1 a 12
+  year: number;
+  baseValue: number;             // Valor PJ acordado no convite
+  totalDays: number;             // Total de dias do mês calendário
+  missedDays: number;            // Total de faltas registradas no calendário no período
+  excusedDays: number;           // Total de faltas abonadas pelo coordenador
+  excusedDates?: string[];       // Datas específicas das faltas que foram abonadas (ex: ["2026-06-12"])
+  deductedValue: number;         // Valor final líquido: baseValue - ((baseValue/totalDays) * (missedDays - excusedDays))
+  status: 'released' | 'invoice_issued' | 'contested';
+  contestationText?: string;
+  releasedAt: string;
+  invoiceIssuedAt?: string;      // Timestamp de quando o operador marcou como nota emitida
+  updatedAt: string;
+}
+
+export interface AppNotification {
+  id: string;
+  userId: string;                // Destinatário
+  title: string;
+  message: string;
+  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system';
+  referenceId?: string;          // ID do fechamento de pagamento ou transferência associado
+  read: boolean;
   createdAt: string;
 }

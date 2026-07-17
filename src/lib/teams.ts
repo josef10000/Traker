@@ -449,7 +449,7 @@ export const getPendingInvites = async (organizationId: string): Promise<Invite[
 };
 
 export const createInvitesInBulk = async (
-  invitesData: Array<{ email: string; role: UserRole; teamId: string | null }>,
+  invitesData: Array<{ email: string; role: UserRole; teamId: string | null; monthlyServiceValue?: number }>,
   organizationId: string,
   invitedBy: string
 ): Promise<Invite[]> => {
@@ -495,7 +495,8 @@ export const createInvitesInBulk = async (
       token,
       invitedBy,
       createdAt: now,
-      expiresAt
+      expiresAt,
+      monthlyServiceValue: data.monthlyServiceValue || undefined
     };
 
     await setDoc(doc(db, 'invites', inviteId), invite);
@@ -557,7 +558,8 @@ export const acceptInvite = async (uid: string, token: string): Promise<void> =>
     organizationId: inviteData.organizationId,
     createdAt: now,
     managedTeams: inviteData.role === 'supervisor' && inviteData.teamId ? [inviteData.teamId] : undefined,
-    managerId: inviteData.invitedBy || null
+    managerId: inviteData.invitedBy || null,
+    monthlyServiceValue: inviteData.monthlyServiceValue || undefined
   };
 
   await setDoc(doc(db, 'users', uid), userProfile);
