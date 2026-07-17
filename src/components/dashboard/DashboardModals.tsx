@@ -111,6 +111,7 @@ export interface DashboardModalsProps {
   setSelectedTeamId: (teamId: string) => void;
   supervisors?: UserProfile[];
   managers?: UserProfile[];
+  theme?: 'light' | 'dark';
 }
 
 export const DashboardModals: React.FC<DashboardModalsProps> = ({
@@ -194,6 +195,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
   setSelectedTeamId,
   supervisors,
   managers,
+  theme = 'dark'
 }) => {
   return (
     <>
@@ -226,6 +228,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         isSupervisor={profile.role === 'supervisor'}
         onAnonimize={handleAnonimizeClient}
         organizationId={profile.organizationId || undefined}
+        theme={theme}
       />
 
       <ExportCpfModal

@@ -17,6 +17,7 @@ interface HistoryModalProps {
   isSupervisor?: boolean;
   onAnonimize?: (cpf: string) => void;
   organizationId?: string;
+  theme?: 'light' | 'dark';
 }
 
 export const HistoryModal = ({ 
@@ -28,7 +29,8 @@ export const HistoryModal = ({
   userName = 'Operador',
   isSupervisor = false,
   onAnonimize,
-  organizationId
+  organizationId,
+  theme = 'dark'
 }: HistoryModalProps) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -61,26 +63,40 @@ export const HistoryModal = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClose}
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+        className={`absolute inset-0 backdrop-blur-md ${
+          theme === 'dark' ? 'bg-slate-950/80' : 'bg-slate-900/40'
+        }`}
       />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0, x: 20 }}
         animate={{ scale: 1, opacity: 1, x: 0 }}
         exit={{ scale: 0.95, opacity: 0, x: 20 }}
-        className="relative glass-card w-full max-w-2xl max-h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+        className={`relative w-full max-w-2xl max-h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border ${
+          theme === 'dark' 
+            ? 'glass-card border-white/5' 
+            : 'bg-white border-slate-200 text-slate-800'
+        }`}
       >
-        <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0">
+        <div className={`px-8 py-5 flex justify-between items-center shrink-0 border-b ${
+          theme === 'dark' 
+            ? 'border-white/5 bg-white/5 backdrop-blur-xl' 
+            : 'border-slate-100 bg-slate-50'
+        }`}>
           <div>
-            <h2 className="text-lg font-bold text-white">Histórico do Cliente</h2>
+            <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Histórico do Cliente</h2>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest font-mono">
+              <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
+                theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+              }`}>
                 CPF: {clientCpf ? (isRevealed ? clientCpf : maskCPF(clientCpf)) : ''}
               </span>
               {clientCpf && (
                 <button
                   type="button"
                   onClick={handleReveal}
-                  className="text-slate-500 hover:text-sky-400 transition-colors p-0.5 rounded"
+                  className={`transition-colors p-0.5 rounded ${
+                    theme === 'dark' ? 'text-slate-500 hover:text-sky-400' : 'text-slate-400 hover:text-primary'
+                  }`}
                   title={isRevealed ? "Ocultar CPF" : "Revelar CPF"}
                 >
                   {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
@@ -90,7 +106,11 @@ export const HistoryModal = ({
           </div>
           <button 
             onClick={handleClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
+            className={`p-2 rounded-full transition-colors ${
+              theme === 'dark' 
+                ? 'hover:bg-white/10 text-slate-500 hover:text-white' 
+                : 'hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+            }`}
           >
             <X size={20} />
           </button>
@@ -99,7 +119,7 @@ export const HistoryModal = ({
         <div className="p-6 overflow-y-auto custom-scrollbar">
           {isLoading ? (
             <div className="flex flex-col items-center py-12 gap-3">
-              <Loader2 className="animate-spin text-sky-500" size={24} />
+              <Loader2 className="animate-spin text-primary" size={24} />
               <span className="text-xs font-medium text-slate-500">Buscando histórico...</span>
             </div>
           ) : history.length > 0 ? (
@@ -108,13 +128,21 @@ export const HistoryModal = ({
                 <div 
                   key={item.id}
                   className={`p-5 rounded-2xl border ${
-                    item.status === AgreementStatus.PAID 
-                      ? 'bg-emerald-500/5 border-emerald-500/10' 
-                      : item.status === AgreementStatus.BROKEN 
-                        ? 'bg-rose-500/5 border-rose-500/10' 
-                        : item.status === AgreementStatus.RECOVERED
-                          ? 'bg-teal-500/5 border-teal-500/10'
-                          : 'bg-slate-800/20 border-slate-800'
+                    theme === 'dark'
+                      ? item.status === AgreementStatus.PAID 
+                        ? 'bg-emerald-500/5 border-emerald-500/10' 
+                        : item.status === AgreementStatus.BROKEN 
+                          ? 'bg-rose-500/5 border-rose-500/10' 
+                          : item.status === AgreementStatus.RECOVERED
+                            ? 'bg-teal-500/5 border-teal-500/10'
+                            : 'bg-slate-800/20 border-slate-800'
+                      : item.status === AgreementStatus.PAID 
+                        ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950 shadow-sm' 
+                        : item.status === AgreementStatus.BROKEN 
+                          ? 'bg-rose-50/50 border-rose-200 text-rose-950 shadow-sm' 
+                          : item.status === AgreementStatus.RECOVERED
+                            ? 'bg-teal-50/50 border-teal-200 text-teal-950 shadow-sm'
+                            : 'bg-slate-100 border-slate-200 text-slate-900 shadow-sm'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-3">
@@ -122,7 +150,7 @@ export const HistoryModal = ({
                       <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                         {new Date(item.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
                       </span>
-                      <span className="text-lg font-bold text-white">{formatCurrency(item.value)}</span>
+                      <span className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(item.value)}</span>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
                       {item.status === AgreementStatus.PAID ? (
@@ -144,7 +172,11 @@ export const HistoryModal = ({
                         </span>
                         {/* Badge de parcelamento com detalhes */}
                         {item.type === 'parcelamento' && item.installmentCount && (
-                          <span className="text-[10px] font-black bg-sky-500/10 border border-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full">
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                            theme === 'dark'
+                              ? 'bg-primary/10 border border-primary/20 text-primary'
+                              : 'bg-primary/10 border border-primary/20 text-primary'
+                          }`}>
                             {item.hasEntry && item.installmentValue
                               ? `entrada + ${item.installmentCount}x ${formatCurrency(item.installmentValue)}`
                               : `${item.installmentCount}x`}
@@ -154,20 +186,24 @@ export const HistoryModal = ({
 
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-slate-400">
+                  <div className={`flex items-center gap-4 text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                     <div className="flex items-center gap-1">
                       <Clock size={12} />
                       Vencimento: {(item.dueDate || '').split('-').reverse().join('/')}
                     </div>
                     {item.paidAt && (
-                      <div className="flex items-center gap-1 text-emerald-400">
+                      <div className="flex items-center gap-1 text-emerald-500 font-bold">
                         <CheckCircle2 size={12} />
                         Pago em: {new Date(item.paidAt).toLocaleDateString('pt-BR')}
                       </div>
                     )}
                   </div>
                   {item.notes && (
-                    <div className="mt-3 p-3 bg-white/5 rounded-xl border border-white/5 text-xs text-slate-300">
+                    <div className={`mt-3 p-3 rounded-xl border text-xs ${
+                      theme === 'dark' 
+                        ? 'bg-white/5 border-white/5 text-slate-300' 
+                        : 'bg-slate-50 border-slate-200 text-slate-700'
+                    }`}>
                       <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider mb-1">Observação do Atendimento:</p>
                       <p className="italic font-medium">"{item.notes}"</p>
                     </div>
@@ -181,13 +217,21 @@ export const HistoryModal = ({
             </div>
           )}
         </div>
-        <div className="px-8 py-4 border-t border-white/5 bg-white/5 backdrop-blur-xl flex justify-between items-center shrink-0">
+        <div className={`px-8 py-4 border-t flex justify-between items-center shrink-0 ${
+          theme === 'dark' 
+            ? 'border-white/5 bg-white/5 backdrop-blur-xl' 
+            : 'border-slate-100 bg-slate-50'
+        }`}>
            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Total de negociações: {history.length}</p>
            {onAnonimize && isSupervisor && clientCpf && (
              <button
                type="button"
                onClick={() => setIsConfirmOpen(true)}
-               className="text-[10px] text-rose-500 hover:text-rose-400 font-bold uppercase tracking-wider flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-rose-500/10 border border-rose-500/20"
+               className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors px-2 py-1 rounded border ${
+                 theme === 'dark'
+                   ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 border-rose-500/20'
+                   : 'text-rose-600 hover:text-rose-500 hover:bg-rose-50 border-rose-200'
+               }`}
                title="Anonimizar dados do cliente (Direito ao Esquecimento — LGPD)"
              >
                Anonimizar Cliente

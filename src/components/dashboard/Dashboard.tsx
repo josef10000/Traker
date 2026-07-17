@@ -3143,6 +3143,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         showToast={showToast}
         supervisors={supervisors}
         managers={managers}
+        theme={theme}
 
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
