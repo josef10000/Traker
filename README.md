@@ -186,3 +186,19 @@ O projeto conta com automação via GitHub Actions para assegurar a saúde do pr
 - **TypeScript Checking**: Validação estática de tipos (`tsc --noEmit`).
 - **Production Build Testing**: Garante que o bundler do Vite compile o código para produção com 100% de sucesso.
 - **Auditoria LGPD**: Validação estática de chaves e vazamentos de chaves privadas.
+
+---
+
+## 🔧 Integração com Google Stitch & IA Agent Skills
+
+O ambiente está configurado com a biblioteca de Agent Skills do **Google Stitch** (`google-labs-code/stitch-skills`). As skills foram instaladas globalmente no ambiente do usuário, permitindo o uso integrado com agentes de codificação como o Antigravity.
+
+As seguintes habilidades do Stitch estão disponíveis:
+* **`stitch::react-components`**: Conversão de designs do Stitch em componentes modulares Vite + React.
+* **`stitch::code-to-design`**: Migração e upload de código React/Vite existente de volta para designs do Stitch.
+* **`stitch::extract-design-md`**: Engenharia reversa para extração de sistemas de design (`DESIGN.md`) diretamente do código fonte.
+* **`stitch::extract-static-html`**: Extração de HTML estático auto-contido a partir do app.
+* **`stitch::generate-design`**: Geração e edição de telas via prompts de linguagem natural usando a API do Stitch.
+* **`stitch::manage-design-system`**: Gerenciamento de design systems do Stitch e seus tokens.
+* **`stitch::upload-to-stitch`**: Upload de imagens, mockups e assets locais para o Stitch.
+* **`taste-design`**: Geração de diretrizes `DESIGN.md` premium para forçar padrões avançados de UX/UI.
