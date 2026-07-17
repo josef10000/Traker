@@ -267,6 +267,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         onClose={() => setIsPreferencesModalOpen(false)}
         hiddenCards={localHiddenCards}
         onToggleCard={handleToggleCard}
+        theme={theme}
       />
 
       <ConfirmModal

@@ -14,6 +14,7 @@ interface DashboardPreferencesModalProps {
   onClose: () => void;
   hiddenCards: string[];
   onToggleCard: (cardId: string) => void;
+  theme?: string;
 }
 
 const CARDS_OPTIONS: CardOption[] = [
@@ -21,57 +22,109 @@ const CARDS_OPTIONS: CardOption[] = [
     id: 'cadastradosHoje',
     title: 'Cadastrados Hoje',
     description: 'Quantidade de acordos registrados no dia atual.',
-    icon: <LayoutDashboard size={18} className="text-sky-400" />
+    icon: <LayoutDashboard size={18} />
   },
   {
     id: 'ticketMedioGeral',
     title: 'Ticket Médio Geral',
     description: 'Média de valor por acordo registrado no período.',
-    icon: <LayoutDashboard size={18} className="text-indigo-400" />
+    icon: <LayoutDashboard size={18} />
   },
   {
     id: 'ticketMedioTipo',
     title: 'Ticket Médio por Tipo',
     description: 'Média de valor separada por Quitação, Parcelamento, etc.',
-    icon: <LayoutDashboard size={18} className="text-emerald-400" />
+    icon: <LayoutDashboard size={18} />
   },
   {
     id: 'tempoMedioPagar',
     title: 'Heatmap de Pagamentos',
     description: 'Mapa de calor mostrando a distribuição dos dias com mais acordos pagos.',
-    icon: <LayoutDashboard size={18} className="text-emerald-400" />
+    icon: <LayoutDashboard size={18} />
   },
   {
     id: 'projecao7Dias',
     title: 'Projeção de 7 Dias',
     description: 'Soma dos valores que vencem nos próximos 7 dias.',
-    icon: <LayoutDashboard size={18} className="text-purple-400" />
+    icon: <LayoutDashboard size={18} />
   },
   {
     id: 'eficienciaCiclo',
     title: 'Eficiência por Ciclo',
     description: 'Conversão comparativa entre os turnos da Manhã e Tarde.',
-    icon: <LayoutDashboard size={18} className="text-sky-400" />
+    icon: <LayoutDashboard size={18} />
   },
   {
     id: 'agendaDoDia',
     title: 'Agenda do Dia (Retornos)',
     description: 'Grade de compromissos e retornos de clientes agendados.',
-    icon: <LayoutDashboard size={18} className="text-amber-400" />
+    icon: <LayoutDashboard size={18} />
   },
   {
     id: 'mediaQualidadeQa',
     title: 'Média de Qualidade (QA)',
     description: 'Nota média das avaliações de monitoria de qualidade.',
-    icon: <LayoutDashboard size={18} className="text-sky-400" />
+    icon: <LayoutDashboard size={18} />
   }
 ];
+
+const getCardStyles = (cardId: string, theme: string) => {
+  const isDark = theme === 'dark';
+  switch (cardId) {
+    case 'projecao7Dias':
+      return { 
+        text: isDark ? 'text-purple-400' : 'text-[#a855f7]', 
+        bg: isDark ? 'bg-purple-500' : 'bg-[#a855f7]' 
+      };
+    case 'agendaDoDia':
+      return { 
+        text: isDark ? 'text-amber-400' : 'text-[#f59e0b]', 
+        bg: isDark ? 'bg-amber-500' : 'bg-[#f59e0b]' 
+      };
+    case 'ticketMedioGeral':
+      return { 
+        text: isDark ? 'text-indigo-400' : 'text-[#3b82f6]', 
+        bg: isDark ? 'bg-indigo-500' : 'bg-[#3b82f6]' 
+      };
+    case 'tempoMedioPagar':
+      return { 
+        text: isDark ? 'text-emerald-400' : 'text-[#10b981]', 
+        bg: isDark ? 'bg-emerald-500' : 'bg-[#10b981]' 
+      };
+    case 'ticketMedioTipo':
+      return { 
+        text: isDark ? 'text-emerald-400' : 'text-[#3a8383]', 
+        bg: isDark ? 'bg-emerald-500' : 'bg-[#3a8383]' 
+      };
+    case 'cadastradosHoje':
+      return { 
+        text: isDark ? 'text-sky-400' : 'text-[#3a8383]', 
+        bg: isDark ? 'bg-sky-500' : 'bg-[#3a8383]' 
+      };
+    case 'eficienciaCiclo':
+      return { 
+        text: isDark ? 'text-sky-400' : 'text-[#3a8383]', 
+        bg: isDark ? 'bg-sky-500' : 'bg-[#3a8383]' 
+      };
+    case 'mediaQualidadeQa':
+      return { 
+        text: isDark ? 'text-sky-400' : 'text-[#3a8383]', 
+        bg: isDark ? 'bg-sky-500' : 'bg-[#3a8383]' 
+      };
+    default:
+      return { 
+        text: isDark ? 'text-sky-400' : 'text-[#3a8383]', 
+        bg: isDark ? 'bg-sky-500' : 'bg-[#3a8383]' 
+      };
+  }
+};
 
 export const DashboardPreferencesModal = ({
   isOpen,
   onClose,
   hiddenCards,
-  onToggleCard
+  onToggleCard,
+  theme = 'dark'
 }: DashboardPreferencesModalProps) => {
   const [localHidden, setLocalHidden] = React.useState<string[]>(hiddenCards);
 
@@ -97,34 +150,54 @@ export const DashboardPreferencesModal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            className={`absolute inset-0 backdrop-blur-md ${
+              theme === 'dark' ? 'bg-slate-950/80' : 'bg-slate-900/40'
+            }`}
           />
           <motion.div 
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="relative glass-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            className={`relative w-full max-w-[580px] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border ${
+              theme === 'dark' 
+                ? 'glass-card border-white/5 text-white' 
+                : 'bg-white border-slate-200 text-slate-800'
+            }`}
           >
-            <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-sky-500/20 rounded-xl">
-                  <LayoutDashboard size={20} className="text-sky-400" />
+            <div className={`px-8 py-6 border-b flex justify-between items-center shrink-0 ${
+              theme === 'dark' 
+                ? 'border-white/5 bg-white/5 backdrop-blur-xl' 
+                : 'border-gray-200 bg-[#f1f5f9]'
+            }`}>
+              <div className="flex items-center gap-4">
+                <div className={`p-2.5 rounded-lg transition-colors ${
+                  theme === 'dark' ? 'bg-sky-500/20 text-sky-400' : 'bg-[#d1e5e5] text-[#3a8383]'
+                }`}>
+                  <LayoutDashboard size={24} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white leading-tight">Personalizar Visão</h2>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Meu Dashboard Pessoal</p>
+                  <h2 className={`text-2xl font-bold leading-tight ${theme === 'dark' ? 'text-white' : 'text-[#0f172a]'}`}>
+                    Personalizar Visão
+                  </h2>
+                  <p className={`text-xs font-bold tracking-widest uppercase mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-[#64748b]'}`}>
+                    Meu Dashboard Pessoal
+                  </p>
                 </div>
               </div>
               <button 
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
+                className={`p-2 rounded-full transition-colors ${
+                  theme === 'dark' 
+                    ? 'hover:bg-white/10 text-slate-500 hover:text-white' 
+                    : 'hover:bg-slate-200 text-[#64748b] hover:text-gray-900'
+                }`}
               >
-                <X size={20} />
+                <X size={24} />
               </button>
             </div>
             
-            <div className="p-8 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-              <p className="text-sm text-slate-400 mb-6">
+            <div className="p-8 overflow-y-auto space-y-4 custom-scrollbar">
+              <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-[#64748b]'}`}>
                 Escolha quais informações você deseja visualizar na sua tela inicial. Essa configuração afeta apenas o seu perfil.
               </p>
 
@@ -132,33 +205,56 @@ export const DashboardPreferencesModal = ({
                 {CARDS_OPTIONS.map((card) => {
                   const isHidden = localHidden.includes(card.id);
                   const isVisible = !isHidden;
+                  const cardStyles = getCardStyles(card.id, theme);
 
                   return (
                     <div 
                       key={card.id}
                       onClick={() => handleToggle(card.id)}
-                      className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all group backdrop-blur-sm ${
-                        isVisible 
-                          ? 'bg-white/10 border-white/20 hover:border-sky-500/50' 
-                          : 'bg-white/5 border-white/5 opacity-60 hover:opacity-100 hover:border-white/10'
+                      className={`flex items-center justify-between p-6 rounded-2xl border cursor-pointer transition-all group backdrop-blur-sm ${
+                        theme === 'dark'
+                          ? isVisible 
+                            ? 'bg-white/10 border-white/20 hover:border-sky-500/50' 
+                            : 'bg-white/5 border-white/5 opacity-60 hover:opacity-100 hover:border-white/10'
+                          : isVisible
+                            ? 'bg-[#f8fafc] border-gray-200 hover:bg-slate-50 hover:border-[#a855f7] hover:shadow-md' 
+                            : 'bg-[#f8fafc] border-gray-200 opacity-60 hover:opacity-100 hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-xl transition-colors ${isVisible ? 'bg-white/10' : 'bg-white/5 text-slate-600'}`}>
-                          {card.icon}
+                      <div className="flex items-center gap-6">
+                        <div className={`p-3 rounded-xl transition-colors ${
+                          theme === 'dark' 
+                            ? isVisible ? 'bg-white/10' : 'bg-white/5 text-slate-600'
+                            : isVisible ? `bg-white shadow-sm ${cardStyles.text}` : 'bg-white shadow-sm text-[#94a3b8]'
+                        }`}>
+                          {React.cloneElement(card.icon as React.ReactElement, {
+                            className: theme === 'dark' ? cardStyles.text : undefined
+                          })}
                         </div>
-                        <div>
-                          <p className={`text-sm font-bold transition-colors ${isVisible ? 'text-white' : 'text-slate-500'}`}>
+                        <div className="flex-1">
+                          <p className={`text-lg font-bold transition-colors ${
+                            theme === 'dark' 
+                              ? isVisible ? 'text-white' : 'text-slate-500'
+                              : isVisible ? 'text-[#0f172a]' : 'text-[#94a3b8]'
+                          }`}>
                             {card.title}
                           </p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">
+                          <p className={`text-sm font-medium leading-relaxed mt-0.5 ${
+                            theme === 'dark' 
+                              ? 'text-slate-500' 
+                              : isVisible ? 'text-[#64748b]' : 'text-[#94a3b8]'
+                          }`}>
                             {card.description}
                           </p>
                         </div>
                       </div>
 
                       {/* Custom Toggle Switch */}
-                      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isVisible ? 'bg-sky-500' : 'bg-white/10'}`}>
+                      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                        isVisible 
+                          ? theme === 'dark' ? 'bg-sky-500' : cardStyles.bg 
+                          : theme === 'dark' ? 'bg-white/10' : 'bg-[#cbd5e1]'
+                      }`}>
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isVisible ? 'translate-x-6' : 'translate-x-1'}`} />
                       </div>
                     </div>
@@ -167,10 +263,16 @@ export const DashboardPreferencesModal = ({
               </div>
             </div>
 
-            <div className="p-6 border-t border-white/5 bg-white/5 shrink-0">
+            <div className={`p-8 border-t shrink-0 ${
+              theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-gray-200 bg-[#f1f5f9]'
+            }`}>
               <button 
                 onClick={onClose}
-                className="w-full py-4 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl transition-colors shadow-lg shadow-sky-500/20"
+                className={`w-full py-4 font-bold text-xl rounded-xl transition-all shadow-lg ${
+                  theme === 'dark'
+                    ? 'bg-sky-500 hover:bg-sky-400 text-white shadow-sky-500/20'
+                    : 'bg-[#4b2c6e] text-white hover:opacity-90'
+                }`}
               >
                 Concluir
               </button>
