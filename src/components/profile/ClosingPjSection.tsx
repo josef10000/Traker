@@ -99,12 +99,99 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
     if (['coordinator', 'manager'].includes(profile.role)) return; // Apenas operador/back office
     if (!profile.organizationId) return;
 
+    const checkSelfAutoRelease = async (existingPayments: MonthlyPayment[]) => {
+      if (!['member', 'backoffice'].includes(profile.role) || !(profile.monthlyServiceValue || 0) > 0) return;
+      
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      
+      const hasCurrentPayment = existingPayments.some(p => p.month === currentMonth && p.year === currentYear);
+      if (hasCurrentPayment) return;
+
+      const range = getClosingRange(currentYear, currentMonth);
+      let collabNotes: CollaborationNote[] = [];
+
+      if (isSandbox) {
+        collabNotes = sandboxService.getCollaborationNotesReport(profile.organizationId!)
+          .filter(n => n.collaboratorId === profile.uid && n.type === 'attendance' && n.attendanceStatus === 'absent');
+      } else {
+        try {
+          const qNotes = query(
+            collection(db, 'collaboration_notes'),
+            where('collaboratorId', '==', profile.uid),
+            where('type', '==', 'attendance'),
+            where('attendanceStatus', '==', 'absent')
+          );
+          const snap = await getDocs(qNotes);
+          collabNotes = snap.docs.map(d => d.data() as CollaborationNote);
+        } catch (err) {
+          console.error(err);
+          return;
+        }
+      }
+
+      const activeFaltas = collabNotes.filter(n => {
+        const noteDate = new Date(n.createdAt);
+        return noteDate >= range.startDate && noteDate <= range.endDate;
+      });
+
+      if (activeFaltas.length === 0) {
+        const paymentId = `${profile.uid}_${currentMonth}_${currentYear}`;
+        const now = new Date().toISOString();
+        const totalDays = getDaysInMonth(currentYear, currentMonth);
+        const baseValue = profile.monthlyServiceValue || 0;
+
+        const paymentData: MonthlyPayment = {
+          id: paymentId,
+          userId: profile.uid,
+          userName: profile.displayName || profile.email.split('@')[0],
+          role: profile.role as 'member' | 'backoffice',
+          teamId: profile.teamId || '',
+          organizationId: profile.organizationId!,
+          month: currentMonth,
+          year: currentYear,
+          baseValue,
+          totalDays,
+          missedDays: 0,
+          excusedDays: 0,
+          excusedDates: [],
+          deductedValue: baseValue,
+          status: 'released',
+          releasedAt: now,
+          updatedAt: now
+        };
+
+        if (isSandbox) {
+          sandboxService.addMonthlyPayment(paymentData);
+        } else {
+          try {
+            await setDoc(doc(db, 'monthly_payments', paymentId), paymentData);
+          } catch (err) {
+            console.error(err);
+            return;
+          }
+        }
+
+        await createNotification({
+          userId: profile.uid,
+          title: 'Fechamento PJ Liberado Automaticamente',
+          message: `Seu fechamento referente a ${currentMonth}/${currentYear} foi gerado automaticamente por não conter faltas registradas. Valor: R$ ${baseValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.`,
+          type: 'payment_released',
+          referenceId: paymentId
+        }, isSandbox);
+
+        showToast('Seu fechamento mensal foi gerado automaticamente!', 'success');
+      }
+    };
+
     if (isSandbox) {
       const loadMyPayments = () => {
         const list = sandboxService.getMonthlyPayments(profile.organizationId!)
           .filter(p => p.userId === profile.uid);
-        setMyPayments(list.sort((a, b) => b.year - a.year || b.month - a.month));
         
+        checkSelfAutoRelease(list);
+
+        setMyPayments(list.sort((a, b) => b.year - a.year || b.month - a.month));
         const pending = list.find(p => p.status === 'released');
         setMyPendingPayment(pending || null);
       };
@@ -118,8 +205,10 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
       );
       const unsubscribe = onSnapshot(q, (snap) => {
         const list = snap.docs.map(d => d.data() as MonthlyPayment);
-        setMyPayments(list.sort((a, b) => b.year - a.year || b.month - a.month));
         
+        checkSelfAutoRelease(list);
+
+        setMyPayments(list.sort((a, b) => b.year - a.year || b.month - a.month));
         const pending = list.find(p => p.status === 'released');
         setMyPendingPayment(pending || null);
       });
@@ -174,6 +263,67 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
         const paySnap = await getDocs(payQ);
         paymentsList = paySnap.docs.map(d => d.data() as MonthlyPayment);
       }
+
+      // --- REGRA DE LIBERAÇÃO AUTOMÁTICA DE COLABORADORES (OPERADOR E BACKOFFICE) SEM FALTA ---
+      const range = getClosingRange(selectedYear, selectedMonth);
+      const autoReleasePromises = collabsList
+        .filter(u => ['member', 'backoffice'].includes(u.role) && (u.monthlyServiceValue || 0) > 0)
+        .map(async (collab) => {
+          const hasPayment = paymentsList.some(p => p.userId === collab.uid);
+          if (hasPayment) return;
+
+          // Verifica se há alguma falta no período
+          const collabNotes = notesList.filter(n => {
+            if (n.collaboratorId !== collab.uid || n.attendanceStatus !== 'absent') return false;
+            const noteDate = new Date(n.createdAt);
+            return noteDate >= range.startDate && noteDate <= range.endDate;
+          });
+
+          if (collabNotes.length === 0) {
+            const paymentId = `${collab.uid}_${selectedMonth}_${selectedYear}`;
+            const now = new Date().toISOString();
+            const totalDays = getDaysInMonth(selectedYear, selectedMonth);
+            const baseValue = collab.monthlyServiceValue || 0;
+
+            const paymentData: MonthlyPayment = {
+              id: paymentId,
+              userId: collab.uid,
+              userName: collab.displayName || collab.email.split('@')[0],
+              role: collab.role as 'member' | 'backoffice',
+              teamId: collab.teamId || '',
+              organizationId: profile.organizationId!,
+              month: selectedMonth,
+              year: selectedYear,
+              baseValue,
+              totalDays,
+              missedDays: 0,
+              excusedDays: 0,
+              excusedDates: [],
+              deductedValue: baseValue,
+              status: 'released',
+              releasedAt: now,
+              updatedAt: now
+            };
+
+            if (isSandbox) {
+              sandboxService.addMonthlyPayment(paymentData);
+            } else {
+              await setDoc(doc(db, 'monthly_payments', paymentId), paymentData);
+            }
+
+            await createNotification({
+              userId: collab.uid,
+              title: 'Fechamento PJ Liberado Automaticamente',
+              message: `Seu fechamento referente a ${selectedMonth}/${selectedYear} foi gerado automaticamente por não conter faltas registradas. Valor: R$ ${baseValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.`,
+              type: 'payment_released',
+              referenceId: paymentId
+            }, isSandbox);
+
+            paymentsList.push(paymentData);
+          }
+        });
+
+      await Promise.all(autoReleasePromises);
 
       setCollaborators(collabsList);
       setNotes(notesList);
