@@ -496,9 +496,7 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
       }
       showToast('Data de início PJ atualizada com sucesso!', 'success');
       
-      if (onRefreshData) {
-        onRefreshData();
-      }
+      loadCoordinatorClosingData();
     } catch (err) {
       console.error(err);
       showToast('Erro ao atualizar data de início.', 'error');
@@ -518,7 +516,7 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
     const multiplier = getProportionalMultiplier(collab.startDate, collab.createdAt, selectedYear, selectedMonth);
     const baseValue = Math.round(originalBase * multiplier * 100) / 100;
     if (baseValue <= 0) {
-      showToast(`O valor proporcional para este mês é R$ 0,00 (admissão fora do período).`, 'warning');
+      showToast(`O valor proporcional para este mês é R$ 0,00 (admissão fora do período).`, 'info');
       return;
     }
 
