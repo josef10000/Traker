@@ -74,7 +74,7 @@ export const InvitesSection: React.FC<InvitesSectionProps> = ({
             email: row.email.trim().toLowerCase(),
             role: row.role,
             teamId: row.teamId || null,
-            monthlyServiceValue: ['member', 'backoffice'].includes(row.role) ? row.monthlyServiceValue : undefined
+            monthlyServiceValue: ['member', 'backoffice', 'supervisor', 'monitor'].includes(row.role) ? row.monthlyServiceValue : undefined
           })),
           'sandbox-test',
           profile.uid
@@ -91,7 +91,7 @@ export const InvitesSection: React.FC<InvitesSectionProps> = ({
           email: row.email.trim().toLowerCase(),
           role: row.role,
           teamId: row.teamId || null,
-          monthlyServiceValue: ['member', 'backoffice'].includes(row.role) ? row.monthlyServiceValue : undefined
+          monthlyServiceValue: ['member', 'backoffice', 'supervisor', 'monitor'].includes(row.role) ? row.monthlyServiceValue : undefined
         }))
       );
 
@@ -125,7 +125,7 @@ export const InvitesSection: React.FC<InvitesSectionProps> = ({
         <div className="space-y-3">
           {inviteRows.map((row, idx) => {
             const showTeamSelector = ['member', 'supervisor', 'backoffice'].includes(row.role);
-            const showPjValue = ['member', 'backoffice'].includes(row.role);
+            const showPjValue = ['member', 'backoffice', 'supervisor', 'monitor'].includes(row.role);
 
             return (
               <div key={idx} className="flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-slate-950/40 p-4 border border-slate-900 rounded-2xl relative">

@@ -100,7 +100,7 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
     if (!profile.organizationId) return;
 
     const checkSelfAutoRelease = async (existingPayments: MonthlyPayment[]) => {
-      if (!['member', 'backoffice'].includes(profile.role) || (profile.monthlyServiceValue || 0) <= 0) return;
+      if (!['member', 'backoffice', 'supervisor', 'monitor'].includes(profile.role) || (profile.monthlyServiceValue || 0) <= 0) return;
       
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
@@ -227,7 +227,7 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
 
       if (isSandbox) {
         collabsList = Object.values(sandboxService.getUsers(profile.organizationId))
-          .filter(u => ['member', 'backoffice'].includes(u.role));
+          .filter(u => ['member', 'backoffice', 'supervisor', 'monitor'].includes(u.role));
         
         notesList = sandboxService.getCollaborationNotesReport(profile.organizationId)
           .filter(n => n.type === 'attendance');
@@ -242,7 +242,7 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
         const colSnap = await getDocs(colQ);
         collabsList = colSnap.docs
           .map(d => d.data() as UserProfile)
-          .filter(u => ['member', 'backoffice'].includes(u.role));
+          .filter(u => ['member', 'backoffice', 'supervisor', 'monitor'].includes(u.role));
 
         // Notas de presença
         const noteQ = query(
@@ -267,7 +267,7 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
       // --- REGRA DE LIBERAÇÃO AUTOMÁTICA DE COLABORADORES (OPERADOR E BACKOFFICE) SEM FALTA ---
       const range = getClosingRange(selectedYear, selectedMonth);
       const autoReleasePromises = collabsList
-        .filter(u => ['member', 'backoffice'].includes(u.role) && (u.monthlyServiceValue || 0) > 0)
+        .filter(u => ['member', 'backoffice', 'supervisor', 'monitor'].includes(u.role) && (u.monthlyServiceValue || 0) > 0)
         .map(async (collab) => {
           const hasPayment = paymentsList.some(p => p.userId === collab.uid);
           if (hasPayment) return;

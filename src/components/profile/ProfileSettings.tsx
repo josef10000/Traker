@@ -709,7 +709,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
         email: row.email.trim().toLowerCase(),
         role: row.role,
         teamId: row.teamId || null,
-        monthlyServiceValue: ['member', 'backoffice'].includes(row.role) ? (row.monthlyServiceValue || 0) : undefined
+        monthlyServiceValue: ['member', 'backoffice', 'supervisor', 'monitor'].includes(row.role) ? (row.monthlyServiceValue || 0) : undefined
       }));
 
       let list: Invite[] = [];
@@ -911,7 +911,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 </button>
               )}
 
-              {(profile.role === 'member' || profile.role === 'backoffice') && (
+              {profile.role !== 'manager' && profile.role !== 'coordinator' && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1570,7 +1570,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                         </div>
 
                         {/* Valor da Prestação PJ */}
-                        {['member', 'backoffice'].includes(row.role) && (
+                        {['member', 'backoffice', 'supervisor', 'monitor'].includes(row.role) && (
                           <div className="w-full md:w-36">
                             <label className="text-[9px] font-black uppercase text-slate-500 tracking-wider block mb-1">Prestação (R$)</label>
                             <input
