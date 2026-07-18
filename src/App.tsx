@@ -351,6 +351,10 @@ export function AppContent() {
                   profile={simulatedProfile} 
                   onSettingsClick={() => setIsProfileModalOpen(true)} 
                   showToast={showToast}
+                  onCreateTeam={() => {
+                    setIsProfileModalOpen(false);
+                    navigate('/create-team');
+                  }}
                 />
               } />
               <Route path="/create-team" element={
@@ -468,6 +472,10 @@ export function AppContent() {
             profile={profile} 
             onSettingsClick={() => setIsProfileModalOpen(true)} 
             showToast={showToast}
+            onCreateTeam={() => {
+              setIsProfileModalOpen(false);
+              navigate('/create-team');
+            }}
           />
         } />
         <Route path="/create-team" element={

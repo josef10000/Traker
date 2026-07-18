@@ -47,10 +47,10 @@ export const Sidebar = ({
     },
     {
       id: 'coordination',
-      label: 'Coordenação',
-      description: 'Painel comparativo de performance, escala consolidada e central de transferências.',
+      label: 'Gestão & Coordenação',
+      description: 'Consolidado de metas, escala de presença, equipes, contratações e pagamentos PJ.',
       icon: TeamIcon,
-      show: profile.role === 'coordinator'
+      show: profile.role === 'coordinator' || profile.role === 'manager'
     },
     {
       id: 'financial',
@@ -85,7 +85,7 @@ export const Sidebar = ({
       label: 'Gestão de Equipe',
       description: 'Administração de colaboradores e novos convites.',
       icon: TeamIcon,
-      show: isSuperUser && profile.role !== 'monitor' && profile.role !== 'backoffice'
+      show: isSuperUser && profile.role !== 'monitor' && profile.role !== 'backoffice' && profile.role !== 'coordinator' && profile.role !== 'manager'
     },
     {
       id: 'portfolio',

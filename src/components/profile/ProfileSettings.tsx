@@ -893,42 +893,6 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 </button>
               )}
 
-              {showAdminTabs && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab('teams');
-                      setSelectedTeamForMembers(null);
-                    }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
-                      activeTab === 'teams'
-                        ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    <Users size={16} />
-                    Gerenciar Equipes
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab('invites');
-                      setSelectedTeamForMembers(null);
-                    }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
-                      activeTab === 'invites'
-                        ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    <PaperPlaneTilt size={16} />
-                    Convites
-                  </button>
-                </>
-              )}
-
               {profile.organizationId === 'sandbox-test' && (
                 <button
                   type="button"
@@ -947,43 +911,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 </button>
               )}
 
-              {(profile.role === 'manager' || profile.role === 'supervisor') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('goals');
-                    setSelectedTeamForMembers(null);
-                  }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
-                    activeTab === 'goals'
-                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <Target size={16} />
-                  Configurar Metas
-                </button>
-              )}
-
-              {(profile.role === 'manager' || profile.role === 'coordinator') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('org_tree');
-                    setSelectedTeamForMembers(null);
-                  }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
-                    activeTab === 'org_tree'
-                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <Folder size={16} />
-                  Organograma / Árvore
-                </button>
-              )}
-
-              {(profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'member' || profile.role === 'backoffice') && (
+              {(profile.role === 'member' || profile.role === 'backoffice') && (
                 <button
                   type="button"
                   onClick={() => {
@@ -997,32 +925,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   }`}
                 >
                   <Calculator size={16} />
-                  {['coordinator', 'manager'].includes(profile.role) ? 'Fechamento PJ' : 'Minhas Prestações PJ'}
-                </button>
-              )}
-
-              {profile.role === 'manager' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('transfers');
-                    setSelectedTeamForMembers(null);
-                  }}
-                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
-                    activeTab === 'transfers'
-                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Bell size={16} />
-                    Notificações
-                  </div>
-                  {transferRequests.filter(r => r.status === 'pending').length > 0 && (
-                    <span className="w-5 h-5 rounded-full bg-rose-500 text-white font-black text-[9px] flex items-center justify-center animate-pulse shrink-0">
-                      {transferRequests.filter(r => r.status === 'pending').length}
-                    </span>
-                  )}
+                  Minhas Prestações PJ
                 </button>
               )}
             </nav>

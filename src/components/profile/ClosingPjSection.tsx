@@ -100,7 +100,7 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
     if (!profile.organizationId) return;
 
     const checkSelfAutoRelease = async (existingPayments: MonthlyPayment[]) => {
-      if (!['member', 'backoffice'].includes(profile.role) || !(profile.monthlyServiceValue || 0) > 0) return;
+      if (!['member', 'backoffice'].includes(profile.role) || (profile.monthlyServiceValue || 0) <= 0) return;
       
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
