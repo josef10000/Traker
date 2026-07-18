@@ -30,6 +30,17 @@ export const StatCard = ({
   extra
 }: StatCardProps) => {
   const [designMode] = useDesignMode();
+  const [isHovered, setIsHovered] = useState(false);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  // Observa mudanças de tema na tag html/body
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Inicializa o estado a partir do localStorage para persistência entre F5
   const [isFlipped, setIsFlipped] = useState(() => {
@@ -216,8 +227,10 @@ export const StatCard = ({
 
   return (
     <div 
-      className="relative h-40 w-full cursor-pointer perspective-1000 group"
+      className="relative h-40 w-full cursor-pointer perspective-1000 group hover:-translate-y-1.5 transition-all duration-300 ease-out"
       onClick={() => setIsFlipped(!isFlipped)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       id={id}
     >
       <motion.div
@@ -227,7 +240,16 @@ export const StatCard = ({
       >
         {/* Face Frontal */}
         <div className="absolute inset-0 backface-hidden preserve-3d">
-          <div className={`glass-card h-full p-5 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden preserve-3d border border-slate-200 dark:border-white/10`} style={{ boxShadow: cardColorShadows[color] }}>
+          <div 
+            className="glass-card h-full p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden preserve-3d border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/60 transition-all duration-300"
+            style={{ 
+              boxShadow: isDark 
+                ? cardColorShadows[color] 
+                : isHovered 
+                  ? '0 25px 50px rgba(0, 0, 0, 0.08), 0 4px 18px rgba(0, 0, 0, 0.03)' 
+                  : '0 12px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)' 
+            }}
+          >
             <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] -mr-8 -mt-8 rounded-full blur-2xl group-hover:opacity-[0.07] transition-all" />
             
             <div className="flex justify-between items-start mb-4 preserve-3d">
@@ -262,9 +284,15 @@ export const StatCard = ({
         {/* Face Traseira */}
         <div className="absolute inset-0 backface-hidden rotate-y-180 preserve-3d">
           <div
-              className={`glass-card h-full p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden border border-slate-200 dark:border-white/10 preserve-3d`}
-              style={{ boxShadow: cardColorShadows[color] }}
-            >
+            className="glass-card h-full p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden preserve-3d border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/60 transition-all duration-300"
+            style={{ 
+              boxShadow: isDark 
+                ? cardColorShadows[color] 
+                : isHovered 
+                  ? '0 25px 50px rgba(0, 0, 0, 0.08), 0 4px 18px rgba(0, 0, 0, 0.03)' 
+                  : '0 12px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)' 
+            }}
+          >
             <div className="flex justify-between items-center mb-1 preserve-3d" style={{ transform: 'translateZ(20px)' }}>
               <p className="text-[9px] font-black text-slate-500 dark:text-white/50 uppercase tracking-[0.2em]">Visão Analítica</p>
               <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-glow`} style={{ backgroundColor: chartColors[color], boxShadow: `0 0 10px ${chartColors[color]}` }} />

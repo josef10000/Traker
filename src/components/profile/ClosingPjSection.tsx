@@ -139,7 +139,11 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
         const paymentId = `${profile.uid}_${currentMonth}_${currentYear}`;
         const now = new Date().toISOString();
         const totalDays = getDaysInMonth(currentYear, currentMonth);
-        const baseValue = profile.monthlyServiceValue || 0;
+        const originalBase = profile.monthlyServiceValue || 0;
+        const multiplier = getProportionalMultiplier(profile.startDate, profile.createdAt, currentYear, currentMonth);
+        const baseValue = Math.round(originalBase * multiplier * 100) / 100;
+
+        if (baseValue <= 0) return; // Não gera fechamento se começou fora do mês
 
         const paymentData: MonthlyPayment = {
           id: paymentId,
@@ -283,7 +287,11 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
             const paymentId = `${collab.uid}_${selectedMonth}_${selectedYear}`;
             const now = new Date().toISOString();
             const totalDays = getDaysInMonth(selectedYear, selectedMonth);
-            const baseValue = collab.monthlyServiceValue || 0;
+            const originalBase = collab.monthlyServiceValue || 0;
+            const multiplier = getProportionalMultiplier(collab.startDate, collab.createdAt, selectedYear, selectedMonth);
+            const baseValue = Math.round(originalBase * multiplier * 100) / 100;
+
+            if (baseValue <= 0) return; // Não gera fechamento se começou fora do período
 
             const paymentData: MonthlyPayment = {
               id: paymentId,
@@ -365,6 +373,41 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
     }
   };
 
+  // Calcula o multiplicador proporcional para o faturamento PJ caso a contratação tenha ocorrido no mês
+  const getProportionalMultiplier = (
+    startDateStr: string | undefined,
+    createdAtStr: string,
+    year: number,
+    month: number
+  ) => {
+    const dateRaw = startDateStr || createdAtStr;
+    if (!dateRaw) return 1.0;
+
+    const startCollabDate = new Date(dateRaw);
+    const refMonthIdx = month - 1; 
+    
+    const monthStart = new Date(year, refMonthIdx, 1, 0, 0, 0);
+    const monthEnd = new Date(year, refMonthIdx + 1, 0, 23, 59, 59);
+
+    const startCollabZero = new Date(startCollabDate.getFullYear(), startCollabDate.getMonth(), startCollabDate.getDate());
+    const monthStartZero = new Date(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate());
+    const monthEndZero = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate());
+
+    if (startCollabZero > monthEndZero) {
+      return 0.0;
+    }
+
+    if (startCollabZero <= monthStartZero) {
+      return 1.0;
+    }
+
+    const totalDaysInMonth = monthEnd.getDate();
+    const dayOfStart = startCollabZero.getDate();
+    const workedDays = totalDaysInMonth - dayOfStart + 1;
+
+    return Math.max(0, Math.min(1.0, workedDays / totalDaysInMonth));
+  };
+
   // Salvar configuração de corte da organização
   const handleSaveClosingConfig = async () => {
     if (!profile.organizationId) return;
@@ -428,13 +471,54 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
     }));
   };
 
+  // Atualiza a data de início PJ de um colaborador
+  const handleUpdateCollabStartDate = async (collabId: string, newDateStr: string) => {
+    if (!newDateStr) return;
+    
+    // Atualiza localmente para feedback visual imediato
+    setCollaborators(prev => prev.map(c => {
+      if (c.uid === collabId) {
+        return { ...c, startDate: newDateStr };
+      }
+      return c;
+    }));
+
+    try {
+      if (isSandbox) {
+        const collab = sandboxService.getUser(collabId);
+        if (collab) {
+          sandboxService.setProfile({ ...collab, startDate: newDateStr });
+        }
+      } else {
+        await updateDoc(doc(db, 'users', collabId), {
+          startDate: newDateStr
+        });
+      }
+      showToast('Data de início PJ atualizada com sucesso!', 'success');
+      
+      if (onRefreshData) {
+        onRefreshData();
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao atualizar data de início.', 'error');
+    }
+  };
+
   // Disparar/Liberar fechamento financeiro para um operador
   const handleReleasePayment = async (collab: UserProfile) => {
     if (!profile.organizationId) return;
     
-    const baseValue = collab.monthlyServiceValue || 0;
-    if (baseValue <= 0) {
+    const originalBase = collab.monthlyServiceValue || 0;
+    if (originalBase <= 0) {
       showToast(`O colaborador ${collab.displayName} não possui prestação cadastrada no convite.`, 'error');
+      return;
+    }
+
+    const multiplier = getProportionalMultiplier(collab.startDate, collab.createdAt, selectedYear, selectedMonth);
+    const baseValue = Math.round(originalBase * multiplier * 100) / 100;
+    if (baseValue <= 0) {
+      showToast(`O valor proporcional para este mês é R$ 0,00 (admissão fora do período).`, 'warning');
       return;
     }
 
@@ -742,7 +826,10 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
                 {collaborators.map(collab => {
                   const { activeFaltas, totalMissed, totalExcused, netFaltas } = getCollabAttendanceDetails(collab.uid);
                   const totalDays = getDaysInMonth(selectedYear, selectedMonth);
-                  const baseValue = collab.monthlyServiceValue || 0;
+                  
+                  const originalBase = collab.monthlyServiceValue || 0;
+                  const multiplier = getProportionalMultiplier(collab.startDate, collab.createdAt, selectedYear, selectedMonth);
+                  const baseValue = Math.round(originalBase * multiplier * 100) / 100;
                   const discount = (baseValue / totalDays) * netFaltas;
                   const netValue = Math.max(0, baseValue - discount);
 
@@ -755,6 +842,15 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
                       <td className="p-4 font-semibold">
                         <span className={theme === 'dark' ? 'text-white' : 'text-slate-800'}>{collab.displayName}</span>
                         <span className="text-[10px] text-slate-500 block font-mono mt-0.5">{collab.email}</span>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <span className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">Início PJ:</span>
+                          <input 
+                            type="date"
+                            value={(collab.startDate || collab.createdAt || '').split('T')[0]}
+                            onChange={(e) => handleUpdateCollabStartDate(collab.uid, e.target.value)}
+                            className="bg-slate-900/40 dark:bg-slate-950/40 text-slate-300 dark:text-slate-300 text-[10px] border border-white/10 rounded px-1 py-0.5 focus:ring-primary focus:border-primary outline-none cursor-pointer"
+                          />
+                        </div>
                       </td>
 
                       {/* Cargo */}
@@ -764,7 +860,14 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
 
                       {/* Valor Base */}
                       <td className="p-4 font-semibold text-slate-300">
-                        {baseValue > 0 ? `R$ ${baseValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                        {originalBase > 0 ? (
+                          <div className="space-y-0.5">
+                            <div>R$ {baseValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                            {multiplier < 1.0 && (
+                              <div className="text-[9px] text-slate-500 line-through">Cheio: R$ {originalBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                            )}
+                          </div>
+                        ) : '-'}
                       </td>
 
                       {/* Faltas Detalhadas */}
@@ -806,14 +909,23 @@ export function ClosingPjSection({ profile, theme = 'dark', showToast }: Closing
                       </td>
 
                       {/* Cálculo */}
-                      <td className="p-4 text-slate-450 leading-relaxed font-mono">
+                      <td className="p-4 text-slate-400 dark:text-slate-450 leading-relaxed font-mono">
                         {baseValue > 0 ? (
-                          <>
+                          <div className="space-y-0.5 text-[10px]">
+                            {multiplier < 1.0 ? (
+                              <div className="text-amber-500 font-semibold mb-1">
+                                Proporcional: {(multiplier * 100).toFixed(0)}% ({Math.round(multiplier * totalDays)}/{totalDays} dias)
+                              </div>
+                            ) : (
+                              <div className="text-slate-500 mb-1">
+                                Mês Cheio ({totalDays}/{totalDays} dias)
+                              </div>
+                            )}
                             <div>Divisor: R$ {(baseValue / totalDays).toFixed(2)}/dia</div>
                             {discount > 0 && (
-                              <div className="text-rose-400">- R$ {discount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                              <div className="text-rose-450 dark:text-rose-450">- R$ {discount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                             )}
-                          </>
+                          </div>
                         ) : '-'}
                       </td>
 

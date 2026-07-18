@@ -71,6 +71,7 @@ export interface UserProfile {
   hasSeenTour?: boolean;
   managerId?: string | null;
   createdAt: string; // Aceite da LGPD no primeiro login
+  startDate?: string; // Data oficial de início da contratação PJ
   acceptedTermsAt?: string; // Aceite da LGPD no primeiro login
   dashboardPreferences?: {
     hiddenCards: string[];
