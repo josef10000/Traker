@@ -118,11 +118,12 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
     - **Regra de Presença Automática**: Por padrão, no início de cada período/dia, todos os operadores têm a presença marcada automaticamente como **Presente** (`present`).
     - **Restrição de Marcação**: Apenas os papéis com permissão gestora (**Coordenador**, **Gerente** e **Supervisor**) visualizam as opções de marcar falta (`absent`) ou atraso (`late`) para os membros de seus respectivos times. Outros perfis operacionais ou externos visualizam apenas o estado estático de frequência, sem botões de alteração.
 
- 10. **💰 Fechamento de Prestação de Contas PJ & Notificações Centrais**:
+ 10. **💰 Fechamento de Prestação de Contas PJ & Notificações Centrais (Aba de Coordenação Unificada)**:
+    - **Aba de Coordenação Centralizada**: Reuniu de forma integrada as abas de *Performance de Equipes*, *Frequência Consolidada*, *Fechamento PJ*, *Equipes & Membros*, *Organograma Hierárquico* e *Convites PJ* sob um menu de sub-abas dinâmico e responsivo na interface principal.
     - **Cálculo Proporcional de Mensalidade**: Desconto diário proporcional de faltas não abonadas no mês selecionado.
+    - **Liberação & Aprovação Automática de Notas**: Caso o colaborador (Operador ou Back Office) tenha presença integral no mês (nenhuma falta não abonada ou pendente), a nota PJ é liberada e pré-aprovada automaticamente no primeiro dia do vencimento para aceite do agente, eliminando a dependência de liberação manual da coordenação.
     - **Abono de Faltas Individual**: O Coordenador pode visualizar as faltas do colaborador no período e abonar faltas justificadas individualmente antes de liberar o fechamento.
     - **Configuração de Data de Corte**: Habilidade de definir o dia do fechamento (de 1 a 28) por organização, fazendo com que faltas registradas após essa data acumulem para o fechamento do mês seguinte.
-    - **Fluxo do Operador/Back Office**: Notificação em tempo real no sino centralizado quando o pagamento é liberado, com botão de "Confirmar Emissão de Nota Fiscal" ou "Contestar Valores" via formulário interativo de contestação.
     - **Sino de Notificações Unificado**: Centraliza avisos de solicitações de transferência, emissões de nota e contestações em tempo real para gerentes/coordenadores e pagamentos liberados para operadores.
 
 ---
