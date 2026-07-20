@@ -78,7 +78,6 @@ import { FinancialPerformanceInsights } from './FinancialPerformanceInsights';
 // Modais do sistema
 import { DashboardModals } from './DashboardModals';
 import { HelpDrawer } from './HelpDrawer';
-import { parseLocalDate } from '../../utils/dateUtils';
 import { exportToCsv } from '../../utils/csvExporter';
 import { startTour } from '../../utils/tour';
 
