@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot, doc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { sandboxService } from '../../lib/sandboxService';
 import { Agreement, AgreementStatus, Team, UserProfile } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { OriginBadge } from './OriginBadge';
@@ -39,11 +40,28 @@ export const RecoveryPoolTab = ({
   // Modal de Exportação
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
+  // Lista de todos os acordos da organização para identificar resgatados e calcular valor recuperado R$
+  const [allOrgAgreements, setAllOrgAgreements] = useState<Agreement[]>([]);
+
   // Escuta em tempo real dos acordos quebrados da organização
   useEffect(() => {
     if (!profile.organizationId) return;
 
     setLoading(true);
+
+    if (profile.organizationId === 'sandbox-test') {
+      const syncSandbox = () => {
+        const list = sandboxService.getAgreements(profile.organizationId);
+        setAllOrgAgreements(list);
+        const broken = list.filter(a => a.status === AgreementStatus.BROKEN);
+        broken.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setAgreements(broken);
+        setLoading(false);
+      };
+      syncSandbox();
+      return sandboxService.subscribe(syncSandbox);
+    }
+
     const q = query(
       collection(db, 'agreements'),
       where('organizationId', '==', profile.organizationId),
@@ -52,7 +70,6 @@ export const RecoveryPoolTab = ({
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
-      // Ordena por data de criação decrescente
       data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setAgreements(data);
       setLoading(false);
@@ -62,8 +79,50 @@ export const RecoveryPoolTab = ({
       showToast('Erro ao carregar acordos do balcão.', 'error');
     });
 
-    return () => unsubscribe();
+    const qAll = query(
+      collection(db, 'agreements'),
+      where('organizationId', '==', profile.organizationId)
+    );
+    const unSubAll = onSnapshot(qAll, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
+      setAllOrgAgreements(data);
+    });
+
+    return () => {
+      unsubscribe();
+      unSubAll();
+    };
   }, [profile.organizationId]);
+
+  // Baixa automática por coincidência de CPF quando um novo acordo é cadastrado no sistema
+  useEffect(() => {
+    if (agreements.length === 0 || allOrgAgreements.length === 0) return;
+
+    const activeOrPaidCpfs = new Set(
+      allOrgAgreements
+        .filter(a => a.status !== AgreementStatus.BROKEN && a.clientCpf)
+        .map(a => (a.clientCpf || '').replace(/\D/g, ''))
+    );
+
+    const matches = agreements.filter(broken => {
+      if (!broken.clientCpf) return false;
+      const clean = broken.clientCpf.replace(/\D/g, '');
+      return activeOrPaidCpfs.has(clean);
+    });
+
+    if (matches.length > 0) {
+      matches.forEach(async (broken) => {
+        if (profile.organizationId === 'sandbox-test') {
+          sandboxService.resolveBrokenAgreements(profile.organizationId, broken.clientCpf);
+        } else {
+          await updateDoc(doc(db, 'agreements', broken.id), {
+            status: AgreementStatus.RECOVERED,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      });
+    }
+  }, [agreements, allOrgAgreements, profile.organizationId]);
 
   // Filtragem dos acordos
   const filteredAgreements = useMemo(() => {
@@ -174,47 +233,96 @@ export const RecoveryPoolTab = ({
     }
   };
 
+  // Métricas do Balcão de Recuperação e Valor Recuperado R$
+  const recoveryKPIs = useMemo(() => {
+    let totalRecoveredValue = 0;
+    let recoveredCount = 0;
+
+    allOrgAgreements.forEach(ag => {
+      if (ag.status === AgreementStatus.RECOVERED) {
+        recoveredCount++;
+        totalRecoveredValue += ag.value || 0;
+      } else if (ag.status === AgreementStatus.PAID && ag.clientCpf) {
+        const cleanCpf = ag.clientCpf.replace(/\D/g, '');
+        const isFromBroken = allOrgAgreements.some(other => other.clientCpf && other.clientCpf.replace(/\D/g, '') === cleanCpf && (other.status === AgreementStatus.BROKEN || other.status === AgreementStatus.RECOVERED));
+        if (isFromBroken) {
+          recoveredCount++;
+          totalRecoveredValue += ag.value || 0;
+        }
+      }
+    });
+
+    const pendingBrokenValue = filteredAgreements.reduce((acc, curr) => acc + curr.value, 0);
+
+    return {
+      totalRecoveredValue,
+      recoveredCount,
+      pendingBrokenCount: filteredAgreements.length,
+      pendingBrokenValue
+    };
+  }, [allOrgAgreements, filteredAgreements]);
+
   return (
     <div className="space-y-6 animate-fade-in no-print">
-      {/* Quadro de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className={`p-6 rounded-3xl border flex items-center justify-between ${
-          theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+      {/* Quadro de Resumo e KPIs de Recuperação */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
+          theme === 'dark' ? 'bg-slate-900/60 border-emerald-500/30' : 'bg-white border-emerald-200'
         }`}>
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total em Recuperação</p>
-            <h3 className={`text-2xl font-black mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{filteredAgreements.length} leads</h3>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block">💰 Valor Recuperado (Pago)</span>
+            <span className="text-2xl font-black text-emerald-400 mt-1 block">
+              {formatCurrency(recoveryKPIs.totalRecoveredValue)}
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">Acordos pagos de leads resgatados</span>
           </div>
-          <div className="p-3.5 bg-rose-500/10 text-rose-600 dark:text-rose-455 rounded-2xl border border-rose-500/20">
-            <ShieldAlert size={22} />
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0 font-bold text-lg">
+            R$
           </div>
         </div>
 
-        <div className={`p-6 rounded-3xl border flex items-center justify-between ${
-          theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
+          theme === 'dark' ? 'bg-slate-900/60 border-sky-500/30' : 'bg-white border-sky-200'
         }`}>
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Volume Financeiro</p>
-            <h3 className={`text-2xl font-black mt-1 ${
-              theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
-            }`}>
-              {formatCurrency(filteredAgreements.reduce((acc, curr) => acc + curr.value, 0))}
-            </h3>
+            <span className="text-[10px] font-black uppercase tracking-widest text-sky-400 block">🎯 Acordos Resgatados</span>
+            <span className="text-2xl font-black text-white mt-1 block">
+              {recoveryKPIs.recoveredCount} resgatados
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">Acordos salvos por CPF</span>
           </div>
-          <div className="p-3.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-455 rounded-2xl border border-emerald-500/20">
-            <Calendar size={22} />
+          <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 shrink-0 font-bold text-lg">
+            ✓
           </div>
         </div>
 
-        <div className={`p-6 rounded-3xl border flex items-center justify-between ${
-          theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
+          theme === 'dark' ? 'bg-slate-900/60 border-rose-500/20' : 'bg-white border-rose-200'
         }`}>
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Selecionados</p>
-            <h3 className={`text-2xl font-black mt-1 ${theme === 'dark' ? 'text-sky-400' : 'text-sky-600'}`}>{selectedIds.length} leads</h3>
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block">🚨 Em Recuperação (Pendente)</span>
+            <span className="text-2xl font-black text-white mt-1 block">
+              {recoveryKPIs.pendingBrokenCount} leads
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">Fila de acordos quebrados</span>
           </div>
-          <div className="p-3.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-2xl border border-sky-500/20">
-            <Users size={22} />
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-400/30 flex items-center justify-center text-rose-400 shrink-0 font-bold text-lg">
+            ⚠️
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
+          theme === 'dark' ? 'bg-slate-900/60 border-amber-500/20' : 'bg-white border-amber-200'
+        }`}>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block">💵 Volume em Risco</span>
+            <span className="text-2xl font-black text-amber-400 mt-1 block">
+              {formatCurrency(recoveryKPIs.pendingBrokenValue)}
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">Total em aberto na fila</span>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0 font-bold text-lg">
+            📊
           </div>
         </div>
       </div>
