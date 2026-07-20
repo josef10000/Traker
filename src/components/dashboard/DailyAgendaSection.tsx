@@ -35,6 +35,23 @@ export const DailyAgendaSection = ({
 }: DailyAgendaSectionProps) => {
   const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin';
 
+  // Paginação: Máximo de 4 linhas por página
+  const ITEMS_PER_PAGE = 4;
+  const [currentPage, setCurrentPage] = React.useState(1);
+
+  const totalPages = Math.ceil(scheduledAgreements.length / ITEMS_PER_PAGE) || 1;
+
+  React.useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [scheduledAgreements.length, totalPages, currentPage]);
+
+  const paginatedAgreements = React.useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return scheduledAgreements.slice(start, start + ITEMS_PER_PAGE);
+  }, [scheduledAgreements, currentPage]);
+
   // Copiar CPF
   const handleCopyCpf = (cpf?: string) => {
     if (!cpf) return;
@@ -112,7 +129,7 @@ export const DailyAgendaSection = ({
             <tbody className={`divide-y ${
               theme === 'dark' ? 'divide-white/[0.02] text-slate-300' : 'divide-slate-100 text-slate-700'
             }`}>
-              {scheduledAgreements.map((agreement) => {
+              {paginatedAgreements.map((agreement) => {
                 const formattedTime = agreement.scheduledAt 
                   ? new Date(agreement.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
                   : 'Sem hora';
@@ -190,6 +207,34 @@ export const DailyAgendaSection = ({
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Navegação por Paginação (4 itens por página) */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2 px-1">
+          <span className="text-[11px] font-bold text-slate-400">
+            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, scheduledAgreements.length)} de {scheduledAgreements.length} compromisso(s)
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 active:scale-95 cursor-pointer"
+            >
+              ← Anterior
+            </button>
+            <span className="text-xs font-black text-white px-2">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 active:scale-95 cursor-pointer"
+            >
+              Próxima →
+            </button>
+          </div>
         </div>
       )}
     </section>
