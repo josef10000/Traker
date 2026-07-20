@@ -853,72 +853,75 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     };
 
 
-    // Coluna administrativa de Ações (Apenas ações permitidas do Back Office)
+    // Coluna administrativa de Ações (4 Slots Fixos e Perfeitamente Alinhados)
     const actionsColumn: ColumnDef<BackOfficeClient> = {
       id: 'actions',
       header: 'Ações',
       cell: ({ row }) => {
         const cli = row.original;
+        const noteCount = cli.notes?.length || 0;
+        const isInProgress = cli.status === 'in_progress';
+        const isTreated = cli.status === 'treated';
+        const isIgnored = cli.status === 'ignored';
+
         return (
-          <div className="flex items-center justify-center gap-1.5">
-            {/* Deixar Comentário / Observação */}
+          <div className="flex items-center justify-center gap-1.5 w-full">
+            {/* Slot 1: Deixar Comentário / Observação */}
             <button
               onClick={() => setActiveClientForNotes(cli)}
-              className={`p-1.5 rounded-lg border transition-all cursor-pointer relative ${
-                cli.notes && cli.notes.length > 0 
-                  ? 'bg-sky-500/10 border-sky-500/20 text-sky-400 hover:bg-sky-500/20' 
-                  : 'bg-slate-900 border-white/[0.04] text-slate-400 hover:text-white'
+              className={`w-7.5 h-7.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer relative ${
+                noteCount > 0 
+                  ? 'bg-sky-500/15 border-sky-500/30 text-sky-400 hover:bg-sky-500/25 shadow-xs' 
+                  : (theme === 'dark' ? 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-200')
               }`}
-              title={`${cli.notes?.length || 0} Comentário(s)`}
+              title={`${noteCount} Comentário(s)`}
             >
               <ChatText size={14} />
-              {cli.notes && cli.notes.length > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-sky-600 text-[8px] font-black text-white">
-                  {cli.notes.length}
+              {noteCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-sky-500 text-[8px] font-black text-white shadow-xs">
+                  {noteCount}
                 </span>
               )}
             </button>
 
-            {/* Marcar como Em Tratativa */}
-            {cli.status !== 'in_progress' && (
-              <button
-                onClick={() => handleUpdateStatus(cli.id, 'in_progress')}
-                className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/25 transition-all cursor-pointer"
-                title="Marcar como Em Tratativa"
-              >
-                <Spinner size={14} />
-              </button>
-            )}
+            {/* Slot 2: Marcar / Alternar Em Tratativa */}
+            <button
+              onClick={() => handleUpdateStatus(cli.id, isInProgress ? 'pending' : 'in_progress')}
+              className={`w-7.5 h-7.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                isInProgress
+                  ? 'bg-sky-500 text-white border-sky-400 shadow-md shadow-sky-500/25 scale-105 font-bold'
+                  : (theme === 'dark' ? 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-sky-400 hover:bg-sky-500/10' : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-sky-600 hover:bg-sky-50')
+              }`}
+              title={isInProgress ? 'Em Tratativa (Clique para desmarcar)' : 'Marcar como Em Tratativa'}
+            >
+              <Spinner size={14} className={isInProgress ? 'animate-spin' : ''} />
+            </button>
 
-            {/* Marcar como Tratado */}
-            {cli.status !== 'treated' && (
-              <button
-                onClick={() => handleUpdateStatus(cli.id, 'treated')}
-                className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/25 transition-all cursor-pointer"
-                title="Marcar como Tratado"
-              >
-                <Check size={14} />
-              </button>
-            )}
+            {/* Slot 3: Marcar / Alternar Tratado */}
+            <button
+              onClick={() => handleUpdateStatus(cli.id, isTreated ? 'pending' : 'treated')}
+              className={`w-7.5 h-7.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                isTreated
+                  ? 'bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/25 scale-105 font-bold'
+                  : (theme === 'dark' ? 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10' : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50')
+              }`}
+              title={isTreated ? 'Tratado (Clique para desfazer)' : 'Marcar como Tratado'}
+            >
+              <Check size={14} weight={isTreated ? 'bold' : 'regular'} />
+            </button>
 
-            {/* Marcar/Desfazer Ignorado */}
-            {cli.status !== 'ignored' ? (
-              <button
-                onClick={() => handleUpdateStatus(cli.id, 'ignored')}
-                className="p-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 hover:bg-slate-500/25 transition-all cursor-pointer"
-                title="Ignorar Cliente"
-              >
-                <XIcon size={14} />
-              </button>
-            ) : (
-              <button
-                onClick={() => handleUpdateStatus(cli.id, 'pending')}
-                className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/25 transition-all cursor-pointer"
-                title="Restaurar para Pendente"
-              >
-                <PaperPlaneTilt size={14} />
-              </button>
-            )}
+            {/* Slot 4: Marcar / Alternar Ignorar */}
+            <button
+              onClick={() => handleUpdateStatus(cli.id, isIgnored ? 'pending' : 'ignored')}
+              className={`w-7.5 h-7.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                isIgnored
+                  ? 'bg-slate-700 text-slate-200 border-slate-500 shadow-md shadow-slate-900/40 scale-105'
+                  : (theme === 'dark' ? 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-200')
+              }`}
+              title={isIgnored ? 'Ignorado (Clique para desmarcar)' : 'Marcar como Ignorar Cliente'}
+            >
+              <XIcon size={14} weight={isIgnored ? 'bold' : 'regular'} />
+            </button>
           </div>
         );
       }
