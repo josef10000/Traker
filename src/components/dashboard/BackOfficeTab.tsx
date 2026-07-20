@@ -1537,7 +1537,8 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
             </p>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       <CustomConfirm 
         isOpen={confirmDialog.isOpen}
