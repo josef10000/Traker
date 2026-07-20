@@ -117,14 +117,44 @@ class SandboxService {
 
     // Simula notificação correspondente
     const mockNotificationId = `sandbox-notification-${Date.now()}`;
+    const mockPresencialId = `sandbox-notification-presencial-${Date.now()}`;
+    
+    const nextPresencialDate = new Date();
+    nextPresencialDate.setDate(nextPresencialDate.getDate() + 2);
+    const dateFormatted = nextPresencialDate.toLocaleDateString('pt-BR');
+
+    // Nota de presença presencial no Sandbox para o teste imediato
+    const presencialNoteId = `note-presencial-sandbox`;
+    this.collaborationNotes[presencialNoteId] = {
+      id: presencialNoteId,
+      organizationId: 'sandbox-test',
+      collaboratorId: 'sandbox-op-1',
+      creatorId: 'sandbox-coord-1',
+      creatorName: 'Carlos Coordenador',
+      type: 'attendance',
+      content: `Escala de Trabalho Presencial agendada para o dia ${dateFormatted}`,
+      attendanceStatus: 'present',
+      createdAt: nextPresencialDate.toISOString()
+    };
+
     this.notifications = {
       [mockNotificationId]: {
         id: mockNotificationId,
         userId: 'sandbox-op-1',
-        title: 'Fechamento PJ Liberado',
+        title: 'Fechamento PJ Liberado 💰',
         message: `Seu fechamento de prestação de serviços referente a ${currentMonth}/${currentYear} está disponível. Valor: R$ 3.266,67.`,
         type: 'payment_released',
         referenceId: mockPaymentId,
+        read: false,
+        createdAt: new Date().toISOString()
+      },
+      [mockPresencialId]: {
+        id: mockPresencialId,
+        userId: 'sandbox-op-1',
+        title: 'Escala Presencial Registrada 🏢',
+        message: `Você foi escalado para Trabalho Presencial no dia ${dateFormatted}. Acesse a sua agenda na aba "Minha Escala" para confirmar.`,
+        type: 'presencial_scheduled',
+        referenceId: nextPresencialDate.toISOString().split('T')[0],
         read: false,
         createdAt: new Date().toISOString()
       }

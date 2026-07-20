@@ -212,9 +212,9 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                       >
                         {/* Indicador de Status de Presença */}
                         <div className="flex flex-col items-center justify-center gap-1.5 py-1">
-                          <span className={`w-3 h-3 rounded-full flex items-center justify-center text-[7px] font-black border transition-all ${
+                          <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black border transition-all ${
                             status === 'present'
-                              ? 'bg-emerald-500 text-white border-emerald-400'
+                              ? 'bg-emerald-500 text-white border-emerald-300 shadow-md shadow-emerald-500/40 font-black scale-110'
                               : status === 'late'
                                 ? 'bg-amber-500 text-white border-amber-400'
                                 : status === 'absent'

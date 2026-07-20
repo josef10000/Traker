@@ -75,6 +75,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [scheduleDate, setScheduleDate] = useState(new Date());
   const [scheduleNotes, setScheduleNotes] = useState<CollaborationNote[]>([]);
   const [scheduleEvents, setScheduleEvents] = useState<CalendarEvent[]>([]);
+  const [confirmedPresenciais, setConfirmedPresenciais] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (activeTab !== 'schedule' || !profile.uid || !profile.organizationId) return;
@@ -1103,6 +1104,33 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                             <span className="text-[7px] font-black uppercase tracking-wider px-1 py-0.5 rounded-sm bg-sky-500/20 text-sky-400 border border-sky-500/20 truncate w-full text-center">
                               {dayEvents[0].title.split(' ').slice(1).join(' ') || dayEvents[0].title}
                             </span>
+                          )}
+
+                          {/* Botão e Status de Confirmação de Presença Presencial */}
+                          {status === 'present' && (
+                            <div className="flex flex-col items-center gap-1 w-full mt-1">
+                              <span className="text-[7px] font-extrabold uppercase tracking-wider px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 truncate w-full text-center">
+                                🏢 Presencial
+                              </span>
+
+                              {confirmedPresenciais[dateStr] ? (
+                                <span className="text-[7px] font-bold text-emerald-300 flex items-center justify-center gap-0.5 bg-emerald-950/80 px-1 py-0.5 rounded border border-emerald-500/40 w-full text-center">
+                                  ✓ Confirmado
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmedPresenciais(prev => ({ ...prev, [dateStr]: true }));
+                                    showToast(`Presença confirmada para a escala presencial do dia ${dayNum}!`, 'success');
+                                  }}
+                                  className="text-[7px] font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 px-1 py-0.5 rounded shadow-sm shadow-emerald-600/40 border border-emerald-400/50 transition-all cursor-pointer w-full text-center font-sans"
+                                >
+                                  Confirmar
+                                </button>
+                              )}
+                            </div>
                           )}
 
                           {/* Hover Tooltip */}

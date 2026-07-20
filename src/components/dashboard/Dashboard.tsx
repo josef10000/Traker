@@ -1005,7 +1005,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
         await batch.commit();
       }
 
-      if (status !== '' && status !== 'present') {
+      if (status === 'present') {
+        const targetDateObj = new Date(dateStr + 'T12:00:00');
+        await addCollaborationNote({
+          organizationId: profile.organizationId,
+          collaboratorId: collab.uid,
+          creatorId: profile.uid,
+          creatorName: profile.displayName || profile.email.split('@')[0],
+          type: 'attendance',
+          content: `Escala de Trabalho Presencial agendada para o dia ${dateFormatted}`,
+          attendanceStatus: 'present',
+          createdAt: targetDateObj.toISOString()
+        });
+
+        // Notificação EXCLUSIVA no sino para escala presencial
+        await createNotification({
+          userId: collab.uid,
+          title: 'Escala Presencial Registrada 🏢',
+          message: `Você foi escalado para Trabalho Presencial no dia ${dateFormatted}. Acesse a sua agenda na aba "Minha Escala" para confirmar.`,
+          type: 'presencial_scheduled',
+          referenceId: dateStr
+        }, profile.organizationId === 'sandbox-test');
+      } else if (status !== '') {
         let content = `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`;
         if (status === 'late' && lateDuration) {
           content += ` (${lateDuration} de atraso)`;
