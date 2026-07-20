@@ -126,11 +126,16 @@ export const QaModals: React.FC<QaModalsProps> = ({
       {/* MODAL CADASTRAR/EDITAR COMPETENCIA */}
       {isCompModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm" onClick={() => setIsCompModalOpen(false)} />
-          <div className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl space-y-4 ${
-            theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-          }`}>
-            <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+          <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer" onClick={() => setIsCompModalOpen(false)} />
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`relative w-full max-w-md rounded-3xl border p-6 space-y-4 cursor-default transition-all ${
+              theme === 'dark' 
+                ? 'bg-slate-900 border-white/10 text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]' 
+                : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
+            }`}
+          >
+            <h3 className={`text-lg font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
               {editingCompetence ? 'Editar Competência' : 'Adicionar Competência'}
             </h3>
 
@@ -139,41 +144,41 @@ export const QaModals: React.FC<QaModalsProps> = ({
               await onSaveCompetence(compName, compWeight, compDesc);
             }} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Nome da Competência *</label>
+                <label className={`text-[10px] font-extrabold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Nome da Competência *</label>
                 <input 
                   type="text" 
                   required
                   placeholder="Ex: Negociação Avançada"
                   value={compName}
                   onChange={(e) => setCompName(e.target.value)}
-                  className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs ${
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none text-xs transition-all focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                     theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Peso na Avaliação</label>
+                <label className={`text-[10px] font-extrabold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Peso na Avaliação</label>
                 <input 
                   type="number" 
                   min={1} 
                   max={5}
                   value={compWeight}
                   onChange={(e) => setCompWeight(parseInt(e.target.value))}
-                  className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs ${
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none text-xs transition-all focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                     theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Descrição explicativa</label>
+                <label className={`text-[10px] font-extrabold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Descrição explicativa</label>
                 <textarea 
                   rows={3}
                   placeholder="Ex: Capacidade de expor valores e propostas sem gaguejar."
                   value={compDesc}
                   onChange={(e) => setCompDesc(e.target.value)}
-                  className={`w-full px-4 py-2.5 rounded-xl outline-none text-xs resize-none ${
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none text-xs resize-none transition-all focus:ring-2 focus:ring-sky-500/15 focus:border-sky-500 ${
                     theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 />
@@ -183,17 +188,17 @@ export const QaModals: React.FC<QaModalsProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCompModalOpen(false)}
-                  className={`flex-1 py-3 rounded-xl font-bold text-xs border cursor-pointer ${
+                  className={`flex-1 py-3 rounded-xl font-extrabold text-xs border transition-all cursor-pointer ${
                     theme === 'dark' 
-                      ? 'bg-slate-950 hover:bg-slate-800 text-slate-400 border-slate-800' 
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                      ? 'bg-slate-950/60 hover:bg-slate-800 text-slate-300 border-white/10' 
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                   }`}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-sky-500 hover:bg-sky-400 rounded-xl font-bold text-white text-xs shadow-lg shadow-sky-500/10 cursor-pointer"
+                  className="flex-1 py-3 bg-sky-500 hover:bg-sky-400 rounded-xl font-extrabold text-white text-xs shadow-lg shadow-sky-500/25 cursor-pointer"
                 >
                   Salvar
                 </button>
@@ -206,11 +211,16 @@ export const QaModals: React.FC<QaModalsProps> = ({
       {/* MODAL NOVA AVALIAÇAO QA */}
       {isEvalModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm" onClick={() => setIsEvalModalOpen(false)} />
-          <div className={`relative w-full max-w-3xl rounded-3xl border p-8 shadow-2xl overflow-y-auto max-h-[90vh] space-y-6 ${
-            theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-          }`}>
-            <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Avaliação de Qualidade de Atendimento</h3>
+          <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer" onClick={() => setIsEvalModalOpen(false)} />
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`relative w-full max-w-3xl rounded-3xl border p-8 overflow-y-auto max-h-[90vh] space-y-6 cursor-default transition-all ${
+              theme === 'dark' 
+                ? 'bg-slate-900 border-white/10 text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]' 
+                : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
+            }`}
+          >
+            <h3 className={`text-xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Avaliação de Qualidade de Atendimento</h3>
 
             <form onSubmit={async (e) => {
               e.preventDefault();
@@ -432,11 +442,16 @@ export const QaModals: React.FC<QaModalsProps> = ({
       {/* MODAL CONFIGURAÇÃO DE CICLO DE QA */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
-          <div className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl space-y-4 ${
-            theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-          }`}>
-            <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+          <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer" onClick={() => setIsSettingsOpen(false)} />
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`relative w-full max-w-md rounded-3xl border p-6 space-y-4 cursor-default transition-all ${
+              theme === 'dark' 
+                ? 'bg-slate-900 border-white/10 text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]' 
+                : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
+            }`}
+          >
+            <h3 className={`text-lg font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
               Configuração de Ciclos de QA
             </h3>
 

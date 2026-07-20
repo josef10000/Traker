@@ -107,7 +107,7 @@ export const PeopleReportModal = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md no-print"
+        className="absolute inset-0 bg-slate-950/75 backdrop-blur-md no-print cursor-pointer"
       />
       
       {/* Container do Modal */}
@@ -116,7 +116,7 @@ export const PeopleReportModal = ({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col h-[90vh] print:h-auto print:w-full print:border-none print:shadow-none print:bg-white print:text-slate-950 print:relative print:overflow-visible"
+        className="relative bg-slate-900 w-full max-w-4xl rounded-3xl shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden flex flex-col h-[90vh] print:h-auto print:w-full print:border-none print:shadow-none print:bg-white print:text-slate-950 print:relative print:overflow-visible cursor-default"
       >
         {/* Cabeçalho - Oculto na impressão */}
         <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0 no-print">

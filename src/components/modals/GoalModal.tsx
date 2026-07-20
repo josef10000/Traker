@@ -34,14 +34,14 @@ export const GoalModal = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+        className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer"
       />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative glass-card w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
+        className="relative bg-slate-900 border border-white/10 w-full max-w-sm rounded-3xl shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] overflow-hidden cursor-default"
       >
         <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl">
           <h2 className="text-lg font-bold text-white">Meta Mensal</h2>

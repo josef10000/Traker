@@ -63,19 +63,17 @@ export const HistoryModal = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClose}
-        className={`absolute inset-0 backdrop-blur-md ${
-          theme === 'dark' ? 'bg-slate-950/80' : 'bg-slate-900/40'
-        }`}
+        className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer"
       />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0, x: 20 }}
         animate={{ scale: 1, opacity: 1, x: 0 }}
         exit={{ scale: 0.95, opacity: 0, x: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full max-w-2xl max-h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border ${
+        className={`relative w-full max-w-2xl max-h-[85vh] rounded-3xl overflow-hidden flex flex-col border cursor-default transition-all ${
           theme === 'dark' 
-            ? 'glass-card border-white/5' 
-            : 'bg-white border-slate-200 text-slate-800'
+            ? 'bg-slate-900 border-white/10 text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]' 
+            : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
         }`}
       >
         <div className={`px-8 py-5 flex justify-between items-center shrink-0 border-b ${

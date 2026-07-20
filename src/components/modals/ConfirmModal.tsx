@@ -41,14 +41,16 @@ export const ConfirmModal = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+          className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer"
         />
         <motion.div 
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-800 overflow-hidden"
+          className={`relative w-full max-w-md rounded-3xl border p-6 overflow-hidden shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] cursor-default ${
+            theme === 'dark' ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
+          }`}
         >
           <div className="p-8 text-center">
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 ${

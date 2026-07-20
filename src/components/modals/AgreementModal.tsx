@@ -129,14 +129,18 @@ export const AgreementModal = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+        className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer"
       />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative glass-card w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className={`relative w-full max-w-3xl rounded-3xl border overflow-hidden flex flex-col max-h-[90vh] cursor-default transition-all ${
+          theme === 'dark'
+            ? 'bg-slate-900 border-white/10 text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]'
+            : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
+        }`}
       >
         <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl shrink-0">
           <div>

@@ -67,12 +67,12 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md cursor-pointer" onClick={onClose}>
       <div 
-        className={`w-full max-w-lg rounded-3xl border p-6 shadow-2xl transition-all max-h-[90vh] overflow-y-auto cursor-default ${
+        className={`w-full max-w-lg rounded-3xl border p-6 transition-all max-h-[90vh] overflow-y-auto cursor-default ${
           theme === 'dark'
-            ? 'bg-slate-900 border-white/10 text-white'
-            : 'bg-white border-slate-200 text-slate-900'
+            ? 'bg-slate-900 border-white/10 text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]'
+            : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
         }`}
         onClick={(e) => e.stopPropagation()}
       >

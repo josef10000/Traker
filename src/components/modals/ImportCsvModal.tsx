@@ -219,7 +219,7 @@ export const ImportCsvModal = ({ isOpen, onClose, profile, selectedTeamId, onImp
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer"
         />
 
         {/* Content */}
@@ -228,7 +228,7 @@ export const ImportCsvModal = ({ isOpen, onClose, profile, selectedTeamId, onImp
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden z-10"
+          className="relative w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] flex flex-col max-h-[85vh] overflow-hidden z-10 cursor-default"
         >
           {/* Header */}
           <div className="px-8 py-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50 backdrop-blur-xl shrink-0">

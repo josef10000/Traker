@@ -37,9 +37,9 @@ export function CustomConfirm({
     : 'text-sky-400 bg-sky-500/10';
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-150 cursor-pointer" onClick={onClose}>
+    <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-150 cursor-pointer" onClick={onClose}>
       <div 
-        className="w-full max-w-md rounded-3xl border border-white/10 p-6 space-y-4 shadow-2xl bg-[#090d16] text-white animate-in zoom-in-95 duration-150 cursor-default"
+        className="w-full max-w-md rounded-3xl border border-white/10 p-6 space-y-4 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] bg-slate-900 text-white animate-in zoom-in-95 duration-150 cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/5 pb-3">

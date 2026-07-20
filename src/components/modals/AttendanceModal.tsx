@@ -108,19 +108,19 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md cursor-pointer" onClick={onClose}>
       <div 
-        className={`w-full max-w-md rounded-3xl border p-6 shadow-2xl transition-all cursor-default ${
+        className={`w-full max-w-md rounded-3xl border p-6 transition-all cursor-default ${
           theme === 'dark'
-            ? 'bg-slate-900 border-white/10 text-white'
-            : 'bg-white border-slate-200 text-slate-900'
+            ? 'bg-slate-900 border-white/10 text-white shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)]'
+            : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h3 className="text-lg font-bold">Registrar Escala / Presença</h3>
+            <h3 className={`text-lg font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Registrar Escala / Presença</h3>
             <p className="text-xs text-slate-400 mt-1">{collaboratorName} • {dateFormatted}</p>
           </div>
           <button
