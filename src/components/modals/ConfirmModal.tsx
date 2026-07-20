@@ -11,6 +11,7 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   variant?: 'danger' | 'warning' | 'info';
+  theme?: 'light' | 'dark';
 }
 
 export const ConfirmModal = ({ 
@@ -21,7 +22,8 @@ export const ConfirmModal = ({
   message, 
   confirmText = 'Confirmar', 
   cancelText = 'Cancelar',
-  variant = 'danger'
+  variant = 'danger',
+  theme = 'dark'
 }: ConfirmModalProps) => {
   if (!isOpen) return null;
 

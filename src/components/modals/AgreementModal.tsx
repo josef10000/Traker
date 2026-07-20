@@ -11,6 +11,7 @@ interface AgreementModalProps {
   onSubmit: (data: any) => void;
   editingAgreement: Agreement | null;
   currentUserProfile?: UserProfile;
+  theme?: 'light' | 'dark';
 }
 
 export const AgreementModal = ({ 
@@ -18,7 +19,8 @@ export const AgreementModal = ({
   onClose, 
   onSubmit, 
   editingAgreement,
-  currentUserProfile
+  currentUserProfile,
+  theme = 'dark'
 }: AgreementModalProps) => {
   if (!isOpen) return null;
 
