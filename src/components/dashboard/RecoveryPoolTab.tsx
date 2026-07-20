@@ -9,6 +9,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { ShieldWarning as ShieldAlert, Download, CheckSquare, Square, Eye, EyeClosed as EyeOff, Play, Users, Calendar, Question as HelpCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { ExportCpfModal } from '../modals/ExportCpfModal';
 import { logAudit } from '../../lib/audit';
+import { exportToCsv } from '../../utils/csvExporter';
 
 interface RecoveryPoolTabProps {
   profile: UserProfile;
@@ -244,31 +245,26 @@ export const RecoveryPoolTab = ({
     }
 
     try {
-      const headers = ['Cliente', 'CPF', 'Valor', 'Vencimento Original', 'Origem', 'Tipo', 'Categoria', 'Data Registro'];
+      const headers = ['Cliente', 'CPF', 'Valor (R$)', 'Vencimento Original', 'Origem', 'Tipo', 'Categoria', 'Data Registro'];
       const rows = targets.map(a => [
         a.clientName || 'Sem nome',
         complete ? a.clientCpf : maskCPF(a.clientCpf),
-        a.value,
-        a.dueDate,
-        a.origin,
-        a.type,
-        a.category,
+        formatCurrency(a.value),
+        a.dueDate ? a.dueDate.split('-').reverse().join('/') : '',
+        a.origin || '',
+        a.type ? a.type.replace('_', ' ') : '',
+        a.category || '',
         new Date(a.createdAt).toLocaleDateString('pt-BR')
       ]);
 
-      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-        + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-      
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `balcao_recuperacao_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      exportToCsv({
+        filename: `balcao_recuperacao_${new Date().toISOString().split('T')[0]}.csv`,
+        headers,
+        rows
+      });
 
       logAudit('EXPORT_CSV', { count: targets.length, type: complete ? 'complete' : 'masked', context: 'RecoveryPool' }, profile.displayName || '', profile.organizationId);
-      showToast('Relatório exportado com sucesso!', 'success');
+      showToast('Planilha de recuperação exportada com sucesso!', 'success');
     } catch (e) {
       console.error(e);
       showToast('Erro ao exportar CSV.', 'error');

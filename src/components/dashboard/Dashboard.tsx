@@ -78,6 +78,8 @@ import { FinancialPerformanceInsights } from './FinancialPerformanceInsights';
 // Modais do sistema
 import { DashboardModals } from './DashboardModals';
 import { HelpDrawer } from './HelpDrawer';
+import { parseLocalDate } from '../../utils/dateUtils';
+import { exportToCsv } from '../../utils/csvExporter';
 import { startTour } from '../../utils/tour';
 
 interface DashboardProps {
@@ -1645,42 +1647,36 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const executeExport = async (complete: boolean) => {
-    const headers = ['Nome', 'CPF', 'Valor', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
+    const headers = ['Nome do Cliente', 'CPF', 'Valor (R$)', 'Vencimento', 'Status', 'Origem', 'Tipo', 'Data Registro'];
     
-    const csvContent = [
-      headers.join(';'),
-      ...filteredAgreements.map(a => [
-        a.clientName,
-        complete ? a.clientCpf : maskCPF(a.clientCpf),
-        a.value.toString().replace('.', ','),
-        (a.dueDate || '').split('-').reverse().join('/'),
-        (() => {
-          const today = new Date();
-          today.setHours(0,0,0,0);
-          if (a.status === AgreementStatus.PAID) return 'Pago';
-          if (a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)) {
-            return (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today) ? 'Quebrado (Vencido)' : 'Quebrado';
-          }
-          return 'Aguardando';
-        })(),
-        a.origin,
-        a.type === 'quitacao' ? 'Quitação' : 
-        a.type === 'parcelamento' ? 'Parcelamento' :
-        a.type === 'parcela_atrasada' ? 'Parc. Atrasada' :
-        a.type === 'antecipacao' ? 'Antecipação' :
-        a.type === 'parcela_atual' ? 'Parcela Atual' : a.type,
-        new Date(a.createdAt).toLocaleDateString('pt-BR')
-      ].join(';'))
-    ].join('\n');
-    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `acordos_${getMonthName(selectedMonth).toLowerCase()}_${selectedYear}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const rows = filteredAgreements.map(a => [
+      a.clientName || 'Sem nome',
+      complete ? a.clientCpf : maskCPF(a.clientCpf),
+      formatCurrency(a.value),
+      (a.dueDate || '').split('-').reverse().join('/'),
+      (() => {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        if (a.status === AgreementStatus.PAID) return 'Pago';
+        if (a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today)) {
+          return (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < today) ? 'Quebrado (Vencido)' : 'Quebrado';
+        }
+        return 'Aguardando';
+      })(),
+      a.origin || '',
+      a.type === 'quitacao' ? 'Quitação' : 
+      a.type === 'parcelamento' ? 'Parcelamento' :
+      a.type === 'parcela_atrasada' ? 'Parc. Atrasada' :
+      a.type === 'antecipacao' ? 'Antecipação' :
+      a.type === 'parcela_atual' ? 'Parcela Atual' : a.type,
+      new Date(a.createdAt).toLocaleDateString('pt-BR')
+    ]);
+
+    exportToCsv({
+      filename: `acordos_${getMonthName(selectedMonth).toLowerCase()}_${selectedYear}.csv`,
+      headers,
+      rows
+    });
     
     await logAudit(
       complete ? 'EXPORT_CSV_COMPLETE' : 'EXPORT_CSV_MASKED', 
@@ -1688,7 +1684,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       profile.displayName || '',
       profile.organizationId
     );
-    showToast('Exportação concluída!', 'success');
+    showToast('Planilha de acordos exportada com sucesso!', 'success');
   };
 
   const handleSaveReconciliation = async (officialValue: number | null, officialEffectiveness: number | null) => {
