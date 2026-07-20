@@ -132,14 +132,28 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   const [newNoteText, setNewNoteText] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
 
+  // Lista consolidada de clientes para cruzamento de estatísticas
+  const allOrgClients = useMemo(() => {
+    if (clients.length > 0 && selectedImportId !== 'all') return clients;
+    if (profile.organizationId === 'sandbox-test') {
+      const imps = sandboxService.getBackofficeImports(profile.organizationId);
+      const allCli: BackOfficeClient[] = [];
+      imps.forEach(imp => {
+        allCli.push(...sandboxService.getBackofficeClients(imp.id));
+      });
+      return allCli.length > 0 ? allCli : clients;
+    }
+    return clients;
+  }, [clients, profile.organizationId, imports, selectedImportId]);
+
   // Cruzamento por CPF e Cálculo do Valor Recuperado R$
   const recoveryStats = useMemo(() => {
-    if (!agreements || agreements.length === 0 || clients.length === 0) {
+    if (!agreements || agreements.length === 0 || allOrgClients.length === 0) {
       return { totalRecoveredValue: 0, recoveredCount: 0 };
     }
 
     const clientCpfMap = new Map<string, BackOfficeClient>();
-    clients.forEach(c => {
+    allOrgClients.forEach(c => {
       const clean = (c.clientCpf || '').replace(/\D/g, '');
       if (clean) clientCpfMap.set(clean, c);
     });
@@ -159,7 +173,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     });
 
     return { totalRecoveredValue, recoveredCount };
-  }, [agreements, clients]);
+  }, [agreements, allOrgClients]);
 
   // Listener para carregar as importações da organização
   useEffect(() => {

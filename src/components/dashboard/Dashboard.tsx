@@ -2425,26 +2425,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* CONTEÚDO DA ABA DE GESTÃO DE EQUIPE */}
               {dashboardTab === 'people' && (
-                <TeamManagementTab 
-                  profile={profile}
-                  currentTeamMembers={currentTeamMembers}
-                  attendanceStatuses={attendanceStatuses}
-                  quickNotesText={quickNotesText}
-                  setQuickNotesText={setQuickNotesText}
-                  handleAddNote={handleAddNote}
-                  handleAttendanceChange={handleAttendanceChange}
-                  handleOpenHistory={handleOpenHistory}
-                  setIsPeopleReportOpen={setIsPeopleReportOpen}
-                  agreements={monthAgreements}
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  setSelectedMonth={setSelectedMonth}
-                  setSelectedYear={setSelectedYear}
-                  MONTHS={MONTHS}
-                  getYearRange={getYearRange}
-                  qaScores={qaScores}
-                  theme={theme}
-                />
+                <div className="space-y-6">
+                  <TeamAttendanceComparisonSection
+                    collaborators={filteredTeamMembers}
+                    teams={managedTeamsData}
+                    notes={allCollaborationNotes}
+                    theme={theme}
+                    selectedTeamId={selectedTeamId !== 'all' ? selectedTeamId : undefined}
+                  />
+                  <TeamManagementTab 
+                    profile={profile}
+                    currentTeamMembers={currentTeamMembers}
+                    attendanceStatuses={attendanceStatuses}
+                    quickNotesText={quickNotesText}
+                    setQuickNotesText={setQuickNotesText}
+                    handleAddNote={handleAddNote}
+                    handleAttendanceChange={handleAttendanceChange}
+                    handleOpenHistory={handleOpenHistory}
+                    setIsPeopleReportOpen={setIsPeopleReportOpen}
+                    agreements={monthAgreements}
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    setSelectedMonth={setSelectedMonth}
+                    setSelectedYear={setSelectedYear}
+                    MONTHS={MONTHS}
+                    getYearRange={getYearRange}
+                    qaScores={qaScores}
+                    theme={theme}
+                  />
+                </div>
               )}
 
               {/* CONTEÚDO DA ABA BALCÃO DE RECUPERAÇÃO */}
@@ -2821,9 +2830,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <>
                       {/* SUB-ABA 1: PERFORMANCE */}
                       {coordinationSubTab === 'performance' && (
-                        <div className="space-y-4 animate-fadeIn">
-                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Painel Comparativo de Equipes</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="space-y-6 animate-fadeIn">
+                          <TeamAttendanceComparisonSection
+                            collaborators={filteredTeamMembers}
+                            teams={managedTeamsData}
+                            notes={allCollaborationNotes}
+                            theme={theme}
+                          />
+
+                          <div>
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1 mb-4">Painel Comparativo de Metas & Faturamento</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {managedTeamsData.map(team => {
                               const teamAgreements = monthAgreements.filter(a => a.teamId === team.id);
                               const paidAgreements = teamAgreements.filter(a => a.status === AgreementStatus.PAID);
@@ -2885,6 +2902,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             })}
                           </div>
                         </div>
+                      </div>
                       )}
 
                       {/* SUB-ABA 2: FREQUÊNCIA CONSOLIDADA */}

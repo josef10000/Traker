@@ -185,14 +185,15 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
       const id = `sandbox-agree-${agreementIdCounter++}`;
       const val = Math.round(800 + (Math.random() * 8000));
       
-      let status = AgreementStatus.WAITING;
-      let dueDate: Date;
-      let paidAt: string | undefined = undefined;
+      let customCpf: string | undefined = undefined;
 
       if (j === 0) {
         status = AgreementStatus.PAID;
         dueDate = new Date(currentYear, currentMonth, 5);
         paidAt = new Date(currentYear, currentMonth, 5, 10 + (j % 8), 0, 0).toISOString();
+        if (opIdx === 0) {
+          customCpf = '98765432110';
+        }
       } else if (j === 1) {
         status = AgreementStatus.PAID;
         dueDate = new Date(currentYear, currentMonth, 15);
@@ -213,7 +214,7 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
 
       const createdAt = new Date(dueDate.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
       const dueDateStr = dueDate.toISOString().split('T')[0];
-      const clientCpf = `123456789${String(opIdx).padStart(2, '0')}`;
+      const clientCpf = customCpf || `123456789${String(opIdx).padStart(2, '0')}`;
       
       agreements[id] = {
         id,
