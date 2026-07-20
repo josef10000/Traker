@@ -1113,16 +1113,31 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                 🏢 Presencial
                               </span>
 
-                              {confirmedPresenciais[dateStr] ? (
+                              {(confirmedPresenciais[dateStr] || dayNote?.attendanceConfirmed) ? (
                                 <span className="text-[7px] font-bold text-emerald-300 flex items-center justify-center gap-0.5 bg-emerald-950/80 px-1 py-0.5 rounded border border-emerald-500/40 w-full text-center">
                                   ✓ Confirmado
                                 </span>
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={(e) => {
+                                  onClick={async (e) => {
                                     e.stopPropagation();
                                     setConfirmedPresenciais(prev => ({ ...prev, [dateStr]: true }));
+                                    if (dayNote) {
+                                      const updatedNote = {
+                                        ...dayNote,
+                                        attendanceConfirmed: true,
+                                        confirmedAt: new Date().toISOString()
+                                      };
+                                      if (profile.organizationId === 'sandbox-test') {
+                                        sandboxService.addCollaborationNote(updatedNote);
+                                      } else {
+                                        await updateDoc(doc(db, 'collaboration_notes', dayNote.id), {
+                                          attendanceConfirmed: true,
+                                          confirmedAt: new Date().toISOString()
+                                        });
+                                      }
+                                    }
                                     showToast(`Presença confirmada para a escala presencial do dia ${dayNum}!`, 'success');
                                   }}
                                   className="text-[7px] font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 px-1 py-0.5 rounded shadow-sm shadow-emerald-600/40 border border-emerald-400/50 transition-all cursor-pointer w-full text-center font-sans"

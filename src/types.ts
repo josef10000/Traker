@@ -207,6 +207,8 @@ export interface CollaborationNote {
   attendanceStatus?: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '';
   lateDuration?: string;
   absenceReason?: string;
+  attendanceConfirmed?: boolean;
+  confirmedAt?: string;
   createdAt: string;
 }
 
