@@ -27,6 +27,7 @@ export const RecoveryPoolTab = ({
   onTakeOverSuccess,
   theme = 'dark'
 }: RecoveryPoolTabProps) => {
+  const [subTab, setSubTab] = useState<'pool' | 'my_batch'>('pool');
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -43,6 +44,14 @@ export const RecoveryPoolTab = ({
   // Lista de todos os acordos da organização para identificar resgatados e calcular valor recuperado R$
   const [allOrgAgreements, setAllOrgAgreements] = useState<Agreement[]>([]);
 
+  // Cópia automática de CPF em 1 clique
+  const handleCopyCpf = (cpf: string) => {
+    if (!cpf) return;
+    const clean = cpf.replace(/\D/g, '');
+    navigator.clipboard.writeText(clean);
+    showToast(`CPF ${cpf} copiado para a área de transferência!`, 'success');
+  };
+
   // Escuta em tempo real dos acordos quebrados da organização
   useEffect(() => {
     if (!profile.organizationId) return;
@@ -53,9 +62,9 @@ export const RecoveryPoolTab = ({
       const syncSandbox = () => {
         const list = sandboxService.getAllAgreements(profile.organizationId);
         setAllOrgAgreements(list);
-        const broken = list.filter(a => a.status === AgreementStatus.BROKEN);
-        broken.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setAgreements(broken);
+        const brokenOrWaiting = list.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && a.notes?.includes('[Recuperação]')));
+        brokenOrWaiting.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setAgreements(brokenOrWaiting);
         setLoading(false);
       };
       syncSandbox();
@@ -65,7 +74,7 @@ export const RecoveryPoolTab = ({
     const q = query(
       collection(db, 'agreements'),
       where('organizationId', '==', profile.organizationId),
-      where('status', '==', AgreementStatus.BROKEN)
+      where('status', 'in', [AgreementStatus.BROKEN, AgreementStatus.WAITING])
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -124,15 +133,31 @@ export const RecoveryPoolTab = ({
     }
   }, [agreements, allOrgAgreements, profile.organizationId]);
 
-  // Filtragem dos acordos
+  // Contadores para as sub-abas
+  const poolCount = useMemo(() => {
+    return agreements.filter(a => (!a.operatorId || a.operatorId !== profile.uid) && a.status === AgreementStatus.BROKEN).length;
+  }, [agreements, profile.uid]);
+
+  const myBatchCount = useMemo(() => {
+    return agreements.filter(a => a.operatorId === profile.uid).length;
+  }, [agreements, profile.uid]);
+
+  // Filtragem dos acordos por sub-aba e campos
   const filteredAgreements = useMemo(() => {
     return agreements.filter(a => {
       const matchTeam = filterTeam === 'all' || a.teamId === filterTeam;
       const matchType = filterType === 'all' || a.type === filterType;
       const matchCategory = filterCategory === 'all' || a.category === filterCategory;
-      return matchTeam && matchType && matchCategory;
+
+      if (subTab === 'my_batch') {
+        const isMine = a.operatorId === profile.uid;
+        return isMine && matchTeam && matchType && matchCategory;
+      } else {
+        const isPool = (!a.operatorId || a.operatorId !== profile.uid) && a.status === AgreementStatus.BROKEN;
+        return isPool && matchTeam && matchType && matchCategory;
+      }
     });
-  }, [agreements, filterTeam, filterType, filterCategory]);
+  }, [agreements, subTab, profile.uid, filterTeam, filterType, filterCategory]);
 
   // Selecionar / Deselecionar todos
   const handleSelectAll = () => {
@@ -344,6 +369,41 @@ export const RecoveryPoolTab = ({
         </div>
       </div>
 
+      {/* Sub-abas de Navegação */}
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900/60 border border-white/5 w-fit">
+        <button
+          onClick={() => { setSubTab('pool'); setSelectedIds([]); }}
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            subTab === 'pool'
+              ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span>🌐 Balcão Geral</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+            subTab === 'pool' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+          }`}>
+            {poolCount}
+          </span>
+        </button>
+
+        <button
+          onClick={() => { setSubTab('my_batch'); setSelectedIds([]); }}
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            subTab === 'my_batch'
+              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span>🎒 Meu Lote</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+            subTab === 'my_batch' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+          }`}>
+            {myBatchCount}
+          </span>
+        </button>
+      </div>
+
       {/* Ações e Filtros */}
       <div className={`p-6 rounded-3xl border space-y-4 ${
         theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
@@ -405,14 +465,16 @@ export const RecoveryPoolTab = ({
               Exportar
             </button>
 
-            <button
-              onClick={handleTakeOver}
-              disabled={selectedIds.length === 0}
-              className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-555/10 active:scale-95 cursor-pointer"
-            >
-              <Users size={14} />
-              Assumir Lote
-            </button>
+            {subTab === 'pool' && (
+              <button
+                onClick={handleTakeOver}
+                disabled={selectedIds.length === 0}
+                className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-555/10 active:scale-95 cursor-pointer"
+              >
+                <Users size={14} />
+                Assumir Lote
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -428,7 +490,9 @@ export const RecoveryPoolTab = ({
           </div>
         ) : filteredAgreements.length === 0 ? (
           <div className="text-center py-20 text-slate-500 text-sm italic">
-            Nenhum lead quebrado disponível no balcão com as filtragens selecionadas.
+            {subTab === 'my_batch' 
+              ? 'Você ainda não assumiu nenhum lote de recuperação.' 
+              : 'Nenhum lead quebrado disponível no balcão geral.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -449,11 +513,12 @@ export const RecoveryPoolTab = ({
                     </button>
                   </th>
                   <th className="px-6 py-4">Cliente</th>
-                  <th className="px-6 py-4">CPF</th>
+                  <th className="px-6 py-4">CPF (Clique p/ copiar)</th>
                   <th className="px-6 py-4">Valor Original</th>
                   <th className="px-6 py-4">Origem</th>
                   <th className="px-6 py-4">Tipo / Cat.</th>
                   <th className="px-6 py-4">Vencimento</th>
+                  {subTab === 'my_batch' && <th className="px-6 py-4 text-right">Ação</th>}
                 </tr>
               </thead>
               <tbody className={`text-xs divide-y ${
@@ -490,11 +555,15 @@ export const RecoveryPoolTab = ({
                       }`} title={a.clientName}>
                         {a.clientName || 'Sem nome'}
                       </td>
-                      <td className="px-6 py-4 font-mono">
+                      <td 
+                        className="px-6 py-4 font-mono cursor-pointer hover:text-sky-400 transition-colors"
+                        onClick={() => handleCopyCpf(a.clientCpf)}
+                        title="Clique para copiar o CPF"
+                      >
                         <div className="flex items-center gap-1.5">
-                          <span>{isRevealed ? a.clientCpf : maskCPF(a.clientCpf)}</span>
+                          <span className="underline decoration-dashed decoration-sky-500/40 underline-offset-4 font-bold">{isRevealed ? a.clientCpf : maskCPF(a.clientCpf)}</span>
                           <button
-                            onClick={() => handleRevealCpf(a)}
+                            onClick={(e) => { e.stopPropagation(); handleRevealCpf(a); }}
                             className="text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 p-0.5 rounded transition-colors cursor-pointer"
                           >
                             {isRevealed ? <EyeOff size={11} /> : <Eye size={11} />}
@@ -514,6 +583,17 @@ export const RecoveryPoolTab = ({
                       <td className="px-6 py-4 text-slate-400 dark:text-slate-500 font-medium">
                         {a.dueDate.split('-').reverse().join('/')}
                       </td>
+                      {subTab === 'my_batch' && (
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => onAttend(a)}
+                            className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-500/20 inline-flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                          >
+                            <Play size={10} fill="currentColor" />
+                            Registrar Acordo
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

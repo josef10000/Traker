@@ -2248,6 +2248,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         setEditingAgreement(agreement);
                         setIsModalOpen(true);
                       }}
+                      onConfirmContact={async (ag) => {
+                        if (profile.organizationId === 'sandbox-test') {
+                          sandboxService.updateAgreement(ag.id, {
+                            notes: `${ag.notes ? ag.notes + ' | ' : ''}[Contato efetuado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}]`
+                          });
+                          showToast('Contato efetuado confirmado com sucesso!', 'success');
+                          return;
+                        }
+                        try {
+                          await updateDoc(doc(db, 'agreements', ag.id), {
+                            notes: `${ag.notes ? ag.notes + ' | ' : ''}[Contato efetuado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}]`
+                          });
+                          showToast('Contato efetuado confirmado com sucesso!', 'success');
+                        } catch (e) {
+                          console.error(e);
+                          showToast('Erro ao confirmar contato.', 'error');
+                        }
+                      }}
+                      onDeleteFromAgenda={async (ag) => {
+                        if (profile.organizationId === 'sandbox-test') {
+                          sandboxService.updateAgreement(ag.id, {
+                            scheduledAt: undefined
+                          });
+                          showToast('Compromisso removido da agenda do dia.', 'info');
+                          return;
+                        }
+                        try {
+                          await updateDoc(doc(db, 'agreements', ag.id), {
+                            scheduledAt: null
+                          });
+                          showToast('Compromisso removido da agenda do dia.', 'info');
+                        } catch (e) {
+                          console.error(e);
+                          showToast('Erro ao remover da agenda.', 'error');
+                        }
+                      }}
                       showToast={showToast}
                       theme={theme}
                     />
@@ -2571,6 +2607,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       onAttend={(agreement) => {
                         setEditingAgreement(agreement);
                         setIsModalOpen(true);
+                      }}
+                      onConfirmContact={async (ag) => {
+                        if (profile.organizationId === 'sandbox-test') {
+                          sandboxService.updateAgreement(ag.id, {
+                            notes: `${ag.notes ? ag.notes + ' | ' : ''}[Contato efetuado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}]`
+                          });
+                          showToast('Contato efetuado confirmado com sucesso!', 'success');
+                          return;
+                        }
+                        try {
+                          await updateDoc(doc(db, 'agreements', ag.id), {
+                            notes: `${ag.notes ? ag.notes + ' | ' : ''}[Contato efetuado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}]`
+                          });
+                          showToast('Contato efetuado confirmado com sucesso!', 'success');
+                        } catch (e) {
+                          console.error(e);
+                          showToast('Erro ao confirmar contato.', 'error');
+                        }
+                      }}
+                      onDeleteFromAgenda={async (ag) => {
+                        if (profile.organizationId === 'sandbox-test') {
+                          sandboxService.updateAgreement(ag.id, {
+                            scheduledAt: undefined
+                          });
+                          showToast('Compromisso removido da agenda do dia.', 'info');
+                          return;
+                        }
+                        try {
+                          await updateDoc(doc(db, 'agreements', ag.id), {
+                            scheduledAt: null
+                          });
+                          showToast('Compromisso removido da agenda do dia.', 'info');
+                        } catch (e) {
+                          console.error(e);
+                          showToast('Erro ao remover da agenda.', 'error');
+                        }
                       }}
                       showToast={showToast}
                       theme={theme}
