@@ -167,6 +167,23 @@ export const RecoveryPoolTab = ({
     }
 
     try {
+      if (profile.organizationId === 'sandbox-test') {
+        selectedIds.forEach(id => {
+          sandboxService.updateAgreement(id, {
+            operatorId: profile.uid,
+            teamId: profile.teamId,
+            status: AgreementStatus.WAITING,
+            notes: `[Recuperação] Acordo assumido do balcão por ${profile.displayName || 'Operador'}.`
+          });
+        });
+        showToast(`${selectedIds.length} acordo(s) assumido(s) com sucesso! Adicionado(s) à sua lista de Entrar em Contato.`, 'success');
+        setSelectedIds([]);
+        if (onTakeOverSuccess) {
+          onTakeOverSuccess();
+        }
+        return;
+      }
+
       const batch = writeBatch(db);
       selectedIds.forEach(id => {
         const agreementRef = doc(db, 'agreements', id);
@@ -179,7 +196,7 @@ export const RecoveryPoolTab = ({
       });
 
       await batch.commit();
-      showToast(`${selectedIds.length} acordos assumidos com sucesso!`, 'success');
+      showToast(`${selectedIds.length} acordo(s) assumido(s) com sucesso! Adicionado(s) à sua lista de Entrar em Contato.`, 'success');
       setSelectedIds([]);
       if (onTakeOverSuccess) {
         onTakeOverSuccess();
@@ -437,7 +454,6 @@ export const RecoveryPoolTab = ({
                   <th className="px-6 py-4">Origem</th>
                   <th className="px-6 py-4">Tipo / Cat.</th>
                   <th className="px-6 py-4">Vencimento</th>
-                  <th className="px-6 py-4 text-right">Ação</th>
                 </tr>
               </thead>
               <tbody className={`text-xs divide-y ${
@@ -497,15 +513,6 @@ export const RecoveryPoolTab = ({
                       </td>
                       <td className="px-6 py-4 text-slate-400 dark:text-slate-500 font-medium">
                         {a.dueDate.split('-').reverse().join('/')}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => onAttend(a)}
-                          className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-sky-555/10 inline-flex items-center gap-1 active:scale-95 cursor-pointer"
-                        >
-                          <Play size={10} fill="currentColor" />
-                          Atender
-                        </button>
                       </td>
                     </tr>
                   );

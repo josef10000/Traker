@@ -409,11 +409,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     setIsLoadingScheduled(true);
 
+    if (profile.organizationId === 'sandbox-test') {
+      const syncSandboxScheduled = () => {
+        setIsLoadingScheduled(true);
+        const list = sandboxService.getAllAgreements(profile.organizationId);
+        const filtered = list.filter(a => (a.status === AgreementStatus.SCHEDULED || a.status === AgreementStatus.WAITING) && teamsToWatch.includes(a.teamId || ''));
+        setScheduledAgreements(filtered);
+        setIsLoadingScheduled(false);
+      };
+      syncSandboxScheduled();
+      return sandboxService.subscribe(syncSandboxScheduled);
+    }
+
     const qScheduled = query(
       collection(db, 'agreements'),
       where('organizationId', '==', profile.organizationId),
       where('teamId', 'in', teamsToWatch),
-      where('status', '==', AgreementStatus.SCHEDULED)
+      where('status', 'in', [AgreementStatus.SCHEDULED, AgreementStatus.WAITING])
     );
 
     const unsubscribe = onSnapshot(qScheduled, (snapshot) => {
