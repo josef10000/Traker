@@ -28,6 +28,12 @@ export function AppContent() {
   const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' | 'coordinator' } | null>(null);
   const [simulatedUid, setSimulatedUid] = useState<string>('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileInitialTab, setProfileInitialTab] = useState<string>('profile');
+
+  const handleOpenSettings = (tab?: string) => {
+    setProfileInitialTab(tab || 'profile');
+    setIsProfileModalOpen(true);
+  };
 
   const navigate = useNavigate();
 
@@ -349,7 +355,7 @@ export function AppContent() {
                 <Dashboard 
                   user={user} 
                   profile={simulatedProfile} 
-                  onSettingsClick={() => setIsProfileModalOpen(true)} 
+                  onSettingsClick={handleOpenSettings} 
                   showToast={showToast}
                   onCreateTeam={() => {
                     setIsProfileModalOpen(false);
@@ -382,6 +388,7 @@ export function AppContent() {
             isOpen={isProfileModalOpen}
             onClose={() => setIsProfileModalOpen(false)}
             profile={simulatedProfile}
+            initialTab={profileInitialTab}
             onUpdate={(updatedData) => {
               if (updatedData) {
                 sandboxService.setProfile({
@@ -470,7 +477,7 @@ export function AppContent() {
           <Dashboard 
             user={user} 
             profile={profile} 
-            onSettingsClick={() => setIsProfileModalOpen(true)} 
+            onSettingsClick={handleOpenSettings} 
             showToast={showToast}
             onCreateTeam={() => {
               setIsProfileModalOpen(false);
@@ -499,6 +506,7 @@ export function AppContent() {
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)}
           profile={profile}
+          initialTab={profileInitialTab}
           onUpdate={refreshProfile}
           onCreateTeam={() => {
             setIsProfileModalOpen(false);

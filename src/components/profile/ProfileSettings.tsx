@@ -60,9 +60,10 @@ interface ProfileSettingsProps {
   onCreateTeam: () => void;
   showToast: (message: string, type?: ToastType) => void;
   theme?: 'light' | 'dark' | 'sky' | 'purple';
+  initialTab?: string;
 }
 
-export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast, theme = 'dark' }: ProfileSettingsProps) {
+export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast, theme = 'dark', initialTab }: ProfileSettingsProps) {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
   const [avatarStyle, setAvatarStyle] = useState(profile.avatarStyle || 'initials');
@@ -71,6 +72,12 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers' | 'schedule' | 'closing_pj'>('profile');
   
+  useEffect(() => {
+    if (initialTab && isOpen) {
+      setActiveTab(initialTab as any);
+    }
+  }, [initialTab, isOpen]);
+
   // Novos estados e effect para aba "Minha Escala"
   const [scheduleDate, setScheduleDate] = useState(new Date());
   const [scheduleNotes, setScheduleNotes] = useState<CollaborationNote[]>([]);
@@ -1106,8 +1113,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                             </span>
                           )}
 
-                          {/* Botão e Status de Confirmação de Presença Presencial */}
-                          {status === 'present' && (
+                          {/* Botão e Status de Confirmação de Presença Presencial (Apenas para escalas presenciais explícitas) */}
+                          {((dayNote && dayNote.attendanceStatus === 'present') || (hasEvent && dayEvents.some(e => e.title.toLowerCase().includes('presencial')))) && (
                             <div className="flex flex-col items-center gap-1 w-full mt-1">
                               <span className="text-[7px] font-extrabold uppercase tracking-wider px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 truncate w-full text-center">
                                 🏢 Presencial

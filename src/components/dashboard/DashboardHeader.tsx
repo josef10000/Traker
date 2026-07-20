@@ -34,7 +34,7 @@ interface DashboardHeaderProps {
   selectedTeamId: string;
   managedTeamsData: Team[];
   isPresentMode: boolean;
-  onSettingsClick: () => void;
+  onSettingsClick: (tab?: string) => void;
   setIsTeamSelectorOpen: (open: boolean) => void;
   setIsConfirmLogoutOpen: (open: boolean) => void;
   setIsWebhookSettingsOpen: (open: boolean) => void;
@@ -159,8 +159,10 @@ export const DashboardHeader = ({
       if (onViewPayment) {
         onViewPayment(notif.referenceId);
       }
+    } else if (notif.type === 'presencial_scheduled') {
+      onSettingsClick('schedule');
     } else if (notif.type === 'transfer_requested' || notif.type === 'invoice_issued' || notif.type === 'contested') {
-      onSettingsClick(); // Abre as configurações, onde os detalhes são exibidos
+      onSettingsClick(); // Abre as configurações
     }
   };
 
