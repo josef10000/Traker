@@ -224,7 +224,7 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                               status === 'present'
                                 ? 'bg-emerald-500 text-white border-emerald-300 shadow-md shadow-emerald-500/40 font-black scale-110'
                                 : status === 'home_office'
-                                  ? 'bg-slate-800/60 text-slate-400 border-slate-700/50'
+                                  ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40 font-black'
                                   : status === 'late'
                                     ? 'bg-amber-500 text-white border-amber-400'
                                     : status === 'absent'
@@ -237,7 +237,7 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                                             ? 'bg-blue-500 text-white border-blue-400'
                                             : 'bg-slate-800/40 border-slate-700/30 text-transparent hover:border-slate-500'
                             }`}>
-                              {status === 'present' ? 'P' : status === 'home_office' ? '•' : status === 'late' ? 'A' : status === 'absent' ? 'F' : status === 'early_departure' ? 'S' : status === 'day_off' ? 'D' : status === 'vacation' ? 'V' : ''}
+                              {status === 'present' ? 'P' : status === 'home_office' ? 'H' : status === 'late' ? 'A' : status === 'absent' ? 'F' : status === 'early_departure' ? 'S' : status === 'day_off' ? 'D' : status === 'vacation' ? 'V' : ''}
                             </span>
                             {status === 'present' && note?.attendanceConfirmed && (
                               <span className="absolute -top-1 -right-1.5 text-[8px] font-extrabold text-emerald-400 leading-none bg-slate-950 rounded-full px-0.5 border border-emerald-500/50 shadow-sm" title="Presença Confirmada pelo Colaborador">
@@ -270,7 +270,7 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                                 <span className="font-bold text-slate-400 block">Status:</span>
                                 <span className={`font-extrabold ${
                                   status === 'present' ? 'text-emerald-400' :
-                                  status === 'home_office' ? 'text-slate-300' :
+                                  status === 'home_office' ? 'text-cyan-400' :
                                   status === 'late' ? 'text-amber-400' :
                                   status === 'absent' ? 'text-rose-400' :
                                   status === 'early_departure' ? 'text-purple-400' :
@@ -315,6 +315,10 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
       {/* Legenda de Marcações */}
       <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/5 text-[10px] text-slate-400 font-medium">
         <div className="flex flex-wrap items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 border border-cyan-400 inline-block" />
+            <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}>H</strong> - Home Office
+          </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-400 inline-block" />
             <strong className={theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}>P</strong> - Presencial

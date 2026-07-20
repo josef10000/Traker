@@ -968,13 +968,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleSaveAttendance = async (
     status: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '',
     lateDuration: string,
-    absenceReason: string
+    absenceReason: string,
+    dateRange?: { startDate: string; endDate: string }
   ) => {
     if (!attendanceModalData || !profile.organizationId) return;
     const { collab, dateStr } = attendanceModalData;
 
+    const datesToApply: string[] = [];
+    if (dateRange && dateRange.startDate && dateRange.endDate) {
+      let curr = new Date(dateRange.startDate + 'T00:00:00');
+      const end = new Date(dateRange.endDate + 'T00:00:00');
+      while (curr <= end) {
+        const y = curr.getFullYear();
+        const m = String(curr.getMonth() + 1).padStart(2, '0');
+        const d = String(curr.getDate()).padStart(2, '0');
+        datesToApply.push(`${y}-${m}-${d}`);
+        curr.setDate(curr.getDate() + 1);
+      }
+    } else {
+      datesToApply.push(dateStr);
+    }
+
     try {
-      const dateFormatted = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
       const statusLabels = { 
         present: 'Presente', 
         late: 'Atrasado', 
@@ -998,77 +1013,81 @@ export const Dashboard: React.FC<DashboardProps> = ({
         existingNotes = querySnapshot.docs.map(doc => doc.data() as CollaborationNote);
       }
 
-      const targetDate = new Date(dateStr);
-      const dayNotes = existingNotes.filter(note => {
-        const noteDate = new Date(note.createdAt);
-        return (
-          noteDate.getUTCFullYear() === targetDate.getUTCFullYear() &&
-          noteDate.getUTCMonth() === targetDate.getUTCMonth() &&
-          noteDate.getUTCDate() === targetDate.getUTCDate()
-        );
-      });
+      for (const targetDateStr of datesToApply) {
+        const dateFormatted = new Date(targetDateStr + 'T00:00:00').toLocaleDateString('pt-BR');
+        const targetDate = new Date(targetDateStr);
 
-      if (profile.organizationId === 'sandbox-test') {
-        dayNotes.forEach(dn => {
-          sandboxService.deleteCollaborationNote(dn.id);
-        });
-      } else {
-        const batch = writeBatch(db);
-        dayNotes.forEach(dn => {
-          batch.delete(doc(db, 'collaboration_notes', dn.id));
-        });
-        await batch.commit();
-      }
-
-      if (status === 'present') {
-        const targetDateObj = new Date(dateStr + 'T12:00:00');
-        await addCollaborationNote({
-          organizationId: profile.organizationId,
-          collaboratorId: collab.uid,
-          creatorId: profile.uid,
-          creatorName: profile.displayName || profile.email.split('@')[0],
-          type: 'attendance',
-          content: `Escala de Trabalho Presencial agendada para o dia ${dateFormatted}`,
-          attendanceStatus: 'present',
-          createdAt: targetDateObj.toISOString()
+        const dayNotes = existingNotes.filter(note => {
+          const noteDate = new Date(note.createdAt);
+          return (
+            noteDate.getUTCFullYear() === targetDate.getUTCFullYear() &&
+            noteDate.getUTCMonth() === targetDate.getUTCMonth() &&
+            noteDate.getUTCDate() === targetDate.getUTCDate()
+          );
         });
 
-        // Notificação EXCLUSIVA no sino para escala presencial
-        await createNotification({
-          userId: collab.uid,
-          title: 'Escala Presencial Registrada 🏢',
-          message: `Você foi escalado para Trabalho Presencial no dia ${dateFormatted}. Acesse a sua agenda na aba "Minha Escala" para confirmar.`,
-          type: 'presencial_scheduled',
-          referenceId: dateStr
-        }, profile.organizationId === 'sandbox-test');
-      } else if (status !== '') {
-        let content = `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`;
-        if (status === 'late' && lateDuration) {
-          content += ` (${lateDuration} de atraso)`;
-        } else if (status === 'early_departure' && lateDuration) {
-          content += ` (Saída às ${lateDuration})`;
-        }
-        if ((status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late') && absenceReason) {
-          content += ` (Motivo: ${absenceReason})`;
+        if (profile.organizationId === 'sandbox-test') {
+          dayNotes.forEach(dn => {
+            sandboxService.deleteCollaborationNote(dn.id);
+          });
+        } else {
+          const batch = writeBatch(db);
+          dayNotes.forEach(dn => {
+            batch.delete(doc(db, 'collaboration_notes', dn.id));
+          });
+          await batch.commit();
         }
 
-        const targetDateObj = new Date(dateStr + 'T12:00:00');
+        if (status === 'present') {
+          const targetDateObj = new Date(targetDateStr + 'T12:00:00');
+          await addCollaborationNote({
+            organizationId: profile.organizationId,
+            collaboratorId: collab.uid,
+            creatorId: profile.uid,
+            creatorName: profile.displayName || profile.email.split('@')[0],
+            type: 'attendance',
+            content: `Escala de Trabalho Presencial agendada para o dia ${dateFormatted}`,
+            attendanceStatus: 'present',
+            createdAt: targetDateObj.toISOString()
+          });
 
-        await addCollaborationNote({
-          organizationId: profile.organizationId,
-          collaboratorId: collab.uid,
-          creatorId: profile.uid,
-          creatorName: profile.displayName || profile.email.split('@')[0],
-          type: 'attendance',
-          content,
-          attendanceStatus: status,
-          lateDuration: (status === 'late' || status === 'early_departure') ? lateDuration : undefined,
-          absenceReason: (status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late') ? absenceReason : undefined,
-          createdAt: targetDateObj.toISOString()
-        });
+          await createNotification({
+            userId: collab.uid,
+            title: 'Escala Presencial Registrada 🏢',
+            message: `Você foi escalado para Trabalho Presencial no dia ${dateFormatted}. Acesse a sua agenda na aba "Minha Escala" para confirmar.`,
+            type: 'presencial_scheduled',
+            referenceId: targetDateStr
+          }, profile.organizationId === 'sandbox-test');
+        } else if (status !== '') {
+          let content = `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`;
+          if (status === 'late' && lateDuration) {
+            content += ` (${lateDuration} de atraso)`;
+          } else if (status === 'early_departure' && lateDuration) {
+            content += ` (Saída às ${lateDuration})`;
+          }
+          if ((status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late' || status === 'vacation') && absenceReason) {
+            content += ` (Motivo: ${absenceReason})`;
+          }
+
+          const targetDateObj = new Date(targetDateStr + 'T12:00:00');
+
+          await addCollaborationNote({
+            organizationId: profile.organizationId,
+            collaboratorId: collab.uid,
+            creatorId: profile.uid,
+            creatorName: profile.displayName || profile.email.split('@')[0],
+            type: 'attendance',
+            content,
+            attendanceStatus: status,
+            lateDuration: (status === 'late' || status === 'early_departure') ? lateDuration : undefined,
+            absenceReason: (status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late' || status === 'vacation') ? absenceReason : undefined,
+            createdAt: targetDateObj.toISOString()
+          });
+        }
       }
 
-      showToast(`Presença de ${collab.displayName || collab.email.split('@')[0]} salva para o dia ${dateFormatted}!`, 'success');
+      showToast(`Escala de presença de ${collab.displayName || collab.email.split('@')[0]} salva com sucesso para ${datesToApply.length} dia(s)!`, 'success');
+      doMarkStale();
     } catch (error) {
       console.error(error);
       showToast('Erro ao salvar presença.', 'error');

@@ -9,7 +9,12 @@ interface AttendanceModalProps {
   currentStatus?: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '';
   currentLateDuration?: string;
   currentAbsenceReason?: string;
-  onSave: (status: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '', lateDuration: string, absenceReason: string) => void;
+  onSave: (
+    status: 'present' | 'late' | 'absent' | 'early_departure' | 'day_off' | 'vacation' | '',
+    lateDuration: string,
+    absenceReason: string,
+    dateRange?: { startDate: string; endDate: string }
+  ) => void;
   theme: 'light' | 'dark';
 }
 
@@ -30,11 +35,27 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const [selectedHours, setSelectedHours] = useState(0);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
 
+  // Estados de Intervalo de Datas para Férias em Lote
+  const [isRangeMode, setIsRangeMode] = useState(true);
+  const [startDate, setStartDate] = useState(dateStr);
+  const [endDate, setEndDate] = useState(dateStr);
+
   useEffect(() => {
     if (isOpen) {
       setStatus(currentStatus);
       setLateDuration(currentLateDuration);
       setAbsenceReason(currentAbsenceReason);
+
+      setStartDate(dateStr);
+      // Calcular padrão de +14 dias (15 dias no total) se for férias
+      if (dateStr) {
+        const d = new Date(dateStr + 'T00:00:00');
+        d.setDate(d.getDate() + 14);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        setEndDate(`${y}-${m}-${day}`);
+      }
 
       let hrs = 0;
       let mins = 0;
@@ -53,7 +74,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
       setSelectedHours(hrs);
       setSelectedMinutes(mins);
     }
-  }, [isOpen, currentStatus, currentLateDuration, currentAbsenceReason]);
+  }, [isOpen, dateStr, currentStatus, currentLateDuration, currentAbsenceReason]);
 
   if (!isOpen) return null;
 
@@ -76,10 +97,12 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     const finalDuration = (status === 'late' || status === 'early_departure')
       ? getFormattedTime(selectedHours, selectedMinutes, status)
       : '';
+    
     onSave(
       status,
       finalDuration,
-      (status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late') ? absenceReason : ''
+      (status === 'absent' || status === 'early_departure' || status === 'day_off' || status === 'late' || status === 'vacation') ? absenceReason : '',
+      (status === 'vacation' && isRangeMode && startDate && endDate) ? { startDate, endDate } : undefined
     );
     onClose();
   };
@@ -520,6 +543,75 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                     : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-slate-400'
                 }`}
               />
+            </div>
+          )}
+
+          {status === 'vacation' && (
+            <div className="space-y-4 animate-fadeIn">
+              <div className={`p-4 rounded-2xl border space-y-3 ${
+                theme === 'dark' ? 'bg-slate-950/40 border-white/5' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-sky-400 block">
+                    📅 Período de Férias (Lançamento em Lote)
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-[10px] font-bold text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={isRangeMode}
+                      onChange={(e) => setIsRangeMode(e.target.checked)}
+                      className="rounded border-white/10 text-sky-500 focus:ring-0"
+                    />
+                    Aplicar em Período
+                  </label>
+                </div>
+
+                {isRangeMode ? (
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1">Data de Início</span>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                          theme === 'dark' ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1">Data Término</span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                          theme === 'dark' ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic">
+                    Férias aplicadas apenas para o dia selecionado ({dateFormatted}). Marque &quot;Aplicar em Período&quot; para definir o intervalo.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Observação / Período (Opcional)</label>
+                <textarea
+                  value={absenceReason}
+                  onChange={(e) => setAbsenceReason(e.target.value)}
+                  placeholder="Ex: Férias regulamentares de 15 dias"
+                  rows={2}
+                  className={`w-full px-4 py-3 rounded-xl text-xs font-medium border transition-all outline-hidden resize-none ${
+                    theme === 'dark'
+                      ? 'bg-slate-950/60 border-white/10 text-white focus:border-blue-500/60'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-500'
+                  }`}
+                />
+              </div>
             </div>
           )}
 
