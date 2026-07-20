@@ -349,7 +349,7 @@ export interface AppNotification {
   userId: string;                // Destinatário
   title: string;
   message: string;
-  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system';
+  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled';
   referenceId?: string;          // ID do fechamento de pagamento ou transferência associado
   read: boolean;
   createdAt: string;

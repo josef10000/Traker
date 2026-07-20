@@ -44,7 +44,7 @@ import {
 } from '@tanstack/react-table';
 import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
-import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote } from '../../types';
+import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote, Agreement, AgreementStatus } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
@@ -56,6 +56,7 @@ interface BackOfficeTabProps {
   theme?: 'light' | 'dark';
   selectedTeamId?: string;
   onAttend?: (agreement: any) => void;
+  agreements?: Agreement[];
 }
 
 export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
@@ -63,7 +64,8 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   showToast,
   theme = 'dark',
   selectedTeamId = 'all',
-  onAttend
+  onAttend,
+  agreements = []
 }) => {
   // Estados para Importações
   const [imports, setImports] = useState<BackOfficeImport[]>([]);
@@ -129,6 +131,35 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   const [activeClientForNotes, setActiveClientForNotes] = useState<BackOfficeClient | null>(null);
   const [newNoteText, setNewNoteText] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
+
+  // Cruzamento por CPF e Cálculo do Valor Recuperado R$
+  const recoveryStats = useMemo(() => {
+    if (!agreements || agreements.length === 0 || clients.length === 0) {
+      return { totalRecoveredValue: 0, recoveredCount: 0 };
+    }
+
+    const clientCpfMap = new Map<string, BackOfficeClient>();
+    clients.forEach(c => {
+      const clean = (c.clientCpf || '').replace(/\D/g, '');
+      if (clean) clientCpfMap.set(clean, c);
+    });
+
+    let totalRecoveredValue = 0;
+    let recoveredCount = 0;
+
+    agreements.forEach(ag => {
+      if (!ag.clientCpf) return;
+      const cleanCpf = ag.clientCpf.replace(/\D/g, '');
+      if (clientCpfMap.has(cleanCpf)) {
+        recoveredCount++;
+        if (ag.status === AgreementStatus.PAID || (ag.status as any) === 'paid') {
+          totalRecoveredValue += (ag.value || 0);
+        }
+      }
+    });
+
+    return { totalRecoveredValue, recoveredCount };
+  }, [agreements, clients]);
 
   // Listener para carregar as importações da organização
   useEffect(() => {
@@ -948,6 +979,54 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* CARD KPI: VALOR TOTAL RECUPERADO (R$) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
+          theme === 'dark' ? 'bg-slate-900/60 border-emerald-500/30' : 'bg-white border-emerald-200'
+        }`}>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block">💰 Valor Recuperado (Pago)</span>
+            <span className="text-2xl font-black text-emerald-400 mt-1 block">
+              {formatCurrency(recoveryStats.totalRecoveredValue)}
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">Acordos pagos vinculados à recuperação</span>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0 font-bold text-lg">
+            R$
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
+          theme === 'dark' ? 'bg-slate-900/60 border-sky-500/30' : 'bg-white border-sky-200'
+        }`}>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-sky-400 block">🎯 Acordos Resgatados</span>
+            <span className="text-2xl font-black text-white mt-1 block">
+              {recoveryStats.recoveredCount} clientes
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">Acordos registrados via CPF</span>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 shrink-0 font-bold text-lg">
+            ✓
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
+          theme === 'dark' ? 'bg-slate-900/60 border-white/5' : 'bg-white border-slate-200'
+        }`}>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">📋 Clientes Pendentes</span>
+            <span className="text-2xl font-black text-amber-400 mt-1 block">
+              {clients.filter(c => c.status === 'pending').length} de {clients.length}
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">Fila aguardando tratamento</span>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0 font-bold text-lg">
+            ⏳
+          </div>
+        </div>
+      </div>
+
       {/* Painel Superior: Seleção e Importação */}
       <div className={`flex flex-col lg:flex-row justify-between items-stretch lg:items-center p-6 rounded-3xl border gap-4 ${
         theme === 'dark' ? 'bg-slate-900/40 border-white/[0.04]' : 'bg-white border-slate-200 shadow-sm'

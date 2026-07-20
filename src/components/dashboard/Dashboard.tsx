@@ -41,12 +41,14 @@ import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
 import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus } from '@phosphor-icons/react';
 import { sandboxService } from '../../lib/sandboxService';
+import { createNotification } from '../../lib/notifications';
 import { useTheme } from '../../hooks/useTheme';
 
 import { Avatar } from '../ui/Avatar';
 import { AttendanceModal } from '../modals/AttendanceModal';
 import { CalendarEventModal } from '../modals/CalendarEventModal';
 import { AttendanceCalendarSection } from './AttendanceCalendarSection';
+import { TeamAttendanceComparisonSection } from './TeamAttendanceComparisonSection';
 import { ClosingPjSection } from '../profile/ClosingPjSection';
 import { TeamsManagementSection } from './TeamsManagementSection';
 import { InvitesSection } from './InvitesSection';
@@ -2559,6 +2561,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     showToast={showToast}
                     theme={theme}
                     selectedTeamId={selectedTeamId}
+                    agreements={monthAgreements}
                     onAttend={(agreement) => {
                       setEditingAgreement(agreement);
                       setIsModalOpen(true);
@@ -2794,13 +2797,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         const teamOps = filteredTeamMembers.filter(m => m.teamId === team.id && (m.role === 'member' || m.role === 'supervisor' || m.role === 'backoffice'));
                         
                         return (
-                          <AttendanceCalendarSection
-                            collaborators={teamOps}
-                            notes={allCollaborationNotes}
-                            calendarEvents={allCalendarEvents}
-                            onCellClick={handleCellClick}
-                            theme={theme}
-                          />
+                          <div className="space-y-6">
+                            <TeamAttendanceComparisonSection
+                              collaborators={filteredTeamMembers}
+                              teams={managedTeamsData}
+                              notes={allCollaborationNotes}
+                              theme={theme}
+                              selectedTeamId={team.id}
+                            />
+                            <AttendanceCalendarSection
+                              collaborators={teamOps}
+                              notes={allCollaborationNotes}
+                              calendarEvents={allCalendarEvents}
+                              onCellClick={handleCellClick}
+                              theme={theme}
+                            />
+                          </div>
                         );
                       })()}
                     </>
@@ -2877,15 +2889,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                       {/* SUB-ABA 2: FREQUÊNCIA CONSOLIDADA */}
                       {coordinationSubTab === 'frequency' && (
-                        <div className="space-y-4 animate-fadeIn">
-                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Escala de Frequência Consolidada</h3>
-                          <AttendanceCalendarSection
-                            collaborators={filteredTeamMembers.filter(m => m.role === 'member' || m.role === 'supervisor' || m.role === 'backoffice')}
+                        <div className="space-y-6 animate-fadeIn">
+                          <TeamAttendanceComparisonSection
+                            collaborators={filteredTeamMembers}
+                            teams={managedTeamsData}
                             notes={allCollaborationNotes}
-                            calendarEvents={allCalendarEvents}
-                            onCellClick={handleCellClick}
                             theme={theme}
                           />
+
+                          <div>
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1 mb-4">Escala de Frequência Consolidada</h3>
+                            <AttendanceCalendarSection
+                              collaborators={filteredTeamMembers.filter(m => m.role === 'member' || m.role === 'supervisor' || m.role === 'backoffice')}
+                              notes={allCollaborationNotes}
+                              calendarEvents={allCalendarEvents}
+                              onCellClick={handleCellClick}
+                              theme={theme}
+                            />
+                          </div>
                         </div>
                       )}
 
