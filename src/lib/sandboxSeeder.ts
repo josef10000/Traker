@@ -186,6 +186,9 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
       const val = Math.round(800 + (Math.random() * 8000));
       
       let customCpf: string | undefined = undefined;
+      let status: AgreementStatus = AgreementStatus.WAITING;
+      let dueDate: Date = new Date();
+      let paidAt: string | undefined = undefined;
 
       if (j === 0) {
         status = AgreementStatus.PAID;
