@@ -395,7 +395,7 @@ class SandboxService {
     this.notify();
   }
 
-  public updateBackofficeClientStatus(clientId: string, status: 'pending' | 'treated' | 'ignored'): void {
+  public updateBackofficeClientStatus(clientId: string, status: 'pending' | 'in_progress' | 'treated' | 'ignored'): void {
     if (this.backofficeClients[clientId]) {
       this.backofficeClients[clientId] = { 
         ...this.backofficeClients[clientId], 

@@ -94,7 +94,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   const [clients, setClients] = useState<BackOfficeClient[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'treated' | 'ignored'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'treated' | 'ignored'>('all');
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -601,8 +601,8 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     }
   };
 
-  // Atualizar Status do Cliente (pending, treated, ignored)
-  const handleUpdateStatus = async (clientId: string, newStatus: 'pending' | 'treated' | 'ignored') => {
+  // Atualizar Status do Cliente (pending, in_progress, treated, ignored)
+  const handleUpdateStatus = async (clientId: string, newStatus: 'pending' | 'in_progress' | 'treated' | 'ignored') => {
     if (profile.organizationId === 'sandbox-test') {
       sandboxService.updateBackofficeClientStatus(clientId, newStatus);
       showToast('Status atualizado na memória do Sandbox.', 'success');
@@ -752,6 +752,16 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  // Estatísticas e Métricas da Planilha Selecionada
+  const stats = useMemo(() => {
+    const total = clients.length;
+    const pending = clients.filter(c => c.status === 'pending' || !c.status).length;
+    const inProgress = clients.filter(c => c.status === 'in_progress').length;
+    const treated = clients.filter(c => c.status === 'treated').length;
+    const ignored = clients.filter(c => c.status === 'ignored').length;
+    return { total, pending, inProgress, treated, ignored };
+  }, [clients]);
+
   // Filtros de Tabela (dados originais filtrados - agora memoizados para estabilidade do TanStack)
   const filteredClients = useMemo(() => {
     return clients.filter(cli => {
@@ -827,21 +837,23 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       cell: (info) => {
         const status = info.getValue() as string;
         return (
-          <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+          <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
             status === 'treated' 
               ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-              : (status === 'ignored' 
-                ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' 
-                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20')
+              : status === 'in_progress'
+                ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+                : status === 'ignored' 
+                  ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' 
+                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
           }`}>
-            {status === 'treated' ? 'Tratado' : (status === 'ignored' ? 'Ignorado' : 'Pendente')}
+            {status === 'treated' ? 'Tratado' : status === 'in_progress' ? 'Em Tratativa' : status === 'ignored' ? 'Ignorado' : 'Pendente'}
           </span>
         );
       }
     };
 
 
-    // Coluna administrativa de Ações
+    // Coluna administrativa de Ações (Apenas ações permitidas do Back Office)
     const actionsColumn: ColumnDef<BackOfficeClient> = {
       id: 'actions',
       header: 'Ações',
@@ -849,47 +861,36 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         const cli = row.original;
         return (
           <div className="flex items-center justify-center gap-1.5">
-            {/* Notas */}
+            {/* Deixar Comentário / Observação */}
             <button
               onClick={() => setActiveClientForNotes(cli)}
               className={`p-1.5 rounded-lg border transition-all cursor-pointer relative ${
                 cli.notes && cli.notes.length > 0 
-                  ? 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20' 
+                  ? 'bg-sky-500/10 border-sky-500/20 text-sky-400 hover:bg-sky-500/20' 
                   : 'bg-slate-900 border-white/[0.04] text-slate-400 hover:text-white'
               }`}
-              title={`${cli.notes?.length || 0} Notas`}
+              title={`${cli.notes?.length || 0} Comentário(s)`}
             >
               <ChatText size={14} />
               {cli.notes && cli.notes.length > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-orange-600 text-[8px] font-black text-white">
+                <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-sky-600 text-[8px] font-black text-white">
                   {cli.notes.length}
                 </span>
               )}
             </button>
 
-            {/* Registrar Acordo diretamente */}
-            {onAttend && cli.status !== 'treated' && (
+            {/* Marcar como Em Tratativa */}
+            {cli.status !== 'in_progress' && (
               <button
-                onClick={() => onAttend({
-                  id: '', 
-                  clientName: cli.clientName,
-                  clientCpf: cli.clientCpf,
-                  value: cli.value,
-                  status: 'aguardando',
-                  createdAt: new Date().toISOString(),
-                  createdBy: profile.uid,
-                  teamId: profile.teamId || '',
-                  organizationId: profile.organizationId || '',
-                  backOfficeClientIdRef: cli.id
-                })}
-                className="p-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/25 transition-all cursor-pointer"
-                title="Registrar Acordo Fechado"
+                onClick={() => handleUpdateStatus(cli.id, 'in_progress')}
+                className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/25 transition-all cursor-pointer"
+                title="Marcar como Em Tratativa"
               >
-                <Handshake size={14} />
+                <Spinner size={14} />
               </button>
             )}
 
-            {/* Ações de status */}
+            {/* Marcar como Tratado */}
             {cli.status !== 'treated' && (
               <button
                 onClick={() => handleUpdateStatus(cli.id, 'treated')}
@@ -900,7 +901,8 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               </button>
             )}
 
-            {cli.status !== 'ignored' && (
+            {/* Marcar/Desfazer Ignorado */}
+            {cli.status !== 'ignored' ? (
               <button
                 onClick={() => handleUpdateStatus(cli.id, 'ignored')}
                 className="p-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 hover:bg-slate-500/25 transition-all cursor-pointer"
@@ -908,15 +910,13 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               >
                 <XIcon size={14} />
               </button>
-            )}
-
-            {(cli.status === 'treated' || cli.status === 'ignored') && (
+            ) : (
               <button
                 onClick={() => handleUpdateStatus(cli.id, 'pending')}
-                className="px-1.5 py-1 rounded-lg border border-orange-500/20 text-orange-400 hover:bg-orange-500/10 text-[9px] font-bold uppercase transition-all cursor-pointer"
-                title="Voltar para Pendente"
+                className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/25 transition-all cursor-pointer"
+                title="Restaurar para Pendente"
               >
-                Reabrir
+                <PaperPlaneTilt size={14} />
               </button>
             )}
           </div>
@@ -1042,6 +1042,72 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         </div>
       ) : (
         <div className="space-y-4">
+          {/* CARDS DE MÉTRICAS E DESEMPENHO DA PLANILHA ATIVA */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {/* Total CPFs */}
+            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
+              theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-xs'
+            }`}>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total CPFs</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-white">{stats.total}</span>
+                <span className="text-[10px] font-bold text-slate-500">casos</span>
+              </div>
+            </div>
+
+            {/* Pendentes */}
+            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
+              theme === 'dark' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-200 shadow-xs'
+            }`}>
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">📌 Pendentes</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-amber-400">{stats.pending}</span>
+                <span className="text-[10px] font-bold text-amber-500/70">
+                  {stats.total > 0 ? `${((stats.pending / stats.total) * 100).toFixed(0)}%` : '0%'}
+                </span>
+              </div>
+            </div>
+
+            {/* Em Tratativa */}
+            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
+              theme === 'dark' ? 'bg-sky-500/5 border-sky-500/20' : 'bg-sky-50 border-sky-200 shadow-xs'
+            }`}>
+              <span className="text-[10px] font-black uppercase tracking-widest text-sky-400">⏳ Em Tratativa</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-sky-400">{stats.inProgress}</span>
+                <span className="text-[10px] font-bold text-sky-500/70">
+                  {stats.total > 0 ? `${((stats.inProgress / stats.total) * 100).toFixed(0)}%` : '0%'}
+                </span>
+              </div>
+            </div>
+
+            {/* Tratados */}
+            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
+              theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200 shadow-xs'
+            }`}>
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">✅ Tratados</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-emerald-400">{stats.treated}</span>
+                <span className="text-[10px] font-bold text-emerald-500/70">
+                  {stats.total > 0 ? `${((stats.treated / stats.total) * 100).toFixed(0)}%` : '0%'}
+                </span>
+              </div>
+            </div>
+
+            {/* Ignorados */}
+            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
+              theme === 'dark' ? 'bg-slate-500/5 border-slate-500/20' : 'bg-slate-100 border-slate-200 shadow-xs'
+            }`}>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">🚫 Ignorados</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-slate-400">{stats.ignored}</span>
+                <span className="text-[10px] font-bold text-slate-500/70">
+                  {stats.total > 0 ? `${((stats.ignored / stats.total) * 100).toFixed(0)}%` : '0%'}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Ações e Filtros de Clientes */}
           <div className={`flex flex-col md:flex-row justify-between items-stretch md:items-center p-4 rounded-2xl border gap-4 ${
             theme === 'dark' ? 'bg-slate-900/20 border-white/[0.04]' : 'bg-slate-50 border-slate-200'
@@ -1066,20 +1132,20 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               </div>
 
               {/* Filtro de Status */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 overflow-x-auto">
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Filtro:</span>
                 <div className="flex bg-slate-950/40 p-0.5 rounded-lg border border-white/[0.02]">
-                  {(['all', 'pending', 'treated', 'ignored'] as const).map(st => (
+                  {(['all', 'pending', 'in_progress', 'treated', 'ignored'] as const).map(st => (
                     <button
                       key={st}
                       onClick={() => setStatusFilter(st)}
-                      className={`px-3 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer whitespace-nowrap ${
                         statusFilter === st
                           ? (theme === 'dark' ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-sm' : 'bg-primary text-white shadow-sm')
                           : (theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-850')
                       }`}
                     >
-                      {st === 'all' ? 'Tudo' : (st === 'pending' ? 'Pendente' : (st === 'treated' ? 'Tratado' : 'Ignorado'))}
+                      {st === 'all' ? `Tudo (${stats.total})` : (st === 'pending' ? `Pendente (${stats.pending})` : (st === 'in_progress' ? `Em Tratativa (${stats.inProgress})` : (st === 'treated' ? `Tratado (${stats.treated})` : `Ignorado (${stats.ignored})`)))}
                     </button>
                   ))}
                 </div>

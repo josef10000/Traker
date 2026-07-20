@@ -280,7 +280,7 @@ export interface BackOfficeClient {
   dueDate: string;
   customFields: Record<string, string>;
   notes: BackOfficeNote[];
-  status: 'pending' | 'treated' | 'ignored';
+  status: 'pending' | 'in_progress' | 'treated' | 'ignored';
   createdAt: string;
   updatedAt: string;
 }
