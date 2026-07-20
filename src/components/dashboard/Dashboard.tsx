@@ -2886,13 +2886,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         
                         return (
                           <div className="space-y-6">
-                            <TeamAttendanceComparisonSection
-                              collaborators={filteredTeamMembers}
-                              teams={managedTeamsData}
-                              notes={allCollaborationNotes}
-                              theme={theme}
-                              selectedTeamId={team.id}
-                            />
                             <AttendanceCalendarSection
                               collaborators={teamOps}
                               notes={allCollaborationNotes}
@@ -2910,13 +2903,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       {/* SUB-ABA 1: PERFORMANCE */}
                       {coordinationSubTab === 'performance' && (
                         <div className="space-y-6 animate-fadeIn">
-                          <TeamAttendanceComparisonSection
-                            collaborators={filteredTeamMembers}
-                            teams={managedTeamsData}
-                            notes={allCollaborationNotes}
-                            theme={theme}
-                          />
-
                           <div>
                             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1 mb-4">Painel Comparativo de Metas & Faturamento</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2931,11 +2917,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               const goalPercent = goal > 0 ? Math.min((totalPaid / goal) * 100, 100) : 0;
                               const supervisor = supervisors.find(s => s.uid === team.supervisorId);
 
+                              // Cálculo de Assiduidade da Equipe
+                              const teamCollabs = filteredTeamMembers.filter(m => m.teamId === team.id);
+                              const teamCollabIds = new Set(teamCollabs.map(c => c.uid));
+                              const currentYear = new Date().getFullYear();
+                              const currentMonth = new Date().getMonth();
+
+                              const teamNotesInMonth = allCollaborationNotes.filter(n => {
+                                if (!teamCollabIds.has(n.collaboratorId) || n.type !== 'attendance') return false;
+                                const d = new Date(n.createdAt);
+                                return d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth;
+                              });
+
+                              let presentCount = 0;
+                              let totalRecorded = 0;
+                              teamNotesInMonth.forEach(n => {
+                                totalRecorded++;
+                                if (n.attendanceStatus === 'present' || n.attendanceStatus === 'late') presentCount++;
+                              });
+
+                              const teamAttendanceRate = totalRecorded > 0 ? ((presentCount / totalRecorded) * 100) : 100.0;
+
                               return (
                                 <div 
                                   key={team.id} 
                                   onClick={() => setActiveTeamDrillDown(team.id)}
-                                  className="glass-card p-6 border border-white/5 hover:border-sky-500/40 hover:bg-white/[0.02] transition-all group flex flex-col justify-between cursor-pointer"
+                                  className="glass-card p-6 border border-white/5 hover:border-sky-500/40 hover:bg-white/[0.02] transition-all group flex flex-col justify-between cursor-pointer rounded-2xl"
                                 >
                                   <div className="space-y-4">
                                     <div className="flex justify-between items-start">
@@ -2945,11 +2952,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                           Supervisor: <span className="text-slate-300 font-medium">{supervisor?.displayName || supervisor?.email.split('@')[0] || 'Não atribuído'}</span>
                                         </p>
                                       </div>
-                                      <span className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
-                                        effectiveness >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                      }`}>
-                                        {effectiveness.toFixed(0)}% Efet.
-                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                                          teamAttendanceRate >= 95 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                          teamAttendanceRate >= 90 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                          'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                        }`} title={`Taxa de Assiduidade: ${teamAttendanceRate.toFixed(1)}% (${presentCount}/${totalRecorded} registros)`}>
+                                          🟢 {teamAttendanceRate.toFixed(1)}% Assid.
+                                        </span>
+                                        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                                          effectiveness >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                        }`}>
+                                          {effectiveness.toFixed(0)}% Efet.
+                                        </span>
+                                      </div>
                                     </div>
 
                                     <div className="space-y-2">
@@ -2981,18 +2997,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             })}
                           </div>
                         </div>
-                      </div>
                       )}
 
                       {/* SUB-ABA 2: FREQUÊNCIA CONSOLIDADA */}
                       {coordinationSubTab === 'frequency' && (
                         <div className="space-y-6 animate-fadeIn">
-                          <TeamAttendanceComparisonSection
-                            collaborators={filteredTeamMembers}
-                            teams={managedTeamsData}
-                            notes={allCollaborationNotes}
-                            theme={theme}
-                          />
 
                           <div>
                             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1 mb-4">Escala de Frequência Consolidada</h3>
