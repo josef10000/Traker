@@ -207,6 +207,10 @@ class SandboxService {
     });
   }
 
+  public getAllAgreements(orgId: string): Agreement[] {
+    return Object.values(this.agreements).filter(a => a.organizationId === orgId);
+  }
+
   public getQaCompetences(orgId: string): QaCompetence[] {
     return Object.values(this.qaCompetences).filter(c => c.organizationId === orgId);
   }

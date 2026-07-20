@@ -51,7 +51,7 @@ export const RecoveryPoolTab = ({
 
     if (profile.organizationId === 'sandbox-test') {
       const syncSandbox = () => {
-        const list = sandboxService.getAgreements(profile.organizationId);
+        const list = sandboxService.getAllAgreements(profile.organizationId);
         setAllOrgAgreements(list);
         const broken = list.filter(a => a.status === AgreementStatus.BROKEN);
         broken.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
