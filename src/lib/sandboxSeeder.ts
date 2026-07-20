@@ -239,7 +239,84 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
       };
     }
 
-    const baseScores = [
+  // Acordos de teste para a Aba de Recuperação (Acordos Quebrados & Resgatados por CPF)
+  const recoverySeeds: Agreement[] = [
+    {
+      id: 'sandbox-rec-broken-1',
+      clientName: 'Carlos Eduardo Silva',
+      clientCpf: '111.222.333-44',
+      value: 2450.00,
+      dueDate: new Date(currentYear, currentMonth, new Date().getDate() - 4).toISOString().split('T')[0],
+      status: AgreementStatus.BROKEN,
+      origin: AgreementOrigin.DISCADOR,
+      type: AgreementType.PARCELAMENTO,
+      category: AgreementCategory.BOLETO,
+      operatorId: 'sandbox-op-1',
+      teamId: 'team-fenix',
+      organizationId: orgId,
+      createdAt: new Date(currentYear, currentMonth, new Date().getDate() - 10).toISOString(),
+      phone: '(11) 97777-1111',
+      notes: 'Acordo anterior quebrado no vencimento.'
+    },
+    {
+      id: 'sandbox-rec-broken-2',
+      clientName: 'Fernanda Lima Rocha',
+      clientCpf: '555.666.777-88',
+      value: 3800.00,
+      dueDate: new Date(currentYear, currentMonth, new Date().getDate() - 2).toISOString().split('T')[0],
+      status: AgreementStatus.BROKEN,
+      origin: AgreementOrigin.REATIVACAO,
+      type: AgreementType.QUITACAO,
+      category: AgreementCategory.PIX,
+      operatorId: 'sandbox-op-2',
+      teamId: 'team-fenix',
+      organizationId: orgId,
+      createdAt: new Date(currentYear, currentMonth, new Date().getDate() - 8).toISOString(),
+      phone: '(11) 98888-2222',
+      notes: 'Cliente não efetuou o pagamento do Pix.'
+    },
+    {
+      id: 'sandbox-rec-recovered-1',
+      clientName: 'Mariana Souza Santos',
+      clientCpf: '444.333.222-11',
+      value: 3200.00,
+      dueDate: new Date(currentYear, currentMonth, new Date().getDate() - 1).toISOString().split('T')[0],
+      status: AgreementStatus.PAID,
+      paidAt: new Date(currentYear, currentMonth, new Date().getDate() - 1, 14, 0, 0).toISOString(),
+      origin: AgreementOrigin.REATIVACAO,
+      type: AgreementType.QUITACAO,
+      category: AgreementCategory.PIX,
+      operatorId: 'sandbox-op-1',
+      teamId: 'team-fenix',
+      organizationId: orgId,
+      createdAt: new Date(currentYear, currentMonth, new Date().getDate() - 5).toISOString(),
+      phone: '(11) 99999-3333',
+      notes: 'Acordo resgatado por CPF e pago via Pix com desconto.'
+    },
+    {
+      id: 'sandbox-rec-broken-old-1',
+      clientName: 'Mariana Souza Santos',
+      clientCpf: '444.333.222-11',
+      value: 3200.00,
+      dueDate: new Date(currentYear, currentMonth, new Date().getDate() - 15).toISOString().split('T')[0],
+      status: AgreementStatus.RECOVERED,
+      origin: AgreementOrigin.DISCADOR,
+      type: AgreementType.PARCELAMENTO,
+      category: AgreementCategory.BOLETO,
+      operatorId: 'sandbox-op-1',
+      teamId: 'team-fenix',
+      organizationId: orgId,
+      createdAt: new Date(currentYear, currentMonth, new Date().getDate() - 20).toISOString(),
+      phone: '(11) 99999-3333',
+      notes: 'Acordo anterior quebrado que foi resgatado com sucesso.'
+    }
+  ];
+
+  recoverySeeds.forEach(ag => {
+    agreements[ag.id] = ag;
+  });
+
+  const baseScores = [
       Math.round(65 + (opIdx * 1.5) % 15),
       Math.round(72 + (opIdx * 1.5) % 15),
       Math.round(79 + (opIdx * 1.5) % 15)
