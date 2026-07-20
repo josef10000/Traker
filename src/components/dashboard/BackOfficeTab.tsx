@@ -1344,10 +1344,16 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
 
       {/* Modal de Mapeamento de Colunas */}
       {isMappingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in no-print">
-          <div className={`w-full max-w-md rounded-3xl border p-6 space-y-6 ${
-            theme === 'dark' ? 'bg-slate-950 border-purple-500/20 text-white' : 'bg-white border-slate-200 text-slate-900 shadow-2xl'
-          }`}>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in no-print cursor-pointer"
+          onClick={() => setIsMappingModalOpen(false)}
+        >
+          <div 
+            className={`w-full max-w-md rounded-3xl border p-6 space-y-6 cursor-default ${
+              theme === 'dark' ? 'bg-slate-950 border-purple-500/20 text-white' : 'bg-white border-slate-200 text-slate-900 shadow-2xl'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="space-y-1">
               <h4 className="font-black text-lg">Mapeamento de Colunas</h4>
               <p className="text-xs text-slate-500 font-medium">
@@ -1452,7 +1458,14 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
 
       {/* Gaveta Lateral (Drawer) de Anotações do Cliente */}
       {activeClientForNotes && (
-        <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-slate-950 border-l border-white/[0.05] p-6 shadow-2xl flex flex-col justify-between animate-slide-in no-print">
+        <div 
+          className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-fade-in no-print cursor-pointer"
+          onClick={() => setActiveClientForNotes(null)}
+        >
+          <div 
+            className="w-full max-w-md bg-slate-950 border-l border-white/[0.05] p-6 shadow-2xl flex flex-col justify-between animate-slide-in h-full cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
           <div className="flex flex-col flex-1 min-h-0">
             {/* Header */}
             <div className="flex justify-between items-start pb-4 border-b border-white/[0.05]">

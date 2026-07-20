@@ -273,8 +273,8 @@ export const OrgTreeSection: React.FC<OrgTreeSectionProps> = ({
 
       {/* MODAL DE TRANSFERÊNCIA DE SUPERVISOR */}
       {showTransferModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-slate-950 border border-white/5 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn cursor-pointer" onClick={() => setShowTransferModal(null)}>
+          <div className="bg-slate-950 border border-white/5 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 text-sky-400 pb-2 border-b border-white/5">
               <UserSwitch size={20} />
               <h4 className="font-bold text-white">Transferir Supervisor</h4>

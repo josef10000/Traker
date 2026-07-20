@@ -343,6 +343,7 @@ export const HelpDrawer = ({ isOpen, onClose, theme, userRole = 'member' }: Help
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            onClick={(e) => e.stopPropagation()}
             className={`fixed right-0 top-0 bottom-0 w-full max-w-md border-l z-[95] flex flex-col shadow-2xl ${
               theme === 'dark'
                 ? 'bg-slate-950 border-white/10 text-slate-100'

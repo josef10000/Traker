@@ -108,12 +108,15 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className={`w-full max-w-md rounded-3xl border p-6 shadow-2xl transition-all ${
-        theme === 'dark'
-          ? 'bg-slate-900 border-white/10 text-white'
-          : 'bg-white border-slate-200 text-slate-900'
-      }`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer" onClick={onClose}>
+      <div 
+        className={`w-full max-w-md rounded-3xl border p-6 shadow-2xl transition-all cursor-default ${
+          theme === 'dark'
+            ? 'bg-slate-900 border-white/10 text-white'
+            : 'bg-white border-slate-200 text-slate-900'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>

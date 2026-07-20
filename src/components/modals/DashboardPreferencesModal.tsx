@@ -158,6 +158,7 @@ export const DashboardPreferencesModal = ({
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
             className={`relative w-full max-w-[580px] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border ${
               theme === 'dark' 
                 ? 'glass-card border-white/5 text-white' 

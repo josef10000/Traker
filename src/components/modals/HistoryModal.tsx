@@ -71,6 +71,7 @@ export const HistoryModal = ({
         initial={{ scale: 0.95, opacity: 0, x: 20 }}
         animate={{ scale: 1, opacity: 1, x: 0 }}
         exit={{ scale: 0.95, opacity: 0, x: 20 }}
+        onClick={(e) => e.stopPropagation()}
         className={`relative w-full max-w-2xl max-h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border ${
           theme === 'dark' 
             ? 'glass-card border-white/5' 
