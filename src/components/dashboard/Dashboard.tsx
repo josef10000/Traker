@@ -2816,8 +2816,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               const goalPercent = goal > 0 ? Math.min((totalPaid / goal) * 100, 100) : 0;
                               const roleLabel = op.role === 'supervisor' ? 'Supervisor' : op.role === 'backoffice' ? 'Back Office' : 'Operador';
 
+                              // Assiduidade Individual do Colaborador no Mês
+                              const currentYear = new Date().getFullYear();
+                              const currentMonth = new Date().getMonth();
+
+                              const opAttendanceNotes = allCollaborationNotes.filter(n => {
+                                if (n.collaboratorId !== op.uid || n.type !== 'attendance') return false;
+                                const d = new Date(n.createdAt);
+                                return d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth;
+                              });
+
+                              let opPresentCount = 0;
+                              let opTotalRecorded = 0;
+                              opAttendanceNotes.forEach(n => {
+                                opTotalRecorded++;
+                                if (n.attendanceStatus === 'present' || n.attendanceStatus === 'late') opPresentCount++;
+                              });
+
+                              const opAttendanceRate = opTotalRecorded > 0 ? ((opPresentCount / opTotalRecorded) * 100) : 100.0;
+
                               return (
-                                <div key={op.uid} className="glass-card p-6 border border-white/5 hover:border-sky-500/30 transition-all group flex flex-col justify-between">
+                                <div key={op.uid} className="glass-card p-6 border border-white/5 hover:border-sky-500/30 transition-all group flex flex-col justify-between rounded-2xl">
                                   <div className="space-y-4">
                                     <div className="flex justify-between items-start">
                                       <div className="flex items-center gap-3">
@@ -2834,11 +2853,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                           <p className="text-[10px] text-slate-500 mt-0.5">{roleLabel}</p>
                                         </div>
                                       </div>
-                                      <span className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
-                                        effectiveness >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                      }`}>
-                                        {effectiveness.toFixed(0)}% Efet.
-                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                                          opAttendanceRate >= 95 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                          opAttendanceRate >= 90 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                          'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                        }`} title={`Assiduidade individual: ${opAttendanceRate.toFixed(1)}% (${opPresentCount}/${opTotalRecorded} presenças)`}>
+                                          🟢 {opAttendanceRate.toFixed(1)}% Assid.
+                                        </span>
+                                        <span className={`text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
+                                          effectiveness >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                        }`}>
+                                          {effectiveness.toFixed(0)}% Efet.
+                                        </span>
+                                      </div>
                                     </div>
 
                                     {op.role === 'member' && (
