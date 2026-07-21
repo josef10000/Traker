@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Sidebar } from './Sidebar';
 import { AuditTab } from './AuditTab';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
@@ -36,7 +37,6 @@ import {
 } from '../../types';
 import { removeTeamMember, getTeamMembers } from '../../lib/teams';
 import { formatCurrency, maskCPF } from '../../utils/masks';
-import { logAudit } from '../../lib/audit';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';

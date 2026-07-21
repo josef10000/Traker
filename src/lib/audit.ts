@@ -66,7 +66,6 @@ export const logAudit = async (
       return;
     }
 
-    const user = auth.currentUser;
     if (!user) return;
     // organizationId é obrigatório para satisfazer a Firestore Rule de audit_logs
     if (!organizationId) {
@@ -86,8 +85,6 @@ export const logAudit = async (
         previousHash = lastLog.hash;
       }
     }
-
-    const timestamp = new Date().toISOString();
     
     // Monta o payload de dados do bloco para assinar com o hash
     const payload = `${user.uid}|${action}|${timestamp}|${JSON.stringify(details)}|${previousHash}`;

@@ -239,7 +239,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 cpf: cleanCpf,
                                 clientName: agreement.clientName,
                                 agreementId: agreement.id
-                              }, userProfile?.name || 'Operador', userProfile?.organizationId);
+                              }, profile?.name || 'Operador', profile?.organizationId);
                               if (onCopyCpf) onCopyCpf(agreement.id, agreement.clientCpf);
                             }}
                             className={`text-xs font-mono font-bold tracking-wider px-1.5 py-0.5 rounded-md transition-all cursor-pointer border border-transparent active:scale-95 ${
