@@ -445,7 +445,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
           <span className={`text-[10px] font-bold uppercase tracking-widest ${
             theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
           }`}>
-            Página {currentPage} de {totalPages || 1} — Total de {displayedAgreements.length} registro(s)
+            Página {currentPage} de {totalPages || 1} — Exibindo {paginatedAgreements.length} registro(s) nesta página
           </span>
           <div className="flex gap-2">
             <button
