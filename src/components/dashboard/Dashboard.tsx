@@ -1534,6 +1534,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         setIsModalOpen(false);
         setEditingAgreement(null);
+        refreshAgreements();
         doMarkStale();
       } catch (error) {
         showToast('Erro ao salvar no Sandbox.', 'error');
@@ -1615,7 +1616,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleAddOrEditAgreement = async (data: any) => {
-    const targetTeamId = profile.teamId || (selectedTeamId !== 'all' ? selectedTeamId : null);
+    let targetTeamId = profile.teamId || (selectedTeamId !== 'all' ? selectedTeamId : null);
+    if (!targetTeamId && profile.organizationId === 'sandbox-test') {
+      targetTeamId = profile.teamId || 'team-1';
+    }
     if (!targetTeamId) {
       showToast('Nenhuma equipe selecionada para registrar o acordo.', 'error');
       return;
@@ -1627,6 +1631,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // Novos agendamentos e edições sem alteração de CPF passam direto
     if (data.status === AgreementStatus.SCHEDULED || (editingAgreement && editingAgreement.clientCpf === data.clientCpf)) {
+      await saveAgreement(data, targetTeamId);
+      return;
+    }
+
+    if (profile.organizationId === 'sandbox-test') {
+      const existing = sandboxService.getAllAgreements('sandbox-test').filter(a => a.clientCpf === data.clientCpf);
+      const activeCollision = existing.find(a => a.status === AgreementStatus.WAITING || a.status === AgreementStatus.PAID);
+      if (activeCollision) {
+        setCollisionData({
+          agreement: activeCollision,
+          newAgreementData: data
+        });
+        setIsCollisionModalOpen(true);
+        return;
+      }
       await saveAgreement(data, targetTeamId);
       return;
     }

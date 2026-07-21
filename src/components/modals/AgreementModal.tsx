@@ -250,10 +250,12 @@ export const AgreementModal = ({
                     />
                   </div>
 
-                  {/* Valor — label muda se for parcelamento com entrada */}
+                  {/* Valor — Rótulo e comportamento dinâmico por tipo */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">
-                      {isParcelamento && hasEntry ? 'Valor da Entrada *' : 'Valor do Acordo *'}
+                      {isParcelamento 
+                        ? (hasEntry ? 'Valor da Entrada *' : 'Valor da Parcela *') 
+                        : 'Valor do Acordo *'}
                     </label>
                     <div className="relative">
                       <span className="absolute left-4 inset-y-0 flex items-center text-slate-500 font-bold">R$</span>
@@ -266,9 +268,11 @@ export const AgreementModal = ({
                         className="w-full bg-white/5 border border-white/10 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white backdrop-blur-sm"
                       />
                     </div>
-                    {isParcelamento && hasEntry && (
+                    {isParcelamento && (
                       <p className="text-[9px] text-amber-400 font-semibold ml-1">
-                        ⚡ Este é o valor que entrará nas métricas de pagamento
+                        {hasEntry 
+                          ? '⚡ Informe o valor pago na entrada' 
+                          : '⚡ Informe o valor da parcela a ser paga'}
                       </p>
                     )}
                   </div>
@@ -323,7 +327,7 @@ export const AgreementModal = ({
                               </div>
                               <div>
                                 <span className={`text-xs font-bold uppercase tracking-wider ${!hasEntry ? 'text-white' : 'text-slate-400'}`}>Sem Entrada</span>
-                                <p className="text-[9px] text-slate-500 mt-0.5">Valor do campo acima = 1ª parcela</p>
+                                <p className="text-[9px] text-slate-500 mt-0.5">Informe o valor da parcela no campo acima</p>
                               </div>
                             </div>
                           </label>
@@ -342,18 +346,18 @@ export const AgreementModal = ({
                               </div>
                               <div>
                                 <span className={`text-xs font-bold uppercase tracking-wider ${hasEntry ? 'text-white' : 'text-slate-400'}`}>Com Entrada</span>
-                                <p className="text-[9px] text-slate-500 mt-0.5">Define valor da entrada acima</p>
+                                <p className="text-[9px] text-slate-500 mt-0.5">Informe valor da entrada + valor de cada parcela</p>
                               </div>
                             </div>
                           </label>
                         </div>
                       </div>
 
-                      {/* Valor de cada Parcela (só aparece se hasEntry) */}
+                      {/* Valor de cada Parcela (se for com entrada) */}
                       {hasEntry && (
                         <div className="space-y-1.5 md:col-span-2">
                           <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">
-                            Valor de Cada Parcela <span className="text-slate-600 normal-case font-normal">(informativo — não entra nas métricas)</span>
+                            Valor de Cada Parcela (Demais Parcelas) *
                           </label>
                           <div className="relative">
                             <span className="absolute left-4 inset-y-0 flex items-center text-slate-500 font-bold">R$</span>
@@ -365,7 +369,7 @@ export const AgreementModal = ({
                               className="w-full bg-slate-900/50 border border-slate-700/60 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-600 transition-all text-slate-300 backdrop-blur-sm"
                             />
                           </div>
-                          <p className="text-[9px] text-slate-500 ml-1">Aparecerá no histórico do cliente: Ex: "Entrada R$ 100 + 12x R$ 300"</p>
+                          <p className="text-[9px] text-slate-500 ml-1">Valor referente às parcelas seguintes à entrada.</p>
                         </div>
                       )}
                     </>
