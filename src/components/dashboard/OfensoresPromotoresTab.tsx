@@ -800,89 +800,101 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
           </div>
         </div>
 
-        {/* 3. Controles de Ajuste Fino (+ / -) com botões e números em alto contraste no Modo Claro */}
+        {/* 3. Controles de Ajuste Fino (+ / -) com botões e números de visibilidade máxima no Modo Claro */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {/* Conversão Meta % */}
           <div className={`p-3.5 rounded-2xl border space-y-2 ${
-            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-300 shadow-2xs'
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-2 border-slate-300 shadow-xs'
           }`}>
             <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-950'}`}>🎯 Meta Acordos</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightConversion, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
-                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-300 hover:bg-slate-400 text-slate-950 border border-slate-400/50'
+              <button onClick={() => adjustWeight(setWeightConversion, -5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-700'
               }`}>-5</button>
               <span className={`font-mono text-base font-black ${isDark ? 'text-purple-400' : 'text-purple-950'}`}>{weightConversion}%</span>
-              <button onClick={() => adjustWeight(setWeightConversion, +5)} className="w-7 h-7 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-xs cursor-pointer">+5</button>
+              <button onClick={() => adjustWeight(setWeightConversion, +5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-purple-600 hover:bg-purple-500 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700'
+              }`}>+5</button>
             </div>
           </div>
 
           {/* Faturamento R$ */}
           <div className={`p-3.5 rounded-2xl border space-y-2 ${
-            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-300 shadow-2xs'
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-2 border-slate-300 shadow-xs'
           }`}>
             <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-950'}`}>💸 Faturamento R$</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightRevenue, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
-                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-300 hover:bg-slate-400 text-slate-950 border border-slate-400/50'
+              <button onClick={() => adjustWeight(setWeightRevenue, -5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-700'
               }`}>-5</button>
               <span className={`font-mono text-base font-black ${isDark ? 'text-emerald-400' : 'text-emerald-950'}`}>{weightRevenue}%</span>
-              <button onClick={() => adjustWeight(setWeightRevenue, +5)} className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs cursor-pointer">+5</button>
+              <button onClick={() => adjustWeight(setWeightRevenue, +5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700'
+              }`}>+5</button>
             </div>
           </div>
 
           {/* Representatividade % Share */}
           <div className={`p-3.5 rounded-2xl border space-y-2 ${
-            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-300 shadow-2xs'
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-2 border-slate-300 shadow-xs'
           }`}>
             <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-950'}`}>📊 Share %</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightShare, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
-                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-300 hover:bg-slate-400 text-slate-950 border border-slate-400/50'
+              <button onClick={() => adjustWeight(setWeightShare, -5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-700'
               }`}>-5</button>
               <span className={`font-mono text-base font-black ${isDark ? 'text-sky-400' : 'text-sky-950'}`}>{weightShare}%</span>
-              <button onClick={() => adjustWeight(setWeightShare, +5)} className="w-7 h-7 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black text-xs cursor-pointer">+5</button>
+              <button onClick={() => adjustWeight(setWeightShare, +5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-sky-600 hover:bg-sky-500 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700'
+              }`}>+5</button>
             </div>
           </div>
 
           {/* Nota QA % */}
           <div className={`p-3.5 rounded-2xl border space-y-2 ${
-            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-300 shadow-2xs'
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-2 border-slate-300 shadow-xs'
           }`}>
             <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-950'}`}>🛡️ Qualidade QA</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightQa, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
-                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-300 hover:bg-slate-400 text-slate-950 border border-slate-400/50'
+              <button onClick={() => adjustWeight(setWeightQa, -5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-700'
               }`}>-5</button>
               <span className={`font-mono text-base font-black ${isDark ? 'text-cyan-400' : 'text-cyan-950'}`}>{weightQa}%</span>
-              <button onClick={() => adjustWeight(setWeightQa, +5)} className="w-7 h-7 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs cursor-pointer">+5</button>
+              <button onClick={() => adjustWeight(setWeightQa, +5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-cyan-600 hover:bg-cyan-500 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700'
+              }`}>+5</button>
             </div>
           </div>
 
           {/* Assiduidade % */}
           <div className={`p-3.5 rounded-2xl border space-y-2 ${
-            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-300 shadow-2xs'
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-2 border-slate-300 shadow-xs'
           }`}>
             <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-950'}`}>⏰ Assiduidade</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightAttendance, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
-                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-300 hover:bg-slate-400 text-slate-950 border border-slate-400/50'
+              <button onClick={() => adjustWeight(setWeightAttendance, -5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-700'
               }`}>-5</button>
               <span className={`font-mono text-base font-black ${isDark ? 'text-blue-400' : 'text-blue-950'}`}>{weightAttendance}%</span>
-              <button onClick={() => adjustWeight(setWeightAttendance, +5)} className="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-black text-xs cursor-pointer">+5</button>
+              <button onClick={() => adjustWeight(setWeightAttendance, +5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700'
+              }`}>+5</button>
             </div>
           </div>
 
           {/* Absenteísmo % */}
           <div className={`p-3.5 rounded-2xl border space-y-2 ${
-            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-300 shadow-2xs'
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-2 border-slate-300 shadow-xs'
           }`}>
             <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-950'}`}>🚫 Absenteísmo</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightAbsenteeism, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
-                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-300 hover:bg-slate-400 text-slate-950 border border-slate-400/50'
+              <button onClick={() => adjustWeight(setWeightAbsenteeism, -5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-700'
               }`}>-5</button>
               <span className={`font-mono text-base font-black ${isDark ? 'text-rose-400' : 'text-rose-950'}`}>{weightAbsenteeism}%</span>
-              <button onClick={() => adjustWeight(setWeightAbsenteeism, +5)} className="w-7 h-7 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-xs cursor-pointer">+5</button>
+              <button onClick={() => adjustWeight(setWeightAbsenteeism, +5)} className={`w-8 h-8 rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 flex items-center justify-center ${
+                isDark ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700'
+              }`}>+5</button>
             </div>
           </div>
         </div>
