@@ -568,20 +568,20 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
         <div className="space-y-6">
           <div className={`p-5 rounded-3xl border-2 flex items-start gap-4 transition-all ${
             isDark 
-              ? 'bg-slate-900 border-sky-500/50 text-white shadow-lg' 
+              ? 'bg-slate-900 border-sky-500/50 text-sky-400 shadow-lg' 
               : 'bg-sky-50 border-slate-900 text-slate-950 font-extrabold shadow-sm'
           }`}>
             <div className={`p-2.5 rounded-2xl border ${
-              isDark ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-sky-200 text-sky-950 border-sky-900'
+              isDark ? 'bg-sky-500/20 text-sky-400 border-sky-500/40' : 'bg-sky-200 text-sky-950 border-sky-900'
             }`}>
               <Info size={24} weight="bold" />
             </div>
-            <div className="space-y-1 text-xs leading-relaxed">
-              <h4 className={`font-black text-sm flex items-center gap-2 ${isDark ? 'text-sky-300' : 'text-sky-950'}`}>
+            <div className="space-y-1.5 text-xs leading-relaxed">
+              <h4 className={`font-black text-sm flex items-center gap-2 ${isDark ? 'text-sky-400' : 'text-sky-950'}`}>
                 <span>💡 Como Funciona o Forecast de Demanda:</span>
               </h4>
-              <p className={isDark ? 'text-slate-200 font-medium' : 'text-slate-900 font-extrabold'}>
-                O Produto pode solicitar uma quantidade inicial de PAs (ex: <strong className={isDark ? 'text-purple-300 font-black' : 'text-purple-950 font-black'}>10 PAs</strong>). A Diretoria/Empresa aprova uma capacidade limite por decisão estratégica de orçamento (ex: <strong className={isDark ? 'text-sky-300 font-black' : 'text-sky-950 font-black'}>8 PAs</strong>). Mesmo quando 100% dos 8 PAs aprovados estiverem contratados (<strong className={isDark ? 'text-emerald-300 font-black' : 'text-emerald-950 font-black'}>0 Vagas Abertas</strong>), a diferença de -2 PAs reflete a <em className={isDark ? 'text-amber-300 font-bold not-italic' : 'text-amber-950 font-black not-italic'}>Repressão Estratégica de Demanda</em>.
+              <p className={isDark ? 'text-sky-400 font-bold' : 'text-slate-900 font-extrabold'}>
+                O Produto pode solicitar uma quantidade inicial de PAs (ex: <strong className={isDark ? 'text-white font-black underline' : 'text-purple-950 font-black'}>10 PAs</strong>). A Diretoria/Empresa aprova uma capacidade limite por decisão estratégica de orçamento (ex: <strong className={isDark ? 'text-white font-black underline' : 'text-sky-950 font-black'}>8 PAs</strong>). Mesmo quando 100% dos 8 PAs aprovados estiverem contratados (<strong className={isDark ? 'text-emerald-300 font-black' : 'text-emerald-950 font-black'}>0 Vagas Abertas</strong>), a diferença de -2 PAs reflete a <strong className={isDark ? 'text-amber-300 font-black' : 'text-amber-950 font-black'}>Repressão Estratégica de Demanda</strong>.
               </p>
             </div>
           </div>
