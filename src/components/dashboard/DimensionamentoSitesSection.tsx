@@ -11,14 +11,16 @@ import {
   Clock, 
   Sparkle,
   Pencil,
-  Trash
+  Trash,
+  Headset,
+  Check
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 
 interface DimensionamentoSitesSectionProps {
   profile: UserProfile;
-  teamsData: Team[];
-  teamMembers: UserProfile[];
+  teamsData?: Team[];
+  teamMembers?: UserProfile[];
   theme?: 'light' | 'dark';
   showToast: (message: string, type: 'success' | 'error') => void;
 }
@@ -43,11 +45,15 @@ interface OperationalSite {
 
 export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionProps> = ({
   profile,
-  teamsData,
-  teamMembers,
+  teamsData = [],
+  teamMembers = [],
   theme = 'dark',
   showToast
 }) => {
+  // Arrays com fallback seguro defensivo absoluto
+  const safeTeamMembers = useMemo(() => Array.isArray(teamMembers) ? teamMembers : [], [teamMembers]);
+  const safeTeamsData = useMemo(() => Array.isArray(teamsData) ? teamsData : [], [teamsData]);
+
   // Lista de Sites Operacionais Gerenciável
   const [sites, setSites] = useState<OperationalSite[]>([
     { id: 'site-1', name: 'Site SP Paulista - 4º Andar', city: 'São Paulo - SP', type: 'Presencial' },
@@ -55,13 +61,24 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
     { id: 'site-3', name: 'Home Office / Remoto BR', city: 'Nacional (Brasil)', type: 'Remoto' },
   ]);
 
+  // Configuração das PAs (Posições de Atendimento) Alvo por Equipe
+  const [teamPaTargets, setTeamPaTargets] = useState<Record<string, number>>({
+    'default-alfa': 15,
+    'default-beta': 12,
+    'default-gamma': 10
+  });
+
+  // Estado de Edição Inline de PA por Equipe
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [tempPaTarget, setTempPaTarget] = useState<number>(10);
+
   // Lista de Vagas / Dimensionamento por Produto
   const [vacancies, setVacancies] = useState<ProductVacancy[]>([
     {
       id: 'vac-1',
       productName: 'Noverde Quitação (Ticket Alto)',
       targetHeadcount: 15,
-      activeHeadcount: teamMembers.length > 0 ? Math.min(12, teamMembers.length) : 12,
+      activeHeadcount: safeTeamMembers.length > 0 ? Math.min(12, safeTeamMembers.length) : 12,
       openVacancies: 3,
       status: 'selecao',
       siteLocation: 'Site SP Paulista - 4º Andar',
@@ -102,7 +119,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
   const [siteCity, setSiteCity] = useState('');
   const [siteType, setSiteType] = useState<'Presencial' | 'Remoto'>('Presencial');
 
-  // Adicionar ou Editar Vaga
+  // Adicionar Nova Vaga
   const handleAddVacancy = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProductName.trim()) return;
@@ -118,10 +135,20 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
       forecastProductivity: `R$ ${Number(newTargetHeadcount) * 10000} / mês`
     };
 
-    setVacancies(prev => [...prev, newVac]);
+    setVacancies(prev => [...(prev || []), newVac]);
     setIsVacModalOpen(false);
     setNewProductName('');
     showToast('Nova vaga por produto adicionada com sucesso!', 'success');
+  };
+
+  // Salvar Meta de PAs de uma Equipe
+  const handleSaveTeamPa = (teamId: string) => {
+    setTeamPaTargets(prev => ({
+      ...prev,
+      [teamId]: Math.max(1, Number(tempPaTarget))
+    }));
+    setEditingTeamId(null);
+    showToast('Dimensionamento de PAs da equipe atualizado com sucesso!', 'success');
   };
 
   // Abrir Modal para Editar Site
@@ -146,7 +173,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
     if (!siteName.trim()) return;
 
     if (editingSiteId) {
-      setSites(prev => prev.map(s => s.id === editingSiteId ? { ...s, name: siteName, city: siteCity, type: siteType } : s));
+      setSites(prev => (prev || []).map(s => s.id === editingSiteId ? { ...s, name: siteName, city: siteCity, type: siteType } : s));
       showToast('Site operacional atualizado com sucesso!', 'success');
     } else {
       const newSite: OperationalSite = {
@@ -155,7 +182,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
         city: siteCity || 'São Paulo - SP',
         type: siteType
       };
-      setSites(prev => [...prev, newSite]);
+      setSites(prev => [...(prev || []), newSite]);
       showToast('Novo site operacional cadastrado!', 'success');
     }
     setIsSiteModalOpen(false);
@@ -163,25 +190,50 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
 
   // Excluir Site Operacional
   const handleDeleteSite = (id: string) => {
-    setSites(prev => prev.filter(s => s.id !== id));
+    setSites(prev => (prev || []).filter(s => s.id !== id));
     showToast('Site operacional removido.', 'info');
   };
 
-  // Totais de Headcount
-  const totalTarget = useMemo(() => vacancies.reduce((a, v) => a + v.targetHeadcount, 0), [vacancies]);
-  const totalActive = useMemo(() => vacancies.reduce((a, v) => a + v.activeHeadcount, 0), [vacancies]);
-  const totalOpen = useMemo(() => vacancies.reduce((a, v) => a + v.openVacancies, 0), [vacancies]);
+  // Safe Sites array
+  const safeSites = useMemo(() => Array.isArray(sites) ? sites : [], [sites]);
+  const safeVacancies = useMemo(() => Array.isArray(vacancies) ? vacancies : [], [vacancies]);
 
-  // Arrays com fallback seguro contra undefined
-  const safeTeamMembers = useMemo(() => teamMembers || [], [teamMembers]);
-  const safeTeamsData = useMemo(() => teamsData || [], [teamsData]);
-  const safeSites = useMemo(() => sites || [], [sites]);
+  // Totais de Headcount e PAs
+  const totalTargetHeadcount = useMemo(() => safeVacancies.reduce((a, v) => a + (v?.targetHeadcount || 0), 0), [safeVacancies]);
+  const totalActiveHeadcount = useMemo(() => safeVacancies.reduce((a, v) => a + (v?.activeHeadcount || 0), 0), [safeVacancies]);
+  const totalOpenVacancies = useMemo(() => safeVacancies.reduce((a, v) => a + (v?.openVacancies || 0), 0), [safeVacancies]);
+
+  // Cálculo das PAs por Equipe
+  const teamMetricsList = useMemo(() => {
+    if (safeTeamsData.length === 0) {
+      // Caso não existam equipes criadas no banco, criar 2 equipes ilustrativas
+      return [
+        { id: 'default-alfa', name: 'Equipe Alfa (Quitação)', paTarget: teamPaTargets['default-alfa'] || 15, activeOperators: Math.min(12, safeTeamMembers.length || 12) },
+        { id: 'default-beta', name: 'Equipe Beta (Consignado)', paTarget: teamPaTargets['default-beta'] || 12, activeOperators: 10 }
+      ];
+    }
+
+    return safeTeamsData.map(team => {
+      const teamOpsCount = safeTeamMembers.filter(m => m?.teamId === team.id).length;
+      const targetPa = teamPaTargets[team.id] || 10;
+      return {
+        id: team.id,
+        name: team.name,
+        paTarget: targetPa,
+        activeOperators: teamOpsCount > 0 ? teamOpsCount : Math.floor(safeTeamMembers.length / safeTeamsData.length) || 5
+      };
+    });
+  }, [safeTeamsData, safeTeamMembers, teamPaTargets]);
+
+  const totalPaTargetSum = useMemo(() => teamMetricsList.reduce((a, t) => a + t.paTarget, 0), [teamMetricsList]);
+  const totalActiveOpsSum = useMemo(() => teamMetricsList.reduce((a, t) => a + t.activeOperators, 0), [teamMetricsList]);
+  const totalPaVacancies = Math.max(0, totalPaTargetSum - totalActiveOpsSum);
+  const occupancyRate = totalPaTargetSum > 0 ? Math.min(100, Math.round((totalActiveOpsSum / totalPaTargetSum) * 100)) : 100;
 
   // Contagem dinâmica de operadores já cadastrados por site
   const sitesWithMetrics = useMemo(() => {
     return safeSites.map(site => {
-      // Contagem proporcional de membros já cadastrados
-      const count = Math.max(1, Math.floor(safeTeamMembers.length / (safeSites.length || 1)));
+      const count = Math.max(1, Math.floor((safeTeamMembers.length || 10) / (safeSites.length || 1)));
       return {
         ...site,
         operatorsCount: count,
@@ -203,13 +255,13 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black tracking-tight">Dimensionamento, Vagas por Produto & Sites</h3>
+                <h3 className="text-xl font-black tracking-tight">Dimensionamento de PAs, Produtos & Sites</h3>
                 <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  Gestão de Coordenação
+                  Gestão Operacional
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Controle de headcount planejado vs. ativo, vagas em aberto por carteira e alocação em unidades físicas/remotas.
+                Configuração da capacidade de PAs (Posições de Atendimento) por equipe, vagas por carteira e alocação física/remota.
               </p>
             </div>
           </div>
@@ -233,17 +285,17 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
         </div>
       </div>
 
-      {/* Cards de Métricas Principais de Dimensionamento */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Cards de Métricas Principais de Dimensionamento & PAs */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className={`p-5 rounded-2xl border flex items-center justify-between ${
           theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
         }`}>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Headcount Planejado</span>
-            <span className="text-2xl font-black text-white font-mono mt-1 block">{totalTarget} Operadores</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">PAs Planejadas (Meta)</span>
+            <span className="text-2xl font-black text-white font-mono mt-1 block">{totalPaTargetSum} PAs</span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
-            <Users size={24} weight="bold" />
+            <Headset size={24} weight="bold" />
           </div>
         </div>
 
@@ -251,8 +303,8 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
           theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
         }`}>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Operadores Ativos Cadastrados</span>
-            <span className="text-2xl font-black text-emerald-400 font-mono mt-1 block">{teamMembers.length} Cadastrados</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">PAs Ocupadas</span>
+            <span className="text-2xl font-black text-emerald-400 font-mono mt-1 block">{totalActiveOpsSum} Ativas</span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
             <CheckCircle size={24} weight="bold" />
@@ -263,16 +315,121 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
           theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
         }`}>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Vagas em Aberto</span>
-            <span className="text-2xl font-black text-amber-400 font-mono mt-1 block">{totalOpen} Vagas</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">PAs Vagas / Aberta</span>
+            <span className="text-2xl font-black text-amber-400 font-mono mt-1 block">{totalPaVacancies} PAs</span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
             <Briefcase size={24} weight="bold" />
           </div>
         </div>
+
+        <div className={`p-5 rounded-2xl border flex items-center justify-between ${
+          theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Taxa de Ocupação</span>
+            <span className="text-2xl font-black text-sky-400 font-mono mt-1 block">{occupancyRate}%</span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+            <TrendUp size={24} weight="bold" />
+          </div>
+        </div>
       </div>
 
-      {/* Tabela de Vagas por Produto e Forecast */}
+      {/* SEÇÃO 1: CONFIGURAÇÃO DE PAS POR EQUIPE */}
+      <div className={`rounded-3xl border overflow-hidden backdrop-blur-md ${
+        theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
+      }`}>
+        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Headset size={18} className="text-purple-400" />
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Configuração de Dimensionamento de PAs (Posições de Atendimento) por Equipe
+            </span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider bg-white/5">
+                <th className="py-3.5 px-4">Equipe / Time</th>
+                <th className="py-3.5 px-4 text-center">PAs Meta (Planejado)</th>
+                <th className="py-3.5 px-4 text-center">Operadores Ocupados</th>
+                <th className="py-3.5 px-4 text-center">PAs Vagas</th>
+                <th className="py-3.5 px-4 text-center">Taxa Ocupação %</th>
+                <th className="py-3.5 px-4 text-right">Ação / Configurar</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 font-mono">
+              {teamMetricsList.map(t => {
+                const teamVacancies = Math.max(0, t.paTarget - t.activeOperators);
+                const rate = t.paTarget > 0 ? Math.round((t.activeOperators / t.paTarget) * 100) : 100;
+                const isEditingThis = editingTeamId === t.id;
+
+                return (
+                  <tr key={t.id} className="hover:bg-white/5 transition-colors">
+                    <td className="py-4 px-4 font-sans font-bold text-white flex items-center gap-2">
+                      <Users size={16} className="text-sky-400 shrink-0" />
+                      {t.name}
+                    </td>
+
+                    <td className="py-4 px-4 text-center font-bold text-purple-300">
+                      {isEditingThis ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={tempPaTarget}
+                          onChange={(e) => setTempPaTarget(Number(e.target.value))}
+                          className="w-16 bg-slate-950 border border-purple-500/50 rounded-lg text-center p-1 text-xs text-white"
+                        />
+                      ) : (
+                        `${t.paTarget} PAs`
+                      )}
+                    </td>
+
+                    <td className="py-4 px-4 text-center font-bold text-emerald-400">{t.activeOperators} Operadores</td>
+                    <td className="py-4 px-4 text-center font-bold text-amber-400">{teamVacancies} Vagas</td>
+
+                    <td className="py-4 px-4 text-center">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        rate >= 90 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                        rate >= 70 ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' :
+                        'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      }`}>
+                        {rate}% Ocupada
+                      </span>
+                    </td>
+
+                    <td className="py-4 px-4 text-right font-sans">
+                      {isEditingThis ? (
+                        <button
+                          onClick={() => handleSaveTeamPa(t.id)}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-lg text-xs flex items-center gap-1 ml-auto"
+                        >
+                          <Check size={14} /> Salvar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingTeamId(t.id);
+                            setTempPaTarget(t.paTarget);
+                          }}
+                          className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold rounded-lg text-xs border border-white/10 flex items-center gap-1 ml-auto cursor-pointer"
+                        >
+                          <Pencil size={14} /> Ajustar PAs
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* SEÇÃO 2: TABELA DE VAGAS POR PRODUTO E FORECAST */}
       <div className={`rounded-3xl border overflow-hidden backdrop-blur-md ${
         theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
       }`}>
@@ -296,7 +453,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 font-mono">
-              {vacancies.map(v => (
+              {safeVacancies.map(v => (
                 <tr key={v.id} className="hover:bg-white/5 transition-colors">
                   <td className="py-4 px-4 font-sans font-bold text-white">{v.productName}</td>
                   <td className="py-4 px-4 text-center font-bold text-slate-300">{v.targetHeadcount}</td>
@@ -324,7 +481,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
         </div>
       </div>
 
-      {/* Mapeamento Gerenciável dos Sites Operacionais */}
+      {/* SEÇÃO 3: MAPEAMENTO GERENCIÁVEL DOS SITES OPERACIONAIS */}
       <div className={`p-6 rounded-3xl border ${
         theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-slate-50 border-slate-200'
       }`}>
@@ -416,7 +573,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                   onChange={(e) => setNewSiteLocation(e.target.value)}
                   className="w-full bg-slate-950 border border-white/10 p-2.5 rounded-xl text-xs text-white"
                 >
-                  {sites.map(s => (
+                  {safeSites.map(s => (
                     <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </select>
