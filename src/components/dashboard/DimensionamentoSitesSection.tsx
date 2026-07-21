@@ -50,6 +50,8 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
   theme = 'dark',
   showToast
 }) => {
+  const isDark = theme === 'dark';
+
   // Arrays com fallback seguro defensivo absoluto
   const safeTeamMembers = useMemo(() => Array.isArray(teamMembers) ? teamMembers : [], [teamMembers]);
   const safeTeamsData = useMemo(() => Array.isArray(teamsData) ? teamsData : [], [teamsData]);
