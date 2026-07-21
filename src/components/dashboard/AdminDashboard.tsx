@@ -292,9 +292,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           }
         ];
 
-        for (const arg of agreements) {
-          await setDoc(doc(db, 'agreements', arg.id), arg);
-        }
+        await Promise.all(
+          agreements.map(arg => setDoc(doc(db, 'agreements', arg.id), arg))
+        );
 
         showToast('Ambiente Sandbox provisionado com sucesso!', 'success');
       }
