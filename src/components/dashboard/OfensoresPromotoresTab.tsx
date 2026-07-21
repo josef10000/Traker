@@ -105,13 +105,15 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
 
     return operators.map(op => {
       const opAgreements = filteredAgreements.filter(a => 
-        a.registeredBy === op.uid || a.registeredByName === op.name || a.userId === op.uid
+        (op?.uid && a?.registeredBy === op.uid) || 
+        (op?.name && a?.registeredByName === op.name) || 
+        (op?.uid && a?.userId === op.uid)
       );
 
-      const paidAgreements = opAgreements.filter(a => a.status === 'pago');
-      const promisesAgreements = opAgreements.filter(a => a.status === 'aguardando' || a.status === 'pago');
+      const paidAgreements = opAgreements.filter(a => a?.status === 'pago');
+      const promisesAgreements = opAgreements.filter(a => a?.status === 'aguardando' || a?.status === 'pago');
 
-      const opRevenue = paidAgreements.reduce((acc, a) => acc + a.value, 0);
+      const opRevenue = paidAgreements.reduce((acc, a) => acc + (a?.value || 0), 0);
       const opAgreementsCount = opAgreements.length;
       const opPromisesCount = promisesAgreements.length;
 
@@ -122,13 +124,14 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       const shareCombined = (shareRevenue * 0.4) + (shareAgreements * 0.3) + (sharePromises * 0.3);
 
       // Meta estipulada x realizada
-      const targetValue = op.dailyTarget ? op.dailyTarget * 20 : 10000;
+      const targetValue = op?.dailyTarget ? op.dailyTarget * 20 : 10000;
       const conversionRate = Math.min(100, (opRevenue / (targetValue || 1)) * 100);
 
       // QA, Assiduidade e Absenteísmo (com valores simulados realistas se não definidos)
-      const qaScore = op.qaAverageScore || 85 + (op.name.length % 12);
-      const attendanceRate = op.attendanceRate || 95 - (op.name.length % 5);
-      const absenteeismRate = op.absenteeismRate || (100 - attendanceRate);
+      const safeName = op?.name || op?.displayName || op?.email || '';
+      const qaScore = op?.qaAverageScore || 85 + (safeName.length % 12);
+      const attendanceRate = op?.attendanceRate || 95 - (safeName.length % 5);
+      const absenteeismRate = op?.absenteeismRate || (100 - attendanceRate);
 
       // Nota Final Ponderada (0 a 100)
       const normFactor = totalWeight > 0 ? 100 / totalWeight : 1;
@@ -160,10 +163,10 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       else if (conversionRate >= 100) mainPromoterReason = 'Superou a Meta de Faturamento';
 
       return {
-        id: op.uid || op.id,
-        name: op.name || op.displayName || 'Operador',
-        role: op.jobTitle || 'Operador de Cobrança',
-        teamName: teamsData.find(t => t.id === op.teamId)?.name || 'Equipe Geral',
+        id: op?.uid || op?.id || Math.random().toString(),
+        name: op?.name || op?.displayName || op?.email || 'Operador',
+        role: op?.jobTitle || 'Operador de Cobrança',
+        teamName: teamsData.find(t => t.id === op?.teamId)?.name || 'Equipe Geral',
         revenue: opRevenue,
         agreementsCount: opAgreementsCount,
         promisesCount: opPromisesCount,
