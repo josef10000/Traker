@@ -115,16 +115,30 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
     setter(prev => Math.max(0, Math.min(100, prev + delta)));
   };
 
-  // Normalização para 100% com 1 clique
+  // Normalização exata para 100% com o Método do Maior Resto (Hamilton Method)
   const normalizeWeightsTo100 = () => {
     if (totalWeight === 0) return;
-    const factor = 100 / totalWeight;
-    setWeightConversion(Math.round(weightConversion * factor));
-    setWeightRevenue(Math.round(weightRevenue * factor));
-    setWeightShare(Math.round(weightShare * factor));
-    setWeightQa(Math.round(weightQa * factor));
-    setWeightAttendance(Math.round(weightAttendance * factor));
-    setWeightAbsenteeism(Math.round(weightAbsenteeism * factor));
+
+    const values = [weightConversion, weightRevenue, weightShare, weightQa, weightAttendance, weightAbsenteeism];
+    const exacts = values.map(v => (v / totalWeight) * 100);
+    const integers = exacts.map(v => Math.floor(v));
+    const remainders = exacts.map((v, idx) => ({ idx, rem: v - integers[idx] }));
+
+    let currentSum = integers.reduce((acc, curr) => acc + curr, 0);
+    const diff = 100 - currentSum;
+
+    // Distribui o ponto faltante para os maiores restos fracionários
+    remainders.sort((a, b) => b.rem - a.rem);
+    for (let i = 0; i < diff; i++) {
+      integers[remainders[i].idx] += 1;
+    }
+
+    setWeightConversion(integers[0]);
+    setWeightRevenue(integers[1]);
+    setWeightShare(integers[2]);
+    setWeightQa(integers[3]);
+    setWeightAttendance(integers[4]);
+    setWeightAbsenteeism(integers[5]);
     setActivePreset('custom');
     showToast('Pesos auto-normalizados para exatamente 100%!', 'success');
   };
