@@ -892,46 +892,50 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       {viewLevel === 'operators' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Card Promotores */}
-          <div className={`p-6 rounded-3xl border space-y-4 shadow-xs ${
+          <div className={`p-6 rounded-3xl border space-y-4 shadow-sm ${
             isDark
               ? 'bg-gradient-to-br from-emerald-950/40 to-slate-900/60 border-emerald-500/20'
-              : 'bg-gradient-to-br from-emerald-50 to-white border-emerald-300 text-slate-950'
+              : 'bg-emerald-50/80 border-2 border-emerald-300 text-slate-950'
           }`}>
             <div className={`flex items-center gap-2 border-b pb-3 ${
               isDark ? 'text-emerald-400 border-emerald-500/20' : 'text-emerald-950 border-emerald-300'
             }`}>
-              <Trophy size={20} weight="bold" />
-              <h3 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-950'}`}>
+              <Trophy size={22} weight="bold" />
+              <h3 className={`text-base font-black ${isDark ? 'text-white' : 'text-emerald-950'}`}>
                 🏆 Top Promotores da Operação
               </h3>
             </div>
 
             <div className="space-y-3">
               {topPromoters.map((op, i) => (
-                <div key={op.id} className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
-                  isDark ? 'bg-white/5 border-white/5' : 'bg-white border-slate-300 shadow-2xs'
+                <div key={op.id} className={`p-4 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
+                  isDark ? 'bg-white/5 border-white/5' : 'bg-white border-2 border-emerald-200/80 shadow-xs hover:border-emerald-400'
                 }`}>
                   <div className="flex items-center gap-3">
-                    <span className={`w-7 h-7 rounded-full font-mono font-black text-xs flex items-center justify-center border ${
-                      isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-emerald-200 text-emerald-950 border-emerald-400'
+                    <span className={`w-7 h-7 rounded-full font-mono font-black text-xs flex items-center justify-center ${
+                      isDark 
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                        : 'bg-emerald-600 text-white shadow-xs font-black'
                     }`}>
                       #{i + 1}
                     </span>
                     <div>
                       <h4 className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-950'}`}>{op.name}</h4>
-                      <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-800 font-bold'}`}>
+                      <p className={`text-[11px] font-extrabold ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>
                         {op.teamName} • QA: <strong className={isDark ? 'text-emerald-300' : 'text-emerald-950 font-black'}>{op.qaScore}%</strong>
                       </p>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <span className={`text-xs font-mono font-black px-2.5 py-1 rounded-full border ${
-                      isDark ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-emerald-950 bg-emerald-100 border-emerald-400'
+                    <span className={`text-xs font-mono font-black px-3 py-1 rounded-full ${
+                      isDark 
+                        ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' 
+                        : 'bg-emerald-600 text-white shadow-xs font-black'
                     }`}>
                       {op.weightedScore} pts
                     </span>
-                    <p className={`text-[10px] font-black mt-1 ${isDark ? 'text-sky-300' : 'text-sky-950'}`}>
+                    <p className={`text-[10px] font-black mt-1 ${isDark ? 'text-sky-300' : 'text-emerald-950'}`}>
                       Share ({shareScope === 'intra_team' ? 'Equipe' : 'Global'}): {op.shareRevenue.toFixed(1)}% R$
                     </p>
                   </div>
@@ -941,28 +945,30 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
           </div>
 
           {/* Card Ofensores */}
-          <div className={`p-6 rounded-3xl border space-y-4 shadow-xs ${
+          <div className={`p-6 rounded-3xl border space-y-4 shadow-sm ${
             isDark
               ? 'bg-gradient-to-br from-rose-950/40 to-slate-900/60 border-rose-500/20'
-              : 'bg-gradient-to-br from-rose-50 to-white border-rose-300 text-slate-950'
+              : 'bg-rose-50/80 border-2 border-rose-300 text-slate-950'
           }`}>
             <div className={`flex items-center gap-2 border-b pb-3 ${
               isDark ? 'text-rose-400 border-rose-500/20' : 'text-rose-950 border-rose-300'
             }`}>
-              <Warning size={20} weight="bold" />
-              <h3 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-950'}`}>
+              <Warning size={22} weight="bold" />
+              <h3 className={`text-base font-black ${isDark ? 'text-white' : 'text-rose-950'}`}>
                 ⚠️ Principais Ofensores (Gargalos)
               </h3>
             </div>
 
             <div className="space-y-3">
               {bottomOffenders.map((op, i) => (
-                <div key={op.id} className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
-                  isDark ? 'bg-white/5 border-white/5' : 'bg-white border-slate-300 shadow-2xs'
+                <div key={op.id} className={`p-4 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
+                  isDark ? 'bg-white/5 border-white/5' : 'bg-white border-2 border-rose-200/80 shadow-xs hover:border-rose-400'
                 }`}>
                   <div className="flex items-center gap-3">
-                    <span className={`w-7 h-7 rounded-full font-mono font-black text-xs flex items-center justify-center border ${
-                      isDark ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-rose-200 text-rose-950 border-rose-400'
+                    <span className={`w-7 h-7 rounded-full font-mono font-black text-xs flex items-center justify-center ${
+                      isDark 
+                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
+                        : 'bg-rose-600 text-white shadow-xs font-black'
                     }`}>
                       #{i + 1}
                     </span>
@@ -973,12 +979,14 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                   </div>
 
                   <div className="text-right">
-                    <span className={`text-xs font-mono font-black px-2.5 py-1 rounded-full border ${
-                      isDark ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-rose-950 bg-rose-100 border-rose-400'
+                    <span className={`text-xs font-mono font-black px-3 py-1 rounded-full ${
+                      isDark 
+                        ? 'text-rose-400 bg-rose-500/10 border border-rose-500/20' 
+                        : 'bg-rose-600 text-white shadow-xs font-black'
                     }`}>
                       {op.weightedScore} pts
                     </span>
-                    <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-800 font-extrabold'}`}>
+                    <p className={`text-[10px] font-black mt-1 ${isDark ? 'text-slate-400' : 'text-slate-950'}`}>
                       Absenteísmo: {op.absenteeismRate}%
                     </p>
                   </div>
