@@ -366,10 +366,12 @@ export const ReconciliationModal = ({
     if (statusMismatches.length === 0) return;
     
     try {
-      for (const d of statusMismatches) {
-        const newStatus = d.excelStatus === 'pago' ? AgreementStatus.PAID : AgreementStatus.WAITING;
-        await onUpdateAgreementStatus(d.agreement.id, newStatus);
-      }
+      await Promise.all(
+        statusMismatches.map(d => {
+          const newStatus = d.excelStatus === 'pago' ? AgreementStatus.PAID : AgreementStatus.WAITING;
+          return onUpdateAgreementStatus(d.agreement.id, newStatus);
+        })
+      );
       setDiscrepancies(prev => prev.filter(d => d.type !== 'status_mismatch'));
     } catch (e) {
       console.error(e);
@@ -381,18 +383,20 @@ export const ReconciliationModal = ({
     if (missing.length === 0) return;
     
     try {
-      for (const d of missing) {
-        await onCreateAgreement({
-          clientName: `Acordo Conciliado (${d.cpf.substring(0,3)}***)`,
-          clientCpf: formatCpfMask(d.cpf),
-          value: d.excelValue,
-          dueDate: new Date().toISOString().split('T')[0],
-          status: AgreementStatus.PAID,
-          origin: AgreementOrigin.QUITE_DIGITAL,
-          type: AgreementType.QUITACAO,
-          category: AgreementCategory.FIXA
-        });
-      }
+      await Promise.all(
+        missing.map(d =>
+          onCreateAgreement({
+            clientName: `Acordo Conciliado (${d.cpf.substring(0,3)}***)`,
+            clientCpf: formatCpfMask(d.cpf),
+            value: d.excelValue,
+            dueDate: new Date().toISOString().split('T')[0],
+            status: AgreementStatus.PAID,
+            origin: AgreementOrigin.QUITE_DIGITAL,
+            type: AgreementType.QUITACAO,
+            category: AgreementCategory.FIXA
+          })
+        )
+      );
       setDiscrepancies(prev => prev.filter(d => d.type !== 'missing_in_tracker'));
     } catch (e) {
       console.error(e);
