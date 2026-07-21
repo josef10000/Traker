@@ -1971,12 +1971,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleAnonimizeClient = async (cpf: string) => {
     try {
       const agreementsToAnon = monthAgreements.filter(a => a.clientCpf === cpf);
-      for (const a of agreementsToAnon) {
-        await updateDoc(doc(db, 'agreements', a.id), {
-          clientName: 'Cliente Anonimizado (LGPD)',
-          clientCpf: '000.000.000-00'
+
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < agreementsToAnon.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db);
+        const chunk = agreementsToAnon.slice(i, i + BATCH_SIZE);
+
+        chunk.forEach(a => {
+          batch.update(doc(db, 'agreements', a.id), {
+            clientName: 'Cliente Anonimizado (LGPD)',
+            clientCpf: '000.000.000-00'
+          });
         });
+
+        await batch.commit();
       }
+
       await logAudit('ANONIMIZE_CLIENT', { clientCpf: cpf }, profile.displayName || '', profile.organizationId);
       setSelectedClientCpf(null);
       showToast('Direito ao esquecimento aplicado com sucesso!', 'success');
