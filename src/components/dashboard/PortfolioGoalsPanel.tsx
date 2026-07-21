@@ -20,6 +20,7 @@ import { formatCurrency } from '../../utils/masks';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
+import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 
 interface PortfolioGoalsPanelProps {
   profile: UserProfile;
@@ -47,6 +48,9 @@ export const PortfolioGoalsPanel = ({
   // Configurações de dias úteis e trabalhados
   const [workingDays, setWorkingDays] = useState(23);
   const [workedDays, setWorkedDays] = useState(8);
+
+  // Sub-aba interna de Metas ou Matriz de Ofensores
+  const [portfolioSubTab, setPortfolioSubTab] = useState<'goals' | 'ofensores'>('goals');
 
   // Estados de edição inline
   const [editingUid, setEditingUid] = useState<string | null>(null);
@@ -369,35 +373,9 @@ export const PortfolioGoalsPanel = ({
 
   return (
     <div className="space-y-8 print:p-0 no-print-sections">
-      {/* HEADER DA ABA */}
+      {/* HEADER DA ABA COM ALTERNÂNCIA DE SUB-ABAS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Target size={24} className="text-sky-400" />
-            Cockpit de Metas & Carteiras
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">Consolidado de metas, desvios proporcionais (dispersão) e projeções por equipe.</p>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={handleExportExcel}
-            className="px-4 py-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 font-bold rounded-xl transition-all flex items-center gap-2 text-xs active:scale-95 shadow-lg"
-          >
-            <FileSpreadsheet size={16} className="text-emerald-400" />
-            Exportar Excel
-          </button>
-          <button 
-            onClick={handleCopyPublicLink}
-            className="px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl transition-all flex items-center gap-2 text-xs active:scale-95 shadow-lg shadow-sky-500/20"
-          >
-            <Link size={16} />
-            Compartilhar Link
-          </button>
-        </div>
-      </div>
-
-      {/* CONTROLE DE DIAS ÚTEIS E GESTOR */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Gestor e Meta Global */}
         <div className="md:col-span-2 glass-card p-6 rounded-3xl border border-white/5 space-y-4">
           <div className="flex items-center gap-2">
@@ -623,6 +601,7 @@ export const PortfolioGoalsPanel = ({
           );
         })}
       </div>
+      )}
     </div>
   );
 };

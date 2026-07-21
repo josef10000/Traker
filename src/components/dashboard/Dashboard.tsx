@@ -2844,16 +2844,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       >
                         🏢 Dimensionamento & Sites
                       </button>
-                      <button
-                        onClick={() => setCoordinationSubTab('matrix')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          coordinationSubTab === 'matrix'
-                            ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-md'
-                            : 'text-slate-400 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        📊 Matriz Ofensores & Promotores
-                      </button>
                       {profile.role === 'manager' && (
                         <button
                           onClick={() => setCoordinationSubTab('transfers')}
@@ -3294,18 +3284,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           profile={profile}
                           teamsData={managedTeamsData}
                           teamMembers={filteredTeamMembers}
-                          theme={theme}
-                          showToast={showToast}
-                        />
-                      )}
-
-                      {/* SUB-ABA 9: MATRIZ DE OFENSORES, PROMOTORES & REPRESENTATIVIDADE */}
-                      {coordinationSubTab === 'matrix' && (
-                        <OfensoresPromotoresTab
-                          profile={profile}
-                          agreements={monthAgreements}
-                          teamMembers={filteredTeamMembers}
-                          teamsData={managedTeamsData}
                           theme={theme}
                           showToast={showToast}
                         />

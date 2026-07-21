@@ -10,7 +10,8 @@ import {
   CheckCircle, 
   Clock, 
   Sparkle,
-  Scales
+  Pencil,
+  Trash
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 
@@ -33,6 +34,13 @@ interface ProductVacancy {
   forecastProductivity: string;
 }
 
+interface OperationalSite {
+  id: string;
+  name: string;
+  city: string;
+  type: 'Presencial' | 'Remoto';
+}
+
 export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionProps> = ({
   profile,
   teamsData,
@@ -40,13 +48,20 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
   theme = 'dark',
   showToast
 }) => {
+  // Lista de Sites Operacionais Gerenciável
+  const [sites, setSites] = useState<OperationalSite[]>([
+    { id: 'site-1', name: 'Site SP Paulista - 4º Andar', city: 'São Paulo - SP', type: 'Presencial' },
+    { id: 'site-2', name: 'Site Campinas - Unidade Central', city: 'Campinas - SP', type: 'Presencial' },
+    { id: 'site-3', name: 'Home Office / Remoto BR', city: 'Nacional (Brasil)', type: 'Remoto' },
+  ]);
+
   // Lista de Vagas / Dimensionamento por Produto
   const [vacancies, setVacancies] = useState<ProductVacancy[]>([
     {
       id: 'vac-1',
       productName: 'Noverde Quitação (Ticket Alto)',
       targetHeadcount: 15,
-      activeHeadcount: 12,
+      activeHeadcount: teamMembers.length > 0 ? Math.min(12, teamMembers.length) : 12,
       openVacancies: 3,
       status: 'selecao',
       siteLocation: 'Site SP Paulista - 4º Andar',
@@ -74,13 +89,20 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
     }
   ]);
 
-  // Modal para Nova Vaga
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Modal para Nova Vaga por Produto
+  const [isVacModalOpen, setIsVacModalOpen] = useState(false);
   const [newProductName, setNewProductName] = useState('');
   const [newTargetHeadcount, setNewTargetHeadcount] = useState(5);
-  const [newSiteLocation, setNewSiteLocation] = useState('Site SP Paulista');
+  const [newSiteLocation, setNewSiteLocation] = useState('Site SP Paulista - 4º Andar');
 
-  // Adicionar Nova Vaga
+  // Modal para Adicionar/Editar Site Operacional
+  const [isSiteModalOpen, setIsSiteModalOpen] = useState(false);
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState('');
+  const [siteCity, setSiteCity] = useState('');
+  const [siteType, setSiteType] = useState<'Presencial' | 'Remoto'>('Presencial');
+
+  // Adicionar ou Editar Vaga
   const handleAddVacancy = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProductName.trim()) return;
@@ -97,9 +119,52 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
     };
 
     setVacancies(prev => [...prev, newVac]);
-    setIsModalOpen(false);
+    setIsVacModalOpen(false);
     setNewProductName('');
     showToast('Nova vaga por produto adicionada com sucesso!', 'success');
+  };
+
+  // Abrir Modal para Editar Site
+  const handleOpenSiteModal = (site?: OperationalSite) => {
+    if (site) {
+      setEditingSiteId(site.id);
+      setSiteName(site.name);
+      setSiteCity(site.city);
+      setSiteType(site.type);
+    } else {
+      setEditingSiteId(null);
+      setSiteName('');
+      setSiteCity('');
+      setSiteType('Presencial');
+    }
+    setIsSiteModalOpen(true);
+  };
+
+  // Salvar / Adicionar Site Operacional
+  const handleSaveSite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!siteName.trim()) return;
+
+    if (editingSiteId) {
+      setSites(prev => prev.map(s => s.id === editingSiteId ? { ...s, name: siteName, city: siteCity, type: siteType } : s));
+      showToast('Site operacional atualizado com sucesso!', 'success');
+    } else {
+      const newSite: OperationalSite = {
+        id: `site-${Date.now()}`,
+        name: siteName,
+        city: siteCity || 'São Paulo - SP',
+        type: siteType
+      };
+      setSites(prev => [...prev, newSite]);
+      showToast('Novo site operacional cadastrado!', 'success');
+    }
+    setIsSiteModalOpen(false);
+  };
+
+  // Excluir Site Operacional
+  const handleDeleteSite = (id: string) => {
+    setSites(prev => prev.filter(s => s.id !== id));
+    showToast('Site operacional removido.', 'info');
   };
 
   // Totais de Headcount
@@ -107,12 +172,18 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
   const totalActive = useMemo(() => vacancies.reduce((a, v) => a + v.activeHeadcount, 0), [vacancies]);
   const totalOpen = useMemo(() => vacancies.reduce((a, v) => a + v.openVacancies, 0), [vacancies]);
 
-  // Sites Operacionais Mapeados
-  const sitesList = useMemo(() => [
-    { name: 'Site SP Paulista - 4º Andar', city: 'São Paulo - SP', operatorsCount: 12, teamsCount: 2, type: 'Presencial' },
-    { name: 'Site Campinas - Unidade Central', city: 'Campinas - SP', operatorsCount: 10, teamsCount: 1, type: 'Presencial' },
-    { name: 'Home Office / Remoto BR', city: 'Nacional (Brasil)', operatorsCount: 6, teamsCount: 1, type: 'Remoto' },
-  ], []);
+  // Contagem dinâmica de operadores já cadastrados por site
+  const sitesWithMetrics = useMemo(() => {
+    return sites.map(site => {
+      // Contagem proporcional de membros já cadastrados
+      const count = Math.max(1, Math.floor(teamMembers.length / (sites.length || 1)));
+      return {
+        ...site,
+        operatorsCount: count,
+        teamsCount: teamsData.length > 0 ? Math.max(1, Math.floor(teamsData.length / sites.length)) : 1
+      };
+    });
+  }, [sites, teamMembers, teamsData]);
 
   return (
     <div className="space-y-6">
@@ -129,7 +200,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-black tracking-tight">Dimensionamento, Vagas por Produto & Sites</h3>
                 <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  Gestão Estratégica
+                  Gestão de Coordenação
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
@@ -138,13 +209,22 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
             </div>
           </div>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
-          >
-            <Plus size={16} weight="bold" />
-            Abrir Vaga por Produto
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => handleOpenSiteModal()}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-xs border border-white/10 transition-all cursor-pointer"
+            >
+              <Plus size={15} weight="bold" />
+              Novo Site Operacional
+            </button>
+            <button
+              onClick={() => setIsVacModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+            >
+              <Plus size={16} weight="bold" />
+              Abrir Vaga por Produto
+            </button>
+          </div>
         </div>
       </div>
 
@@ -166,8 +246,8 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
           theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
         }`}>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Operadores Ativos</span>
-            <span className="text-2xl font-black text-emerald-400 font-mono mt-1 block">{totalActive} Operadores</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Operadores Ativos Cadastrados</span>
+            <span className="text-2xl font-black text-emerald-400 font-mono mt-1 block">{teamMembers.length} Cadastrados</span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
             <CheckCircle size={24} weight="bold" />
@@ -239,36 +319,63 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
         </div>
       </div>
 
-      {/* Mapeamento dos Sites Operacionais */}
+      {/* Mapeamento Gerenciável dos Sites Operacionais */}
       <div className={`p-6 rounded-3xl border ${
         theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-slate-50 border-slate-200'
       }`}>
-        <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-3">
-          <MapPin size={20} className="text-sky-400" />
-          <h4 className="text-sm font-black text-white">Mapeamento de Sites & Unidades Operacionais</h4>
+        <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+          <div className="flex items-center gap-2">
+            <MapPin size={20} className="text-sky-400" />
+            <h4 className="text-sm font-black text-white">Mapeamento de Sites & Unidades Operacionais</h4>
+          </div>
+
+          <button
+            onClick={() => handleOpenSiteModal()}
+            className="text-xs font-bold text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <Plus size={14} /> Adicionar Novo Site
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {sitesList.map(site => (
-            <div key={site.name} className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+          {sitesWithMetrics.map(site => (
+            <div key={site.id} className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-3 relative group">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30">
                   {site.type}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">{site.city}</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleOpenSiteModal(site)}
+                    className="p-1 text-slate-400 hover:text-sky-400 rounded-md hover:bg-white/10"
+                    title="Editar Site Operacional"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSite(site.id)}
+                    className="p-1 text-slate-400 hover:text-rose-400 rounded-md hover:bg-white/10"
+                    title="Excluir Site"
+                  >
+                    <Trash size={14} />
+                  </button>
+                </div>
               </div>
-              <h5 className="text-sm font-bold text-white">{site.name}</h5>
+              <div>
+                <h5 className="text-sm font-bold text-white">{site.name}</h5>
+                <p className="text-xs text-slate-400">{site.city}</p>
+              </div>
               <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5 text-slate-400">
                 <span>{site.teamsCount} Equipe(s)</span>
-                <strong className="text-emerald-400 font-mono">{site.operatorsCount} Operadores Alocados</strong>
+                <strong className="text-emerald-400 font-mono">{site.operatorsCount} Operador(es) Alocados</strong>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Modal Adicionar Vaga */}
-      {isModalOpen && (
+      {/* Modal Adicionar/Editar Vaga por Produto */}
+      {isVacModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-900 border border-white/10 p-6 rounded-3xl w-full max-w-md space-y-4">
             <h4 className="text-base font-black text-white">Abrir Vaga por Produto / Carteira</h4>
@@ -304,16 +411,16 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                   onChange={(e) => setNewSiteLocation(e.target.value)}
                   className="w-full bg-slate-950 border border-white/10 p-2.5 rounded-xl text-xs text-white"
                 >
-                  <option value="Site SP Paulista - 4º Andar">Site SP Paulista - 4º Andar</option>
-                  <option value="Site Campinas - Unidade Central">Site Campinas - Unidade Central</option>
-                  <option value="Home Office / Remoto BR">Home Office / Remoto BR</option>
+                  {sites.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
                 </select>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => setIsVacModalOpen(false)}
                   className="px-4 py-2 text-xs text-slate-400 hover:text-white"
                 >
                   Cancelar
@@ -323,6 +430,68 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                   className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs rounded-xl"
                 >
                   Salvar Vaga
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal Adicionar/Editar Site Operacional */}
+      {isSiteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-900 border border-white/10 p-6 rounded-3xl w-full max-w-md space-y-4">
+            <h4 className="text-base font-black text-white">{editingSiteId ? 'Editar Site Operacional' : 'Novo Site Operacional'}</h4>
+            <form onSubmit={handleSaveSite} className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Nome do Site / Unidade</label>
+                <input
+                  type="text"
+                  required
+                  value={siteName}
+                  onChange={(e) => setSiteName(e.target.value)}
+                  placeholder="Ex: Site RJ Centro - 2º Andar"
+                  className="w-full bg-slate-950 border border-white/10 p-2.5 rounded-xl text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Cidade / Estado</label>
+                <input
+                  type="text"
+                  required
+                  value={siteCity}
+                  onChange={(e) => setSiteCity(e.target.value)}
+                  placeholder="Ex: Rio de Janeiro - RJ"
+                  className="w-full bg-slate-950 border border-white/10 p-2.5 rounded-xl text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Tipo de Operação</label>
+                <select
+                  value={siteType}
+                  onChange={(e) => setSiteType(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-white/10 p-2.5 rounded-xl text-xs text-white"
+                >
+                  <option value="Presencial">Presencial</option>
+                  <option value="Remoto">Remoto / Home Office</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSiteModalOpen(false)}
+                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs rounded-xl"
+                >
+                  Salvar Site
                 </button>
               </div>
             </form>
