@@ -670,9 +670,9 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
           </div>
         </div>
 
-        {/* 1. Presets Prontos (Textos 100% legíveis e escuros no Modo Claro) */}
+        {/* 1. Presets Prontos (Textos 100% legíveis e de visibilidade máxima em ambos os temas) */}
         <div className="space-y-2">
-          <span className={`text-[10px] font-black uppercase tracking-wider ${
+          <span className={`text-[10px] font-black uppercase tracking-wider block ${
             isDark ? 'text-slate-400' : 'text-slate-950'
           }`}>
             PERFIS ESTRATÉGICOS RECOMENDADOS:
@@ -685,19 +685,21 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 activePreset === 'balanced' 
                   ? isDark 
                     ? 'bg-purple-600/20 border-purple-500 text-white shadow-lg' 
-                    : 'bg-purple-100 border-2 border-purple-600 text-purple-950 font-black shadow-md'
+                    : 'bg-purple-700 border-2 border-purple-800 text-white font-black shadow-md'
                   : isDark 
                     ? 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20' 
-                    : 'bg-slate-50 border border-slate-300 text-slate-950 hover:border-purple-400 hover:bg-purple-50/50'
+                    : 'bg-white border-2 border-slate-300 text-slate-950 hover:border-purple-500 hover:bg-purple-50/50 shadow-xs'
               }`}
             >
               <div className={`flex items-center gap-2 font-black text-xs ${
-                !isDark && activePreset === 'balanced' ? 'text-purple-950' : !isDark ? 'text-slate-950' : ''
+                activePreset === 'balanced' ? 'text-white' : !isDark ? 'text-slate-950 font-black' : 'text-white'
               }`}>
                 <span>⚖️ Equilibrado 360°</span>
               </div>
-              <p className={`text-[10px] mt-1 ${
-                isDark ? 'opacity-70' : activePreset === 'balanced' ? 'text-purple-950 font-bold' : 'text-slate-700 font-bold'
+              <p className={`text-[10px] mt-1.5 leading-tight ${
+                activePreset === 'balanced' 
+                  ? 'text-white font-bold opacity-100' 
+                  : isDark ? 'text-slate-400 opacity-80' : 'text-slate-900 font-extrabold'
               }`}>
                 Visão completa e balanceada de todos os indicadores.
               </p>
@@ -710,19 +712,21 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 activePreset === 'revenue' 
                   ? isDark 
                     ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-lg' 
-                    : 'bg-emerald-100 border-2 border-emerald-600 text-emerald-950 font-black shadow-md'
+                    : 'bg-emerald-700 border-2 border-emerald-800 text-white font-black shadow-md'
                   : isDark 
                     ? 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20' 
-                    : 'bg-slate-50 border border-slate-300 text-slate-950 hover:border-emerald-400 hover:bg-emerald-50/50'
+                    : 'bg-white border-2 border-slate-300 text-slate-950 hover:border-emerald-500 hover:bg-emerald-50/50 shadow-xs'
               }`}
             >
               <div className={`flex items-center gap-2 font-black text-xs ${
-                !isDark && activePreset === 'revenue' ? 'text-emerald-950' : !isDark ? 'text-slate-950' : ''
+                activePreset === 'revenue' ? 'text-white' : !isDark ? 'text-slate-950 font-black' : 'text-white'
               }`}>
                 <span>💰 Foco Faturamento</span>
               </div>
-              <p className={`text-[10px] mt-1 ${
-                isDark ? 'opacity-70' : activePreset === 'revenue' ? 'text-emerald-950 font-bold' : 'text-slate-700 font-bold'
+              <p className={`text-[10px] mt-1.5 leading-tight ${
+                activePreset === 'revenue' 
+                  ? 'text-white font-bold opacity-100' 
+                  : isDark ? 'text-slate-400 opacity-80' : 'text-slate-900 font-extrabold'
               }`}>
                 Prioriza faturamento R$ e representatividade no caixa.
               </p>
@@ -735,19 +739,21 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 activePreset === 'qa' 
                   ? isDark 
                     ? 'bg-cyan-600/20 border-cyan-500 text-white shadow-lg' 
-                    : 'bg-cyan-100 border-2 border-cyan-600 text-cyan-950 font-black shadow-md'
+                    : 'bg-cyan-700 border-2 border-cyan-800 text-white font-black shadow-md'
                   : isDark 
                     ? 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20' 
-                    : 'bg-slate-50 border border-slate-300 text-slate-950 hover:border-cyan-400 hover:bg-cyan-50/50'
+                    : 'bg-white border-2 border-slate-300 text-slate-950 hover:border-cyan-500 hover:bg-cyan-50/50 shadow-xs'
               }`}
             >
               <div className={`flex items-center gap-2 font-black text-xs ${
-                !isDark && activePreset === 'qa' ? 'text-cyan-950' : !isDark ? 'text-slate-950' : ''
+                activePreset === 'qa' ? 'text-white' : !isDark ? 'text-slate-950 font-black' : 'text-white'
               }`}>
                 <span>🛡️ Foco em QA & Script</span>
               </div>
-              <p className={`text-[10px] mt-1 ${
-                isDark ? 'opacity-70' : activePreset === 'qa' ? 'text-cyan-950 font-bold' : 'text-slate-700 font-bold'
+              <p className={`text-[10px] mt-1.5 leading-tight ${
+                activePreset === 'qa' 
+                  ? 'text-white font-bold opacity-100' 
+                  : isDark ? 'text-slate-400 opacity-80' : 'text-slate-900 font-extrabold'
               }`}>
                 Prioriza a nota de auditoria de qualidade e compliance.
               </p>
@@ -760,19 +766,21 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 activePreset === 'attendance' 
                   ? isDark 
                     ? 'bg-blue-600/20 border-blue-500 text-white shadow-lg' 
-                    : 'bg-blue-100 border-2 border-blue-600 text-blue-950 font-black shadow-md'
+                    : 'bg-blue-700 border-2 border-blue-800 text-white font-black shadow-md'
                   : isDark 
                     ? 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20' 
-                    : 'bg-slate-50 border border-slate-300 text-slate-950 hover:border-blue-400 hover:bg-blue-50/50'
+                    : 'bg-white border-2 border-slate-300 text-slate-950 hover:border-blue-500 hover:bg-blue-50/50 shadow-xs'
               }`}
             >
               <div className={`flex items-center gap-2 font-black text-xs ${
-                !isDark && activePreset === 'attendance' ? 'text-blue-950' : !isDark ? 'text-slate-950' : ''
+                activePreset === 'attendance' ? 'text-white' : !isDark ? 'text-slate-950 font-black' : 'text-white'
               }`}>
                 <span>⚡ Foco em Assiduidade</span>
               </div>
-              <p className={`text-[10px] mt-1 ${
-                isDark ? 'opacity-70' : activePreset === 'attendance' ? 'text-blue-950 font-bold' : 'text-slate-700 font-bold'
+              <p className={`text-[10px] mt-1.5 leading-tight ${
+                activePreset === 'attendance' 
+                  ? 'text-white font-bold opacity-100' 
+                  : isDark ? 'text-slate-400 opacity-80' : 'text-slate-900 font-extrabold'
               }`}>
                 Pontua fortemente operadores presentes e sem faltas.
               </p>
