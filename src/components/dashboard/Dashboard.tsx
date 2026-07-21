@@ -1792,9 +1792,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           return true;
         });
 
-        for (const adj of adjustmentsToDelete) {
-          await deleteDoc(doc(db, 'agreements', adj.id));
-        }
+        await Promise.all(adjustmentsToDelete.map(adj => deleteDoc(doc(db, 'agreements', adj.id))));
       } catch (e) {
         console.error("Erro ao remover adjustments ao apagar saldo:", e);
       }
