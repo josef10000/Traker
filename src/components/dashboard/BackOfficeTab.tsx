@@ -46,6 +46,7 @@ import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
 import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote, Agreement, AgreementStatus } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
+import { sanitizeFilename } from '../../utils/sanitize';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 import ExcelJS from 'exceljs';
@@ -704,7 +705,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `original_${activeImport.fileName}`;
+    a.download = `original_${sanitizeFilename(activeImport.fileName)}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -747,7 +748,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `atualizado_${activeImport.fileName}`;
+    a.download = `atualizado_${sanitizeFilename(activeImport.fileName)}`;
     a.click();
     URL.revokeObjectURL(url);
   };
