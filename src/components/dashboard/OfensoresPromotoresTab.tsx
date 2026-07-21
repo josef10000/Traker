@@ -15,7 +15,12 @@ import {
   DownloadSimple,
   Sparkle,
   TrendUp,
-  TrendDown
+  TrendDown,
+  Globe,
+  UsersThree,
+  CalendarCheck,
+  ArrowsLeftRight,
+  Scales
 } from '@phosphor-icons/react';
 import { UserProfile, Agreement, Team } from '../../types';
 import { formatCurrency } from '../../utils/masks';
@@ -37,9 +42,14 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   theme = 'dark',
   showToast
 }) => {
-  // Filtros de Nível e Período
+  // Filtros de Nível, Período e Escopo do Share
   const [viewLevel, setViewLevel] = useState<'operators' | 'teams'>('operators');
-  const [periodFilter, setPeriodFilter] = useState<'today' | 'yesterday' | 'week' | 'month'>('month');
+  const [periodFilter, setPeriodFilter] = useState<'today' | 'yesterday' | 'week' | 'month' | 'custom'>('month');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  
+  // Escopo de Share: 'global' (Toda a Operação) vs 'intra_team' (Sua Própria Equipe)
+  const [shareScope, setShareScope] = useState<'global' | 'intra_team'>('global');
   const [shareMode, setShareMode] = useState<'combined' | 'revenue' | 'agreements' | 'promises'>('combined');
 
   // Sliders de Pesos Parametrizáveis (%)
@@ -50,15 +60,73 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   const [weightAttendance, setWeightAttendance] = useState<number>(10);
   const [weightAbsenteeism, setWeightAbsenteeism] = useState<number>(10);
 
-  // Normalização do Peso Total para garantir 100%
+  // Preset Ativo
+  const [activePreset, setActivePreset] = useState<'balanced' | 'revenue' | 'qa' | 'attendance' | 'custom'>('balanced');
+
+  // Soma dos Pesos
   const totalWeight = weightConversion + weightRevenue + weightShare + weightQa + weightAttendance + weightAbsenteeism;
+
+  // Aplicação dos Presets Prontos (1 clique)
+  const applyPreset = (preset: 'balanced' | 'revenue' | 'qa' | 'attendance') => {
+    setActivePreset(preset);
+    if (preset === 'balanced') {
+      setWeightConversion(25);
+      setWeightRevenue(20);
+      setWeightShare(20);
+      setWeightQa(15);
+      setWeightAttendance(10);
+      setWeightAbsenteeism(10);
+    } else if (preset === 'revenue') {
+      setWeightConversion(10);
+      setWeightRevenue(40);
+      setWeightShare(30);
+      setWeightQa(10);
+      setWeightAttendance(5);
+      setWeightAbsenteeism(5);
+    } else if (preset === 'qa') {
+      setWeightConversion(15);
+      setWeightRevenue(15);
+      setWeightShare(10);
+      setWeightQa(40);
+      setWeightAttendance(10);
+      setWeightAbsenteeism(10);
+    } else if (preset === 'attendance') {
+      setWeightConversion(15);
+      setWeightRevenue(15);
+      setWeightShare(10);
+      setWeightQa(10);
+      setWeightAttendance(25);
+      setWeightAbsenteeism(25);
+    }
+    showToast(`Preset "${preset.toUpperCase()}" aplicado com sucesso!`, 'success');
+  };
+
+  // Funções de Ajuste Fino (+5% / -5%)
+  const adjustWeight = (setter: React.Dispatch<React.SetStateAction<number>>, delta: number) => {
+    setActivePreset('custom');
+    setter(prev => Math.max(0, Math.min(100, prev + delta)));
+  };
+
+  // Normalização para 100% com 1 clique
+  const normalizeWeightsTo100 = () => {
+    if (totalWeight === 0) return;
+    const factor = 100 / totalWeight;
+    setWeightConversion(Math.round(weightConversion * factor));
+    setWeightRevenue(Math.round(weightRevenue * factor));
+    setWeightShare(Math.round(weightShare * factor));
+    setWeightQa(Math.round(weightQa * factor));
+    setWeightAttendance(Math.round(weightAttendance * factor));
+    setWeightAbsenteeism(Math.round(weightAbsenteeism * factor));
+    setActivePreset('custom');
+    showToast('Pesos auto-normalizados para exatamente 100%!', 'success');
+  };
 
   // Fallbacks de arrays seguros contra undefined
   const safeAgreements = useMemo(() => agreements || [], [agreements]);
   const safeTeamMembers = useMemo(() => teamMembers || [], [teamMembers]);
   const safeTeamsData = useMemo(() => teamsData || [], [teamsData]);
 
-  // Filtrar Acordos pelo Período Escolhido
+  // Filtrar Acordos pelo Período Escolhido (Hoje, Ontem, Semana, Mês ou Customizado)
   const filteredAgreements = useMemo(() => {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -81,26 +149,45 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       if (periodFilter === 'yesterday') return dateStr === yesterdayStr;
       if (periodFilter === 'week') return new Date(dateStr) >= startOfWeek;
       if (periodFilter === 'month') return new Date(dateStr) >= startOfMonth;
+      if (periodFilter === 'custom' && customStartDate && customEndDate) {
+        return dateStr >= customStartDate && dateStr <= customEndDate;
+      }
       return true;
     });
-  }, [safeAgreements, periodFilter]);
+  }, [safeAgreements, periodFilter, customStartDate, customEndDate]);
 
-  // Totais Gerais do Período para cálculo de Representatividade (% Share)
-  const totalPeriodRevenue = useMemo(() => {
+  // Totais Gerais Globais do Período para cálculo de Share Global
+  const globalPeriodRevenue = useMemo(() => {
     return filteredAgreements.reduce((acc, a) => acc + (a.status === 'pago' ? a.value : 0), 0) || 1;
   }, [filteredAgreements]);
 
-  const totalPeriodAgreementsCount = useMemo(() => {
+  const globalPeriodAgreementsCount = useMemo(() => {
     return filteredAgreements.length || 1;
   }, [filteredAgreements]);
 
-  const totalPeriodPromisesCount = useMemo(() => {
+  const globalPeriodPromisesCount = useMemo(() => {
     return filteredAgreements.filter(a => a.status === 'aguardando' || a.status === 'pago').length || 1;
   }, [filteredAgreements]);
 
-  // Cálculo da Performance por Operador
+  // Totais por Equipe (para cálculo de Share Intra-Equipe)
+  const teamTotalsMap = useMemo(() => {
+    const map: Record<string, { revenue: number; agreements: number; promises: number }> = {};
+    
+    filteredAgreements.forEach(a => {
+      const tId = a.teamId || 'no_team';
+      if (!map[tId]) {
+        map[tId] = { revenue: 0, agreements: 0, promises: 0 };
+      }
+      if (a.status === 'pago') map[tId].revenue += (a.value || 0);
+      map[tId].agreements += 1;
+      if (a.status === 'aguardando' || a.status === 'pago') map[tId].promises += 1;
+    });
+
+    return map;
+  }, [filteredAgreements]);
+
+  // Cálculo da Performance por Operador (com suporte a Share Intra-Equipe vs Global)
   const operatorMetrics = useMemo(() => {
-    // Filtrar membros que são operadores
     const operators = safeTeamMembers.filter(m => m.role === 'member' || m.role === 'supervisor' || !m.role);
 
     return operators.map(op => {
@@ -117,17 +204,25 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       const opAgreementsCount = opAgreements.length;
       const opPromisesCount = promisesAgreements.length;
 
+      // Definição da base de referência do Share (Global vs Intra-Equipe)
+      const tId = op?.teamId || 'no_team';
+      const teamTot = teamTotalsMap[tId] || { revenue: 1, agreements: 1, promises: 1 };
+
+      const baseRevenue = shareScope === 'intra_team' ? (teamTot.revenue || 1) : globalPeriodRevenue;
+      const baseAgreements = shareScope === 'intra_team' ? (teamTot.agreements || 1) : globalPeriodAgreementsCount;
+      const basePromises = shareScope === 'intra_team' ? (teamTot.promises || 1) : globalPeriodPromisesCount;
+
       // Representatividades (% Share)
-      const shareRevenue = (opRevenue / totalPeriodRevenue) * 100;
-      const shareAgreements = (opAgreementsCount / totalPeriodAgreementsCount) * 100;
-      const sharePromises = (opPromisesCount / totalPeriodPromisesCount) * 100;
+      const shareRevenue = (opRevenue / baseRevenue) * 100;
+      const shareAgreements = (opAgreementsCount / baseAgreements) * 100;
+      const sharePromises = (opPromisesCount / basePromises) * 100;
       const shareCombined = (shareRevenue * 0.4) + (shareAgreements * 0.3) + (sharePromises * 0.3);
 
       // Meta estipulada x realizada
       const targetValue = op?.dailyTarget ? op.dailyTarget * 20 : 10000;
       const conversionRate = Math.min(100, (opRevenue / (targetValue || 1)) * 100);
 
-      // QA, Assiduidade e Absenteísmo (com valores simulados realistas se não definidos)
+      // QA, Assiduidade e Absenteísmo
       const safeName = op?.name || op?.displayName || op?.email || '';
       const qaScore = op?.qaAverageScore || 85 + (safeName.length % 12);
       const attendanceRate = op?.attendanceRate || 95 - (safeName.length % 5);
@@ -166,7 +261,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         id: op?.uid || op?.id || Math.random().toString(),
         name: op?.name || op?.displayName || op?.email || 'Operador',
         role: op?.jobTitle || 'Operador de Cobrança',
-        teamName: teamsData.find(t => t.id === op?.teamId)?.name || 'Equipe Geral',
+        teamName: safeTeamsData.find(t => t.id === op?.teamId)?.name || 'Equipe Geral',
         revenue: opRevenue,
         agreementsCount: opAgreementsCount,
         promisesCount: opPromisesCount,
@@ -183,19 +278,19 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         mainPromoterReason
       };
     }).sort((a, b) => b.weightedScore - a.weightedScore);
-  }, [teamMembers, filteredAgreements, teamsData, totalPeriodRevenue, totalPeriodAgreementsCount, totalPeriodPromisesCount, weightConversion, weightRevenue, weightShare, weightQa, weightAttendance, weightAbsenteeism, totalWeight, shareMode]);
+  }, [safeTeamMembers, filteredAgreements, safeTeamsData, teamTotalsMap, shareScope, globalPeriodRevenue, globalPeriodAgreementsCount, globalPeriodPromisesCount, weightConversion, weightRevenue, weightShare, weightQa, weightAttendance, weightAbsenteeism, totalWeight, shareMode]);
 
   // Cálculo da Performance por Equipe / Supervisor
   const teamMetrics = useMemo(() => {
-    return teamsData.map(team => {
-      const teamMems = teamMembers.filter(m => m.teamId === team.id);
+    return safeTeamsData.map(team => {
+      const teamMems = safeTeamMembers.filter(m => m.teamId === team.id);
       const teamOpsMetrics = operatorMetrics.filter(m => teamMems.some(tm => tm.uid === m.id));
 
       const teamRevenue = teamOpsMetrics.reduce((acc, m) => acc + m.revenue, 0);
       const teamAgreements = teamOpsMetrics.reduce((acc, m) => acc + m.agreementsCount, 0);
       const teamPromises = teamOpsMetrics.reduce((acc, m) => acc + m.promisesCount, 0);
 
-      const shareRevenue = (teamRevenue / totalPeriodRevenue) * 100;
+      const shareRevenue = (teamRevenue / globalPeriodRevenue) * 100;
       const avgScore = teamOpsMetrics.length > 0 
         ? Math.round(teamOpsMetrics.reduce((acc, m) => acc + m.weightedScore, 0) / teamOpsMetrics.length) 
         : 0;
@@ -222,7 +317,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         avgQa
       };
     }).sort((a, b) => b.avgScore - a.avgScore);
-  }, [teamsData, teamMembers, operatorMetrics, totalPeriodRevenue]);
+  }, [safeTeamsData, safeTeamMembers, operatorMetrics, globalPeriodRevenue]);
 
   // Separação de Promotores (Top 3) e Ofensores (Bottom 3)
   const topPromoters = useMemo(() => operatorMetrics.slice(0, 3), [operatorMetrics]);
@@ -276,7 +371,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Configure os pesos dos indicadores, analise a representatividade (% Share) do time e diagnostique os gargalos operacionais.
+                Ajuste os pesos dos 6 indicadores de performance, alterne entre visões globais e por equipe, e descubra os principais promotores e gargalos operacionais.
               </p>
             </div>
           </div>
@@ -293,191 +388,252 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         </div>
       </div>
 
-      {/* Painel de Controle de Pesos Parametrizáveis */}
-      <div className={`p-6 rounded-3xl border ${
-        theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-slate-50 border-slate-200'
+      {/* NOVO PAINEL DE CONTROLE: Presets Estratégicos + Stack Bar 100% + Ajuste Fino */}
+      <div className={`p-6 rounded-3xl border space-y-6 ${
+        theme === 'dark' ? 'bg-slate-900/50 border-white/10' : 'bg-slate-50 border-slate-200'
       }`}>
-        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+        {/* Cabeçalho do Painel */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div className="flex items-center gap-2">
-            <SlidersHorizontal size={18} className="text-purple-400" />
-            <h3 className="text-sm font-black text-white">Configuração de Pesos dos Indicadores (%)</h3>
+            <Scales size={20} className="text-purple-400" />
+            <div>
+              <h3 className="text-sm font-black text-white">Configuração dos Pesos dos Indicadores (%)</h3>
+              <p className="text-[11px] text-slate-400">Escolha um preset estratégico pronto ou faça o ajuste fino indicador por indicador.</p>
+            </div>
           </div>
-          <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full ${
-            totalWeight === 100 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-          }`}>
-            Soma dos Pesos: {totalWeight}% {totalWeight !== 100 && '(Auto-normalizado)'}
-          </span>
+
+          <div className="flex items-center gap-3">
+            <span className={`text-xs font-mono font-bold px-3 py-1.5 rounded-full border ${
+              totalWeight === 100 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+            }`}>
+              Soma: {totalWeight}% {totalWeight !== 100 && '(Desbalanceado)'}
+            </span>
+
+            {totalWeight !== 100 && (
+              <button
+                onClick={normalizeWeightsTo100}
+                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                ⚡ 100% Auto-Equilibrar
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        {/* 1. Presets Prontos (1 clique) */}
+        <div className="space-y-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perfis Estratégicos Recomendados:</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button
+              onClick={() => applyPreset('balanced')}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                activePreset === 'balanced' ? 'bg-purple-600/20 border-purple-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <span>⚖️ Equilibrado 360°</span>
+              </div>
+              <p className="text-[10px] opacity-70 mt-1">Visão completa e balanceada de todos os indicadores.</p>
+            </button>
+
+            <button
+              onClick={() => applyPreset('revenue')}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                activePreset === 'revenue' ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <span>💰 Foco Faturamento</span>
+              </div>
+              <p className="text-[10px] opacity-70 mt-1">Prioriza faturamento R$ e representatividade no caixa.</p>
+            </button>
+
+            <button
+              onClick={() => applyPreset('qa')}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                activePreset === 'qa' ? 'bg-cyan-600/20 border-cyan-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <span>🛡️ Foco em QA & Script</span>
+              </div>
+              <p className="text-[10px] opacity-70 mt-1">Prioriza a nota de auditoria de qualidade e compliance.</p>
+            </button>
+
+            <button
+              onClick={() => applyPreset('attendance')}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                activePreset === 'attendance' ? 'bg-blue-600/20 border-blue-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <span>⚡ Foco em Assiduidade</span>
+              </div>
+              <p className="text-[10px] opacity-70 mt-1">Pontua fortemente operadores presentes e sem faltas.</p>
+            </button>
+          </div>
+        </div>
+
+        {/* 2. Barra de Distribuição Segmentada (Stack Bar 100%) */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[11px] font-mono text-slate-400">
+            <span>Distribuição Visual dos Pesos</span>
+            <span>{totalWeight}% Total</span>
+          </div>
+          <div className="h-4 w-full rounded-full bg-slate-800 overflow-hidden flex border border-white/10">
+            <div style={{ width: `${(weightConversion / (totalWeight || 1)) * 100}%` }} className="bg-purple-500 h-full transition-all" title={`Meta Acordos: ${weightConversion}%`} />
+            <div style={{ width: `${(weightRevenue / (totalWeight || 1)) * 100}%` }} className="bg-emerald-500 h-full transition-all" title={`Faturamento: ${weightRevenue}%`} />
+            <div style={{ width: `${(weightShare / (totalWeight || 1)) * 100}%` }} className="bg-sky-500 h-full transition-all" title={`Share: ${weightShare}%`} />
+            <div style={{ width: `${(weightQa / (totalWeight || 1)) * 100}%` }} className="bg-cyan-500 h-full transition-all" title={`Qualidade QA: ${weightQa}%`} />
+            <div style={{ width: `${(weightAttendance / (totalWeight || 1)) * 100}%` }} className="bg-blue-500 h-full transition-all" title={`Assiduidade: ${weightAttendance}%`} />
+            <div style={{ width: `${(weightAbsenteeism / (totalWeight || 1)) * 100}%` }} className="bg-rose-500 h-full transition-all" title={`Absenteísmo: ${weightAbsenteeism}%`} />
+          </div>
+        </div>
+
+        {/* 3. Controles de Ajuste Fino (+ / -) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {/* Conversão Meta % */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-400 font-bold">🎯 Meta Acordos</span>
-              <span className="font-mono text-purple-400 font-bold">{weightConversion}%</span>
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+            <span className="text-[11px] font-bold text-slate-300 block">🎯 Meta Acordos</span>
+            <div className="flex items-center justify-between gap-1">
+              <button onClick={() => adjustWeight(setWeightConversion, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
+              <span className="font-mono text-base font-black text-purple-400">{weightConversion}%</span>
+              <button onClick={() => adjustWeight(setWeightConversion, +5)} className="w-7 h-7 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="50"
-              value={weightConversion}
-              onChange={(e) => setWeightConversion(Number(e.target.value))}
-              className="w-full accent-purple-500 cursor-pointer"
-            />
           </div>
 
           {/* Faturamento R$ */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-400 font-bold">💸 Faturamento R$</span>
-              <span className="font-mono text-emerald-400 font-bold">{weightRevenue}%</span>
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+            <span className="text-[11px] font-bold text-slate-300 block">💸 Faturamento R$</span>
+            <div className="flex items-center justify-between gap-1">
+              <button onClick={() => adjustWeight(setWeightRevenue, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
+              <span className="font-mono text-base font-black text-emerald-400">{weightRevenue}%</span>
+              <button onClick={() => adjustWeight(setWeightRevenue, +5)} className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="50"
-              value={weightRevenue}
-              onChange={(e) => setWeightRevenue(Number(e.target.value))}
-              className="w-full accent-emerald-500 cursor-pointer"
-            />
           </div>
 
           {/* Representatividade % Share */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-400 font-bold">📊 Representatividade %</span>
-              <span className="font-mono text-sky-400 font-bold">{weightShare}%</span>
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+            <span className="text-[11px] font-bold text-slate-300 block">📊 Share %</span>
+            <div className="flex items-center justify-between gap-1">
+              <button onClick={() => adjustWeight(setWeightShare, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
+              <span className="font-mono text-base font-black text-sky-400">{weightShare}%</span>
+              <button onClick={() => adjustWeight(setWeightShare, +5)} className="w-7 h-7 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="50"
-              value={weightShare}
-              onChange={(e) => setWeightShare(Number(e.target.value))}
-              className="w-full accent-sky-500 cursor-pointer"
-            />
           </div>
 
           {/* Nota QA % */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-400 font-bold">🛡️ Qualidade QA</span>
-              <span className="font-mono text-cyan-400 font-bold">{weightQa}%</span>
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+            <span className="text-[11px] font-bold text-slate-300 block">🛡️ Qualidade QA</span>
+            <div className="flex items-center justify-between gap-1">
+              <button onClick={() => adjustWeight(setWeightQa, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
+              <span className="font-mono text-base font-black text-cyan-400">{weightQa}%</span>
+              <button onClick={() => adjustWeight(setWeightQa, +5)} className="w-7 h-7 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="50"
-              value={weightQa}
-              onChange={(e) => setWeightQa(Number(e.target.value))}
-              className="w-full accent-cyan-500 cursor-pointer"
-            />
           </div>
 
           {/* Assiduidade % */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-400 font-bold">⏰ Assiduidade</span>
-              <span className="font-mono text-blue-400 font-bold">{weightAttendance}%</span>
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+            <span className="text-[11px] font-bold text-slate-300 block">⏰ Assiduidade</span>
+            <div className="flex items-center justify-between gap-1">
+              <button onClick={() => adjustWeight(setWeightAttendance, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
+              <span className="font-mono text-base font-black text-blue-400">{weightAttendance}%</span>
+              <button onClick={() => adjustWeight(setWeightAttendance, +5)} className="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="50"
-              value={weightAttendance}
-              onChange={(e) => setWeightAttendance(Number(e.target.value))}
-              className="w-full accent-blue-500 cursor-pointer"
-            />
           </div>
 
           {/* Absenteísmo % */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-400 font-bold">🚫 Absenteísmo</span>
-              <span className="font-mono text-rose-400 font-bold">{weightAbsenteeism}%</span>
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+            <span className="text-[11px] font-bold text-slate-300 block">🚫 Absenteísmo</span>
+            <div className="flex items-center justify-between gap-1">
+              <button onClick={() => adjustWeight(setWeightAbsenteeism, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
+              <span className="font-mono text-base font-black text-rose-400">{weightAbsenteeism}%</span>
+              <button onClick={() => adjustWeight(setWeightAbsenteeism, +5)} className="w-7 h-7 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="50"
-              value={weightAbsenteeism}
-              onChange={(e) => setWeightAbsenteeism(Number(e.target.value))}
-              className="w-full accent-rose-500 cursor-pointer"
-            />
           </div>
         </div>
       </div>
 
-      {/* Barra de Filtros e Modos de Representatividade */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Alternador Nível: Operadores vs Equipes */}
-        <div className="flex items-center p-1 rounded-2xl bg-slate-900/60 border border-white/10 shrink-0">
-          <button
-            onClick={() => setViewLevel('operators')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              viewLevel === 'operators' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Users size={14} /> Visão por Operadores
-          </button>
-          <button
-            onClick={() => setViewLevel('teams')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              viewLevel === 'teams' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <ChartBar size={14} /> Visão por Equipes & Supervisores
-          </button>
+      {/* BARRA DE FILTROS E ESCOPO: Share Global vs Intra-Equipe & Período Personalizado */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Alternador Nível: Operadores vs Equipes */}
+          <div className="flex items-center p-1 rounded-2xl bg-slate-900/60 border border-white/10 shrink-0">
+            <button
+              onClick={() => setViewLevel('operators')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewLevel === 'operators' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Users size={14} /> Operadores
+            </button>
+            <button
+              onClick={() => setViewLevel('teams')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewLevel === 'teams' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <ChartBar size={14} /> Equipes & Supervisores
+            </button>
+          </div>
+
+          {/* ALTERNADOR DE ESCOPO DO SHARE: Global vs Intra-Equipe (Solicitado pelo Usuário) */}
+          {viewLevel === 'operators' && (
+            <div className="flex items-center p-1 rounded-2xl bg-slate-900/60 border border-white/10 shrink-0">
+              <button
+                onClick={() => setShareScope('global')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  shareScope === 'global' ? 'bg-sky-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Calcula o Share em relação a toda a operação (todas as equipes)"
+              >
+                <Globe size={14} /> Share Global (Toda a Operação)
+              </button>
+              <button
+                onClick={() => setShareScope('intra_team')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  shareScope === 'intra_team' ? 'bg-sky-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Calcula o Share do operador exclusivamente dentro da sua própria equipe"
+              >
+                <UsersThree size={14} /> Share Intra-Equipe (Sua Equipe)
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Modos de Representatividade (% Share) */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-bold text-slate-400 uppercase">Modo de Share:</span>
-          <button
-            onClick={() => setShareMode('combined')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-              shareMode === 'combined' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-white/5 border-white/10 text-slate-400'
-            }`}
+        {/* PERÍODO E SELETOR DE DATAS CUSTOMIZADAS */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <select
+            value={periodFilter}
+            onChange={(e) => setPeriodFilter(e.target.value as any)}
+            className="bg-slate-900 border border-white/10 px-3.5 py-2 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-bold cursor-pointer"
           >
-            Combinado (Global)
-          </button>
-          <button
-            onClick={() => setShareMode('revenue')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-              shareMode === 'revenue' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-white/5 border-white/10 text-slate-400'
-            }`}
-          >
-            Faturamento R$
-          </button>
-          <button
-            onClick={() => setShareMode('agreements')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-              shareMode === 'agreements' ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-white/5 border-white/10 text-slate-400'
-            }`}
-          >
-            Qtd. Acordos
-          </button>
-          <button
-            onClick={() => setShareMode('promises')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-              shareMode === 'promises' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-white/5 border-white/10 text-slate-400'
-            }`}
-          >
-            Promessas
-          </button>
-        </div>
+            <option value="today">Hoje</option>
+            <option value="yesterday">Ontem</option>
+            <option value="week">Semana Atual</option>
+            <option value="month">Mês Vigente</option>
+            <option value="custom">📅 Período Personalizado</option>
+          </select>
 
-        {/* Período */}
-        <select
-          value={periodFilter}
-          onChange={(e) => setPeriodFilter(e.target.value as any)}
-          className="bg-slate-900 border border-white/10 px-3.5 py-2 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
-        >
-          <option value="today">Hoje</option>
-          <option value="yesterday">Ontem</option>
-          <option value="week">Semana Atual</option>
-          <option value="month">Mês Vigente</option>
-        </select>
+          {periodFilter === 'custom' && (
+            <div className="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-white/10">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="bg-transparent text-xs text-white px-2 py-1 focus:outline-none"
+              />
+              <span className="text-slate-500 text-xs">até</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="bg-transparent text-xs text-white px-2 py-1 focus:outline-none"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Cartões dos Top Promotores e Principais Ofensores */}
@@ -508,7 +664,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                       {op.weightedScore} pts
                     </span>
                     <p className="text-[10px] text-sky-300 font-bold mt-1">
-                      Share: {op.shareRevenue.toFixed(1)}% R$
+                      Share ({shareScope === 'intra_team' ? 'Equipe' : 'Global'}): {op.shareRevenue.toFixed(1)}% R$
                     </p>
                   </div>
                 </div>
@@ -557,7 +713,9 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       }`}>
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            {viewLevel === 'operators' ? `Classificação Geral de Operadores (${operatorMetrics.length})` : `Comparativo por Equipe / Supervisor (${teamMetrics.length})`}
+            {viewLevel === 'operators' 
+              ? `Classificação Geral de Operadores (${operatorMetrics.length}) — Modo Share: ${shareScope === 'intra_team' ? 'Intra-Equipe (Na Sua Equipe)' : 'Global (Toda Operação)'}` 
+              : `Comparativo por Equipe / Supervisor (${teamMetrics.length})`}
           </span>
         </div>
 
@@ -633,7 +791,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                   <th className="py-3.5 px-4 text-center">Operadores</th>
                   <th className="py-3.5 px-4 text-center">Score Médio</th>
                   <th className="py-3.5 px-4 text-right">Faturamento R$</th>
-                  <th className="py-3.5 px-4 text-center">Share no Faturamento</th>
+                  <th className="py-3.5 px-4 text-center">Share no Faturamento Global</th>
                   <th className="py-3.5 px-4 text-center">Média QA</th>
                   <th className="py-3.5 px-4 text-center">Absenteísmo Médio</th>
                 </tr>
