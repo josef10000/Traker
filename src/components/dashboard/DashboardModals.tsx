@@ -91,6 +91,7 @@ export interface DashboardModalsProps {
   handleDeleteAdjustment: (id: string) => Promise<void>;
   monthAgreements: Agreement[];
   handleUpdateAgreementStatus: (agreementId: string, status: any, optionalData?: any) => Promise<void>;
+  handleBulkUpdateAgreementStatus: (updates: { agreementId: string, status: any, optionalData?: any }[]) => Promise<void>;
   handleCreateAgreementFromReconciliation: (agreementData: any) => Promise<void>;
 
   // CollaboratorHistoryModal
@@ -178,6 +179,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
   handleDeleteAdjustment,
   monthAgreements,
   handleUpdateAgreementStatus,
+  handleBulkUpdateAgreementStatus,
   handleCreateAgreementFromReconciliation,
 
   selectedCollabForHistory,
@@ -309,6 +311,7 @@ export const DashboardModals: React.FC<DashboardModalsProps> = ({
         onDeleteAdjustment={handleDeleteAdjustment}
         monthAgreements={monthAgreements}
         onUpdateAgreementStatus={handleUpdateAgreementStatus}
+        onBulkUpdateAgreementStatus={handleBulkUpdateAgreementStatus}
         onCreateAgreement={handleCreateAgreementFromReconciliation}
       />
 

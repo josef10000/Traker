@@ -1877,6 +1877,60 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleBulkUpdateAgreementStatus = async (updates: { agreementId: string, status: AgreementStatus, optionalData?: Partial<Agreement> }[]) => {
+    if (updates.length === 0) return;
+
+    if (profile.organizationId === 'sandbox-test') {
+      let updatedCount = 0;
+      for (const update of updates) {
+        const { agreementId, status, optionalData } = update;
+        const agreement = sandboxService.getAgreements(profile.organizationId, selectedMonth, selectedYear).find(a => a.id === agreementId);
+        if (agreement) {
+          sandboxService.setAgreement({
+            ...agreement,
+            status,
+            paidAt: status === AgreementStatus.PAID ? new Date().toISOString() : null,
+            ...optionalData
+          });
+          updatedCount++;
+        }
+      }
+      if (updatedCount > 0) {
+        showToast(`${updatedCount} Acordos do Sandbox atualizados na memória!`, 'success');
+        doMarkStale();
+      }
+      return;
+    }
+
+    try {
+      let currentBatch = writeBatch(db);
+      let count = 0;
+      for (const update of updates) {
+        const { agreementId, status, optionalData } = update;
+        const agreementRef = doc(db, 'agreements', agreementId);
+        const updateData: any = {
+          status,
+          paidAt: status === AgreementStatus.PAID ? new Date().toISOString() : null,
+          ...optionalData
+        };
+        currentBatch.update(agreementRef, updateData);
+        count++;
+        if (count % 500 === 0) {
+          await currentBatch.commit();
+          currentBatch = writeBatch(db);
+        }
+      }
+      if (count % 500 !== 0) {
+        await currentBatch.commit();
+      }
+      showToast(`${updates.length} Acordos atualizados com sucesso!`, 'success');
+      doMarkStale();
+    } catch (error) {
+      console.error("Erro ao atualizar acordos em lote:", error);
+      showToast('Erro ao atualizar acordos em lote.', 'error');
+    }
+  };
+
   const handleUpdateAgreementStatus = async (agreementId: string, status: AgreementStatus, optionalData?: Partial<Agreement>) => {
     if (profile.organizationId === 'sandbox-test') {
       const agreement = sandboxService.getAgreements(profile.organizationId, selectedMonth, selectedYear).find(a => a.id === agreementId);
@@ -3591,6 +3645,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         handleDeleteAdjustment={handleDeleteAdjustment}
         monthAgreements={monthAgreements}
         handleUpdateAgreementStatus={handleUpdateAgreementStatus}
+        handleBulkUpdateAgreementStatus={handleBulkUpdateAgreementStatus}
         handleCreateAgreementFromReconciliation={handleCreateAgreementFromReconciliation}
 
         selectedCollabForHistory={selectedCollabForHistory}

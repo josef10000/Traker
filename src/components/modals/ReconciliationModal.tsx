@@ -33,6 +33,7 @@ interface ReconciliationModalProps {
   onDeleteAdjustment: (id: string) => Promise<void>;
   monthAgreements: Agreement[];
   onUpdateAgreementStatus: (agreementId: string, status: AgreementStatus, optionalData?: Partial<Agreement>) => Promise<void>;
+  onBulkUpdateAgreementStatus?: (updates: { agreementId: string, status: AgreementStatus, optionalData?: Partial<Agreement> }[]) => Promise<void>;
   onCreateAgreement: (agreementData: Omit<Agreement, 'id' | 'operatorId' | 'teamId' | 'organizationId' | 'createdAt'>) => Promise<void>;
 }
 
@@ -67,6 +68,7 @@ export const ReconciliationModal = ({
   onDeleteAdjustment,
   monthAgreements,
   onUpdateAgreementStatus,
+  onBulkUpdateAgreementStatus,
   onCreateAgreement
 }: ReconciliationModalProps) => {
   const [activeTab, setActiveTab] = useState<'manual' | 'spreadsheet'>('manual');
@@ -366,9 +368,17 @@ export const ReconciliationModal = ({
     if (statusMismatches.length === 0) return;
     
     try {
-      for (const d of statusMismatches) {
-        const newStatus = d.excelStatus === 'pago' ? AgreementStatus.PAID : AgreementStatus.WAITING;
-        await onUpdateAgreementStatus(d.agreement.id, newStatus);
+      if (onBulkUpdateAgreementStatus) {
+        const updates = statusMismatches.map(d => ({
+          agreementId: d.agreement!.id,
+          status: d.excelStatus === 'pago' ? AgreementStatus.PAID : AgreementStatus.WAITING
+        }));
+        await onBulkUpdateAgreementStatus(updates);
+      } else {
+        for (const d of statusMismatches) {
+          const newStatus = d.excelStatus === 'pago' ? AgreementStatus.PAID : AgreementStatus.WAITING;
+          await onUpdateAgreementStatus(d.agreement!.id, newStatus);
+        }
       }
       setDiscrepancies(prev => prev.filter(d => d.type !== 'status_mismatch'));
     } catch (e) {
