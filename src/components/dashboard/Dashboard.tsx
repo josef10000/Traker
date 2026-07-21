@@ -337,19 +337,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Lista de Equipes para monitorar acordos
   const teamsToWatch = useMemo(() => {
+    const safeManagedTeams = managedTeamsData || [];
     if (selectedTeamId === 'all') {
-      return managedTeamsData.map(t => t.id);
+      return safeManagedTeams.map(t => t.id);
     }
     if (selectedTeamId.startsWith('manager-')) {
       const targetManagerId = selectedTeamId.replace('manager-', '');
-      return managedTeamsData
-        .filter(t => t.managerId === targetManagerId)
+      return safeManagedTeams
+        .filter(t => t?.managerId === targetManagerId)
         .map(t => t.id);
     }
     if (selectedTeamId.startsWith('supervisor-')) {
       const targetSupervisorId = selectedTeamId.replace('supervisor-', '');
-      return managedTeamsData
-        .filter(t => t.supervisorId === targetSupervisorId)
+      return safeManagedTeams
+        .filter(t => t?.supervisorId === targetSupervisorId)
         .map(t => t.id);
     }
     return [selectedTeamId];
@@ -357,24 +358,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Filtra operadores/membros da equipe de acordo com a seleção ativa (gerente, supervisor ou equipe)
   const filteredTeamMembers = useMemo(() => {
+    const safeMembers = currentTeamMembers || [];
+    const safeManagedTeams = managedTeamsData || [];
     if (selectedTeamId === 'all') {
-      return currentTeamMembers;
+      return safeMembers;
     }
     if (selectedTeamId.startsWith('manager-')) {
       const targetManagerId = selectedTeamId.replace('manager-', '');
-      return currentTeamMembers.filter(m => {
-        const team = managedTeamsData.find(t => t.id === m.teamId);
+      return safeMembers.filter(m => {
+        const team = safeManagedTeams.find(t => t.id === m?.teamId);
         return team?.managerId === targetManagerId;
       });
     }
     if (selectedTeamId.startsWith('supervisor-')) {
       const targetSupervisorId = selectedTeamId.replace('supervisor-', '');
-      return currentTeamMembers.filter(m => {
-        const team = managedTeamsData.find(t => t.id === m.teamId);
+      return safeMembers.filter(m => {
+        const team = safeManagedTeams.find(t => t.id === m?.teamId);
         return team?.supervisorId === targetSupervisorId;
       });
     }
-    return currentTeamMembers.filter(m => m.teamId === selectedTeamId);
+    return safeMembers.filter(m => m?.teamId === selectedTeamId);
   }, [selectedTeamId, currentTeamMembers, managedTeamsData]);
 
   // Escuta o histórico do cliente selecionado (LGPD e histórico global)
@@ -2051,19 +2054,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // 5. CÁLCULO DE DADOS COMPLEMENTARES PARA IMPRESSÃO DO RELATÓRIO
   const printTeamPerformance = useMemo(() => {
     if (selectedTeamId !== 'all') return [];
-    return managedTeamsData.map(t => {
-      const teamAgreements = monthAgreements.filter(a => {
-        return a.teamId === t.id && !a.isAdjustment;
+    const safeManaged = managedTeamsData || [];
+    const safeAgreementsMonth = monthAgreements || [];
+    return safeManaged.map(t => {
+      const teamAgreements = safeAgreementsMonth.filter(a => {
+        return a?.teamId === t?.id && !a?.isAdjustment;
       });
-      const totalProjected = teamAgreements.reduce((acc, curr) => acc + curr.value, 0);
-      const totalPaid = teamAgreements.filter(a => a.status === AgreementStatus.PAID).reduce((acc, curr) => acc + curr.value, 0);
+      const totalProjected = teamAgreements.reduce((acc, curr) => acc + (curr?.value || 0), 0);
+      const totalPaid = teamAgreements.filter(a => a?.status === AgreementStatus.PAID).reduce((acc, curr) => acc + (curr?.value || 0), 0);
       const effectiveness = totalProjected > 0 ? (totalPaid / totalProjected) * 100 : 0;
-      const goal = t.monthlyGoal || 0;
+      const goal = t?.monthlyGoal || 0;
       const pctGoal = goal > 0 ? (totalPaid / goal) * 100 : 0;
       
       return {
-        id: t.id,
-        name: t.name,
+        id: t?.id || '',
+        name: t?.name || 'Sem nome',
         monthlyGoal: goal,
         totalProjected,
         totalPaid,
@@ -2075,21 +2080,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const printOperatorRanking = useMemo(() => {
     if (selectedTeamId === 'all') return [];
-    const members = viewMode === 'personal' ? [profile] : filteredTeamMembers;
+    const safeFilteredMembers = filteredTeamMembers || [];
+    const safeMonthFiltered = monthFilteredAgreements || [];
+    const members = viewMode === 'personal' ? (profile ? [profile] : []) : safeFilteredMembers;
     if (members.length === 0) return [];
     
     return members.map(m => {
-      const opAgreements = monthFilteredAgreements.filter(a => a.operatorId === m.uid);
-      const totalProjected = opAgreements.reduce((acc, curr) => acc + curr.value, 0);
-      const totalPaid = opAgreements.filter(a => a.status === AgreementStatus.PAID).reduce((acc, curr) => acc + curr.value, 0);
+      const opAgreements = safeMonthFiltered.filter(a => a?.operatorId === m?.uid);
+      const totalProjected = opAgreements.reduce((acc, curr) => acc + (curr?.value || 0), 0);
+      const totalPaid = opAgreements.filter(a => a?.status === AgreementStatus.PAID).reduce((acc, curr) => acc + (curr?.value || 0), 0);
       const countTotal = opAgreements.length;
-      const countPaid = opAgreements.filter(a => a.status === AgreementStatus.PAID).length;
+      const countPaid = opAgreements.filter(a => a?.status === AgreementStatus.PAID).length;
       const effectiveness = totalProjected > 0 ? (totalPaid / totalProjected) * 100 : 0;
       
       return {
-        uid: m.uid,
-        displayName: m.displayName || m.email.split('@')[0],
-        jobTitle: m.jobTitle,
+        uid: m?.uid || '',
+        displayName: m?.displayName || 'Sem nome',
+        email: m?.email || '',
+        role: m?.role || 'member',
         totalProjected,
         totalPaid,
         countTotal,
