@@ -1,3 +1,4 @@
+import { generateSecureToken } from './teams';
 import { 
   Agreement, 
   AgreementStatus, 
@@ -439,7 +440,7 @@ class SandboxService {
 
     invitesData.forEach((data, index) => {
       const id = `sandbox-invite-${Date.now()}-${index}`;
-      const token = `sb-tok-${Math.random().toString(36).substring(2, 8)}`;
+      const token = `sb-tok-${generateSecureToken(6)}`;
       const invite: Invite = {
         id,
         email: data.email.trim(),
@@ -565,7 +566,7 @@ class SandboxService {
   }
 
   public createNotification(data: Omit<AppNotification, 'id' | 'read' | 'createdAt'>): AppNotification {
-    const id = `sandbox-notification-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const id = `sandbox-notification-${Date.now()}-${generateSecureToken(4)}`;
     const notification: AppNotification = {
       ...data,
       id,
