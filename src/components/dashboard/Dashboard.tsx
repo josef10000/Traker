@@ -1840,7 +1840,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const reconRef = doc(db, 'reconciliations', reconId);
 
     try {
-      await deleteDoc(reconRef);
+      const batch = writeBatch(db);
+      batch.delete(reconRef);
       const adjustmentsToDelete = monthAgreements.filter(a => {
         if (!a.isAdjustment) return false;
         if (a.operatorId !== profile.uid) return false;
@@ -1849,8 +1850,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
 
       for (const adj of adjustmentsToDelete) {
-        await deleteDoc(doc(db, 'agreements', adj.id));
+        batch.delete(doc(db, 'agreements', adj.id));
       }
+
+      await batch.commit();
 
       showToast('Conciliação e ajustes de saldo apagados com sucesso! O saldo voltou ao normal.', 'success');
       doMarkStale();
