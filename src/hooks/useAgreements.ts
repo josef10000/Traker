@@ -544,13 +544,14 @@ export const useAgreements = ({
   }, [currentPage]);
 
   const totalPages = useMemo(() => {
+    const safeAgreements = Array.isArray(monthAgreements) ? monthAgreements : [];
     if (searchTerm.trim() !== '' || isChecklistMode || operatorId !== 'all') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      let matched = monthAgreements.filter(a => !a.isAdjustment);
+      let matched = safeAgreements.filter(a => a && !a.isAdjustment);
 
       if (operatorId !== 'all') {
-        matched = matched.filter(a => a.operatorId === operatorId);
+        matched = matched.filter(a => a?.operatorId === operatorId);
       }
 
       if (isChecklistMode) {
@@ -604,8 +605,8 @@ export const useAgreements = ({
       if (searchTerm.trim() !== '') {
         const lowerSearch = searchTerm.toLowerCase();
         matched = matched.filter(a => 
-          a.clientName.toLowerCase().includes(lowerSearch) ||
-          a.clientCpf.includes(searchTerm)
+          a.clientName?.toLowerCase().includes(lowerSearch) ||
+          a.clientCpf?.includes(searchTerm)
         );
       }
 
@@ -613,12 +614,12 @@ export const useAgreements = ({
     }
     
     // Para paginação reativa do banco, calculamos com base no tamanho consolidado do mês filtrado
-    let baseList = monthAgreements;
+    let baseList = safeAgreements;
     if (filterStatus !== 'all') {
-      baseList = baseList.filter(a => a.status === filterStatus);
+      baseList = baseList.filter(a => a?.status === filterStatus);
     }
-    return Math.ceil(baseList.length / itemsPerPage) || 1;
-  }, [monthAgreements, filterStatus, searchTerm, isChecklistMode, operatorId, dateFilter]);
+    return Math.ceil((baseList?.length || 0) / itemsPerPage) || 1;
+  }, [monthAgreements, filterStatus, searchTerm, isChecklistMode, operatorId, dateFilter, customStartDate, customEndDate]);
 
   return {
     monthAgreements,

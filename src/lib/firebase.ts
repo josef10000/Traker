@@ -35,13 +35,14 @@ const app = initializeApp(firebaseConfig);
  */
 const rawSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 const appCheckSiteKey = typeof rawSiteKey === 'string' ? rawSiteKey.trim() : undefined;
+const enableAppCheck = import.meta.env.VITE_ENABLE_APP_CHECK === 'true';
 
-if (import.meta.env.DEV) {
-  // Debug token para desenvolvimento local — não bloqueia o dev
+// Ativa debug token para ambiente local ou desenvolvimento para não bloquear chamadas do Firestore/Auth com HTTP 400
+if (import.meta.env.DEV || typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
   (self as unknown as Record<string, unknown>).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
-if (appCheckSiteKey && appCheckSiteKey.length > 0) {
+if (enableAppCheck && appCheckSiteKey && appCheckSiteKey.length > 0) {
   try {
     initializeAppCheck(app, {
       provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
