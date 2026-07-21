@@ -323,33 +323,83 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   const topPromoters = useMemo(() => operatorMetrics.slice(0, 3), [operatorMetrics]);
   const bottomOffenders = useMemo(() => [...operatorMetrics].reverse().slice(0, 3), [operatorMetrics]);
 
-  // Exportar Relatório da Matriz em CSV
+  // Exportar Relatório da Matriz em CSV perfeitamente formatado (Excel PT-BR com BOM UTF-8 e ponto e vírgula)
   const exportMatrixCSV = () => {
-    const headers = ['Classificacao', 'Nome', 'Equipe', 'Pontuacao_Ponderada', 'Representatividade_R$', 'Representatividade_Acordos', 'QA_Nota', 'Absenteismo_%', 'Diagnostico'];
-    const rows = operatorMetrics.map((op, idx) => [
-      idx + 1,
-      op.name,
-      op.teamName,
-      `${op.weightedScore} pts`,
-      `${op.shareRevenue.toFixed(1)}%`,
-      `${op.shareAgreements.toFixed(1)}%`,
-      `${op.qaScore}%`,
-      `${op.absenteeismRate}%`,
-      idx < 3 ? op.mainPromoterReason : op.mainOffenderReason
-    ]);
+    let csvRows: string[] = [];
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + 
-      [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
+    if (viewLevel === 'operators') {
+      const headers = [
+        'Posição', 
+        'Nome do Operador', 
+        'Equipe', 
+        'Score Ponderado (pts)', 
+        'Faturamento (R$)', 
+        `Share Faturamento % (${shareScope === 'intra_team' ? 'Intra-Equipe' : 'Global'})`, 
+        `Share Acordos % (${shareScope === 'intra_team' ? 'Intra-Equipe' : 'Global'})`, 
+        'Nota QA (%)', 
+        'Absenteísmo (%)', 
+        'Diagnóstico Principal'
+      ];
 
-    const encodedUri = encodeURI(csvContent);
+      csvRows.push(headers.map(h => `"${h}"`).join(';'));
+
+      operatorMetrics.forEach((op, idx) => {
+        const row = [
+          `#${idx + 1}`,
+          op.name,
+          op.teamName,
+          `${op.weightedScore} pts`,
+          formatCurrency(op.revenue),
+          `${op.shareRevenue.toFixed(1).replace('.', ',')}%`,
+          `${op.shareAgreements.toFixed(1).replace('.', ',')}%`,
+          `${op.qaScore}%`,
+          `${op.absenteeismRate}%`,
+          idx < 3 ? op.mainPromoterReason : op.mainOffenderReason
+        ];
+        csvRows.push(row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'));
+      });
+    } else {
+      const headers = [
+        'Equipe', 
+        'Supervisor Responsável', 
+        'Qtd. Operadores', 
+        'Score Médio (pts)', 
+        'Faturamento Total (R$)', 
+        'Share Faturamento Global (%)', 
+        'Média QA (%)', 
+        'Absenteísmo Médio (%)'
+      ];
+
+      csvRows.push(headers.map(h => `"${h}"`).join(';'));
+
+      teamMetrics.forEach((t) => {
+        const row = [
+          t.name,
+          t.supervisorName,
+          t.membersCount,
+          `${t.avgScore} pts`,
+          formatCurrency(t.revenue),
+          `${t.shareRevenue.toFixed(1).replace('.', ',')}%`,
+          `${t.avgQa}%`,
+          `${t.avgAbsenteeism.replace('.', ',')}%`
+        ];
+        csvRows.push(row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'));
+      });
+    }
+
+    // Inclui BOM UTF-8 (\uFEFF) para garantir que acentos e ç abram perfeitamente no Excel
+    const csvContent = '\uFEFF' + csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `matriz_ofensores_promotores_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `matriz_ofensores_promotores_${viewLevel}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
-    showToast('Relatório da Matriz exportado com sucesso!', 'success');
+    showToast(`Relatório da Matriz (${viewLevel === 'operators' ? 'Operadores' : 'Equipes'}) exportado com sucesso!`, 'success');
   };
 
   return (
