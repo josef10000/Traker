@@ -9,7 +9,8 @@ import {
   updateDoc, 
   arrayUnion,
   arrayRemove,
-  deleteDoc
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Team, UserProfile, UserRole, Organization, Invite } from '../types';
@@ -316,12 +317,14 @@ export const joinOrganizationAsSupervisor = async (uid: string, userEmail: strin
     createdAt: now
   }, { merge: true });
 
+  const batch = writeBatch(db);
   for (const teamId of selectedTeamIds) {
     const teamRef = doc(db, 'teams', teamId);
-    await updateDoc(teamRef, {
+    batch.update(teamRef, {
       supervisorId: uid
     });
   }
+  await batch.commit();
 
   await updateDoc(orgDoc.ref, { supervisorInviteToken: null });
 
