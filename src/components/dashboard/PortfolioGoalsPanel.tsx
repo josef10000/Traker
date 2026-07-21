@@ -57,16 +57,20 @@ export const PortfolioGoalsPanel = ({
   const [tempGoal, setTempGoal] = useState('');
   const [tempObservation, setTempObservation] = useState('');
 
+  // Arrays seguros contra undefined
+  const safeMembers = useMemo(() => currentTeamMembers || [], [currentTeamMembers]);
+  const safeAgreements = useMemo(() => monthAgreements || [], [monthAgreements]);
+
   // Filtramos apenas membros que são operadores (role === 'member')
   const operators = useMemo(() => {
-    return currentTeamMembers.filter(m => m.role === 'member');
-  }, [currentTeamMembers]);
+    return safeMembers.filter(m => m.role === 'member');
+  }, [safeMembers]);
 
   // Lógica de cálculo por operador
   const operatorStats = useMemo(() => {
     // 1. Calcular os valores acumulados e metas de todos os operadores
     const baseStats = operators.map(op => {
-      const opAgreements = monthAgreements.filter(a => a.operatorId === op.uid && !a.isAdjustment);
+      const opAgreements = safeAgreements.filter(a => a.operatorId === op.uid && !a.isAdjustment);
       const partial = opAgreements
         .filter(a => a.status === AgreementStatus.PAID)
         .reduce((sum, a) => sum + a.value, 0);

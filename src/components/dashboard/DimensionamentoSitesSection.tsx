@@ -172,18 +172,23 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
   const totalActive = useMemo(() => vacancies.reduce((a, v) => a + v.activeHeadcount, 0), [vacancies]);
   const totalOpen = useMemo(() => vacancies.reduce((a, v) => a + v.openVacancies, 0), [vacancies]);
 
+  // Arrays com fallback seguro contra undefined
+  const safeTeamMembers = useMemo(() => teamMembers || [], [teamMembers]);
+  const safeTeamsData = useMemo(() => teamsData || [], [teamsData]);
+  const safeSites = useMemo(() => sites || [], [sites]);
+
   // Contagem dinâmica de operadores já cadastrados por site
   const sitesWithMetrics = useMemo(() => {
-    return sites.map(site => {
+    return safeSites.map(site => {
       // Contagem proporcional de membros já cadastrados
-      const count = Math.max(1, Math.floor(teamMembers.length / (sites.length || 1)));
+      const count = Math.max(1, Math.floor(safeTeamMembers.length / (safeSites.length || 1)));
       return {
         ...site,
         operatorsCount: count,
-        teamsCount: teamsData.length > 0 ? Math.max(1, Math.floor(teamsData.length / sites.length)) : 1
+        teamsCount: safeTeamsData.length > 0 ? Math.max(1, Math.floor(safeTeamsData.length / (safeSites.length || 1))) : 1
       };
     });
-  }, [sites, teamMembers, teamsData]);
+  }, [safeSites, safeTeamMembers, safeTeamsData]);
 
   return (
     <div className="space-y-6">

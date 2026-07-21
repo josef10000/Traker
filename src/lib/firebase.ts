@@ -33,19 +33,23 @@ const app = initializeApp(firebaseConfig);
  * Em desenvolvimento (import.meta.env.DEV), ativa o debug token automaticamente
  * para não bloquear o ambiente local.
  */
-const appCheckSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+const rawSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+const appCheckSiteKey = typeof rawSiteKey === 'string' ? rawSiteKey.trim() : undefined;
 
 if (import.meta.env.DEV) {
   // Debug token para desenvolvimento local — não bloqueia o dev
-  // Adicione o token gerado no console do Firebase App Check como token de debug permitido
   (self as unknown as Record<string, unknown>).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
-if (appCheckSiteKey) {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
-    isTokenAutoRefreshEnabled: true,
-  });
+if (appCheckSiteKey && appCheckSiteKey.length > 0) {
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (err) {
+    console.warn('Alerta AppCheck (não impeditivo):', err);
+  }
 }
 
 /**

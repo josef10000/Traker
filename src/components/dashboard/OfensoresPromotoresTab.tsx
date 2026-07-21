@@ -53,6 +53,11 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   // Normalização do Peso Total para garantir 100%
   const totalWeight = weightConversion + weightRevenue + weightShare + weightQa + weightAttendance + weightAbsenteeism;
 
+  // Fallbacks de arrays seguros contra undefined
+  const safeAgreements = useMemo(() => agreements || [], [agreements]);
+  const safeTeamMembers = useMemo(() => teamMembers || [], [teamMembers]);
+  const safeTeamsData = useMemo(() => teamsData || [], [teamsData]);
+
   // Filtrar Acordos pelo Período Escolhido
   const filteredAgreements = useMemo(() => {
     const now = new Date();
@@ -68,7 +73,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
 
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    return agreements.filter(a => {
+    return safeAgreements.filter(a => {
       if (!a.createdAt && !a.dueDate) return true;
       const dateStr = (a.createdAt || a.dueDate).split('T')[0];
 
@@ -78,7 +83,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       if (periodFilter === 'month') return new Date(dateStr) >= startOfMonth;
       return true;
     });
-  }, [agreements, periodFilter]);
+  }, [safeAgreements, periodFilter]);
 
   // Totais Gerais do Período para cálculo de Representatividade (% Share)
   const totalPeriodRevenue = useMemo(() => {
@@ -96,7 +101,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   // Cálculo da Performance por Operador
   const operatorMetrics = useMemo(() => {
     // Filtrar membros que são operadores
-    const operators = teamMembers.filter(m => m.role === 'member' || m.role === 'supervisor' || !m.role);
+    const operators = safeTeamMembers.filter(m => m.role === 'member' || m.role === 'supervisor' || !m.role);
 
     return operators.map(op => {
       const opAgreements = filteredAgreements.filter(a => 
