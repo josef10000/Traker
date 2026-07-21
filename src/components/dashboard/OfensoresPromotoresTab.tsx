@@ -20,7 +20,10 @@ import {
   UsersThree,
   CalendarCheck,
   ArrowsLeftRight,
-  Scales
+  Scales,
+  CaretLeft,
+  CaretRight,
+  Buildings
 } from '@phosphor-icons/react';
 import { UserProfile, Agreement, Team } from '../../types';
 import { formatCurrency } from '../../utils/masks';
@@ -42,8 +45,9 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   theme = 'dark',
   showToast
 }) => {
-  // Filtros de Nível, Período e Escopo do Share
+  // Filtros de Nível, Equipe e Período
   const [viewLevel, setViewLevel] = useState<'operators' | 'teams'>('operators');
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<'today' | 'yesterday' | 'week' | 'month' | 'custom'>('month');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
@@ -51,6 +55,10 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   // Escopo de Share: 'global' (Toda a Operação) vs 'intra_team' (Sua Própria Equipe)
   const [shareScope, setShareScope] = useState<'global' | 'intra_team'>('global');
   const [shareMode, setShareMode] = useState<'combined' | 'revenue' | 'agreements' | 'promises'>('combined');
+
+  // Paginação
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
 
   // Sliders de Pesos Parametrizáveis (%)
   const [weightConversion, setWeightConversion] = useState<number>(25);
@@ -186,9 +194,14 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
     return map;
   }, [filteredAgreements]);
 
-  // Cálculo da Performance por Operador (com suporte a Share Intra-Equipe vs Global)
+  // Cálculo da Performance por Operador (com filtro de Equipe Específica e Share)
   const operatorMetrics = useMemo(() => {
-    const operators = safeTeamMembers.filter(m => m.role === 'member' || m.role === 'supervisor' || !m.role);
+    let operators = safeTeamMembers.filter(m => m.role === 'member' || m.role === 'supervisor' || !m.role);
+
+    // Filtro por Equipe selecionada no Dropdown
+    if (selectedTeamId !== 'all') {
+      operators = operators.filter(m => m.teamId === selectedTeamId);
+    }
 
     return operators.map(op => {
       const opAgreements = filteredAgreements.filter(a => 
@@ -278,11 +291,16 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         mainPromoterReason
       };
     }).sort((a, b) => b.weightedScore - a.weightedScore);
-  }, [safeTeamMembers, filteredAgreements, safeTeamsData, teamTotalsMap, shareScope, globalPeriodRevenue, globalPeriodAgreementsCount, globalPeriodPromisesCount, weightConversion, weightRevenue, weightShare, weightQa, weightAttendance, weightAbsenteeism, totalWeight, shareMode]);
+  }, [safeTeamMembers, selectedTeamId, filteredAgreements, safeTeamsData, teamTotalsMap, shareScope, globalPeriodRevenue, globalPeriodAgreementsCount, globalPeriodPromisesCount, weightConversion, weightRevenue, weightShare, weightQa, weightAttendance, weightAbsenteeism, totalWeight, shareMode]);
 
   // Cálculo da Performance por Equipe / Supervisor
   const teamMetrics = useMemo(() => {
-    return safeTeamsData.map(team => {
+    let teams = safeTeamsData;
+    if (selectedTeamId !== 'all') {
+      teams = teams.filter(t => t.id === selectedTeamId);
+    }
+
+    return teams.map(team => {
       const teamMems = safeTeamMembers.filter(m => m.teamId === team.id);
       const teamOpsMetrics = operatorMetrics.filter(m => teamMems.some(tm => tm.uid === m.id));
 
@@ -317,13 +335,26 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         avgQa
       };
     }).sort((a, b) => b.avgScore - a.avgScore);
-  }, [safeTeamsData, safeTeamMembers, operatorMetrics, globalPeriodRevenue]);
+  }, [safeTeamsData, selectedTeamId, safeTeamMembers, operatorMetrics, globalPeriodRevenue]);
+
+  // Paginação dos Operadores
+  const totalPages = Math.ceil(operatorMetrics.length / itemsPerPage) || 1;
+  const paginatedOperators = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return operatorMetrics.slice(start, start + itemsPerPage);
+  }, [operatorMetrics, currentPage]);
+
+  // Reset de página ao mudar filtros
+  const handleTeamChange = (tId: string) => {
+    setSelectedTeamId(tId);
+    setCurrentPage(1);
+  };
 
   // Separação de Promotores (Top 3) e Ofensores (Bottom 3)
   const topPromoters = useMemo(() => operatorMetrics.slice(0, 3), [operatorMetrics]);
   const bottomOffenders = useMemo(() => [...operatorMetrics].reverse().slice(0, 3), [operatorMetrics]);
 
-  // Exportar Relatório da Matriz em CSV perfeitamente formatado (Excel PT-BR com BOM UTF-8 e ponto e vírgula)
+  // Exportar Relatório da Matriz em CSV (Excel PT-BR)
   const exportMatrixCSV = () => {
     let csvRows: string[] = [];
 
@@ -387,7 +418,6 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       });
     }
 
-    // Inclui BOM UTF-8 (\uFEFF) para garantir que acentos e ç abram perfeitamente no Excel
     const csvContent = '\uFEFF' + csvRows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -421,7 +451,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Ajuste os pesos dos 6 indicadores de performance, alterne entre visões globais e por equipe, e descubra os principais promotores e gargalos operacionais.
+                Selecione a equipe desejada, ajuste a sensibilidade dos indicadores e descubra os principais promotores e gargalos operacionais.
               </p>
             </div>
           </div>
@@ -438,7 +468,101 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         </div>
       </div>
 
-      {/* NOVO PAINEL DE CONTROLE: Presets Estratégicos + Stack Bar 100% + Ajuste Fino */}
+      {/* BARRA DE SELEÇÃO PRINCIPAL: SELETOR DE EQUIPES + VISÕES + FILTROS TEMPORAIS (Dropdowns Estilizados) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 1. SELETOR DE EQUIPE (Solicitado para Coordenação & QA) */}
+        <div className="p-4 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Buildings size={14} className="text-purple-400" />
+            Filtrar por Equipe:
+          </label>
+          <select
+            value={selectedTeamId}
+            onChange={(e) => handleTeamChange(e.target.value)}
+            className="w-full bg-slate-950 border border-white/10 hover:border-purple-500/50 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-white focus:outline-none focus:border-purple-500 transition-all cursor-pointer shadow-inner"
+          >
+            <option value="all">🏢 Todas as Equipes (Visão Geral da Operação)</option>
+            {safeTeamsData.map(team => (
+              <option key={team.id} value={team.id}>
+                👥 {team.name} ({team.supervisorName || 'Supervisor Responsável'})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 2. ALTERNADOR DE VISÃO & ESCOPO DO SHARE */}
+        <div className="p-4 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Globe size={14} className="text-sky-400" />
+            Escopo de Representatividade (% Share):
+          </label>
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-2xl border border-white/10">
+            <button
+              onClick={() => setShareScope('global')}
+              className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+                shareScope === 'global' ? 'bg-sky-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🌐 Share Global
+            </button>
+            <button
+              onClick={() => setShareScope('intra_team')}
+              className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+                shareScope === 'intra_team' ? 'bg-sky-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              👥 Intra-Equipe
+            </button>
+          </div>
+        </div>
+
+        {/* 3. SELETOR DE PERÍODO & DATAS */}
+        <div className="p-4 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <CalendarCheck size={14} className="text-emerald-400" />
+            Período de Análise:
+          </label>
+          <div className="flex items-center gap-2">
+            <select
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value as any)}
+              className="flex-1 bg-slate-950 border border-white/10 hover:border-purple-500/50 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-white focus:outline-none focus:border-purple-500 transition-all cursor-pointer"
+            >
+              <option value="today">📅 Hoje</option>
+              <option value="yesterday">⏪ Ontem</option>
+              <option value="week">📊 Semana Atual</option>
+              <option value="month">🏆 Mês Vigente</option>
+              <option value="custom">🔍 Período Personalizado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* INPUTS DE DATA SE PERÍODO PERSONALIZADO */}
+      {periodFilter === 'custom' && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-2xl bg-slate-900/80 border border-purple-500/30 flex items-center gap-4 justify-center"
+        >
+          <span className="text-xs font-bold text-slate-300">Filtrar de:</span>
+          <input
+            type="date"
+            value={customStartDate}
+            onChange={(e) => setCustomStartDate(e.target.value)}
+            className="bg-slate-950 border border-white/10 px-3 py-1.5 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+          />
+          <span className="text-xs font-bold text-slate-300">até:</span>
+          <input
+            type="date"
+            value={customEndDate}
+            onChange={(e) => setCustomEndDate(e.target.value)}
+            className="bg-slate-950 border border-white/10 px-3 py-1.5 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+          />
+        </motion.div>
+      )}
+
+      {/* PAINEL DE CONTROLE DE PESOS: Presets Estratégicos + Stack Bar 100% + Ajuste Fino */}
       <div className={`p-6 rounded-3xl border space-y-6 ${
         theme === 'dark' ? 'bg-slate-900/50 border-white/10' : 'bg-slate-50 border-slate-200'
       }`}>
@@ -604,88 +728,6 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         </div>
       </div>
 
-      {/* BARRA DE FILTROS E ESCOPO: Share Global vs Intra-Equipe & Período Personalizado */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Alternador Nível: Operadores vs Equipes */}
-          <div className="flex items-center p-1 rounded-2xl bg-slate-900/60 border border-white/10 shrink-0">
-            <button
-              onClick={() => setViewLevel('operators')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                viewLevel === 'operators' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Users size={14} /> Operadores
-            </button>
-            <button
-              onClick={() => setViewLevel('teams')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                viewLevel === 'teams' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <ChartBar size={14} /> Equipes & Supervisores
-            </button>
-          </div>
-
-          {/* ALTERNADOR DE ESCOPO DO SHARE: Global vs Intra-Equipe (Solicitado pelo Usuário) */}
-          {viewLevel === 'operators' && (
-            <div className="flex items-center p-1 rounded-2xl bg-slate-900/60 border border-white/10 shrink-0">
-              <button
-                onClick={() => setShareScope('global')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  shareScope === 'global' ? 'bg-sky-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-                }`}
-                title="Calcula o Share em relação a toda a operação (todas as equipes)"
-              >
-                <Globe size={14} /> Share Global (Toda a Operação)
-              </button>
-              <button
-                onClick={() => setShareScope('intra_team')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  shareScope === 'intra_team' ? 'bg-sky-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-                }`}
-                title="Calcula o Share do operador exclusivamente dentro da sua própria equipe"
-              >
-                <UsersThree size={14} /> Share Intra-Equipe (Sua Equipe)
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* PERÍODO E SELETOR DE DATAS CUSTOMIZADAS */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <select
-            value={periodFilter}
-            onChange={(e) => setPeriodFilter(e.target.value as any)}
-            className="bg-slate-900 border border-white/10 px-3.5 py-2 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-bold cursor-pointer"
-          >
-            <option value="today">Hoje</option>
-            <option value="yesterday">Ontem</option>
-            <option value="week">Semana Atual</option>
-            <option value="month">Mês Vigente</option>
-            <option value="custom">📅 Período Personalizado</option>
-          </select>
-
-          {periodFilter === 'custom' && (
-            <div className="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-white/10">
-              <input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="bg-transparent text-xs text-white px-2 py-1 focus:outline-none"
-              />
-              <span className="text-slate-500 text-xs">até</span>
-              <input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="bg-transparent text-xs text-white px-2 py-1 focus:outline-none"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Cartões dos Top Promotores e Principais Ofensores */}
       {viewLevel === 'operators' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -757,16 +799,45 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         </div>
       )}
 
-      {/* Tabela Principal Comparativa */}
+      {/* TABELA PRINCIPAL COMPARATIVA + PAGINAÇÃO */}
       <div className={`rounded-3xl border overflow-hidden backdrop-blur-md ${
         theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
       }`}>
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             {viewLevel === 'operators' 
-              ? `Classificação Geral de Operadores (${operatorMetrics.length}) — Modo Share: ${shareScope === 'intra_team' ? 'Intra-Equipe (Na Sua Equipe)' : 'Global (Toda Operação)'}` 
-              : `Comparativo por Equipe / Supervisor (${teamMetrics.length})`}
+              ? `Classificação Geral de Operadores (${operatorMetrics.length} total) — Equipe: ${selectedTeamId === 'all' ? 'Todas' : safeTeamsData.find(t => t.id === selectedTeamId)?.name}` 
+              : `Comparativo por Equipe / Supervisor (${teamMetrics.length} equipes)`}
           </span>
+
+          {/* Posição de Paginação no Topo da Tabela */}
+          {viewLevel === 'operators' && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-slate-400">
+                Página <strong className="text-white">{currentPage}</strong> de <strong className="text-white">{totalPages}</strong>
+              </span>
+
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white transition-all cursor-pointer"
+                  title="Página Anterior"
+                >
+                  <CaretLeft size={16} />
+                </button>
+
+                <button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white transition-all cursor-pointer"
+                  title="Próxima Página"
+                >
+                  <CaretRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {viewLevel === 'operators' ? (
@@ -786,48 +857,51 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 font-mono">
-                {operatorMetrics.map((op, idx) => (
-                  <tr key={op.id} className="hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-4 font-bold text-slate-300">#{idx + 1}</td>
-                    <td className="py-4 px-4 font-sans font-bold text-white">
-                      <div>{op.name}</div>
-                      <span className="text-[10px] font-normal text-slate-400">{op.teamName}</span>
-                    </td>
-                    <td className="py-4 px-4 text-center font-bold">
-                      <span className={`px-2.5 py-1 rounded-full text-xs ${
-                        op.weightedScore >= 75 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                        op.weightedScore >= 50 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                        'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      }`}>
-                        {op.weightedScore} pts
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-right font-bold text-emerald-400">
-                      {formatCurrency(op.revenue)}
-                    </td>
-                    <td className="py-4 px-4 text-center font-bold text-sky-400">
-                      {op.shareRevenue.toFixed(1)}%
-                    </td>
-                    <td className="py-4 px-4 text-center font-bold text-purple-400">
-                      {op.shareAgreements.toFixed(1)}%
-                    </td>
-                    <td className="py-4 px-4 text-center font-bold text-cyan-300">
-                      {op.qaScore}%
-                    </td>
-                    <td className="py-4 px-4 text-center font-bold text-rose-400">
-                      {op.absenteeismRate}%
-                    </td>
-                    <td className="py-4 px-4 font-sans text-xs">
-                      {idx < 3 ? (
-                        <span className="text-emerald-300 font-semibold">{op.mainPromoterReason}</span>
-                      ) : op.weightedScore < 50 ? (
-                        <span className="text-rose-400 font-semibold">{op.mainOffenderReason}</span>
-                      ) : (
-                        <span className="text-slate-400">{op.mainOffenderReason}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {paginatedOperators.map((op, idx) => {
+                  const absoluteIndex = (currentPage - 1) * itemsPerPage + idx + 1;
+                  return (
+                    <tr key={op.id} className="hover:bg-white/5 transition-colors">
+                      <td className="py-4 px-4 font-bold text-slate-300">#{absoluteIndex}</td>
+                      <td className="py-4 px-4 font-sans font-bold text-white">
+                        <div>{op.name}</div>
+                        <span className="text-[10px] font-normal text-slate-400">{op.teamName}</span>
+                      </td>
+                      <td className="py-4 px-4 text-center font-bold">
+                        <span className={`px-2.5 py-1 rounded-full text-xs ${
+                          op.weightedScore >= 75 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                          op.weightedScore >= 50 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                          'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        }`}>
+                          {op.weightedScore} pts
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-right font-bold text-emerald-400">
+                        {formatCurrency(op.revenue)}
+                      </td>
+                      <td className="py-4 px-4 text-center font-bold text-sky-400">
+                        {op.shareRevenue.toFixed(1)}%
+                      </td>
+                      <td className="py-4 px-4 text-center font-bold text-purple-400">
+                        {op.shareAgreements.toFixed(1)}%
+                      </td>
+                      <td className="py-4 px-4 text-center font-bold text-cyan-300">
+                        {op.qaScore}%
+                      </td>
+                      <td className="py-4 px-4 text-center font-bold text-rose-400">
+                        {op.absenteeismRate}%
+                      </td>
+                      <td className="py-4 px-4 font-sans text-xs">
+                        {absoluteIndex <= 3 ? (
+                          <span className="text-emerald-300 font-semibold">{op.mainPromoterReason}</span>
+                        ) : op.weightedScore < 50 ? (
+                          <span className="text-rose-400 font-semibold">{op.mainOffenderReason}</span>
+                        ) : (
+                          <span className="text-slate-400">{op.mainOffenderReason}</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -873,6 +947,37 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* CONTROLES DE PAGINAÇÃO NO RODAPÉ DA TABELA */}
+        {viewLevel === 'operators' && (
+          <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-mono">
+            <span>
+              Exibindo <strong className="text-white">{(currentPage - 1) * itemsPerPage + 1}</strong> a <strong className="text-white">{Math.min(currentPage * itemsPerPage, operatorMetrics.length)}</strong> de <strong className="text-white">{operatorMetrics.length}</strong> operador(es)
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white font-bold transition-all cursor-pointer flex items-center gap-1 font-sans"
+              >
+                <CaretLeft size={14} /> Anterior
+              </button>
+
+              <span className="px-3 py-1 rounded-xl bg-white/5 text-white font-bold">
+                {currentPage} / {totalPages}
+              </span>
+
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white font-bold transition-all cursor-pointer flex items-center gap-1 font-sans"
+              >
+                Próxima <CaretRight size={14} />
+              </button>
+            </div>
           </div>
         )}
       </div>
