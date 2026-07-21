@@ -323,14 +323,14 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Vencimento com Alto Contraste */}
+                    {/* Vencimento com Alto Contraste (idêntico ao Valor) */}
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span 
                           className={`text-sm font-black tabular-nums ${
-                            isOverdue 
+                            isOverdue && agreement.status !== AgreementStatus.PAID
                               ? theme === 'dark' ? 'text-rose-400' : 'text-rose-600' 
-                              : theme === 'dark' ? 'text-slate-100' : 'text-slate-900'
+                              : theme === 'dark' ? 'text-white' : 'text-slate-900'
                           }`}
                           title="Data de Vencimento do Acordo"
                         >
