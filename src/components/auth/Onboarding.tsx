@@ -68,8 +68,8 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
       await setDoc(userRef, userProfile);
       if (showToast) showToast('Acesso de Super Admin configurado com sucesso!', 'success');
       onComplete();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +85,8 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
       await createOrganization(user.uid, user.email!, orgName);
       if (showToast) showToast('Empresa criada com sucesso!', 'success');
       onComplete();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -106,8 +106,8 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
       await createTeam(user.uid, user.email!, teamName, profile.organizationId);
       if (showToast) showToast('Equipe criada com sucesso!', 'success');
       onComplete();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -162,8 +162,8 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
         if (showToast) showToast('Você entrou na equipe com sucesso!', 'success');
         onComplete();
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -176,8 +176,8 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
       const orgName = await joinOrganizationAsSupervisor(user.uid, user.email!, inviteToken.trim(), selectedTeams);
       if (showToast) showToast(`Você ingressou como Supervisor na empresa ${orgName}!`, 'success');
       onComplete();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
