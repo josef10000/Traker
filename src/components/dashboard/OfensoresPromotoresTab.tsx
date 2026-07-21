@@ -45,6 +45,8 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   theme = 'dark',
   showToast
 }) => {
+  const isDark = theme === 'dark';
+
   // Filtros de Nível, Equipe e Período
   const [viewLevel, setViewLevel] = useState<'operators' | 'teams'>('operators');
   const [selectedTeamId, setSelectedTeamId] = useState<string>('all');
@@ -449,22 +451,34 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
   return (
     <div className="space-y-8">
       {/* Banner Principal */}
-      <div className={`p-6 rounded-3xl border relative overflow-hidden backdrop-blur-xl ${
-        theme === 'dark' ? 'bg-slate-900/60 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900 shadow-sm'
+      <div className={`p-6 rounded-3xl border relative overflow-hidden backdrop-blur-xl transition-all ${
+        isDark 
+          ? 'bg-slate-900/60 border-white/10 text-white' 
+          : 'bg-white border-slate-200/80 text-slate-900 shadow-sm'
       }`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-sky-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${
+              isDark
+                ? 'bg-gradient-to-br from-purple-500/20 to-sky-500/20 border-purple-500/30 text-purple-400'
+                : 'bg-purple-100/60 border-purple-300 text-purple-700'
+            }`}>
               <SlidersHorizontal size={32} weight="bold" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black tracking-tight">Matriz Parametrizável de Ofensores & Promotores</h2>
-                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  Matriz Parametrizável de Ofensores & Promotores
+                </h2>
+                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
+                  isDark
+                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+                    : 'bg-sky-100 text-sky-800 border-sky-300'
+                }`}>
                   Coordenação & QA
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600 font-medium'}`}>
                 Selecione a equipe desejada, ajuste a sensibilidade dos indicadores e descubra os principais promotores e gargalos operacionais.
               </p>
             </div>
@@ -482,18 +496,28 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         </div>
       </div>
 
-      {/* BARRA DE SELEÇÃO PRINCIPAL: SELETOR DE EQUIPES + VISÕES + FILTROS TEMPORAIS (Dropdowns Estilizados) */}
+      {/* BARRA DE SELEÇÃO PRINCIPAL: SELETOR DE EQUIPES + VISÕES + FILTROS TEMPORAIS (Adaptado para Modo Claro) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* 1. SELETOR DE EQUIPE (Solicitado para Coordenação & QA) */}
-        <div className="p-4 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Buildings size={14} className="text-purple-400" />
+        {/* 1. SELETOR DE EQUIPE */}
+        <div className={`p-4 rounded-3xl border space-y-1.5 transition-all ${
+          isDark 
+            ? 'bg-slate-900/60 border-white/10' 
+            : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <label className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+            isDark ? 'text-slate-400' : 'text-slate-700'
+          }`}>
+            <Buildings size={14} className={isDark ? 'text-purple-400' : 'text-purple-600'} />
             Filtrar por Equipe:
           </label>
           <select
             value={selectedTeamId}
             onChange={(e) => handleTeamChange(e.target.value)}
-            className="w-full bg-slate-950 border border-white/10 hover:border-purple-500/50 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-white focus:outline-none focus:border-purple-500 transition-all cursor-pointer shadow-inner"
+            className={`w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              isDark
+                ? 'bg-slate-950 border border-white/10 hover:border-purple-500/50 text-white'
+                : 'bg-slate-50 border border-slate-300 hover:border-purple-500 text-slate-950 font-extrabold shadow-xs'
+            }`}
           >
             <option value="all">🏢 Todas as Equipes (Visão Geral da Operação)</option>
             {safeTeamsData.map(team => (
@@ -505,25 +529,39 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         </div>
 
         {/* 2. ALTERNADOR DE VISÃO & ESCOPO DO SHARE */}
-        <div className="p-4 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Globe size={14} className="text-sky-400" />
+        <div className={`p-4 rounded-3xl border space-y-1.5 transition-all ${
+          isDark 
+            ? 'bg-slate-900/60 border-white/10' 
+            : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <label className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+            isDark ? 'text-slate-400' : 'text-slate-700'
+          }`}>
+            <Globe size={14} className={isDark ? 'text-sky-400' : 'text-sky-600'} />
             Escopo de Representatividade (% Share):
           </label>
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-2xl border border-white/10">
+          <div className={`flex items-center gap-1 p-1 rounded-2xl border ${
+            isDark ? 'bg-slate-950 border-white/10' : 'bg-slate-100 border-slate-200'
+          }`}>
             <button
               onClick={() => setShareScope('global')}
               className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
-                shareScope === 'global' ? 'bg-sky-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                shareScope === 'global'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
+              title="Calcula o Share em relação a toda a operação (todas as equipes)"
             >
               🌐 Share Global
             </button>
             <button
               onClick={() => setShareScope('intra_team')}
               className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
-                shareScope === 'intra_team' ? 'bg-sky-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                shareScope === 'intra_team'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
+              title="Calcula o Share do operador exclusivamente dentro da sua própria equipe"
             >
               👥 Intra-Equipe
             </button>
@@ -531,16 +569,26 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         </div>
 
         {/* 3. SELETOR DE PERÍODO & DATAS */}
-        <div className="p-4 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <CalendarCheck size={14} className="text-emerald-400" />
+        <div className={`p-4 rounded-3xl border space-y-1.5 transition-all ${
+          isDark 
+            ? 'bg-slate-900/60 border-white/10' 
+            : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <label className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+            isDark ? 'text-slate-400' : 'text-slate-700'
+          }`}>
+            <CalendarCheck size={14} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
             Período de Análise:
           </label>
           <div className="flex items-center gap-2">
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as any)}
-              className="flex-1 bg-slate-950 border border-white/10 hover:border-purple-500/50 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-white focus:outline-none focus:border-purple-500 transition-all cursor-pointer"
+              className={`flex-1 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                isDark
+                  ? 'bg-slate-950 border border-white/10 hover:border-purple-500/50 text-white'
+                  : 'bg-slate-50 border border-slate-300 hover:border-purple-500 text-slate-950 font-extrabold shadow-xs'
+              }`}
             >
               <option value="today">📅 Hoje</option>
               <option value="yesterday">⏪ Ontem</option>
@@ -557,42 +605,58 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-2xl bg-slate-900/80 border border-purple-500/30 flex items-center gap-4 justify-center"
+          className={`p-4 rounded-2xl border flex items-center gap-4 justify-center ${
+            isDark ? 'bg-slate-900/80 border-purple-500/30' : 'bg-purple-50/70 border-purple-200'
+          }`}
         >
-          <span className="text-xs font-bold text-slate-300">Filtrar de:</span>
+          <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Filtrar de:</span>
           <input
             type="date"
             value={customStartDate}
             onChange={(e) => setCustomStartDate(e.target.value)}
-            className="bg-slate-950 border border-white/10 px-3 py-1.5 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+            className={`px-3 py-1.5 rounded-xl text-xs font-mono ${
+              isDark ? 'bg-slate-950 border-white/10 text-white' : 'bg-white border-slate-300 text-slate-900'
+            }`}
           />
-          <span className="text-xs font-bold text-slate-300">até:</span>
+          <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>até:</span>
           <input
             type="date"
             value={customEndDate}
             onChange={(e) => setCustomEndDate(e.target.value)}
-            className="bg-slate-950 border border-white/10 px-3 py-1.5 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+            className={`px-3 py-1.5 rounded-xl text-xs font-mono ${
+              isDark ? 'bg-slate-950 border-white/10 text-white' : 'bg-white border-slate-300 text-slate-900'
+            }`}
           />
         </motion.div>
       )}
 
       {/* PAINEL DE CONTROLE DE PESOS: Presets Estratégicos + Stack Bar 100% + Ajuste Fino */}
-      <div className={`p-6 rounded-3xl border space-y-6 ${
-        theme === 'dark' ? 'bg-slate-900/50 border-white/10' : 'bg-slate-50 border-slate-200'
+      <div className={`p-6 rounded-3xl border space-y-6 transition-all ${
+        isDark 
+          ? 'bg-slate-900/50 border-white/10' 
+          : 'bg-white border-slate-200 shadow-sm'
       }`}>
         {/* Cabeçalho do Painel */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+        <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 ${
+          isDark ? 'border-white/10' : 'border-slate-200'
+        }`}>
           <div className="flex items-center gap-2">
-            <Scales size={20} className="text-purple-400" />
+            <Scales size={20} className={isDark ? 'text-purple-400' : 'text-purple-600'} />
             <div>
-              <h3 className="text-sm font-black text-white">Configuração dos Pesos dos Indicadores (%)</h3>
-              <p className="text-[11px] text-slate-400">Escolha um preset estratégico pronto ou faça o ajuste fino indicador por indicador.</p>
+              <h3 className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Configuração dos Pesos dos Indicadores (%)
+              </h3>
+              <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600 font-medium'}`}>
+                Escolha um preset estratégico pronto ou faça o ajuste fino indicador por indicador.
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <span className={`text-xs font-mono font-bold px-3 py-1.5 rounded-full border ${
-              totalWeight === 100 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+              totalWeight === 100 
+                ? isDark ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                : isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-900 border-amber-300 font-black'
             }`}>
               Soma: {totalWeight}% {totalWeight !== 100 && '(Desbalanceado)'}
             </span>
@@ -610,65 +674,89 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
 
         {/* 1. Presets Prontos (1 clique) */}
         <div className="space-y-2">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perfis Estratégicos Recomendados:</span>
+          <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>
+            Perfis Estratégicos Recomendados:
+          </span>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <button
               onClick={() => applyPreset('balanced')}
               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                activePreset === 'balanced' ? 'bg-purple-600/20 border-purple-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                activePreset === 'balanced' 
+                  ? isDark ? 'bg-purple-600/20 border-purple-500 text-white shadow-lg' : 'bg-purple-100/80 border-purple-400 text-purple-950 font-bold shadow-sm'
+                  : isDark ? 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20' : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-purple-300 hover:bg-purple-50/50'
               }`}
             >
               <div className="flex items-center gap-2 font-bold text-xs">
                 <span>⚖️ Equilibrado 360°</span>
               </div>
-              <p className="text-[10px] opacity-70 mt-1">Visão completa e balanceada de todos os indicadores.</p>
+              <p className={`text-[10px] mt-1 ${isDark ? 'opacity-70' : 'text-slate-600 font-medium'}`}>
+                Visão completa e balanceada de todos os indicadores.
+              </p>
             </button>
 
             <button
               onClick={() => applyPreset('revenue')}
               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                activePreset === 'revenue' ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                activePreset === 'revenue' 
+                  ? isDark ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-lg' : 'bg-emerald-100/80 border-emerald-400 text-emerald-950 font-bold shadow-sm'
+                  : isDark ? 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20' : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/50'
               }`}
             >
               <div className="flex items-center gap-2 font-bold text-xs">
                 <span>💰 Foco Faturamento</span>
               </div>
-              <p className="text-[10px] opacity-70 mt-1">Prioriza faturamento R$ e representatividade no caixa.</p>
+              <p className={`text-[10px] mt-1 ${isDark ? 'opacity-70' : 'text-slate-600 font-medium'}`}>
+                Prioriza faturamento R$ e representatividade no caixa.
+              </p>
             </button>
 
             <button
               onClick={() => applyPreset('qa')}
               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                activePreset === 'qa' ? 'bg-cyan-600/20 border-cyan-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                activePreset === 'qa' 
+                  ? isDark ? 'bg-cyan-600/20 border-cyan-500 text-white shadow-lg' : 'bg-cyan-100/80 border-cyan-400 text-cyan-950 font-bold shadow-sm'
+                  : isDark ? 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20' : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-cyan-300 hover:bg-cyan-50/50'
               }`}
             >
               <div className="flex items-center gap-2 font-bold text-xs">
                 <span>🛡️ Foco em QA & Script</span>
               </div>
-              <p className="text-[10px] opacity-70 mt-1">Prioriza a nota de auditoria de qualidade e compliance.</p>
+              <p className={`text-[10px] mt-1 ${isDark ? 'opacity-70' : 'text-slate-600 font-medium'}`}>
+                Prioriza a nota de auditoria de qualidade e compliance.
+              </p>
             </button>
 
             <button
               onClick={() => applyPreset('attendance')}
               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                activePreset === 'attendance' ? 'bg-blue-600/20 border-blue-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                activePreset === 'attendance' 
+                  ? isDark ? 'bg-blue-600/20 border-blue-500 text-white shadow-lg' : 'bg-blue-100/80 border-blue-400 text-blue-950 font-bold shadow-sm'
+                  : isDark ? 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20' : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-blue-300 hover:bg-blue-50/50'
               }`}
             >
               <div className="flex items-center gap-2 font-bold text-xs">
                 <span>⚡ Foco em Assiduidade</span>
               </div>
-              <p className="text-[10px] opacity-70 mt-1">Pontua fortemente operadores presentes e sem faltas.</p>
+              <p className={`text-[10px] mt-1 ${isDark ? 'opacity-70' : 'text-slate-600 font-medium'}`}>
+                Pontua fortemente operadores presentes e sem faltas.
+              </p>
             </button>
           </div>
         </div>
 
         {/* 2. Barra de Distribuição Segmentada (Stack Bar 100%) */}
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[11px] font-mono text-slate-400">
+          <div className={`flex justify-between text-[11px] font-mono font-bold ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>
             <span>Distribuição Visual dos Pesos</span>
             <span>{totalWeight}% Total</span>
           </div>
-          <div className="h-4 w-full rounded-full bg-slate-800 overflow-hidden flex border border-white/10">
+          <div className={`h-4 w-full rounded-full overflow-hidden flex border ${
+            isDark ? 'bg-slate-800 border-white/10' : 'bg-slate-200 border-slate-300'
+          }`}>
             <div style={{ width: `${(weightConversion / (totalWeight || 1)) * 100}%` }} className="bg-purple-500 h-full transition-all" title={`Meta Acordos: ${weightConversion}%`} />
             <div style={{ width: `${(weightRevenue / (totalWeight || 1)) * 100}%` }} className="bg-emerald-500 h-full transition-all" title={`Faturamento: ${weightRevenue}%`} />
             <div style={{ width: `${(weightShare / (totalWeight || 1)) * 100}%` }} className="bg-sky-500 h-full transition-all" title={`Share: ${weightShare}%`} />
@@ -678,64 +766,88 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
           </div>
         </div>
 
-        {/* 3. Controles de Ajuste Fino (+ / -) */}
+        {/* 3. Controles de Ajuste Fino (+ / -) com excelente legibilidade no Modo Claro */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {/* Conversão Meta % */}
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-            <span className="text-[11px] font-bold text-slate-300 block">🎯 Meta Acordos</span>
+          <div className={`p-3.5 rounded-2xl border space-y-2 ${
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>🎯 Meta Acordos</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightConversion, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
-              <span className="font-mono text-base font-black text-purple-400">{weightConversion}%</span>
+              <button onClick={() => adjustWeight(setWeightConversion, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+              }`}>-5</button>
+              <span className={`font-mono text-base font-black ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>{weightConversion}%</span>
               <button onClick={() => adjustWeight(setWeightConversion, +5)} className="w-7 h-7 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
           </div>
 
           {/* Faturamento R$ */}
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-            <span className="text-[11px] font-bold text-slate-300 block">💸 Faturamento R$</span>
+          <div className={`p-3.5 rounded-2xl border space-y-2 ${
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>💸 Faturamento R$</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightRevenue, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
-              <span className="font-mono text-base font-black text-emerald-400">{weightRevenue}%</span>
+              <button onClick={() => adjustWeight(setWeightRevenue, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+              }`}>-5</button>
+              <span className={`font-mono text-base font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>{weightRevenue}%</span>
               <button onClick={() => adjustWeight(setWeightRevenue, +5)} className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
           </div>
 
           {/* Representatividade % Share */}
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-            <span className="text-[11px] font-bold text-slate-300 block">📊 Share %</span>
+          <div className={`p-3.5 rounded-2xl border space-y-2 ${
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>📊 Share %</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightShare, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
-              <span className="font-mono text-base font-black text-sky-400">{weightShare}%</span>
+              <button onClick={() => adjustWeight(setWeightShare, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+              }`}>-5</button>
+              <span className={`font-mono text-base font-black ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>{weightShare}%</span>
               <button onClick={() => adjustWeight(setWeightShare, +5)} className="w-7 h-7 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
           </div>
 
           {/* Nota QA % */}
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-            <span className="text-[11px] font-bold text-slate-300 block">🛡️ Qualidade QA</span>
+          <div className={`p-3.5 rounded-2xl border space-y-2 ${
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>🛡️ Qualidade QA</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightQa, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
-              <span className="font-mono text-base font-black text-cyan-400">{weightQa}%</span>
+              <button onClick={() => adjustWeight(setWeightQa, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+              }`}>-5</button>
+              <span className={`font-mono text-base font-black ${isDark ? 'text-cyan-400' : 'text-cyan-700'}`}>{weightQa}%</span>
               <button onClick={() => adjustWeight(setWeightQa, +5)} className="w-7 h-7 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
           </div>
 
           {/* Assiduidade % */}
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-            <span className="text-[11px] font-bold text-slate-300 block">⏰ Assiduidade</span>
+          <div className={`p-3.5 rounded-2xl border space-y-2 ${
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>⏰ Assiduidade</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightAttendance, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
-              <span className="font-mono text-base font-black text-blue-400">{weightAttendance}%</span>
+              <button onClick={() => adjustWeight(setWeightAttendance, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+              }`}>-5</button>
+              <span className={`font-mono text-base font-black ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>{weightAttendance}%</span>
               <button onClick={() => adjustWeight(setWeightAttendance, +5)} className="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
           </div>
 
           {/* Absenteísmo % */}
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-            <span className="text-[11px] font-bold text-slate-300 block">🚫 Absenteísmo</span>
+          <div className={`p-3.5 rounded-2xl border space-y-2 ${
+            isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-black block ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>🚫 Absenteísmo</span>
             <div className="flex items-center justify-between gap-1">
-              <button onClick={() => adjustWeight(setWeightAbsenteeism, -5)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black text-xs cursor-pointer">-5</button>
-              <span className="font-mono text-base font-black text-rose-400">{weightAbsenteeism}%</span>
+              <button onClick={() => adjustWeight(setWeightAbsenteeism, -5)} className={`w-7 h-7 rounded-lg font-black text-xs cursor-pointer ${
+                isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+              }`}>-5</button>
+              <span className={`font-mono text-base font-black ${isDark ? 'text-rose-400' : 'text-rose-700'}`}>{weightAbsenteeism}%</span>
               <button onClick={() => adjustWeight(setWeightAbsenteeism, +5)} className="w-7 h-7 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-xs cursor-pointer">+5</button>
             </div>
           </div>
@@ -746,30 +858,46 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       {viewLevel === 'operators' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Card Promotores */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-950/40 to-slate-900/60 border border-emerald-500/20 space-y-4">
-            <div className="flex items-center gap-2 text-emerald-400 border-b border-emerald-500/20 pb-3">
+          <div className={`p-6 rounded-3xl border space-y-4 shadow-xs ${
+            isDark
+              ? 'bg-gradient-to-br from-emerald-950/40 to-slate-900/60 border-emerald-500/20'
+              : 'bg-gradient-to-br from-emerald-50/80 to-white border-emerald-200 text-slate-900'
+          }`}>
+            <div className={`flex items-center gap-2 border-b pb-3 ${
+              isDark ? 'text-emerald-400 border-emerald-500/20' : 'text-emerald-700 border-emerald-200'
+            }`}>
               <Trophy size={20} weight="bold" />
-              <h3 className="text-base font-black text-white">🏆 Top Promotores da Operação</h3>
+              <h3 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                🏆 Top Promotores da Operação
+              </h3>
             </div>
 
             <div className="space-y-3">
               {topPromoters.map((op, i) => (
-                <div key={op.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-4">
+                <div key={op.id} className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
+                  isDark ? 'bg-white/5 border-white/5' : 'bg-white border-slate-200/80 shadow-2xs'
+                }`}>
                   <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-black text-xs flex items-center justify-center border border-emerald-500/30">
+                    <span className={`w-7 h-7 rounded-full font-mono font-black text-xs flex items-center justify-center border ${
+                      isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    }`}>
                       #{i + 1}
                     </span>
                     <div>
-                      <h4 className="text-sm font-bold text-white">{op.name}</h4>
-                      <p className="text-[11px] text-slate-400">{op.teamName} • QA: <strong className="text-emerald-300">{op.qaScore}%</strong></p>
+                      <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{op.name}</h4>
+                      <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {op.teamName} • QA: <strong className={isDark ? 'text-emerald-300' : 'text-emerald-700 font-black'}>{op.qaScore}%</strong>
+                      </p>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                    <span className={`text-xs font-mono font-black px-2.5 py-1 rounded-full border ${
+                      isDark ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-emerald-800 bg-emerald-100 border-emerald-300'
+                    }`}>
                       {op.weightedScore} pts
                     </span>
-                    <p className="text-[10px] text-sky-300 font-bold mt-1">
+                    <p className={`text-[10px] font-bold mt-1 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
                       Share ({shareScope === 'intra_team' ? 'Equipe' : 'Global'}): {op.shareRevenue.toFixed(1)}% R$
                     </p>
                   </div>
@@ -779,30 +907,44 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
           </div>
 
           {/* Card Ofensores */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-rose-950/40 to-slate-900/60 border border-rose-500/20 space-y-4">
-            <div className="flex items-center gap-2 text-rose-400 border-b border-rose-500/20 pb-3">
+          <div className={`p-6 rounded-3xl border space-y-4 shadow-xs ${
+            isDark
+              ? 'bg-gradient-to-br from-rose-950/40 to-slate-900/60 border-rose-500/20'
+              : 'bg-gradient-to-br from-rose-50/80 to-white border-rose-200 text-slate-900'
+          }`}>
+            <div className={`flex items-center gap-2 border-b pb-3 ${
+              isDark ? 'text-rose-400 border-rose-500/20' : 'text-rose-700 border-rose-200'
+            }`}>
               <Warning size={20} weight="bold" />
-              <h3 className="text-base font-black text-white">⚠️ Principais Ofensores (Gargalos)</h3>
+              <h3 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                ⚠️ Principais Ofensores (Gargalos)
+              </h3>
             </div>
 
             <div className="space-y-3">
               {bottomOffenders.map((op, i) => (
-                <div key={op.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-4">
+                <div key={op.id} className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
+                  isDark ? 'bg-white/5 border-white/5' : 'bg-white border-slate-200/80 shadow-2xs'
+                }`}>
                   <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-full bg-rose-500/20 text-rose-400 font-mono font-black text-xs flex items-center justify-center border border-rose-500/30">
+                    <span className={`w-7 h-7 rounded-full font-mono font-black text-xs flex items-center justify-center border ${
+                      isDark ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-rose-100 text-rose-800 border-rose-300'
+                    }`}>
                       #{i + 1}
                     </span>
                     <div>
-                      <h4 className="text-sm font-bold text-white">{op.name}</h4>
-                      <p className="text-[11px] text-rose-300 font-semibold">{op.mainOffenderReason}</p>
+                      <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{op.name}</h4>
+                      <p className={`text-[11px] font-semibold ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>{op.mainOffenderReason}</p>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <span className="text-xs font-mono font-black text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20">
+                    <span className={`text-xs font-mono font-black px-2.5 py-1 rounded-full border ${
+                      isDark ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-rose-800 bg-rose-100 border-rose-300'
+                    }`}>
                       {op.weightedScore} pts
                     </span>
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600 font-semibold'}`}>
                       Absenteísmo: {op.absenteeismRate}%
                     </p>
                   </div>
@@ -814,11 +956,17 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       )}
 
       {/* TABELA PRINCIPAL COMPARATIVA + PAGINAÇÃO */}
-      <div className={`rounded-3xl border overflow-hidden backdrop-blur-md ${
-        theme === 'dark' ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-200 shadow-sm'
+      <div className={`rounded-3xl border overflow-hidden transition-all ${
+        isDark 
+          ? 'bg-slate-900/40 border-white/10 text-white' 
+          : 'bg-white border-slate-200 text-slate-900 shadow-sm'
       }`}>
-        <div className="px-6 py-4 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+        <div className={`px-6 py-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+          isDark ? 'border-white/10' : 'border-slate-200'
+        }`}>
+          <span className={`text-xs font-black uppercase tracking-wider ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>
             {viewLevel === 'operators' 
               ? `Classificação Geral de Operadores (${operatorMetrics.length} total) — Equipe: ${selectedTeamId === 'all' ? 'Todas' : safeTeamsData.find(t => t.id === selectedTeamId)?.name}` 
               : `Comparativo por Equipe / Supervisor (${teamMetrics.length} equipes)`}
@@ -827,15 +975,17 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
           {/* Posição de Paginação no Topo da Tabela */}
           {viewLevel === 'operators' && (
             <div className="flex items-center gap-3">
-              <span className="text-xs font-mono text-slate-400">
-                Página <strong className="text-white">{currentPage}</strong> de <strong className="text-white">{totalPages}</strong>
+              <span className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-600 font-bold'}`}>
+                Página <strong className={isDark ? 'text-white' : 'text-slate-950 font-black'}>{currentPage}</strong> de <strong className={isDark ? 'text-white' : 'text-slate-950 font-black'}>{totalPages}</strong>
               </span>
 
               <div className="flex items-center gap-1">
                 <button
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white transition-all cursor-pointer"
+                  className={`p-1.5 rounded-xl transition-all cursor-pointer disabled:opacity-30 ${
+                    isDark ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                  }`}
                   title="Página Anterior"
                 >
                   <CaretLeft size={16} />
@@ -844,7 +994,9 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                 <button
                   disabled={currentPage >= totalPages}
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white transition-all cursor-pointer"
+                  className={`p-1.5 rounded-xl transition-all cursor-pointer disabled:opacity-30 ${
+                    isDark ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                  }`}
                   title="Próxima Página"
                 >
                   <CaretRight size={16} />
@@ -858,7 +1010,9 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider bg-white/5">
+                <tr className={`border-b font-black uppercase tracking-wider ${
+                  isDark ? 'border-white/10 text-slate-400 bg-white/5' : 'border-slate-200 text-slate-700 bg-slate-100/80'
+                }`}>
                   <th className="py-3.5 px-4">Posição</th>
                   <th className="py-3.5 px-4">Operador</th>
                   <th className="py-3.5 px-4 text-center">Score Ponderado</th>
@@ -870,47 +1024,53 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                   <th className="py-3.5 px-4 text-left">Diagnóstico Principal</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 font-mono">
+              <tbody className={`divide-y font-mono ${
+                isDark ? 'divide-white/5' : 'divide-slate-200/60'
+              }`}>
                 {paginatedOperators.map((op, idx) => {
                   const absoluteIndex = (currentPage - 1) * itemsPerPage + idx + 1;
                   return (
-                    <tr key={op.id} className="hover:bg-white/5 transition-colors">
-                      <td className="py-4 px-4 font-bold text-slate-300">#{absoluteIndex}</td>
-                      <td className="py-4 px-4 font-sans font-bold text-white">
+                    <tr key={op.id} className={`transition-colors ${
+                      isDark ? 'hover:bg-white/5' : 'hover:bg-purple-50/50'
+                    }`}>
+                      <td className={`py-4 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>#{absoluteIndex}</td>
+                      <td className={`py-4 px-4 font-sans font-bold ${isDark ? 'text-white' : 'text-slate-950'}`}>
                         <div>{op.name}</div>
-                        <span className="text-[10px] font-normal text-slate-400">{op.teamName}</span>
+                        <span className={`text-[10px] font-normal ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{op.teamName}</span>
                       </td>
                       <td className="py-4 px-4 text-center font-bold">
-                        <span className={`px-2.5 py-1 rounded-full text-xs ${
-                          op.weightedScore >= 75 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                          op.weightedScore >= 50 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                          'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                          op.weightedScore >= 75 
+                            ? isDark ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            : op.weightedScore >= 50 
+                              ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : isDark ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-rose-100 text-rose-900 border border-rose-300'
                         }`}>
                           {op.weightedScore} pts
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-right font-bold text-emerald-400">
+                      <td className={`py-4 px-4 text-right font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
                         {formatCurrency(op.revenue)}
                       </td>
-                      <td className="py-4 px-4 text-center font-bold text-sky-400">
+                      <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>
                         {op.shareRevenue.toFixed(1)}%
                       </td>
-                      <td className="py-4 px-4 text-center font-bold text-purple-400">
+                      <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>
                         {op.shareAgreements.toFixed(1)}%
                       </td>
-                      <td className="py-4 px-4 text-center font-bold text-cyan-300">
+                      <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-cyan-300' : 'text-cyan-800'}`}>
                         {op.qaScore}%
                       </td>
-                      <td className="py-4 px-4 text-center font-bold text-rose-400">
+                      <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-rose-400' : 'text-rose-700'}`}>
                         {op.absenteeismRate}%
                       </td>
                       <td className="py-4 px-4 font-sans text-xs">
                         {absoluteIndex <= 3 ? (
-                          <span className="text-emerald-300 font-semibold">{op.mainPromoterReason}</span>
+                          <span className={`font-bold ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>{op.mainPromoterReason}</span>
                         ) : op.weightedScore < 50 ? (
-                          <span className="text-rose-400 font-semibold">{op.mainOffenderReason}</span>
+                          <span className={`font-bold ${isDark ? 'text-rose-400' : 'text-rose-800'}`}>{op.mainOffenderReason}</span>
                         ) : (
-                          <span className="text-slate-400">{op.mainOffenderReason}</span>
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>{op.mainOffenderReason}</span>
                         )}
                       </td>
                     </tr>
@@ -923,7 +1083,9 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider bg-white/5">
+                <tr className={`border-b font-black uppercase tracking-wider ${
+                  isDark ? 'border-white/10 text-slate-400 bg-white/5' : 'border-slate-200 text-slate-700 bg-slate-100/80'
+                }`}>
                   <th className="py-3.5 px-4">Equipe</th>
                   <th className="py-3.5 px-4">Supervisor</th>
                   <th className="py-3.5 px-4 text-center">Operadores</th>
@@ -934,27 +1096,33 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
                   <th className="py-3.5 px-4 text-center">Absenteísmo Médio</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 font-mono">
+              <tbody className={`divide-y font-mono ${
+                isDark ? 'divide-white/5' : 'divide-slate-200/60'
+              }`}>
                 {teamMetrics.map(t => (
-                  <tr key={t.id} className="hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-4 font-sans font-bold text-white">{t.name}</td>
-                    <td className="py-4 px-4 font-sans text-slate-300">{t.supervisorName}</td>
-                    <td className="py-4 px-4 text-center font-bold text-slate-200">{t.membersCount}</td>
+                  <tr key={t.id} className={`transition-colors ${
+                    isDark ? 'hover:bg-white/5' : 'hover:bg-purple-50/50'
+                  }`}>
+                    <td className={`py-4 px-4 font-sans font-bold ${isDark ? 'text-white' : 'text-slate-950'}`}>{t.name}</td>
+                    <td className={`py-4 px-4 font-sans ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t.supervisorName}</td>
+                    <td className={`py-4 px-4 text-center font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{t.membersCount}</td>
                     <td className="py-4 px-4 text-center font-bold">
-                      <span className="px-2.5 py-1 rounded-full text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                        isDark ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-900 border border-purple-300'
+                      }`}>
                         {t.avgScore} pts
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-right font-bold text-emerald-400">
+                    <td className={`py-4 px-4 text-right font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
                       {formatCurrency(t.revenue)}
                     </td>
-                    <td className="py-4 px-4 text-center font-bold text-sky-400">
+                    <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>
                       {t.shareRevenue.toFixed(1)}%
                     </td>
-                    <td className="py-4 px-4 text-center font-bold text-cyan-300">
+                    <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-cyan-300' : 'text-cyan-800'}`}>
                       {t.avgQa}%
                     </td>
-                    <td className="py-4 px-4 text-center font-bold text-rose-400">
+                    <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-rose-400' : 'text-rose-700'}`}>
                       {t.avgAbsenteeism}%
                     </td>
                   </tr>
@@ -966,28 +1134,36 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
 
         {/* CONTROLES DE PAGINAÇÃO NO RODAPÉ DA TABELA */}
         {viewLevel === 'operators' && (
-          <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-mono">
+          <div className={`px-6 py-4 border-t flex items-center justify-between text-xs font-mono ${
+            isDark ? 'border-white/10 text-slate-400' : 'border-slate-200 text-slate-600'
+          }`}>
             <span>
-              Exibindo <strong className="text-white">{(currentPage - 1) * itemsPerPage + 1}</strong> a <strong className="text-white">{Math.min(currentPage * itemsPerPage, operatorMetrics.length)}</strong> de <strong className="text-white">{operatorMetrics.length}</strong> operador(es)
+              Exibindo <strong className={isDark ? 'text-white' : 'text-slate-900 font-bold'}>{(currentPage - 1) * itemsPerPage + 1}</strong> a <strong className={isDark ? 'text-white' : 'text-slate-900 font-bold'}>{Math.min(currentPage * itemsPerPage, operatorMetrics.length)}</strong> de <strong className={isDark ? 'text-white' : 'text-slate-900 font-bold'}>{operatorMetrics.length}</strong> operador(es)
             </span>
 
             <div className="flex items-center gap-2">
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white font-bold transition-all cursor-pointer flex items-center gap-1 font-sans"
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1 font-sans disabled:opacity-30 ${
+                  isDark ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                }`}
               >
                 <CaretLeft size={14} /> Anterior
               </button>
 
-              <span className="px-3 py-1 rounded-xl bg-white/5 text-white font-bold">
+              <span className={`px-3 py-1 rounded-xl font-bold ${
+                isDark ? 'bg-white/5 text-white' : 'bg-slate-100 text-slate-900'
+              }`}>
                 {currentPage} / {totalPages}
               </span>
 
               <button
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white font-bold transition-all cursor-pointer flex items-center gap-1 font-sans"
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1 font-sans disabled:opacity-30 ${
+                  isDark ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                }`}
               >
                 Próxima <CaretRight size={14} />
               </button>
