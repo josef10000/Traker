@@ -339,12 +339,14 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Valor com Alto Contraste */}
+                    {/* Valor com Alto Contraste (Verde se Pago) */}
                     <td 
                       className={`px-6 py-4 text-sm font-black tabular-nums ${
-                        theme === 'dark' ? 'text-white' : 'text-slate-900'
+                        agreement.status === AgreementStatus.PAID
+                          ? theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
+                          : theme === 'dark' ? 'text-white' : 'text-slate-900'
                       }`}
-                      title="Valor do Acordo registrado"
+                      title={agreement.status === AgreementStatus.PAID ? "Valor Pago e Confirmado no Sistema" : "Valor do Acordo registrado"}
                     >
                       {formatCurrency(agreement.value)}
                     </td>
