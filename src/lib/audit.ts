@@ -2,16 +2,36 @@ import { collection, addDoc, query, orderBy, limit, getDocs } from 'firebase/fir
 import { db, auth } from './firebase';
 
 export interface AuditLog {
+  id?: string;
   userId: string;
   userEmail: string | null;
   userName: string;
   organizationId: string; // Obrigatório para isolamento multi-tenant nas Firestore Rules
-  action: 'REVEAL_CPF' | 'EXPORT_CSV_COMPLETE' | 'EXPORT_CSV_MASKED' | 'ANONIMIZE_CLIENT' | 'ACCEPT_TERMS' | 'CREATE_ORGANIZATION' | 'DELETE_ORGANIZATION' | 'UPDATE_ORGANIZATION_LIMITS' | 'FORCE_COLLISION' | 'EXPORT_CSV';
+  action: 
+    | 'COPY_CPF'
+    | 'REVEAL_CPF'
+    | 'CREATE_AGREEMENT'
+    | 'UPDATE_AGREEMENT'
+    | 'EFETIVAR_PAGAMENTO'
+    | 'CHECK_AGREEMENT'
+    | 'DELETE_AGREEMENT'
+    | 'EXPORT_CSV_COMPLETE'
+    | 'EXPORT_CSV_MASKED'
+    | 'ANONIMIZE_CLIENT'
+    | 'ACCEPT_TERMS'
+    | 'CREATE_ORGANIZATION'
+    | 'DELETE_ORGANIZATION'
+    | 'UPDATE_ORGANIZATION_LIMITS'
+    | 'FORCE_COLLISION'
+    | 'EXPORT_CSV';
   details: Record<string, any>;
   timestamp: string;
   previousHash?: string;
   hash?: string;
 }
+
+// Importação tardia dinâmica para evitar dependências circulares com sandboxService
+import { sandboxService } from './sandboxService';
 
 // Função assíncrona para gerar hash SHA-256 em formato hexadecimal
 async function generateSHA256(message: string): Promise<string> {
@@ -29,8 +49,20 @@ export const logAudit = async (
   organizationId?: string
 ) => {
   try {
+    const timestamp = new Date().toISOString();
+    const user = auth.currentUser;
+
     if (organizationId === 'sandbox-test') {
-      console.log(`[Sandbox Audit] Ação: ${action}, Detalhes:`, details);
+      sandboxService.addAuditLog({
+        id: `sandbox-audit-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        userId: user?.uid || 'sandbox-user-1',
+        userEmail: user?.email || 'operador.teste@noverde.com.br',
+        userName: userName || 'Carlos Silva',
+        organizationId: 'sandbox-test',
+        action,
+        details,
+        timestamp
+      });
       return;
     }
 

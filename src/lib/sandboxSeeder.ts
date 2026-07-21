@@ -17,6 +17,8 @@ import {
   UserRole
 } from '../types';
 
+import { AuditLog } from './audit';
+
 export interface SandboxSeeds {
   organizations: Record<string, Organization>;
   users: Record<string, UserProfile>;
@@ -29,6 +31,7 @@ export interface SandboxSeeds {
   backofficeClients: Record<string, BackOfficeClient>;
   qaSettings: Record<string, QaSettings>;
   invites: Record<string, Invite>;
+  auditLogs: AuditLog[];
 }
 
 export const generateSandboxSeeds = (): SandboxSeeds => {
@@ -47,6 +50,81 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
   const backofficeClients: Record<string, BackOfficeClient> = {};
   const qaSettings: Record<string, QaSettings> = {};
   const invites: Record<string, Invite> = {};
+  const auditLogs: AuditLog[] = [
+    {
+      id: 'sandbox-audit-seed-1',
+      userId: 'sandbox-op-1',
+      userEmail: 'carlos.op@noverde.com.br',
+      userName: 'Carlos Silva (Operador)',
+      organizationId: orgId,
+      action: 'COPY_CPF',
+      details: {
+        cpf: '12345678900',
+        clientName: 'JOSE FRAZAO DA SILVA NETO',
+        agreementId: 'sandbox-agree-1'
+      },
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() // Há 3 horas
+    },
+    {
+      id: 'sandbox-audit-seed-2',
+      userId: 'sandbox-op-1',
+      userEmail: 'carlos.op@noverde.com.br',
+      userName: 'Carlos Silva (Operador)',
+      organizationId: orgId,
+      action: 'CREATE_AGREEMENT',
+      details: {
+        cpf: '12345678900',
+        clientName: 'JOSE FRAZAO DA SILVA NETO',
+        value: 500,
+        type: 'quitacao',
+        agreementId: 'sandbox-agree-1'
+      },
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2.8).toISOString()
+    },
+    {
+      id: 'sandbox-audit-seed-3',
+      userId: 'sandbox-super-1',
+      userEmail: 'mariana.sup@noverde.com.br',
+      userName: 'Mariana Souza (Supervisora)',
+      organizationId: orgId,
+      action: 'EFETIVAR_PAGAMENTO',
+      details: {
+        cpf: '98765432111',
+        clientName: 'Devedor 2 (Ana Souza)',
+        value: 6262,
+        agreementId: 'sandbox-agree-2'
+      },
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1.5).toISOString()
+    },
+    {
+      id: 'sandbox-audit-seed-4',
+      userId: 'sandbox-op-2',
+      userEmail: 'ana.paula@noverde.com.br',
+      userName: 'Ana Paula (Operadora)',
+      organizationId: orgId,
+      action: 'REVEAL_CPF',
+      details: {
+        cpf: '98765432111',
+        clientName: 'Devedor 2 (Ana Souza)',
+        agreementId: 'sandbox-agree-2'
+      },
+      timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString() // Há 45 min
+    },
+    {
+      id: 'sandbox-audit-seed-5',
+      userId: 'sandbox-op-1',
+      userEmail: 'carlos.op@noverde.com.br',
+      userName: 'Carlos Silva (Operador)',
+      organizationId: orgId,
+      action: 'CHECK_AGREEMENT',
+      details: {
+        cpf: '12345678900',
+        clientName: 'JOSE FRAZAO DA SILVA NETO',
+        agreementId: 'sandbox-agree-1'
+      },
+      timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString() // Há 10 min
+    }
+  ];
 
   // 1. Organização
   organizations[orgId] = {
@@ -468,6 +546,7 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
     backofficeImports,
     backofficeClients,
     qaSettings,
-    invites
+    invites,
+    auditLogs
   };
 };

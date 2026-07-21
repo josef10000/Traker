@@ -235,6 +235,11 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                               const cleanCpf = agreement.clientCpf.replace(/\D/g, '');
                               navigator.clipboard.writeText(cleanCpf);
                               showToast('CPF copiado!', 'success');
+                              logAudit('COPY_CPF', {
+                                cpf: cleanCpf,
+                                clientName: agreement.clientName,
+                                agreementId: agreement.id
+                              }, userProfile?.name || 'Operador', userProfile?.organizationId);
                               if (onCopyCpf) onCopyCpf(agreement.id, agreement.clientCpf);
                             }}
                             className={`text-xs font-mono font-bold tracking-wider px-1.5 py-0.5 rounded-md transition-all cursor-pointer border border-transparent active:scale-95 ${

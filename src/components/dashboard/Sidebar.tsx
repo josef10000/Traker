@@ -100,6 +100,13 @@ export const Sidebar = ({
       description: 'Canal direto de suporte técnico do Tracker.',
       icon: SupportIcon,
       show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor'
+    },
+    {
+      id: 'audit',
+      label: 'Auditoria & CPF',
+      description: 'Trilha histórica de ações de colaboradores sobre CPFs.',
+      icon: QaIcon,
+      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin' || profile.organizationId === 'sandbox-test'
     }
   ];
 

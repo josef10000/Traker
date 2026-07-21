@@ -20,6 +20,7 @@ import {
   AppNotification,
   MonthlyPayment
 } from '../types';
+import { AuditLog } from './audit';
 import { generateSandboxSeeds } from './sandboxSeeder';
 
 // Tipo para listeners reativos
@@ -45,7 +46,7 @@ class SandboxService {
   private calendarEvents: Record<string, CalendarEvent> = {};
   private notifications: Record<string, AppNotification> = {};
   private monthlyPayments: Record<string, MonthlyPayment> = {};
-
+  private auditLogs: AuditLog[] = [];
 
   constructor() {
     this.resetSandbox();
@@ -84,6 +85,7 @@ class SandboxService {
     this.backofficeClients = seeds.backofficeClients;
     this.qaSettings = seeds.qaSettings;
     this.invites = seeds.invites;
+    this.auditLogs = seeds.auditLogs || [];
     this.collaborationNotes = {};
     this.calendarEvents = {};
     this.transferRequests = {};
@@ -617,6 +619,15 @@ class SandboxService {
       this.monthlyPayments[id].updatedAt = new Date().toISOString();
       this.notify();
     }
+  }
+
+  public getAuditLogs(): AuditLog[] {
+    return [...this.auditLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+
+  public addAuditLog(log: AuditLog): void {
+    this.auditLogs.unshift(log);
+    this.notify();
   }
 }
 

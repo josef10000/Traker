@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sidebar } from './Sidebar';
+import { AuditTab } from './AuditTab';
+import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
   doc, 
@@ -2708,6 +2709,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   selectedTeamId={selectedTeamId}
                   supervisors={supervisors}
                   managedTeamsData={managedTeamsData}
+                />
+              )}
+
+              {/* CONTEÚDO DA ABA DE TRILHA DE AUDITORIA & CONFORMIDADE */}
+              {dashboardTab === 'audit' && (
+                <AuditTab
+                  profile={profile}
+                  theme={theme}
+                  showToast={showToast}
                 />
               )}
 
