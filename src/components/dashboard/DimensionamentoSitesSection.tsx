@@ -503,10 +503,10 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                           )}
                         </div>
                       </td>
-                      <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-slate-200' : 'text-slate-950'}`}>
+                      <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-white font-black' : 'text-slate-950'}`}>
                         {prod.approvedHeadcount}
                       </td>
-                      <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-sky-400' : 'text-sky-950'}`}>
+                      <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-sky-300 font-black' : 'text-sky-950'}`}>
                         {prod.activeHeadcount}
                       </td>
                       <td className="py-4 px-4 text-center">
@@ -616,13 +616,13 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                         <td className={`py-4 px-4 font-sans font-black ${isDark ? 'text-white' : 'text-slate-950'}`}>
                           {prod.productName}
                         </td>
-                        <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-purple-400' : 'text-purple-950'}`}>
+                        <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-purple-300 font-black' : 'text-purple-950'}`}>
                           {prod.requestedHeadcount} PAs
                         </td>
-                        <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-sky-400' : 'text-sky-950'}`}>
+                        <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-white font-black' : 'text-slate-950'}`}>
                           {prod.approvedHeadcount} PAs
                         </td>
-                        <td className={`py-4 px-4 text-center font-black ${isDark ? 'text-slate-200' : 'text-slate-950'}`}>
+                        <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-sky-300 font-black' : 'text-slate-950'}`}>
                           {prod.activeHeadcount} PAs
                         </td>
                         <td className={`py-4 px-4 text-center font-black ${
