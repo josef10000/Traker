@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sidebar } from './Sidebar';
 import { AuditTab } from './AuditTab';
 import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
+import { DimensionamentoSitesSection } from './DimensionamentoSitesSection';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -2733,18 +2734,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 />
               )}
 
-              {/* CONTEÚDO DA ABA MATRIZ DE OFENSORES, PROMOTORES & REPRESENTATIVIDADE */}
-              {dashboardTab === 'ofensores' && (
-                <OfensoresPromotoresTab
-                  profile={profile}
-                  agreements={agreements}
-                  teamMembers={filteredTeamMembers}
-                  teamsData={managedTeamsData}
-                  theme={theme}
-                  showToast={showToast}
-                />
-              )}
-
               {/* CONTEÚDO DA ABA DE GESTÃO & COORDENAÇÃO (COORDENADOR E GERENTE) */}
               {dashboardTab === 'coordination' && (profile.role === 'coordinator' || profile.role === 'manager') && (
                 <div className="space-y-8">
@@ -2844,6 +2833,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         }`}
                       >
                         ✉️ Convites PJ
+                      </button>
+                      <button
+                        onClick={() => setCoordinationSubTab('dimensionamento')}
+                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          coordinationSubTab === 'dimensionamento'
+                            ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-md'
+                            : 'text-slate-400 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        🏢 Dimensionamento & Sites
+                      </button>
+                      <button
+                        onClick={() => setCoordinationSubTab('matrix')}
+                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          coordinationSubTab === 'matrix'
+                            ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-md'
+                            : 'text-slate-400 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        📊 Matriz Ofensores & Promotores
                       </button>
                       {profile.role === 'manager' && (
                         <button
@@ -3274,6 +3283,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       {coordinationSubTab === 'transfers' && profile.role === 'manager' && (
                         <TransfersSection
                           profile={profile}
+                          theme={theme}
+                          showToast={showToast}
+                        />
+                      )}
+
+                      {/* SUB-ABA 8: DIMENSIONAMENTO & SITES OPERACIONAIS */}
+                      {coordinationSubTab === 'dimensionamento' && (
+                        <DimensionamentoSitesSection
+                          profile={profile}
+                          teamsData={managedTeamsData}
+                          teamMembers={filteredTeamMembers}
+                          theme={theme}
+                          showToast={showToast}
+                        />
+                      )}
+
+                      {/* SUB-ABA 9: MATRIZ DE OFENSORES, PROMOTORES & REPRESENTATIVIDADE */}
+                      {coordinationSubTab === 'matrix' && (
+                        <OfensoresPromotoresTab
+                          profile={profile}
+                          agreements={monthAgreements}
+                          teamMembers={filteredTeamMembers}
+                          teamsData={managedTeamsData}
                           theme={theme}
                           showToast={showToast}
                         />

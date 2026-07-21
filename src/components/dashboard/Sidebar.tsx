@@ -107,13 +107,6 @@ export const Sidebar = ({
       description: 'Trilha histórica de ações de colaboradores sobre CPFs.',
       icon: QaIcon,
       show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin' || profile.organizationId === 'sandbox-test'
-    },
-    {
-      id: 'ofensores',
-      label: 'Ofensores & Matriz',
-      description: 'Matriz parametrizável de pesos, promotores, ofensores e % share.',
-      icon: BiIcon,
-      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin' || profile.role === 'monitor' || profile.organizationId === 'sandbox-test'
     }
   ];
 
