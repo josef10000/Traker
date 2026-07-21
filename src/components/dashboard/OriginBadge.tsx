@@ -21,7 +21,10 @@ export const OriginBadge = ({ origin }: OriginBadgeProps) => {
   const Icon = config.icon;
 
   return (
-    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config.color}`}>
+    <span 
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${config.color}`}
+      title={`Origem do Atendimento: ${config.label}`}
+    >
       <Icon size={12} />
       {config.label}
     </span>

@@ -124,9 +124,12 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                 const renderStatusBadge = () => {
                   if (agreement.status === AgreementStatus.PAID) {
                     return (
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                        theme === 'dark' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                      }`}>
+                      <span 
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
+                          theme === 'dark' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        }`}
+                        title="Status: Pago — Acordo quitado e verificado no sistema"
+                      >
                         <CheckCircle2 size={12} weight="bold" />
                         Pago
                       </span>
@@ -134,9 +137,12 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                   }
                   if (isOverdue && isCheckedToday) {
                     return (
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                        theme === 'dark' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : 'bg-rose-100 text-rose-800 border-rose-200'
-                      }`}>
+                      <span 
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
+                          theme === 'dark' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-rose-100 text-rose-800 border-rose-300'
+                        }`}
+                        title="Status: Quebrado — O cliente não efetuou o pagamento no prazo estipulado"
+                      >
                         <AlertTriangle size={12} weight="bold" />
                         Quebrado
                       </span>
@@ -144,9 +150,12 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                   }
                   if (isOverdue && !isCheckedToday) {
                     return (
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                        theme === 'dark' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-amber-100 text-amber-800 border-amber-200'
-                      }`}>
+                      <span 
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
+                          theme === 'dark' ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' : 'bg-amber-100 text-amber-800 border-amber-300'
+                        }`}
+                        title="Status: Vencido — Data limite expirada aguardando confirmação de pagamento"
+                      >
                         <AlertTriangle size={12} weight="bold" />
                         Vencido
                       </span>
@@ -154,9 +163,12 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                   }
                   if (isPriorityOntem) {
                     return (
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                        theme === 'dark' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-amber-500 text-white border-amber-400'
-                      }`}>
+                      <span 
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
+                          theme === 'dark' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-amber-500 text-white border-amber-400'
+                        }`}
+                        title="Status: Prioridade — Acordo registrado anteriormente pendente de acompanhamento"
+                      >
                         <Zap size={12} weight="bold" />
                         Prioridade
                       </span>
@@ -164,20 +176,26 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                   }
                   if (isCheckedToday) {
                     return (
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                        theme === 'dark' ? 'bg-sky-500/15 text-sky-300 border-sky-500/30' : 'bg-sky-500 text-white border-sky-400'
-                      }`}>
+                      <span 
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
+                          theme === 'dark' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-sky-500 text-white border-sky-400'
+                        }`}
+                        title="Status: Conferido Hoje — Acordo checado pelo operador no turno de hoje"
+                      >
                         <Check size={12} weight="bold" />
                         Conferido
                       </span>
                     );
                   }
                   return (
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border ${
-                      isMorning 
-                        ? theme === 'dark' ? 'bg-sky-500/5 text-sky-400 border-sky-500/20' : 'bg-sky-50 text-sky-600 border-sky-200'
-                        : theme === 'dark' ? 'bg-amber-500/5 text-amber-400 border-amber-500/20' : 'bg-amber-50 text-amber-600 border-amber-200'
-                    }`}>
+                    <span 
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border ${
+                        isMorning 
+                          ? theme === 'dark' ? 'bg-sky-500/10 text-sky-300 border-sky-500/30' : 'bg-sky-50 text-sky-700 border-sky-300'
+                          : theme === 'dark' ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-300'
+                      }`}
+                      title={isMorning ? "Status: Ciclo Hoje — Aguardando acompanhamento no turno do dia" : "Status: Ciclo Seguinte — Agendado para acompanhamento no ciclo seguinte"}
+                    >
                       {isMorning ? <Sun size={10} /> : <Moon size={10} />}
                       {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
                     </span>
@@ -204,7 +222,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             <MessageSquare 
                               size={14} 
                               className="text-sky-400 cursor-help shrink-0" 
-                              title={agreement.notes}
+                              title={`Observação do cliente: ${agreement.notes}`}
                             />
                           )}
                         </div>
@@ -227,7 +245,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 ? 'text-slate-400 hover:text-sky-400 hover:bg-sky-400/10' 
                                 : 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
                             }`}
-                            title="Copiar CPF limpo"
+                            title="Copiar CPF limpo para a área de transferência"
                           >
                             <Copy size={13} />
                           </button>
@@ -240,7 +258,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 ? 'text-slate-400 hover:text-sky-400 hover:bg-sky-400/10' 
                                 : 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
                             }`}
-                            title={revealedCpfs[agreement.id] ? "Ocultar CPF" : "Revelar CPF completo"}
+                            title={revealedCpfs[agreement.id] ? "Ocultar CPF completo" : "Revelar CPF completo"}
                           >
                             {revealedCpfs[agreement.id] ? <EyeOff size={13} /> : <Eye size={13} />}
                           </button>
@@ -253,7 +271,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 ? 'text-slate-400 hover:text-sky-400 hover:bg-sky-400/10' 
                                 : 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
                             }`}
-                            title="Ver Histórico de Negociações"
+                            title="Ver Histórico de Negociações do Cliente"
                           >
                             <History size={13} />
                           </button>
@@ -261,7 +279,10 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
 
                         {/* Data em que o acordo foi feito */}
                         {regDate && (
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                          <span 
+                            className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5"
+                            title="Data e hora em que este acordo foi registrado pelo operador"
+                          >
                             Feito em {regDate.toLocaleDateString('pt-BR')} às {regDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
@@ -273,12 +294,22 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                       <OriginBadge origin={agreement.origin} />
                     </td>
 
-                    {/* Tipo */}
+                    {/* Tipo com Alto Contraste */}
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full border w-fit ${
-                          theme === 'dark' ? 'text-slate-200 bg-slate-900 border-white/10' : 'text-slate-800 bg-slate-100 border-slate-200'
-                        }`}>
+                        <span 
+                          className={`text-xs font-black px-3 py-1 rounded-full border w-fit shadow-xs ${
+                            theme === 'dark' 
+                              ? 'text-sky-300 bg-sky-500/15 border-sky-500/30' 
+                              : 'text-slate-900 bg-slate-100 border-slate-300'
+                          }`}
+                          title={`Tipo de Negociação: ${
+                            agreement.type === 'quitacao' ? 'Quitação' : 
+                            agreement.type === 'parcelamento' ? 'Parcelamento' :
+                            agreement.type === 'parcela_atrasada' ? 'Parcela Atrasada' : 
+                            agreement.type === 'antecipacao' ? 'Antecipação' : agreement.type
+                          }`}
+                        >
                           {agreement.type === 'quitacao' ? 'Quitação' : 
                            agreement.type === 'parcelamento' ? 'Parcelamento' :
                            agreement.type === 'parcela_atrasada' ? 'Pcl Atrasada' : 
@@ -292,23 +323,29 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Vencimento */}
+                    {/* Vencimento com Alto Contraste */}
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className={`text-sm font-bold tabular-nums ${
-                          isOverdue 
-                            ? theme === 'dark' ? 'text-rose-400' : 'text-rose-600' 
-                            : theme === 'dark' ? 'text-slate-200' : 'text-slate-800'
-                        }`}>
+                        <span 
+                          className={`text-sm font-black tabular-nums ${
+                            isOverdue 
+                              ? theme === 'dark' ? 'text-rose-400' : 'text-rose-600' 
+                              : theme === 'dark' ? 'text-slate-100' : 'text-slate-900'
+                          }`}
+                          title="Data de Vencimento do Acordo"
+                        >
                           {(agreement.dueDate || '').split('-').reverse().join('/')}
                         </span>
                       </div>
                     </td>
 
-                    {/* Valor */}
-                    <td className={`px-6 py-4 text-sm font-black tabular-nums ${
-                      theme === 'dark' ? 'text-white' : 'text-slate-900'
-                    }`}>
+                    {/* Valor com Alto Contraste */}
+                    <td 
+                      className={`px-6 py-4 text-sm font-black tabular-nums ${
+                        theme === 'dark' ? 'text-white' : 'text-slate-900'
+                      }`}
+                      title="Valor do Acordo registrado"
+                    >
                       {formatCurrency(agreement.value)}
                     </td>
 
@@ -337,7 +374,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 <button 
                                   onClick={() => handleEfetivar(agreement.id)}
                                   className="p-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-xs border border-emerald-500/20 active:scale-95 cursor-pointer"
-                                  title="Efetivar Pagamento"
+                                  title="Efetivar Pagamento (Marcar acordo como pago)"
                                 >
                                   <Check size={16} weight="bold" />
                                 </button>
@@ -354,7 +391,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                         ? 'bg-slate-900 border-white/10 text-slate-400 hover:text-sky-400 hover:bg-sky-500/10' 
                                         : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-slate-200'
                                   }`}
-                                  title={isCheckedToday ? 'Remover marcação de conferido' : 'Marcar como conferido hoje'}
+                                  title={isCheckedToday ? 'Remover marcação de conferido hoje' : 'Conferir Acordo (Marcar como checado no turno de hoje)'}
                                 >
                                   <Search size={16} weight="bold" />
                                 </button>
@@ -371,7 +408,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                     ? 'bg-slate-900 border-white/10 text-slate-400 hover:text-sky-400 hover:bg-sky-500/10' 
                                     : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-slate-200'
                                 }`}
-                                title="Editar Acordo"
+                                title="Editar Acordo (Alterar dados, valores ou observações)"
                               >
                                 <Edit3 size={16} weight="bold" />
                               </button>
@@ -384,7 +421,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                     ? 'bg-slate-900 border-white/10 text-rose-400 hover:bg-rose-500 hover:text-white' 
                                     : 'bg-slate-100 border-slate-200 text-rose-600 hover:bg-rose-500 hover:text-white'
                                 }`}
-                                title="Excluir Acordo"
+                                title="Excluir Acordo (Remover registro permanentemente)"
                               >
                                 <Trash2 size={16} weight="bold" />
                               </button>
@@ -401,35 +438,37 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
         </table>
       </div>
 
-      {totalPages > 1 && (
+      {totalPages > 0 && (
         <div className={`px-6 py-4 border-t flex items-center justify-between no-print ${
           theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-200 bg-slate-50/50'
         }`}>
           <span className={`text-[10px] font-bold uppercase tracking-widest ${
-            theme === 'dark' ? 'text-slate-500' : 'text-slate-500'
+            theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
           }`}>
-            Página {currentPage} de {totalPages}
+            Página {currentPage} de {totalPages || 1} — Total de {agreements.length} registro(s)
           </span>
           <div className="flex gap-2">
             <button
               onClick={prevPage}
-              disabled={currentPage === 1}
+              disabled={currentPage <= 1}
               className={`p-2 rounded-lg border text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
                 theme === 'dark' 
-                  ? 'bg-white/5 border-white/10 text-slate-450 hover:text-white hover:bg-white/10' 
+                  ? 'bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10' 
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
+              title="Ir para a página anterior"
             >
               Anterior
             </button>
             <button
               onClick={nextPage}
-              disabled={currentPage === totalPages}
+              disabled={currentPage >= totalPages}
               className={`p-2 rounded-lg border text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
                 theme === 'dark' 
-                  ? 'bg-white/5 border-white/10 text-slate-450 hover:text-white hover:bg-white/10' 
+                  ? 'bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10' 
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
+              title="Ir para a próxima página"
             >
               Próximo
             </button>
