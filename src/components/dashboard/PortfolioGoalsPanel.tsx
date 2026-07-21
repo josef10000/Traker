@@ -668,6 +668,7 @@ export const PortfolioGoalsPanel = ({
           );
         })}
       </div>
+        </>
       )}
     </div>
   );
