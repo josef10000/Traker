@@ -464,12 +464,15 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                     {v.siteLocation}
                   </td>
                   <td className="py-4 px-4 text-right font-bold text-purple-300">{v.forecastProductivity}</td>
-                  <td className="py-4 px-4 text-center">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                      v.status === 'preenchida' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                      v.status === 'selecao' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                      v.status === 'treinamento' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' :
-                      'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  <td className="py-4 px-4 text-center whitespace-nowrap">
+                    <span className={`px-3 py-1 rounded-full text-[11px] font-black whitespace-nowrap inline-flex items-center justify-center ${
+                      v.status === 'preenchida' 
+                        ? isDark ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-950 border border-emerald-400' 
+                        : v.status === 'selecao' 
+                          ? isDark ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-950 border border-purple-400' 
+                          : v.status === 'treinamento' 
+                            ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-100 text-amber-950 border border-amber-400 font-black' 
+                            : isDark ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-sky-100 text-sky-950 border border-sky-400'
                     }`}>
                       {v.status === 'preenchida' ? 'Preenchida' : v.status === 'selecao' ? 'Em Seleção' : v.status === 'treinamento' ? 'Em Treinamento' : 'Aberta'}
                     </span>
