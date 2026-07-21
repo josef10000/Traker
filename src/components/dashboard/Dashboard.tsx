@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sidebar } from './Sidebar';
 import { AuditTab } from './AuditTab';
+import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -2727,6 +2728,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {dashboardTab === 'audit' && (
                 <AuditTab
                   profile={profile}
+                  theme={theme}
+                  showToast={showToast}
+                />
+              )}
+
+              {/* CONTEÚDO DA ABA MATRIZ DE OFENSORES, PROMOTORES & REPRESENTATIVIDADE */}
+              {dashboardTab === 'ofensores' && (
+                <OfensoresPromotoresTab
+                  profile={profile}
+                  agreements={agreements}
+                  teamMembers={filteredTeamMembers}
+                  teamsData={managedTeamsData}
                   theme={theme}
                   showToast={showToast}
                 />
