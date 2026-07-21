@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { 
-  Copy, Eye, EyeClosed as EyeOff, ClockCounterClockwise as History, Sun, Moon, Check, Lightning as Zap, 
+  Eye, EyeClosed as EyeOff, ClockCounterClockwise as History, Sun, Moon, Check, Lightning as Zap, 
   Warning as AlertTriangle, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Clock, Pencil as Edit3, Trash as Trash2, MagnifyingGlass as Search, CircleNotch as Loader2, ChatText as MessageSquare
 } from '@phosphor-icons/react';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
@@ -228,26 +228,23 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span className={`text-xs font-mono font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                            {revealedCpfs[agreement.id] ? agreement.clientCpf : maskCPF(agreement.clientCpf)}
-                          </span>
-                          
-                          {/* Copiar CPF */}
+                          {/* Clique no CPF para Copiar */}
                           <button
+                            type="button"
                             onClick={() => {
                               const cleanCpf = agreement.clientCpf.replace(/\D/g, '');
                               navigator.clipboard.writeText(cleanCpf);
                               showToast('CPF copiado!', 'success');
                               if (onCopyCpf) onCopyCpf(agreement.id, agreement.clientCpf);
                             }}
-                            className={`p-1 rounded-md transition-all cursor-pointer ${
+                            className={`text-xs font-mono font-bold tracking-wider px-1.5 py-0.5 rounded-md transition-all cursor-pointer border border-transparent active:scale-95 ${
                               theme === 'dark' 
-                                ? 'text-slate-400 hover:text-sky-400 hover:bg-sky-400/10' 
-                                : 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
+                                ? 'text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 hover:border-sky-500/30' 
+                                : 'text-slate-700 hover:text-sky-600 hover:bg-sky-50 hover:border-sky-200'
                             }`}
-                            title="Copiar CPF limpo para a área de transferência"
+                            title="Clique para copiar o CPF limpo (somente números)"
                           >
-                            <Copy size={13} />
+                            {revealedCpfs[agreement.id] ? agreement.clientCpf : maskCPF(agreement.clientCpf)}
                           </button>
 
                           {/* Revelar / Ocultar CPF */}
