@@ -376,41 +376,108 @@ export const PortfolioGoalsPanel = ({
       {/* HEADER DA ABA COM ALTERNÂNCIA DE SUB-ABAS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div>
-        {/* Gestor e Meta Global */}
-        <div className="md:col-span-2 glass-card p-6 rounded-3xl border border-white/5 space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-3 bg-sky-500 rounded-full"></div>
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-              Resumo Geral da Liderança (Gestor)
-            </h3>
-          </div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Target size={24} className="text-sky-400" />
+            Metas, Carteiras & Matriz de Ofensores
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">Consolidado de metas, desvios proporcionais (dispersão), projeções e matriz parametrizável de ofensores/promotores.</p>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-              <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Gestor Responsável</span>
-              <span className="text-sm font-bold text-white block mt-1 truncate">{profile.displayName}</span>
-            </div>
-            <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-              <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Meta Consolidada</span>
-              <span className="text-sm font-bold text-sky-400 block mt-1">{formatCurrency(totals.totalGoal)}</span>
-            </div>
-            <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-              <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Total Entregue</span>
-              <span className="text-sm font-bold text-emerald-400 block mt-1">{formatCurrency(totals.totalPartial)}</span>
-            </div>
-            <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-              <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Atingido</span>
-              <span className="text-sm font-bold text-white block mt-1">{totals.progressPercent.toFixed(1)}%</span>
-            </div>
-          </div>
-
-          <div className="w-full bg-slate-950/80 h-2 rounded-full overflow-hidden border border-white/5">
-            <div 
-              className="bg-gradient-to-r from-sky-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
-              style={{ width: `${Math.min(totals.progressPercent, 100)}%` }}
-            />
+          {/* Seletor de Sub-Abas */}
+          <div className="flex items-center gap-2 mt-4">
+            <button
+              onClick={() => setPortfolioSubTab('goals')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                portfolioSubTab === 'goals'
+                  ? 'bg-sky-500 text-white shadow-md'
+                  : 'bg-white/5 text-slate-400 hover:text-white border border-white/10'
+              }`}
+            >
+              🎯 Cockpit de Metas & Projeções
+            </button>
+            <button
+              onClick={() => setPortfolioSubTab('ofensores')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                portfolioSubTab === 'ofensores'
+                  ? 'bg-purple-500 text-white shadow-md'
+                  : 'bg-white/5 text-slate-400 hover:text-white border border-white/10'
+              }`}
+            >
+              📊 Matriz de Ofensores & Promotores (% Share)
+            </button>
           </div>
         </div>
+
+        {portfolioSubTab === 'goals' && (
+          <div className="flex gap-2 shrink-0">
+            <button 
+              onClick={handleExportExcel}
+              className="px-4 py-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 font-bold rounded-xl transition-all flex items-center gap-2 text-xs active:scale-95 shadow-lg"
+            >
+              <FileSpreadsheet size={16} className="text-emerald-400" />
+              Exportar Excel Profissional
+            </button>
+            <button
+              onClick={handleCopyPublicLink}
+              className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl transition-all flex items-center gap-2 text-xs active:scale-95 shadow-lg shadow-sky-500/20"
+            >
+              <Link size={16} />
+              Copiar Link Público
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* CONTEÚDO DA SUB-ABA MATRIZ DE OFENSORES & PROMOTORES */}
+      {portfolioSubTab === 'ofensores' && (
+        <OfensoresPromotoresTab
+          profile={profile}
+          agreements={monthAgreements}
+          teamMembers={currentTeamMembers}
+          teamsData={managedTeamsData}
+          showToast={showToast}
+        />
+      )}
+
+      {/* CONTEÚDO DA SUB-ABA COCKPIT DE METAS */}
+      {portfolioSubTab === 'goals' && (
+        <>
+          {/* CONTROLE DE DIAS ÚTEIS E GESTOR */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Gestor e Meta Global */}
+            <div className="md:col-span-2 glass-card p-6 rounded-3xl border border-white/5 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-3 bg-sky-500 rounded-full"></div>
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                  Resumo Geral da Liderança (Gestor)
+                </h3>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Gestor Responsável</span>
+                  <span className="text-sm font-bold text-white block mt-1 truncate">{profile.displayName}</span>
+                </div>
+                <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Meta Consolidada</span>
+                  <span className="text-sm font-bold text-sky-400 block mt-1">{formatCurrency(totals.totalGoal)}</span>
+                </div>
+                <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Total Entregue</span>
+                  <span className="text-sm font-bold text-emerald-400 block mt-1">{formatCurrency(totals.totalPartial)}</span>
+                </div>
+                <div className="bg-slate-900/40 p-4 rounded-2xl border border-white/5">
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Atingido</span>
+                  <span className="text-sm font-bold text-white block mt-1">{totals.progressPercent.toFixed(1)}%</span>
+                </div>
+              </div>
+
+              <div className="w-full bg-slate-950/80 h-2 rounded-full overflow-hidden border border-white/5">
+                <div 
+                  className="bg-gradient-to-r from-sky-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${Math.min(totals.progressPercent, 100)}%` }}
+                />
+              </div>
+            </div>
 
         {/* Parâmetros Temporais */}
         <div className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col justify-between space-y-4">
