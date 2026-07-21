@@ -40,6 +40,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Método não permitido. Use POST.' });
   }
 
+  // Verificação de autenticação do Webhook
+  const authHeader = req.headers.authorization;
+  const expectedSecret = process.env.CRM_WEBHOOK_SECRET;
+
+  if (!expectedSecret) {
+    console.error('CRITICAL: CRM_WEBHOOK_SECRET is not configured no ambiente.');
+    return res.status(500).json({ error: 'Erro de configuração no servidor.' });
+  }
+
+  if (!authHeader || authHeader !== `Bearer ${expectedSecret}`) {
+    return res.status(401).json({ error: 'Não autorizado.' });
+  }
+
   const { integrationCode, crmOrgId, crmClientId, crmPublicToken } = req.body;
 
   // Validação simples de parâmetros
