@@ -108,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `${fromName} <onboarding@resend.dev>`,
+        from: `${fromName} <notificacoes@hubsymples.com.br>`,
         to: [recipientEmail],
         subject: `🚀 Convite de Acesso — ${orgName} (Tracker Platform)`,
         html: htmlContent

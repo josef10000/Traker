@@ -100,7 +100,7 @@ const sendDirectResendEmail = async ({
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `${fromName} <onboarding@resend.dev>`,
+        from: `${fromName} <notificacoes@hubsymples.com.br>`,
         to: [recipientEmail],
         subject: `🚀 Convite de Acesso — ${orgName} (Tracker Platform)`,
         html: htmlContent
