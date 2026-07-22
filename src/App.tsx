@@ -11,8 +11,9 @@ import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { Onboarding } from './components/auth/Onboarding';
 import { ProfileSettings } from './components/profile/ProfileSettings';
 import { PublicPortfolioView } from './components/dashboard/PublicPortfolioView';
+import { DemoPage } from './components/demo/DemoPage';
 import { getUserProfile } from './lib/teams';
-import { UserProfile } from './types';
+import { UserProfile, UserRole } from './types';
 import { sandboxService } from './lib/sandboxService';
 import { Toast, ToastType } from './components/ui/Toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,7 +26,7 @@ export function AppContent() {
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-  const [simulation, setSimulation] = useState<{ active: boolean; role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' | 'coordinator' } | null>(null);
+  const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean } | null>(null);
   const [simulatedUid, setSimulatedUid] = useState<string>('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState<string>('profile');
@@ -39,7 +40,6 @@ export function AppContent() {
 
   useEffect(() => {
     if (simulation?.active) {
-      // Define o UID inicial com base na role selecionada
       if (simulation.role === 'manager') {
         setSimulatedUid('sandbox-manager-a');
       } else if (simulation.role === 'coordinator') {
@@ -53,7 +53,6 @@ export function AppContent() {
       } else {
         setSimulatedUid('sandbox-op-1');
       }
-      // Inicializa/Reseta dados em memória do Sandbox
       sandboxService.resetSandbox();
     } else {
       setSimulatedUid('');
@@ -110,7 +109,6 @@ export function AppContent() {
   }, []);
 
   useEffect(() => {
-    // Prioridade: localStorage (toggle do usuário) > profile.theme do Firestore > dark (padrão)
     const savedTheme = localStorage.getItem('tracker-theme') as 'dark' | 'light' | null;
     const resolvedTheme = savedTheme || profile?.theme || 'dark';
     document.documentElement.setAttribute('data-theme', resolvedTheme);
@@ -157,7 +155,6 @@ export function AppContent() {
     return (
       <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center relative overflow-hidden selection:bg-sky-500/30">
         <DynamicBackground theme="dark" />
-        
         <div className="absolute w-[300px] h-[300px] bg-sky-500/10 rounded-full blur-[80px] -z-10 animate-pulse"></div>
 
         <motion.div 
@@ -194,6 +191,7 @@ export function AppContent() {
   }
 
   const isPublicRoute = window.location.pathname.startsWith('/public/');
+  const isDemoRoute = window.location.pathname === '/demo';
 
   if (isPublicRoute) {
     return (
@@ -210,6 +208,29 @@ export function AppContent() {
         <Routes>
           <Route path="/public/portfolio" element={<PublicPortfolioView />} />
         </Routes>
+      </>
+    );
+  }
+
+  // ROTA /demo PÚBLICA PARA VISITANTES E CLIENTES DE TESTE
+  if (isDemoRoute && !simulation?.active) {
+    return (
+      <>
+        <AnimatePresence>
+          {toast && (
+            <Toast 
+              message={toast.message} 
+              type={toast.type} 
+              onClose={() => setToast(null)} 
+            />
+          )}
+        </AnimatePresence>
+        <DemoPage 
+          onStartDemo={(role) => {
+            setSimulation({ active: true, role, isDemoMode: true });
+            showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
+          }} 
+        />
       </>
     );
   }
@@ -238,6 +259,129 @@ export function AppContent() {
     );
   }
 
+  // SIMULAÇÃO ATIVA (Tanto para SuperAdmin quanto para Visitantes na Rota /demo)
+  if (simulation?.active) {
+    const rawProfile = sandboxService.getProfile(simulatedUid);
+    const simulatedProfile: UserProfile = rawProfile ? {
+      ...rawProfile,
+      email: profile?.email || 'demo@hubsymples.com.br',
+      theme: profile?.theme || 'dark'
+    } : {
+      uid: 'sandbox-manager-a',
+      email: profile?.email || 'demo@hubsymples.com.br',
+      displayName: 'Arthur (Gerente A)',
+      role: 'manager',
+      organizationId: 'sandbox-test',
+      theme: profile?.theme || 'dark',
+      createdAt: new Date().toISOString()
+    };
+
+    return (
+      <>
+        <AnimatePresence>
+          {toast && (
+            <Toast 
+              message={toast.message} 
+              type={toast.type} 
+              onClose={() => setToast(null)} 
+            />
+          )}
+        </AnimatePresence>
+
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-purple-950/95 to-indigo-950/95 backdrop-blur-md border-b border-purple-500/30 px-6 py-3 flex justify-between items-center no-print shadow-lg">
+          <div className="flex items-center gap-3">
+            <span className="flex h-3.5 w-3.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-purple-500"></span>
+            </span>
+            <p className="text-xs font-bold text-purple-200">
+              MODO DEMONSTRAÇÃO — Simulando <span className="uppercase text-white font-black">{simulatedProfile.displayName}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={async () => {
+                sandboxService.resetSandbox();
+                setSimulation(null);
+                if (simulation.isDemoMode) {
+                  navigate('/demo');
+                } else if (profile?.role !== 'super_admin') {
+                  await signOut(auth);
+                  navigate('/login');
+                  showToast('Sessão encerrada.', 'info');
+                } else {
+                  showToast('Simulação encerrada.', 'info');
+                }
+              }}
+              className="px-4 py-1.5 bg-purple-600 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-500 transition-colors shadow-md shadow-purple-500/20 active:scale-95 cursor-pointer"
+            >
+              Encerrar Demonstração
+            </button>
+          </div>
+        </div>
+
+        <div className="pt-12">
+          <DynamicBackground theme={simulatedProfile.theme} />
+          <Routes>
+            <Route path="/" element={
+              <Dashboard 
+                user={user} 
+                profile={simulatedProfile} 
+                onSettingsClick={handleOpenSettings} 
+                showToast={showToast}
+                onCreateTeam={() => {
+                  setIsProfileModalOpen(false);
+                  navigate('/create-team');
+                }}
+              />
+            } />
+            <Route path="/create-team" element={
+              <Onboarding 
+                user={user} 
+                profile={simulatedProfile}
+                onComplete={() => {
+                  showToast('Equipe simulada criada com sucesso!', 'success');
+                  setIsProfileModalOpen(true);
+                  navigate('/');
+                }} 
+                isAdditionalTeam={true}
+                onBack={() => {
+                  setIsProfileModalOpen(true);
+                  navigate('/');
+                }}
+                showToast={showToast}
+              />
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+
+        <ProfileSettings
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          profile={simulatedProfile}
+          initialTab={profileInitialTab}
+          onUpdate={(updatedData) => {
+            if (updatedData) {
+              sandboxService.setProfile({
+                ...simulatedProfile,
+                ...updatedData
+              });
+              showToast('Perfil simulado atualizado na memória!', 'success');
+            }
+          }}
+          onCreateTeam={() => {
+            setIsProfileModalOpen(false);
+            navigate('/create-team');
+          }}
+          showToast={showToast}
+          theme={simulatedProfile.theme || 'dark'}
+        />
+      </>
+    );
+  }
+
   if (!user) {
     return (
       <>
@@ -253,6 +397,14 @@ export function AppContent() {
         <Routes>
           <Route path="/login" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
           <Route path="/register" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
+          <Route path="/demo" element={
+            <DemoPage 
+              onStartDemo={(role) => {
+                setSimulation({ active: true, role, isDemoMode: true });
+                showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
+              }} 
+            />
+          } />
           <Route path="*" element={<Navigate to={`/login${window.location.search}`} replace />} />
         </Routes>
       </>
@@ -267,9 +419,6 @@ export function AppContent() {
           <h2 className="text-2xl font-bold text-white">Acesso Suspenso</h2>
           <p className="text-slate-400 text-sm leading-relaxed">
             O acesso para a organização vinculada à sua conta foi temporariamente suspenso.
-          </p>
-          <p className="text-xs text-slate-500 font-medium">
-            Entre em contato com o suporte ou o administrador do sistema para mais informações.
           </p>
           <button 
             onClick={async () => {
@@ -288,127 +437,7 @@ export function AppContent() {
     );
   }
 
-  if (profile?.role === 'super_admin' || profile?.organizationId === 'sandbox-test') {
-    if (simulation?.active) {
-      const rawProfile = sandboxService.getProfile(simulatedUid);
-      const simulatedProfile: UserProfile = rawProfile ? {
-        ...rawProfile,
-        email: profile.email || '', // Mantém o email do usuário real
-        theme: profile.theme || 'dark'
-      } : {
-        uid: 'sandbox-manager-a',
-        email: profile.email || '',
-        displayName: 'Arthur (Gerente A)',
-        role: 'manager',
-        organizationId: 'sandbox-test',
-        theme: profile.theme || 'dark',
-        createdAt: new Date().toISOString()
-      };
-
-      return (
-        <>
-          <AnimatePresence>
-            {toast && (
-              <Toast 
-                message={toast.message} 
-                type={toast.type} 
-                onClose={() => setToast(null)} 
-              />
-            )}
-          </AnimatePresence>
-
-          <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-purple-950/95 to-indigo-950/95 backdrop-blur-md border-b border-purple-500/30 px-6 py-3 flex justify-between items-center no-print shadow-lg">
-            <div className="flex items-center gap-3">
-              <span className="flex h-3.5 w-3.5 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-purple-500"></span>
-              </span>
-              <p className="text-xs font-bold text-purple-200">
-                AMBIENTE DE TESTE ATIVO — Simulando <span className="uppercase text-white font-black">{simulatedProfile.displayName}</span>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={async () => {
-                  sandboxService.resetSandbox();
-                  setSimulation(null);
-                  if (profile?.role !== 'super_admin') {
-                    await signOut(auth);
-                    navigate('/login');
-                    showToast('Sessão do Sandbox encerrada.', 'info');
-                  } else {
-                    showToast('Simulação encerrada. Dados de teste descartados.', 'info');
-                  }
-                }}
-                className="px-4 py-1.5 bg-purple-600 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-500 transition-colors shadow-md shadow-purple-500/20 active:scale-95 cursor-pointer"
-              >
-                {profile?.role === 'super_admin' ? 'Sair da Simulação' : 'Sair do Sandbox'}
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-12">
-            <DynamicBackground theme={simulatedProfile.theme} />
-            <Routes>
-              <Route path="/" element={
-                <Dashboard 
-                  user={user} 
-                  profile={simulatedProfile} 
-                  onSettingsClick={handleOpenSettings} 
-                  showToast={showToast}
-                  onCreateTeam={() => {
-                    setIsProfileModalOpen(false);
-                    navigate('/create-team');
-                  }}
-                />
-              } />
-              <Route path="/create-team" element={
-                <Onboarding 
-                  user={user} 
-                  profile={simulatedProfile}
-                  onComplete={() => {
-                    showToast('Equipe simulada criada com sucesso!', 'success');
-                    setIsProfileModalOpen(true);
-                    navigate('/');
-                  }} 
-                  isAdditionalTeam={true}
-                  onBack={() => {
-                    setIsProfileModalOpen(true);
-                    navigate('/');
-                  }}
-                  showToast={showToast}
-                />
-              } />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-
-          <ProfileSettings
-            isOpen={isProfileModalOpen}
-            onClose={() => setIsProfileModalOpen(false)}
-            profile={simulatedProfile}
-            initialTab={profileInitialTab}
-            onUpdate={(updatedData) => {
-              if (updatedData) {
-                sandboxService.setProfile({
-                  ...simulatedProfile,
-                  ...updatedData
-                });
-                showToast('Perfil simulado atualizado na memória!', 'success');
-              }
-            }}
-            onCreateTeam={() => {
-              setIsProfileModalOpen(false);
-              navigate('/create-team');
-            }}
-            showToast={showToast}
-            theme={simulatedProfile.theme || 'dark'}
-          />
-        </>
-      );
-    }
-
+  if (profile?.role === 'super_admin') {
     return (
       <>
         <AnimatePresence>
@@ -427,6 +456,14 @@ export function AppContent() {
               onLogoutSuccess={refreshProfile}
               showToast={showToast}
               onStartSimulation={(role) => setSimulation({ active: true, role })}
+            />
+          } />
+          <Route path="/demo" element={
+            <DemoPage 
+              onStartDemo={(role) => {
+                setSimulation({ active: true, role, isDemoMode: true });
+                showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
+              }} 
             />
           } />
           <Route path="*" element={<Navigate to="/" replace />} />
