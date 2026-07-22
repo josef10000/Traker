@@ -1,3 +1,5 @@
+import { TRACKER_LOGO_BASE64 } from './logoBase64';
+
 interface InviteEmailParams {
   recipientEmail: string;
   orgName: string;
@@ -47,20 +49,31 @@ export const generateInviteEmailHtml = ({
       background: linear-gradient(180deg, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0) 100%);
       border-bottom: 1px solid #1e293b;
     }
-    .logo-img {
-      max-width: 180px;
-      max-height: 60px;
-      height: auto;
-      object-fit: contain;
-      margin-bottom: 12px;
+    .logo-container {
+      margin-bottom: 14px;
+      display: inline-block;
     }
-    .brand-name {
-      font-size: 20px;
+    .logo-img {
+      max-width: 220px;
+      max-height: 70px;
+      height: auto;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+    .brand-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 9999px;
+      font-size: 11px;
       font-weight: 900;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.15em;
       color: #38bdf8;
       text-transform: uppercase;
-      margin: 0;
+      margin-top: 8px;
     }
     .body-content {
       padding: 36px 40px;
@@ -142,10 +155,14 @@ export const generateInviteEmailHtml = ({
 <body>
   <div class="wrapper">
     <div class="main-card">
-      <!-- HEADER COM LOGO DO DOMÍNIO OFICIAL -->
+      <!-- HEADER COM LOGO EMBUTIDA EM BASE64 SEM DEPENDER DE REDE EXTERNA -->
       <div class="header">
-        <img src="https://tracker.hubsymples.com.br/logo.png" alt="Tracker" class="logo-img" />
-        <h2 class="brand-name">TRACKER PLATFORM</h2>
+        <div class="logo-container">
+          <img src="${TRACKER_LOGO_BASE64}" alt="Tracker Platform" class="logo-img" />
+        </div>
+        <div>
+          <span class="brand-badge">TRACKER PLATFORM</span>
+        </div>
       </div>
 
       <!-- BODY -->
