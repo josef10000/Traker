@@ -18,7 +18,7 @@ import {
 } from '@phosphor-icons/react';
 import { UserRole } from '../../types';
 import { db } from '../../lib/firebase';
-import { collection, query, where, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { generateSecureToken } from '../../lib/teams';
 
 interface CompanyUserSetupModalProps {
@@ -63,29 +63,22 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     { email: '', role: 'manager', teamId: '', monthlyServiceValue: 0 }
   ]);
 
-  // Carregar convites pendentes da empresa
-  const loadPendingInvites = async () => {
-    if (!orgId) return;
-    setIsLoading(true);
-    try {
-      const q = query(collection(db, 'invites'), where('organizationId', '==', orgId));
-      const snap = await getDocs(q);
+  // Ouvinte em tempo real dos convites da empresa
+  useEffect(() => {
+    if (!isOpen || !orgId) return;
+
+    const q = query(collection(db, 'invites'), where('organizationId', '==', orgId));
+    const unsubscribe = onSnapshot(q, (snap) => {
       const list: PendingInvite[] = snap.docs.map(d => ({
         id: d.id,
         ...d.data()
       } as PendingInvite));
       setPendingInvites(list);
-    } catch (error) {
-      console.error('Erro ao carregar convites pendentes da empresa:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    }, (err) => {
+      console.error('Erro ao ouvir convites da empresa:', err);
+    });
 
-  useEffect(() => {
-    if (isOpen && orgId) {
-      loadPendingInvites();
-    }
+    return () => unsubscribe();
   }, [isOpen, orgId]);
 
   if (!isOpen) return null;
@@ -146,7 +139,6 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
       showToast(`${createdList.length} link(s) de convite gerado(s) com sucesso para ${orgName}!`, 'success');
       setSetupRows([{ email: '', role: 'supervisor', teamId: '', monthlyServiceValue: 0 }]);
-      await loadPendingInvites();
     } catch (error) {
       console.error('Erro ao gerar convites de setup:', error);
       showToast('Erro ao gerar links de convite.', 'error');
