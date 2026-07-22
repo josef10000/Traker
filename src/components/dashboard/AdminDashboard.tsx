@@ -52,6 +52,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 
 import { ToastType } from '../ui/Toast';
+import { CompanyUserSetupModal } from '../modals/CompanyUserSetupModal';
 
 interface AdminDashboardProps {
   profile: UserProfile;
@@ -104,6 +105,15 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [newOrgMaxUsers, setNewOrgMaxUsers] = useState(5);
   const [newOrgMaxTeams, setNewOrgMaxTeams] = useState(1);
   const [orgToDelete, setOrgToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  // Modal de Setup de Usuários e Convites da Empresa
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+  const [setupOrg, setSetupOrg] = useState<{ id: string; name: string; maxUsers?: number } | null>(null);
+
+  const handleOpenUserSetup = (org: Organization) => {
+    setSetupOrg({ id: org.id, name: org.name, maxUsers: org.maxUsers });
+    setIsSetupModalOpen(true);
+  };
 
   useEffect(() => {
     // Carregar todas as organizações
@@ -909,6 +919,14 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                       </td>
                       <td className="px-8 py-5 text-right flex justify-end gap-2">
                         <button
+                          onClick={() => handleOpenUserSetup(org)}
+                          className="px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                          title="Setup Inicial de Usuários & Convites da Empresa"
+                        >
+                          <UserCheck2 size={16} />
+                          <span>Setup Usuários</span>
+                        </button>
+                        <button
                           onClick={() => openEditModal(org)}
                           className={`p-2 rounded-xl transition-all cursor-pointer ${
                             theme === 'dark' ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
@@ -1362,6 +1380,17 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         onConfirm={confirmDialog.onConfirm}
         onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {setupOrg && (
+        <CompanyUserSetupModal
+          isOpen={isSetupModalOpen}
+          onClose={() => setIsSetupModalOpen(false)}
+          orgId={setupOrg.id}
+          orgName={setupOrg.name}
+          maxUsers={setupOrg.maxUsers}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 };

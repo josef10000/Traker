@@ -53,6 +53,10 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
   const [newJobTitle, setNewJobTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Edição do Valor da Prestação de Serviços
+  const [editingServiceValueUid, setEditingServiceValueUid] = useState<string | null>(null);
+  const [newServiceValue, setNewServiceValue] = useState<number | string>('');
+
   // Estados de busca e paginação
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,6 +71,21 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
       setNewJobTitle('');
     } catch (error) {
       console.error('[TeamManagementTab] Erro ao salvar cargo:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveServiceValue = async (uid: string) => {
+    setIsSaving(true);
+    try {
+      const userRef = doc(db, 'users', uid);
+      const val = Number(newServiceValue) || 0;
+      await updateDoc(userRef, { monthlyServiceValue: val });
+      setEditingServiceValueUid(null);
+      setNewServiceValue('');
+    } catch (error) {
+      console.error('[TeamManagementTab] Erro ao salvar valor da prestação de serviços:', error);
     } finally {
       setIsSaving(false);
     }
@@ -259,6 +278,67 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
                         )}
                         <span className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`} />
                         <span className="font-mono">{member.email}</span>
+
+                        {/* VALOR DA PRESTAÇÃO DE SERVIÇOS */}
+                        <span className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-300'}`} />
+                        {editingServiceValueUid === member.uid ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-purple-400">Prestação R$:</span>
+                            <input 
+                              type="number"
+                              min={0}
+                              value={newServiceValue}
+                              onChange={(e) => setNewServiceValue(e.target.value)}
+                              className={`w-24 px-2 py-0.5 rounded text-xs outline-none border font-mono ${
+                                theme === 'dark' ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                              }`}
+                              placeholder="0,00"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveServiceValue(member.uid);
+                                if (e.key === 'Escape') {
+                                  setEditingServiceValueUid(null);
+                                  setNewServiceValue('');
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={() => handleSaveServiceValue(member.uid)}
+                              disabled={isSaving}
+                              className="p-1 hover:text-emerald-400 cursor-pointer disabled:opacity-50"
+                              title="Salvar Valor da Prestação de Serviços"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingServiceValueUid(null);
+                                setNewServiceValue('');
+                              }}
+                              className="p-1 hover:text-rose-400 cursor-pointer"
+                            >
+                              <XIcon size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 font-mono">
+                            <span className="text-emerald-500 dark:text-emerald-400 font-bold">
+                              Valor Prestação Serviços: {member.monthlyServiceValue ? `R$ ${member.monthlyServiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Não definido'}
+                            </span>
+                            {canManageAttendance && (
+                              <button
+                                onClick={() => {
+                                  setEditingServiceValueUid(member.uid);
+                                  setNewServiceValue(member.monthlyServiceValue || 0);
+                                }}
+                                className="p-1 text-slate-400 hover:text-purple-400 cursor-pointer transition-colors"
+                                title="Editar Valor da Prestação de Serviços"
+                              >
+                                <PencilSimple size={12} />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       
                       {/* Mini KPIs Individuais */}
