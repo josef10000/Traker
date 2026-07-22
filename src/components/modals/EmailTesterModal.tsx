@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { EnvelopeSimple, PaperPlaneRight, CheckCircle, Warning, Eye, Key, Sparkle, FloppyDisk } from '@phosphor-icons/react';
+import { EnvelopeSimple, PaperPlaneRight, CheckCircle, Warning, Eye, ShieldCheck } from '@phosphor-icons/react';
 import { sendInviteEmail } from '../../services/emailService';
 import { generateInviteEmailHtml } from '../../templates/inviteEmailTemplate';
 
@@ -18,29 +18,11 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
   const [testEmail, setTestEmail] = useState('');
   const [testOrgName, setTestOrgName] = useState('Empresa Teste Resend');
   const [testRoleName, setTestRoleName] = useState('🏢 Gerente de Operações');
-  const [customKey, setCustomKey] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [activeTab, setActiveTab] = useState<'send' | 'preview'>('send');
   const [lastResult, setLastResult] = useState<{ success: boolean; messageId?: string; error?: string } | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      const savedKey = localStorage.getItem('RESEND_CUSTOM_API_KEY') || import.meta.env.VITE_RESEND_API_KEY || '';
-      setCustomKey(savedKey);
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
-
-  const handleSaveKey = () => {
-    if (customKey.trim()) {
-      localStorage.setItem('RESEND_CUSTOM_API_KEY', customKey.trim());
-      showToast('Chave da API do Resend salva localmente!', 'success');
-    } else {
-      localStorage.removeItem('RESEND_CUSTOM_API_KEY');
-      showToast('Chave personalizada removida. Usando variável de ambiente.', 'success');
-    }
-  };
 
   const previewInviteUrl = `${window.location.origin}/register?invite=inv-demo-123456`;
   const previewHtml = generateInviteEmailHtml({
@@ -65,8 +47,7 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
         recipientEmail: testEmail.trim().toLowerCase(),
         orgName: testOrgName,
         roleName: testRoleName,
-        inviteUrl: previewInviteUrl,
-        customApiKey: customKey.trim() || undefined
+        inviteUrl: previewInviteUrl
       });
 
       setLastResult(res);
@@ -100,13 +81,13 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black flex items-center gap-2">
-                <span>Testador de E-mails Resend (SuperAdmin)</span>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  Resend Integration
+                <span>Testador de E-mails Resend (Nativo)</span>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  VITE_RESEND_API_KEY Configurada
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Envie um e-mail de teste real ou veja a pré-visualização visual do template HTML com a logo s-logo.
+                Envie um e-mail de teste real nativo ou veja a pré-visualização do template HTML com a logo s-logo.
               </p>
             </div>
           </div>
@@ -117,33 +98,6 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
           >
             ✕
           </button>
-        </div>
-
-        {/* CAMPO DE API KEY PERSONALIZADA DE TESTE */}
-        <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/30 text-xs space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-white flex items-center gap-1.5">
-              <Key size={16} className="text-purple-400" />
-              Chave de API do Resend (VITE_RESEND_API_KEY):
-            </span>
-            <button
-              type="button"
-              onClick={handleSaveKey}
-              className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <FloppyDisk size={14} /> Salvar Chave
-            </button>
-          </div>
-          <input
-            type="password"
-            value={customKey}
-            onChange={(e) => setCustomKey(e.target.value)}
-            placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxx"
-            className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white font-mono text-xs focus:border-purple-500 transition-all"
-          />
-          <p className="text-[10px] text-purple-300/80">
-            <strong>Dica:</strong> Em aplicações Vite na Vercel, após adicionar a chave nas variáveis de ambiente, é necessário acionar um <strong>Redeploy na Vercel</strong> para que o Vite compile a chave. Você também pode colar a chave `re_...` acima para testar agora mesmo!
-          </p>
         </div>
 
         {/* ABAS DO MODAL */}

@@ -6,7 +6,6 @@ export interface SendInviteEmailParams {
   roleName: string;
   inviteUrl: string;
   fromName?: string;
-  customApiKey?: string;
 }
 
 export interface SendEmailResult {
@@ -20,18 +19,16 @@ export const sendInviteEmail = async ({
   orgName,
   roleName,
   inviteUrl,
-  fromName = 'Tracker System',
-  customApiKey
+  fromName = 'Tracker System'
 }: SendInviteEmailParams): Promise<SendEmailResult> => {
-  // Tenta obter a chave do argumento customizado, do localStorage local ou da variável de ambiente da Vercel/Vite
-  const storedKey = typeof window !== 'undefined' ? localStorage.getItem('RESEND_CUSTOM_API_KEY') : null;
-  const apiKey = (customApiKey || storedKey || import.meta.env.VITE_RESEND_API_KEY || '').trim();
+  // Consumo 100% nativo da variável de ambiente compilada no build da Vercel
+  const apiKey = (import.meta.env.VITE_RESEND_API_KEY || '').trim();
 
   if (!apiKey) {
-    console.warn('[emailService] VITE_RESEND_API_KEY não configurada no ambiente nem salva no testador.');
+    console.warn('[emailService] VITE_RESEND_API_KEY não configurada no ambiente nativo.');
     return {
       success: false,
-      error: 'VITE_RESEND_API_KEY ausente nas variáveis de ambiente da Vercel/Local. Informe a chave re_... no testador acima ou faça um Novo Deploy na Vercel.'
+      error: 'A variável de ambiente VITE_RESEND_API_KEY ainda não foi compilada no build da Vercel.'
     };
   }
 
@@ -50,7 +47,7 @@ export const sendInviteEmail = async ({
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `${fromName} <onboarding@resend.dev>`, // Remetente padrão Resend sandbox ou domínio verificado
+        from: `${fromName} <onboarding@resend.dev>`,
         to: [recipientEmail],
         subject: `🚀 Convite de Acesso — ${orgName} (Tracker Platform)`,
         html: htmlContent
