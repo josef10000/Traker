@@ -178,6 +178,8 @@ export const calculateDashboardStats = (
   const paidAgreementsMonth = realMonthAgreements.filter(a => a.status === AgreementStatus.PAID);
   const totalPaidMonth = paidAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
 
+  const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
+
   // Chamando sub-cálculos purificados
   const projectedMrr = calculateProjectedMrr(monthAgreements, todayZero);
   const breakRatesByDilatedDays = calculateBreakRatesByDilatedDays(realTargetAgreements);
