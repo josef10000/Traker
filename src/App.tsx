@@ -477,11 +477,7 @@ export function AppContent() {
     );
   }
 
-  const hasNoTeam = !profile?.teamId;
-  const isSupervisorWithManagedTeams = profile?.role === 'supervisor' && (profile?.managedTeams?.length || 0) > 0;
-  const isManagerOrCoordinator = profile?.role === 'manager' || profile?.role === 'coordinator';
-
-  if (!profile || (!isManagerOrCoordinator && hasNoTeam && !isSupervisorWithManagedTeams)) {
+  if (!profile || !profile.organizationId) {
     return (
       <>
         <AnimatePresence>
@@ -500,6 +496,7 @@ export function AppContent() {
       </>
     );
   }
+
 
   return (
     <>
