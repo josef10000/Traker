@@ -21,17 +21,70 @@ export const sendInviteEmail = async ({
   inviteUrl,
   fromName = 'Tracker System'
 }: SendInviteEmailParams): Promise<SendEmailResult> => {
-  // Consumo 100% nativo da variável de ambiente compilada no build da Vercel
-  const apiKey = (import.meta.env.VITE_RESEND_API_KEY || '').trim();
+  try {
+    // 1. Tenta chamar o Endpoint Serverless Nativo da Vercel (/api/send-email)
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        recipientEmail,
+        orgName,
+        roleName,
+        inviteUrl,
+        fromName
+      })
+    });
 
-  if (!apiKey) {
-    console.warn('[emailService] VITE_RESEND_API_KEY não configurada no ambiente nativo.');
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      return {
+        success: true,
+        messageId: data.id
+      };
+    }
+
+    // Se o endpoint da Vercel retornar erro, obtém a mensagem
+    if (!response.ok && data.error) {
+      // Fallback para disparo direto se estiver rodando localmente sem a pasta /api
+      const apiKey = (import.meta.env.VITE_RESEND_API_KEY || '').trim();
+      if (apiKey) {
+        return await sendDirectResendEmail({ recipientEmail, orgName, roleName, inviteUrl, fromName, apiKey });
+      }
+      return {
+        success: false,
+        error: data.error
+      };
+    }
+
+    return {
+      success: true,
+      messageId: data.id
+    };
+  } catch (error: any) {
+    // Fallback de desenvolvimento local se a rota /api não estiver rodando no localhost
+    const apiKey = (import.meta.env.VITE_RESEND_API_KEY || '').trim();
+    if (apiKey) {
+      return await sendDirectResendEmail({ recipientEmail, orgName, roleName, inviteUrl, fromName, apiKey });
+    }
+
     return {
       success: false,
-      error: 'A variável de ambiente VITE_RESEND_API_KEY ainda não foi compilada no build da Vercel.'
+      error: error.message || 'Erro ao comunicar com a API de e-mails.'
     };
   }
+};
 
+const sendDirectResendEmail = async ({
+  recipientEmail,
+  orgName,
+  roleName,
+  inviteUrl,
+  fromName,
+  apiKey
+}: SendInviteEmailParams & { apiKey: string }): Promise<SendEmailResult> => {
   const htmlContent = generateInviteEmailHtml({
     recipientEmail,
     orgName,
@@ -40,7 +93,7 @@ export const sendInviteEmail = async ({
   });
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -54,25 +107,14 @@ export const sendInviteEmail = async ({
       })
     });
 
-    const data = await response.json();
+    const data = await res.json();
 
-    if (!response.ok) {
-      console.error('[emailService] Erro retornado pela API do Resend:', data);
-      return {
-        success: false,
-        error: data.message || data.error?.message || 'Falha ao enviar e-mail via Resend.'
-      };
+    if (!res.ok) {
+      return { success: false, error: data.message || 'Erro no Resend.' };
     }
 
-    return {
-      success: true,
-      messageId: data.id
-    };
-  } catch (error: any) {
-    console.error('[emailService] Erro ao conectar com o servidor do Resend:', error);
-    return {
-      success: false,
-      error: error.message || 'Erro de rede ao disparar e-mail.'
-    };
+    return { success: true, messageId: data.id };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
 };
