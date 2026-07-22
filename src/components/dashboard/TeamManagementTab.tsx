@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Printer, User as UserIcon, Check, X as XIcon, PencilSimple, MagnifyingGlass, CaretLeft, CaretRight } from '@phosphor-icons/react';
-import { doc, updateDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { Printer, User as UserIcon, Check, X as XIcon, PencilSimple, MagnifyingGlass, CaretLeft, CaretRight, Link, UserPlus, BuildingOffice } from '@phosphor-icons/react';
+import { doc, updateDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Agreement, AgreementStatus, UserProfile } from '../../types';
+import { Agreement, AgreementStatus, UserProfile, Team } from '../../types';
 import { formatCurrency } from '../../utils/masks';
 import { CustomSelect } from '../ui/CustomSelect';
 import { Avatar } from '../ui/Avatar';
+import { assignUserToTeam, getUnassignedUsers } from '../../lib/teams';
 
 interface TeamManagementTabProps {
   profile: UserProfile;
@@ -61,6 +62,38 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Estados para Colaboradores sem Time e Vinculação Rápida
+  const [unassignedMembers, setUnassignedMembers] = useState<UserProfile[]>([]);
+  const [orgTeams, setOrgTeams] = useState<Team[]>([]);
+  const [selectedTeamForUser, setSelectedTeamForUser] = useState<Record<string, string>>({});
+  const [assigningUid, setAssigningUid] = useState<string | null>(null);
+
+  // Ouvinte em tempo real de membros sem time e times da empresa
+  useEffect(() => {
+    if (!profile.organizationId) return;
+
+    // Buscar Times da Organização
+    const teamsQ = query(collection(db, 'teams'), where('organizationId', '==', profile.organizationId));
+    const unsubTeams = onSnapshot(teamsQ, (snap) => {
+      const list: Team[] = snap.docs.map(d => ({ id: d.id, ...d.data() } as Team));
+      setOrgTeams(list);
+    });
+
+    // Buscar Usuários sem Time
+    const usersQ = query(collection(db, 'users'), where('organizationId', '==', profile.organizationId));
+    const unsubUsers = onSnapshot(usersQ, (snap) => {
+      const list: UserProfile[] = snap.docs
+        .map(d => d.data() as UserProfile)
+        .filter(u => !u.teamId && u.role !== 'super_admin' && u.role !== 'manager');
+      setUnassignedMembers(list);
+    });
+
+    return () => {
+      unsubTeams();
+      unsubUsers();
+    };
+  }, [profile.organizationId]);
+
   const handleSaveJobTitle = async (uid: string) => {
     if (!newJobTitle.trim()) return;
     setIsSaving(true);
@@ -91,6 +124,27 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
     }
   };
 
+  // Executar vinculação de colaborador a um time em 1 clique
+  const handleAssignToTeam = async (uid: string) => {
+    const targetTeamId = selectedTeamForUser[uid];
+    if (!targetTeamId) return;
+
+    setAssigningUid(uid);
+    try {
+      await assignUserToTeam(uid, targetTeamId);
+      // Limpa a seleção
+      setSelectedTeamForUser(prev => {
+        const copy = { ...prev };
+        delete copy[uid];
+        return copy;
+      });
+    } catch (error) {
+      console.error('[TeamManagementTab] Erro ao vincular membro ao time:', error);
+    } finally {
+      setAssigningUid(null);
+    }
+  };
+
   // Filtragem de membros por busca
   const filteredMembers = currentTeamMembers.filter(member => {
     const name = (member.displayName || '').toLowerCase();
@@ -115,7 +169,7 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
       }`}>
         <div>
           <h3 className={`text-lg font-bold leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Quadro de Ocorrências e Performance</h3>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Registre presença diária, feedbacks e consulte históricos individuais.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Registre presença diária, feedbacks, atribua equipes e consulte históricos.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Seletor Compacto de Período */}
@@ -152,6 +206,68 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({
           )}
         </div>
       </div>
+
+      {/* SEÇÃO: COLABORADORES SEM TIME ATRIBUÍDO */}
+      {unassignedMembers.length > 0 && canManageAttendance && (
+        <div className={`p-6 rounded-3xl border space-y-4 ${
+          theme === 'dark' ? 'bg-amber-950/20 border-amber-500/30' : 'bg-amber-50 border-amber-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <UserPlus size={20} weight="bold" />
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-amber-300 flex items-center gap-2">
+                  <span>📥 Colaboradores sem Time Atribuído ({unassignedMembers.length})</span>
+                </h4>
+                <p className="text-xs text-amber-200/80">
+                  Estes colaboradores já aceitaram o convite mas ainda não pertencem a um time. Selecione uma equipe abaixo para vinculá-los em 1 clique:
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {unassignedMembers.map(u => (
+              <div key={u.uid} className="p-3.5 rounded-2xl bg-slate-900/60 border border-white/10 flex items-center justify-between gap-3 text-xs">
+                <div className="space-y-0.5">
+                  <strong className="text-white font-bold block">{u.displayName || u.email.split('@')[0]}</strong>
+                  <span className="text-[10px] text-slate-400 font-mono block">{u.email} • Cargo: {u.jobTitle || u.role}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {orgTeams.length > 0 ? (
+                    <>
+                      <select
+                        value={selectedTeamForUser[u.uid] || ''}
+                        onChange={(e) => setSelectedTeamForUser(prev => ({ ...prev, [u.uid]: e.target.value }))}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-white/10 text-white font-bold text-xs outline-none focus:border-amber-500"
+                      >
+                        <option value="">Selecione o Time...</option>
+                        {orgTeams.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+
+                      <button
+                        onClick={() => handleAssignToTeam(u.uid)}
+                        disabled={!selectedTeamForUser[u.uid] || assigningUid === u.uid}
+                        className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all disabled:opacity-40 cursor-pointer flex items-center gap-1 shrink-0"
+                      >
+                        <Link size={14} weight="bold" />
+                        {assigningUid === u.uid ? 'Vinculando...' : 'Vincular'}
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-[10px] text-amber-300 italic">Crie um time na empresa para vincular</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Barra de Busca (Exibida caso o time tenha membros) */}
       {currentTeamMembers.length > 0 && (

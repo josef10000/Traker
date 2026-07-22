@@ -595,3 +595,38 @@ export const acceptInvite = async (uid: string, token: string): Promise<void> =>
 
   await updateDoc(inviteDoc.ref, { status: 'accepted' });
 };
+
+export const assignUserToTeam = async (uid: string, teamId: string | null): Promise<void> => {
+  const userRef = doc(db, 'users', uid);
+  const userSnap = await getDoc(userRef);
+  
+  if (!userSnap.exists()) {
+    throw new Error('Usuário não encontrado.');
+  }
+
+  const userData = userSnap.data() as UserProfile;
+
+  await updateDoc(userRef, {
+    teamId: teamId || null,
+    managedTeams: userData.role === 'supervisor' && teamId ? arrayUnion(teamId) : (userData.managedTeams || undefined)
+  });
+
+  // Se o usuário for supervisor e for vinculado a um time, define supervisorId no time
+  if (userData.role === 'supervisor' && teamId) {
+    const teamRef = doc(db, 'teams', teamId);
+    await updateDoc(teamRef, {
+      supervisorId: uid
+    });
+  }
+};
+
+export const getUnassignedUsers = async (organizationId: string): Promise<UserProfile[]> => {
+  const usersRef = collection(db, 'users');
+  const q = query(usersRef, where('organizationId', '==', organizationId));
+  const querySnapshot = await getDocs(q);
+  
+  return querySnapshot.docs
+    .map(doc => doc.data() as UserProfile)
+    .filter(user => !user.teamId && user.role !== 'super_admin' && user.role !== 'manager');
+};
+
