@@ -83,6 +83,7 @@ import { DashboardModals } from './DashboardModals';
 import { HelpDrawer } from './HelpDrawer';
 import { exportToCsv } from '../../utils/csvExporter';
 import { startTour } from '../../utils/tour';
+import { DemoFeatureBanner } from '../demo/DemoFeatureBanner';
 
 interface DashboardProps {
   user: User;
@@ -692,7 +693,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Exibe tour interativo se for primeiro login (somente após aceitar os termos de uso)
   useEffect(() => {
-    if (profile && !profile.hasSeenTour && profile.acceptedTermsAt) {
+    if (profile && !profile.hasSeenTour && profile.acceptedTermsAt && profile.organizationId !== 'sandbox-test') {
       const timer = setTimeout(() => {
         startTour(profile.role, async () => {
           try {
@@ -708,7 +709,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [profile?.hasSeenTour, profile?.acceptedTermsAt]);
+  }, [profile?.hasSeenTour, profile?.acceptedTermsAt, profile?.organizationId]);
 
   // 3. CÁLCULO DAS FILTRAGENS LOCAIS E ESTATÍSTICAS FINANCEIRAS
   // Ajustes técnicos do usuário no time selecionado para o faturamento
@@ -2176,6 +2177,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           <main className="max-w-7xl w-full mx-auto px-6 py-8 space-y-8 no-print">
+            {profile.organizationId === 'sandbox-test' && (
+              <DemoFeatureBanner 
+                activeTab={dashboardTab}
+                role={profile.role}
+                theme={theme}
+              />
+            )}
             {/* Barra Superior Executiva (Meta, Filtros, Seletores) */}
             {dashboardTab === 'financial' && (
               <div className={`flex flex-col xl:flex-row xl:items-center justify-between gap-6 p-6 rounded-[2rem] border ${
