@@ -109,6 +109,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [filterStatus, setFilterStatus] = useState<'all' | AgreementStatus>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'custom'>('all');
+  const [cardDateFilter, setCardDateFilter] = useState<'month' | 'year' | 'today' | 'week' | 'custom'>('month');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -738,24 +739,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return filtered;
   }, [monthFilteredAgreements, viewMode, profile.uid, selectedMemberId]);
 
-  // Acordos filtrados por filtros temporais (Hoje / Ontem / Customizado)
-  const timeFilteredAgreements = useMemo(() => {
+  // Acordos filtrados por granularidade de data exclusivamente para Cards e Gráficos (Hoje / Semana / Mês / Ano / Período Específico)
+  const cardTimeFilteredAgreements = useMemo(() => {
     let filtered = memberFilteredAgreements;
-    if (dateFilter === 'today') {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      filtered = filtered.filter(a => new Date(a.createdAt) >= today);
-    } else if (dateFilter === 'yesterday') {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      yesterday.setHours(0,0,0,0);
-      const today = new Date();
-      today.setHours(0,0,0,0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (cardDateFilter === 'today') {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
       filtered = filtered.filter(a => {
-        const d = new Date(a.createdAt);
-        return d >= yesterday && d < today;
+        const created = new Date(a.createdAt);
+        return created >= today && created < tomorrow;
       });
-    } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+    } else if (cardDateFilter === 'week') {
+      const dayOfWeek = today.getDay(); // 0: Dom, 1: Seg...
+      const distToMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - distToMon);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+      filtered = filtered.filter(a => {
+        const created = new Date(a.createdAt);
+        return created >= startOfWeek && created < endOfWeek;
+      });
+    } else if (cardDateFilter === 'year') {
+      filtered = filtered.filter(a => {
+        const created = new Date(a.createdAt);
+        return created.getFullYear() === selectedYear;
+      });
+    } else if (cardDateFilter === 'custom' && customStartDate && customEndDate) {
       const start = new Date(customStartDate + 'T00:00:00');
       const end = new Date(customEndDate + 'T23:59:59');
       filtered = filtered.filter(a => {
@@ -764,12 +780,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
     }
     return filtered;
-  }, [memberFilteredAgreements, dateFilter, customStartDate, customEndDate]);
+  }, [memberFilteredAgreements, cardDateFilter, selectedYear, customStartDate, customEndDate]);
 
   // Executa o cálculo de estatísticas (faturamento total, projeção, turnos, heatmap, meta diária)
   const stats = useDashboardStats({
     monthAgreements: memberFilteredAgreements,
-    filteredAgreements: timeFilteredAgreements,
+    filteredAgreements: cardTimeFilteredAgreements,
     monthlyGoal,
     selectedMonth,
     selectedYear
@@ -2382,6 +2398,109 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       theme={theme}
                     />
                   )}
+
+                  {/* Barra de Granularidade Temporal (Cards e Gráficos) */}
+                  <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl border ${
+                    theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        Filtro dos Cards & Gráficos:
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                        {cardDateFilter === 'today' ? 'Diário (Hoje)' : 
+                         cardDateFilter === 'week' ? 'Semanal (Esta Semana)' : 
+                         cardDateFilter === 'month' ? 'Mensal (Mês Selecionado)' : 
+                         cardDateFilter === 'year' ? 'Anual (Ano Selecionado)' : 'Período Específico'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                      <div className={`flex items-center p-1 rounded-xl border ${
+                        theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
+                      }`}>
+                        <button
+                          type="button"
+                          onClick={() => setCardDateFilter('today')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            cardDateFilter === 'today'
+                              ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                              : theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Diário
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCardDateFilter('week')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            cardDateFilter === 'week'
+                              ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                              : theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Semanal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCardDateFilter('month')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            cardDateFilter === 'month'
+                              ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                              : theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Mensal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCardDateFilter('year')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            cardDateFilter === 'year'
+                              ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                              : theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Anual
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCardDateFilter('custom')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            cardDateFilter === 'custom'
+                              ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                              : theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Período Específico
+                        </button>
+                      </div>
+
+                      {cardDateFilter === 'custom' && (
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+                          theme === 'dark' ? 'bg-slate-950 border-sky-500/30' : 'bg-slate-50 border-sky-500/30'
+                        }`}>
+                          <input
+                            type="date"
+                            value={customStartDate}
+                            onChange={(e) => setCustomStartDate(e.target.value)}
+                            className={`bg-transparent text-xs font-bold outline-none cursor-pointer ${
+                              theme === 'dark' ? 'text-white' : 'text-slate-900'
+                            }`}
+                          />
+                          <span className="text-slate-400 text-xs font-medium">até</span>
+                          <input
+                            type="date"
+                            value={customEndDate}
+                            onChange={(e) => setCustomEndDate(e.target.value)}
+                            className={`bg-transparent text-xs font-bold outline-none cursor-pointer ${
+                              theme === 'dark' ? 'text-white' : 'text-slate-900'
+                            }`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
                   {/* KPIs de Monitoramento */}
                   <StatsGrid 

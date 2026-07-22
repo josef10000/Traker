@@ -61,14 +61,21 @@ class SandboxService {
     };
   }
 
-  // Notifica todos os inscritos
+  private notifyScheduled = false;
+
+  // Notifica todos os inscritos (com batching em microtask para otimizar a performance no Modo Demo)
   private notify(): void {
-    this.listeners.forEach(cb => {
-      try {
-        cb();
-      } catch (err) {
-        console.error('[SandboxService] Erro ao notificar listener:', err);
-      }
+    if (this.notifyScheduled) return;
+    this.notifyScheduled = true;
+    queueMicrotask(() => {
+      this.notifyScheduled = false;
+      this.listeners.forEach(cb => {
+        try {
+          cb();
+        } catch (err) {
+          console.error('[SandboxService] Erro ao notificar listener:', err);
+        }
+      });
     });
   }
 

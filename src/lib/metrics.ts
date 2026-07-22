@@ -154,34 +154,35 @@ export const calculateDashboardStats = (
   const realMonthAgreements = filterRealAgreements(monthAgreements);
   const realFilteredAgreements = filterRealAgreements(filteredAgreements);
 
-  // Cálculos Mensais
-  const totalProjected = monthAgreements.reduce((acc, curr) => acc + curr.value, 0);
-  const paidAgreementsMonth = monthAgreements.filter(a => a.status === AgreementStatus.PAID);
-  const totalPaidMonth = paidAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-  
-  const overdueAgreementsMonth = monthAgreements.filter(a => 
+  // Usa o conjunto filtrado (granular) para as métricas dos cards/gráficos
+  const realTargetAgreements = realFilteredAgreements;
+
+  // Cálculos Filtrados / Granulados para Cards e Gráficos
+  const totalProjected = realTargetAgreements.reduce((acc, curr) => acc + curr.value, 0);
+  const paidAgreementsFiltered = realTargetAgreements.filter(a => a.status === AgreementStatus.PAID);
+  const totalPaidFiltered = paidAgreementsFiltered.reduce((acc, curr) => acc + curr.value, 0);
+
+  const overdueAgreementsFiltered = realTargetAgreements.filter(a => 
     a.status === AgreementStatus.WAITING && 
     parseLocalDate(a.dueDate) < todayZero
   );
-  const totalOverdueMonth = overdueAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
-  
-  const pendingTodayAgreementsMonth = monthAgreements.filter(a => 
+  const totalOverdueFiltered = overdueAgreementsFiltered.reduce((acc, curr) => acc + curr.value, 0);
+
+  const pendingTodayAgreementsFiltered = realTargetAgreements.filter(a => 
     a.status === AgreementStatus.WAITING && 
     parseLocalDate(a.dueDate).getTime() === todayZero.getTime()
   );
-  const totalPendingTodayMonth = pendingTodayAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
+  const totalPendingTodayFiltered = pendingTodayAgreementsFiltered.reduce((acc, curr) => acc + curr.value, 0);
 
-  // Cálculos Filtrados
-  const paidAgreementsFiltered = filteredAgreements.filter(a => a.status === AgreementStatus.PAID);
-  const totalPaidFiltered = paidAgreementsFiltered.reduce((acc, curr) => acc + curr.value, 0);
-  
-  const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
+  // Cálculos Mensais Fixos para Acompanhamento de Meta Global
+  const paidAgreementsMonth = realMonthAgreements.filter(a => a.status === AgreementStatus.PAID);
+  const totalPaidMonth = paidAgreementsMonth.reduce((acc, curr) => acc + curr.value, 0);
 
   // Chamando sub-cálculos purificados
   const projectedMrr = calculateProjectedMrr(monthAgreements, todayZero);
-  const breakRatesByDilatedDays = calculateBreakRatesByDilatedDays(monthAgreements);
-  const breakRateByCategory = calculateBreakRateByCategory(monthAgreements);
-  const primeTimeDistribution = calculatePrimeTimeDistribution(monthAgreements);
+  const breakRatesByDilatedDays = calculateBreakRatesByDilatedDays(realTargetAgreements);
+  const breakRateByCategory = calculateBreakRateByCategory(realTargetAgreements);
+  const primeTimeDistribution = calculatePrimeTimeDistribution(realTargetAgreements);
   const heatmap31Days = calculateHeatmap31Days(monthAgreements, selectedMonth, selectedYear);
 
   const dueTodayAgreements = realMonthAgreements.filter(a => 
@@ -197,15 +198,17 @@ export const calculateDashboardStats = (
     .filter(a => a.status === AgreementStatus.PAID && new Date(a.createdAt) >= todayZero)
     .reduce((acc, curr) => acc + curr.value, 0);
 
+  const effectivenessRate = realTargetAgreements.length > 0
+    ? (paidAgreementsFiltered.length / realTargetAgreements.length) * 100
+    : 0;
+
   return {
     totalProjected,
-    totalPaid: totalPaidMonth,
+    totalPaid: totalPaidFiltered,
     filteredPaidValue: totalPaidFiltered,
-    totalOverdue: totalOverdueMonth,
-    totalPendingToday: totalPendingTodayMonth,
-    effectivenessRate: realMonthAgreements.length > 0
-      ? (realMonthAgreements.filter(a => a.status === AgreementStatus.PAID).length / realMonthAgreements.length) * 100
-      : 0,
+    totalOverdue: totalOverdueFiltered,
+    totalPendingToday: totalPendingTodayFiltered,
+    effectivenessRate,
     todayPaidValue,
     todayEffectiveness,
     counts: {
@@ -224,7 +227,7 @@ export const calculateDashboardStats = (
         broken: realFilteredAgreements.filter(a => a.status === AgreementStatus.BROKEN || (a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < todayZero)).length,
         overdue: realFilteredAgreements.filter(a => a.status === AgreementStatus.WAITING && parseLocalDate(a.dueDate) < todayZero).length,
       },
-      today: realMonthAgreements.filter(a => new Date(a.createdAt) >= todayZero).length,
+      today: realTargetAgreements.filter(a => new Date(a.createdAt) >= todayZero).length,
       checklist: realMonthAgreements.filter(a => {
         const dueDate = parseLocalDate(a.dueDate);
         const wasCheckedToday = a.lastCheckedAt && 
@@ -242,7 +245,7 @@ export const calculateDashboardStats = (
         return false;
       }).length,
     },
-    ticketAverage: realMonthAgreements.length > 0 ? totalProjected / realMonthAgreements.length : 0,
+    ticketAverage: realTargetAgreements.length > 0 ? totalProjected / realTargetAgreements.length : 0,
     remainingToGoal: Math.max(0, (monthlyGoal || 0) - totalPaidMonth),
     projectedMrr,
     
