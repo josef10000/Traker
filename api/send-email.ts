@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS Headers para chamadas do frontend
+  // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -15,22 +15,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { recipientEmail, orgName, roleName, inviteUrl, fromName = 'Tracker System' } = req.body;
+    const { recipientEmail, orgName, roleName, inviteUrl, fromName = 'Tracker System', apiKey: bodyApiKey } = req.body;
 
     if (!recipientEmail || !inviteUrl) {
       return res.status(400).json({ error: 'E-mail de destino e URL do convite são obrigatórios.' });
     }
 
-    // Leitura nativa no servidor Node.js da Vercel (Production, Preview, Dev)
+    // Leitura resiliente de todas as variações de nome da chave no servidor Node.js da Vercel
     const apiKey = (
+      bodyApiKey ||
       process.env.VITE_RESEND_API_KEY || 
       process.env.RESEND_API_KEY || 
+      process.env.resend_api_key ||
+      process.env.RESEND_KEY ||
       ''
     ).trim();
 
     if (!apiKey) {
       return res.status(500).json({ 
-        error: 'A chave da API do Resend não foi encontrada no servidor da Vercel. Verifique as Environment Variables na Vercel.' 
+        error: 'A chave da API do Resend (VITE_RESEND_API_KEY ou RESEND_API_KEY) não foi encontrada no servidor da Vercel. Certifique-se de salvar a variável nas Environment Variables da Vercel e ir em Deployments -> Redeploy para que a Vercel atualize os containers de servidor.' 
       });
     }
 
@@ -97,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 </html>
     `.trim();
 
-    // Chamada oficial da API do Resend no servidor Node da Vercel
+    // Chamada oficial à API do Resend no servidor Node da Vercel
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -107,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         from: `${fromName} <onboarding@resend.dev>`,
         to: [recipientEmail],
-        subject: `🚀 Convite de Acessar Empresa — ${orgName} (Tracker Platform)`,
+        subject: `🚀 Convite de Acesso — ${orgName} (Tracker Platform)`,
         html: htmlContent
       })
     });
