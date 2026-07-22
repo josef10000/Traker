@@ -37,7 +37,13 @@ export const sendInviteEmail = async ({
       })
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = { error: responseText || `Servidor respondeu com status ${response.status}` };
+    }
 
     if (response.ok && data.success) {
       return {
@@ -46,16 +52,15 @@ export const sendInviteEmail = async ({
       };
     }
 
-    // Se o endpoint da Vercel retornar erro, obtém a mensagem
+    // Se o endpoint da Vercel retornar erro, trata com o fallback
     if (!response.ok && data.error) {
-      // Fallback para disparo direto se estiver rodando localmente sem a pasta /api
       const apiKey = (import.meta.env.VITE_RESEND_API_KEY || '').trim();
       if (apiKey) {
         return await sendDirectResendEmail({ recipientEmail, orgName, roleName, inviteUrl, fromName, apiKey });
       }
       return {
         success: false,
-        error: data.error
+        error: typeof data.error === 'string' ? data.error : JSON.stringify(data.error)
       };
     }
 
@@ -64,7 +69,6 @@ export const sendInviteEmail = async ({
       messageId: data.id
     };
   } catch (error: any) {
-    // Fallback de desenvolvimento local se a rota /api não estiver rodando no localhost
     const apiKey = (import.meta.env.VITE_RESEND_API_KEY || '').trim();
     if (apiKey) {
       return await sendDirectResendEmail({ recipientEmail, orgName, roleName, inviteUrl, fromName, apiKey });
@@ -107,7 +111,13 @@ const sendDirectResendEmail = async ({
       })
     });
 
-    const data = await res.json();
+    const resText = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(resText);
+    } catch {
+      data = { message: resText };
+    }
 
     if (!res.ok) {
       return { success: false, error: data.message || 'Erro no Resend.' };
