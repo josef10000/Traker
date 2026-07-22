@@ -308,6 +308,7 @@ export const calculateDashboardStats = (
       heatmap31Days
     },
     projection: (() => {
+      const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
       if (!isCurrentMonth) return totalPaidMonth;
       const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
       const currentDay = today.getDate();
