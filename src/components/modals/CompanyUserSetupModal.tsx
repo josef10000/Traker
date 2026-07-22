@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Users, 
@@ -41,6 +41,26 @@ interface PendingInvite {
   monthlyServiceValue?: number;
   createdAt: string;
 }
+
+const getRoleLabel = (role: UserRole): string => {
+  switch (role) {
+    case 'super_admin':
+      return '👑 Administrador Master';
+    case 'manager':
+      return '🏢 Gerente da Empresa';
+    case 'coordinator':
+      return '🎯 Coordenador de Operações';
+    case 'supervisor':
+      return '👥 Supervisor de Equipe';
+    case 'monitor':
+      return '🛡️ Monitor / QA';
+    case 'backoffice':
+      return '📋 Backoffice';
+    case 'member':
+    default:
+      return '🎧 Operador';
+  }
+};
 
 export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
   isOpen,
@@ -122,13 +142,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
       for (const row of validRows) {
         const token = `inv-${generateSecureToken(8).toLowerCase()}`;
         const inviteUrl = `${window.location.origin}/register?invite=${token}`;
-        
-        const roleLabel = 
-          row.role === 'manager' ? '🏢 Gerente da Empresa' :
-          row.role === 'coordinator' ? '🎯 Coordenador de Operações' :
-          row.role === 'supervisor' ? '👥 Supervisor de Equipe' :
-          row.role === 'monitor' ? '🛡️ Monitor / QA' :
-          row.role === 'seller' ? '💼 Vendedor' : '🎧 Operador de Cobrança';
+        const roleLabel = getRoleLabel(row.role);
 
         // Disparo automático via Resend
         const emailRes = await sendInviteEmail({
@@ -170,12 +184,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
   // Reenviar E-mail de Convite Individual via Resend
   const handleResendEmail = async (inv: PendingInvite) => {
     const inviteUrl = `${window.location.origin}/register?invite=${inv.token}`;
-    const roleLabel = 
-      inv.role === 'manager' ? '🏢 Gerente da Empresa' :
-      inv.role === 'coordinator' ? '🎯 Coordenador de Operações' :
-      inv.role === 'supervisor' ? '👥 Supervisor de Equipe' :
-      inv.role === 'monitor' ? '🛡️ Monitor / QA' :
-      inv.role === 'seller' ? '💼 Vendedor' : '🎧 Operador de Cobrança';
+    const roleLabel = getRoleLabel(inv.role);
 
     showToast(`Reenviando e-mail para ${inv.email}...`, 'success');
     const emailRes = await sendInviteEmail({
@@ -207,12 +216,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
     let text = `🚀 *Links de Acesso e Setup — ${orgName}*\n\n`;
     pendingInvites.forEach(inv => {
-      const roleLabel = 
-        inv.role === 'manager' ? 'Gerente' :
-        inv.role === 'coordinator' ? 'Coordenador' :
-        inv.role === 'supervisor' ? 'Supervisor' :
-        inv.role === 'monitor' ? 'Monitor/QA' :
-        inv.role === 'seller' ? 'Vendedor' : 'Operador';
+      const roleLabel = getRoleLabel(inv.role);
       text += `👤 *${inv.email}* (${roleLabel}):\n🔗 ${window.location.origin}/register?invite=${inv.token}\n\n`;
     });
 
@@ -255,7 +259,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Cadastre os e-mails e cargos da liderança ou colaboradores para gerar os links diretos de convite.
+                Cadastre os e-mails e cargos da liderança ou colaboradores para disparar os e-mails via Resend e gerar os links.
               </p>
             </div>
           </div>
@@ -272,9 +276,9 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
         <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/30 text-purple-200 text-xs flex items-start gap-3">
           <Info size={22} className="text-purple-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <strong className="text-white font-black block">💡 Como Funciona o Setup sem E-mail Automático:</strong>
+            <strong className="text-white font-black block">💡 Dupla Garantia de Entrega (Resend + WhatsApp):</strong>
             <p className="text-purple-200/90 leading-relaxed">
-              Você pode convidar apenas a <strong>Liderança (Gerentes, Coordenadores, Supervisores)</strong>. Cada link gerado é pré-vinculado ao e-mail informado. Basta copiar o link e enviá-lo pelo WhatsApp ou chat do colaborador. Ao entrar, o colaborador cadastra a senha e já ingressa no cargo correto.
+              Os e-mails de convite são enviados automaticamente via <strong>Resend</strong> para a caixa de entrada dos colaboradores. Você também pode copiar o link individual ou em lote para enviar via WhatsApp.
             </p>
           </div>
         </div>
@@ -284,7 +288,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
               <ListChecks size={16} className="text-purple-400" />
-              Novos Links de Convite a Gerar:
+              Novos Convites a Gerar:
             </span>
             <button
               type="button"
@@ -320,8 +324,8 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
                     <option value="coordinator">🎯 Coordenador de Operações</option>
                     <option value="supervisor">👥 Supervisor de Equipe</option>
                     <option value="monitor">🛡️ Monitor / QA</option>
+                    <option value="backoffice">📋 Backoffice</option>
                     <option value="member">🎧 Operador de Cobrança</option>
-                    <option value="seller">💼 Vendedor</option>
                   </select>
                 </div>
 
@@ -361,18 +365,18 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
               disabled={isLoading}
               className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
-              <Link size={16} weight="bold" />
-              Gerar e Salvar Links de Convite
+              <PaperPlaneRight size={16} weight="bold" />
+              Enviar E-mails & Gerar Links
             </button>
           </div>
         </form>
 
-        {/* LISTA DE CONVITES PENDENTES COM BOTÕES DE CÓPIA */}
+        {/* LISTA DE CONVITES PENDENTES COM BOTÕES DE E-MAIL E CÓPIA */}
         <div className="space-y-3 border-t border-white/10 pt-6">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
               <Link size={16} className="text-sky-400" />
-              Links de Convite Ativos ({pendingInvites.length}):
+              Convites Ativos ({pendingInvites.length}):
             </h4>
 
             {pendingInvites.length > 0 && (
@@ -391,12 +395,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {pendingInvites.map(inv => {
                 const isCopied = copiedToken === inv.token;
-                const roleLabel = 
-                  inv.role === 'manager' ? 'Gerente' :
-                  inv.role === 'coordinator' ? 'Coordenador' :
-                  inv.role === 'supervisor' ? 'Supervisor' :
-                  inv.role === 'monitor' ? 'Monitor/QA' :
-                  inv.role === 'seller' ? 'Vendedor' : 'Operador';
+                const roleLabel = getRoleLabel(inv.role);
 
                 return (
                   <div key={inv.id} className="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
@@ -456,7 +455,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
             </div>
           ) : (
             <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center text-xs text-slate-400">
-              Nenhum link de convite ativo para esta empresa. Cadastre os e-mails acima e clique em "Gerar e Salvar Links".
+              Nenhum convite ativo para esta empresa. Cadastre os e-mails acima e clique em "Enviar E-mails & Gerar Links".
             </div>
           )}
         </div>

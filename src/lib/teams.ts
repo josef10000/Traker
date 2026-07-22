@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Team, UserProfile, UserRole, Organization, Invite } from '../types';
+import { sendInviteEmail } from '../services/emailService';
 
 export const generateSecureToken = (length: number): string => {
   const array = new Uint8Array(length);
@@ -487,6 +488,25 @@ export const createInvitesInBulk = async (
     const data = invitesData[i];
     const inviteId = generateSecureToken(12);
     const token = generateSecureToken(16);
+
+    const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/register?invite=${token}`;
+    const roleLabel = 
+      data.role === 'super_admin' ? '👑 Administrador Master' :
+      data.role === 'manager' ? '🏢 Gerente da Empresa' :
+      data.role === 'coordinator' ? '🎯 Coordenador de Operações' :
+      data.role === 'supervisor' ? '👥 Supervisor de Equipe' :
+      data.role === 'monitor' ? '🛡️ Monitor / QA' :
+      data.role === 'backoffice' ? '📋 Backoffice' : '🎧 Operador';
+
+    // Disparo automático via Resend para convites da liderança
+    if (typeof window !== 'undefined') {
+      sendInviteEmail({
+        recipientEmail: data.email.trim().toLowerCase(),
+        orgName: orgData.name,
+        roleName: roleLabel,
+        inviteUrl
+      }).catch(err => console.error('[createInvitesInBulk] Erro ao disparar e-mail:', err));
+    }
 
     const invite: Invite = {
       id: inviteId,
