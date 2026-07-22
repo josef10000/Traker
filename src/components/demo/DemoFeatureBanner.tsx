@@ -5,7 +5,6 @@ import {
   CaretUp, 
   CaretDown, 
   Sparkle, 
-  CheckCircle,
   FileCsv as FileSpreadsheet,
   ChartLine,
   Target,
@@ -14,7 +13,8 @@ import {
   Users as TeamIcon,
   ChartBar as BiIcon,
   ShieldCheck,
-  Building
+  RocketLaunch,
+  Lightbulb
 } from '@phosphor-icons/react';
 import { UserRole } from '../../types';
 
@@ -40,11 +40,11 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
     benefitByRole: {
       member: 'Visualização transparente do seu faturamento acumulado no mês e de quanto falta para atingir a sua meta individual.',
       supervisor: 'Acompanhe em tempo real o desempenho de vendas e recuperação de crédito dos colaboradores sob sua supervisão.',
-      manager: 'Visão executiva consolida dos recebimentos da empresa e projeção do faturamento mensal.',
+      manager: 'Visão executiva consolidada dos recebimentos da empresa e projeção do faturamento mensal.',
       coordinator: 'Monitoramento estratégico das metas e liquidações operacionais da empresa.',
       monitor: 'Acompanhe como o faturamento se relaciona com os atendimentos auditados.'
     },
-    highlights: ['📊 Metas Automáticas', '⚡ Atualização em Tempo Real', '💰 Extrato de Acordos']
+    highlights: ['Metas Automáticas', 'Atualização em Tempo Real', 'Extrato de Acordos']
   },
   carga_acordos: {
     title: 'Carga de Acordos (Planilhas Externas)',
@@ -56,7 +56,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
       manager: 'Padronize a entrada de dados operacionais sem depender de arquivos soltos ou desatualizados.',
       coordinator: 'Controle o fluxo de entrada e saída de planilhas de trabalho dos times.'
     },
-    highlights: ['📁 Planilhas Externas', '✏️ Edição & Reexportação', '🔒 Centralização de Dados']
+    highlights: ['Planilhas Externas', 'Edição & Reexportação', 'Centralização de Dados']
   },
   portfolio: {
     title: 'Metas & Carteiras (Análises Aprofundadas)',
@@ -68,7 +68,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
       coordinator: 'Monitore o equilíbrio de faturamento e qualidade técnica de toda a operação.',
       monitor: 'Cruze as notas de monitoria técnica com a conversão de cada operador.'
     },
-    highlights: ['🎯 Performance Individual', '📊 Qualidade & Carteiras', '📈 Diagnóstico de Time']
+    highlights: ['Performance Individual', 'Qualidade & Carteiras', 'Diagnóstico de Time']
   },
   recovery: {
     title: 'Recuperação & Renegociação',
@@ -79,7 +79,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
       supervisor: 'Reduza o índice de inadimplência da equipe resgatando acordos vencidos.',
       manager: 'Acompanhe a taxa de recuperação sobre carteiras de dívida vencida.'
     },
-    highlights: ['🔄 Resgate por CPF', '📉 Redução de Inadimplência', '⚡ Renegociação Rápida']
+    highlights: ['Resgate por CPF', 'Redução de Inadimplência', 'Renegociação Rápida']
   },
   qa: {
     title: 'Qualidade (QA) & Monitoria',
@@ -90,7 +90,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
       member: 'Acesse seus feedbacks de atendimento e confira as orientações do seu PDI para evolução profissional.',
       supervisor: 'Acompanhe a nota média de qualidade da equipe e o cumprimento dos PDIs dos seus operadores.'
     },
-    highlights: ['🎧 Ficha de Escuta', '📈 PDI Automatizado', '⭐ Fator de Eficiência']
+    highlights: ['Ficha de Escuta', 'PDI Automatizado', 'Fator de Eficiência']
   },
   coordination: {
     title: 'Gestão & Coordenação Geral',
@@ -101,7 +101,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
       coordinator: 'Supervisione escalas diárias, gerencie o headcount dos times e monitore o batimento de metas em tempo real.',
       supervisor: 'Garanta o registro de presenças da sua equipe e consulte a escala de trabalho diária.'
     },
-    highlights: ['👥 Visão Total dos Times', '📅 Escalas & Presenças', '💳 Fechamento PJ']
+    highlights: ['Visão Total dos Times', 'Escalas & Presenças', 'Fechamento PJ']
   },
   bi: {
     title: 'BI & Analytics',
@@ -112,17 +112,17 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
       coordinator: 'Analise tendências operacionais e gargalos de conversão.',
       supervisor: 'Compare a curva de faturamento do seu time com o histórico de meses anteriores.'
     },
-    highlights: ['📈 Gráficos 360°', '📊 Análise de Tendências', '📤 Exportação em Excel']
+    highlights: ['Gráficos 360°', 'Análise de Tendências', 'Exportação em Excel']
   },
   audit: {
     title: 'Auditoria & Compliance LGPD',
     icon: ShieldCheck,
-    whatItDoes: 'Trilha histótica e auditável de todas as consultas, revelações e cópias de CPFs realizadas no sistema.',
+    whatItDoes: 'Trilha histórica e auditável de todas as consultas, revelações e cópias de CPFs realizadas no sistema.',
     benefitByRole: {
       manager: 'Garantia total de segurança jurídica e compliance com a LGPD contra vazamentos de dados.',
       supervisor: 'Monitore o histórico de acessos da equipe a informações sensíveis dos clientes.'
     },
-    highlights: ['🛡️ Compliance LGPD', '📜 Trilha Auditável', '🔒 Proteção de Dados']
+    highlights: ['Compliance LGPD', 'Trilha Auditável', 'Proteção de Dados']
   },
   people: {
     title: 'Gestão de Equipe & Usuários',
@@ -132,7 +132,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
       manager: 'Convide novos supervisores ou colaboradores e defina suas estruturas de equipe.',
       supervisor: 'Vincule operadores sem time à sua equipe com 1 clique.'
     },
-    highlights: ['✉️ Convites Automatizados', '🔗 Vinculação Rápida', '👥 Gestão de Time']
+    highlights: ['Convites Automatizados', 'Vinculação Rápida', 'Gestão de Time']
   },
   backoffice: {
     title: 'Back Office & Conciliação',
@@ -141,7 +141,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
     benefitByRole: {
       backoffice: 'Processe grandes volumes de contratos e valide os extratos financeiros do sistema.'
     },
-    highlights: ['📂 Carga em Massa', '🏦 Conciliação Bancária', '⚡ Processamento Rápido']
+    highlights: ['Carga em Massa', 'Conciliação Bancária', 'Processamento Rápido']
   }
 };
 
@@ -155,7 +155,7 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
     benefitByRole: {
       default: 'Acompanhe e gerencie as operações da sua empresa.'
     },
-    highlights: ['⚡ Tracker Platform']
+    highlights: ['Tracker Platform']
   };
 
   const IconComp = detail.icon;
@@ -163,25 +163,25 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
 
   return (
     <div className="w-full mb-6 z-20">
-      <div className="p-4 rounded-3xl border bg-slate-900/90 border-purple-500/30 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+      <div className="p-5 rounded-3xl border bg-slate-900 border-purple-500/40 backdrop-blur-xl shadow-2xl relative overflow-hidden">
         {/* Efeito de Luz */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
 
         {/* CABEÇALHO DO BANNER */}
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
-              <IconComp size={22} weight="bold" />
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/25 shrink-0">
+              <IconComp size={24} weight="bold" />
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20 flex items-center gap-1">
-                  <Sparkle size={10} weight="bold" /> Guia da Demonstração
+                <span className="text-[10px] font-black uppercase tracking-widest text-purple-300 bg-purple-500/20 px-2.5 py-0.5 rounded-lg border border-purple-500/30 flex items-center gap-1.5 shadow-sm">
+                  <Sparkle size={12} weight="bold" className="text-purple-400" /> Guia da Demonstração
                 </span>
-                <span className="text-xs font-black text-white">{detail.title}</span>
+                <span className="text-sm font-black text-white">{detail.title}</span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium line-clamp-1 mt-0.5">
+              <p className="text-xs text-slate-300 font-medium line-clamp-1 mt-0.5">
                 {detail.whatItDoes}
               </p>
             </div>
@@ -190,7 +190,7 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold shrink-0"
+            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-black shrink-0 active:scale-95"
           >
             <span>{isExpanded ? 'Recolher' : 'Entender Tela'}</span>
             {isExpanded ? <CaretUp size={14} weight="bold" /> : <CaretDown size={14} weight="bold" />}
@@ -207,38 +207,57 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* O QUE FAZ */}
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-1">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 block">
-                    🎯 O que esta tela faz
-                  </span>
-                  <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                    {detail.whatItDoes}
-                  </p>
-                </div>
-
-                {/* BENEFÍCIO PARA O CARGO */}
-                <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 space-y-1">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 block">
-                    🚀 Benefício para {role === 'member' ? 'Operador' : role === 'supervisor' ? 'Supervisor' : role === 'manager' ? 'Gerente' : role === 'coordinator' ? 'Coordenador' : role === 'monitor' ? 'Monitor' : 'Back Office'}
-                  </span>
-                  <p className="text-xs text-purple-100 leading-relaxed font-medium">
-                    {benefitText}
-                  </p>
-                </div>
-
-                {/* PÍLULAS DE DESTAQUE */}
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex flex-col justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block">
-                    💡 Destaques Principais
-                  </span>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {detail.highlights.map((item, idx) => (
-                      <span key={idx} className="text-[10px] font-bold text-slate-200 bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
-                        {item}
+              <div className="mt-5 pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* CARD 1: O QUE FAZ */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-sky-400">
+                      <Target size={16} weight="bold" />
+                      <span className="text-[11px] font-black uppercase tracking-wider">
+                        O que esta tela faz
                       </span>
-                    ))}
+                    </div>
+                    <p className="text-xs text-slate-200 leading-relaxed font-medium mt-1.5">
+                      {detail.whatItDoes}
+                    </p>
+                  </div>
+                </div>
+
+                {/* CARD 2: BENEFÍCIO PARA O CARGO */}
+                <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 space-y-2 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-purple-300">
+                      <RocketLaunch size={16} weight="bold" />
+                      <span className="text-[11px] font-black uppercase tracking-wider">
+                        Benefício para {role === 'member' ? 'Operador' : role === 'supervisor' ? 'Supervisor' : role === 'manager' ? 'Gerente' : role === 'coordinator' ? 'Coordenador' : role === 'monitor' ? 'Monitor' : 'Back Office'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-purple-100 leading-relaxed font-semibold mt-1.5">
+                      {benefitText}
+                    </p>
+                  </div>
+                </div>
+
+                {/* CARD 3: DESTAQUES PRINCIPAIS (ALTO CONTRASTE) */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-amber-400">
+                      <Lightbulb size={16} weight="bold" />
+                      <span className="text-[11px] font-black uppercase tracking-wider">
+                        Destaques Principais
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2.5">
+                      {detail.highlights.map((item, idx) => (
+                        <span 
+                          key={idx} 
+                          className="text-[11px] font-black text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-xl border border-emerald-500/40 shadow-sm flex items-center gap-1.5"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          {item}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
