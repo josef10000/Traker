@@ -6,6 +6,7 @@ export interface SendInviteEmailParams {
   roleName: string;
   inviteUrl: string;
   fromName?: string;
+  customApiKey?: string;
 }
 
 export interface SendEmailResult {
@@ -19,15 +20,18 @@ export const sendInviteEmail = async ({
   orgName,
   roleName,
   inviteUrl,
-  fromName = 'Tracker System'
+  fromName = 'Tracker System',
+  customApiKey
 }: SendInviteEmailParams): Promise<SendEmailResult> => {
-  const apiKey = import.meta.env.VITE_RESEND_API_KEY;
+  // Tenta obter a chave do argumento customizado, do localStorage local ou da variável de ambiente da Vercel/Vite
+  const storedKey = typeof window !== 'undefined' ? localStorage.getItem('RESEND_CUSTOM_API_KEY') : null;
+  const apiKey = (customApiKey || storedKey || import.meta.env.VITE_RESEND_API_KEY || '').trim();
 
-  if (!apiKey || apiKey.trim() === '') {
-    console.warn('[emailService] VITE_RESEND_API_KEY não configurada no ambiente. O e-mail não foi disparado via API.');
+  if (!apiKey) {
+    console.warn('[emailService] VITE_RESEND_API_KEY não configurada no ambiente nem salva no testador.');
     return {
       success: false,
-      error: 'VITE_RESEND_API_KEY ausente nas variáveis de ambiente da Vercel/Local.'
+      error: 'VITE_RESEND_API_KEY ausente nas variáveis de ambiente da Vercel/Local. Informe a chave re_... no testador acima ou faça um Novo Deploy na Vercel.'
     };
   }
 
@@ -42,11 +46,11 @@ export const sendInviteEmail = async ({
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `${fromName} <onboarding@resend.dev>`, // Remetente padrão Resend sandbox ou verificado
+        from: `${fromName} <onboarding@resend.dev>`, // Remetente padrão Resend sandbox ou domínio verificado
         to: [recipientEmail],
         subject: `🚀 Convite de Acesso — ${orgName} (Tracker Platform)`,
         html: htmlContent
