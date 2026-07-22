@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { 
   BuildingOffice, 
@@ -21,6 +21,18 @@ import {
   Funnel
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
+import { db } from '../../lib/firebase';
+import {
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+  addDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  Timestamp
+} from 'firebase/firestore';
 
 interface DimensionamentoSitesSectionProps {
   profile: UserProfile;
@@ -48,6 +60,18 @@ export interface OperationalSite {
   type: 'Presencial' | 'Remoto';
 }
 
+// Dados padrão para sandbox (in-memory, sem persistência)
+const DEFAULT_SITES: OperationalSite[] = [
+  { id: 'site-1', name: 'Site SP Paulista - 4º Andar', city: 'São Paulo - SP', type: 'Presencial' },
+  { id: 'site-2', name: 'Site Campinas - Unidade Central', city: 'Campinas - SP', type: 'Presencial' },
+  { id: 'site-3', name: 'Home Office / Remoto BR', city: 'Nacional (Brasil)', type: 'Remoto' },
+];
+
+const SANDBOX_ORG_ID = 'sandbox-test';
+
+const isSandbox = (orgId: string | undefined) =>
+  !orgId || orgId === SANDBOX_ORG_ID;
+
 export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionProps> = ({
   profile,
   teamsData = [],
@@ -56,6 +80,8 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
   showToast
 }) => {
   const isDark = theme === 'dark';
+  const organizationId = profile.organizationId;
+  const sandbox = isSandbox(organizationId);
 
   // Alternador de Sub-Aba: Dimensionamento & Presença vs Forecast Estratégico
   const [activeTab, setActiveTab] = useState<'dimensioning' | 'forecast'>('dimensioning');
@@ -64,15 +90,45 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
   const safeTeamMembers = useMemo(() => Array.isArray(teamMembers) ? teamMembers : [], [teamMembers]);
   const safeTeamsData = useMemo(() => Array.isArray(teamsData) ? teamsData : [], [teamsData]);
 
-  // Lista de Sites Operacionais Gerenciável
-  const [sites, setSites] = useState<OperationalSite[]>([
-    { id: 'site-1', name: 'Site SP Paulista - 4º Andar', city: 'São Paulo - SP', type: 'Presencial' },
-    { id: 'site-2', name: 'Site Campinas - Unidade Central', city: 'Campinas - SP', type: 'Presencial' },
-    { id: 'site-3', name: 'Home Office / Remoto BR', city: 'Nacional (Brasil)', type: 'Remoto' },
-  ]);
+  // ── SITES OPERACIONAIS ──────────────────────────────────────────────────────
+  const [sites, setSites] = useState<OperationalSite[]>(DEFAULT_SITES);
+  const [sitesLoading, setSitesLoading] = useState(!sandbox);
 
-  // Lista de Produtos / Carteiras Guarda-Chuva com Vínculo de Times
-  const [products, setProducts] = useState<ProductVacancy[]>([
+  useEffect(() => {
+    if (sandbox) {
+      setSites(DEFAULT_SITES);
+      setSitesLoading(false);
+      return;
+    }
+
+    const sitesCol = collection(db, 'organizations', organizationId!, 'operational_sites');
+    const q = query(sitesCol, orderBy('name'));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        if (snap.empty) {
+          // Primeira vez: inicializa com os sites padrão no Firestore
+          DEFAULT_SITES.forEach(async (s) => {
+            await setDoc(doc(db, 'organizations', organizationId!, 'operational_sites', s.id), s);
+          });
+          setSites(DEFAULT_SITES);
+        } else {
+          setSites(snap.docs.map(d => ({ id: d.id, ...d.data() } as OperationalSite)));
+        }
+        setSitesLoading(false);
+      },
+      (err) => {
+        console.error('[DimensionamentoSites] sites onSnapshot error:', err);
+        setSitesLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [organizationId, sandbox]);
+
+  // ── PRODUTOS / CARTEIRAS ────────────────────────────────────────────────────
+  const getDefaultProducts = useCallback((): ProductVacancy[] => [
     {
       id: 'prod-1',
       productName: 'Noverde Quitação (Ticket Alto)',
@@ -103,35 +159,69 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
       linkedTeamIds: safeTeamsData.length > 2 ? [safeTeamsData[2]?.id || 'default-gamma'] : ['default-gamma'],
       statusNote: 'Capacidade ajustada para 8 PAs (Empresa)'
     }
-  ]);
+  ], [safeTeamsData]);
 
-  // Modais de Cadastro / Edição
+  const [products, setProducts] = useState<ProductVacancy[]>([]);
+  const [productsLoading, setProductsLoading] = useState(!sandbox);
+
+  useEffect(() => {
+    if (sandbox) {
+      setProducts(getDefaultProducts());
+      setProductsLoading(false);
+      return;
+    }
+
+    const productsCol = collection(db, 'organizations', organizationId!, 'operational_products');
+    const q = query(productsCol, orderBy('productName'));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        if (snap.empty) {
+          // Primeira vez: inicializa com os produtos padrão no Firestore
+          const defaults = getDefaultProducts();
+          defaults.forEach(async (p) => {
+            await setDoc(doc(db, 'organizations', organizationId!, 'operational_products', p.id), p);
+          });
+          setProducts(defaults);
+        } else {
+          setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as ProductVacancy)));
+        }
+        setProductsLoading(false);
+      },
+      (err) => {
+        console.error('[DimensionamentoSites] products onSnapshot error:', err);
+        setProductsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [organizationId, sandbox, getDefaultProducts]);
+
+  // ── MODAIS DE PRODUTO / CARTEIRA ────────────────────────────────────────────
   const [isProdModalOpen, setIsProdModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
-  // Formulário do Modal de Produto / Carteira
   const [prodName, setProdName] = useState('');
   const [prodRequested, setProdRequested] = useState(10);
   const [prodApproved, setProdApproved] = useState(8);
-  const [prodSite, setProdSite] = useState('Site SP Paulista - 4º Andar');
+  const [prodSite, setProdSite] = useState('');
   const [prodForecastVal, setProdForecastVal] = useState('R$ 100.000 / mês');
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [prodStatusNote, setProdStatusNote] = useState('');
 
-  // Abrir Modal para Criar Novo Produto
   const handleOpenNewProdModal = () => {
     setEditingProductId(null);
     setProdName('');
     setProdRequested(10);
     setProdApproved(8);
-    setProdSite('Site SP Paulista - 4º Andar');
+    setProdSite(sites[0]?.name || '');
     setProdForecastVal('R$ 100.000 / mês');
     setSelectedTeams([]);
     setProdStatusNote('');
     setIsProdModalOpen(true);
   };
 
-  // Abrir Modal para Editar Produto Existente
   const handleOpenEditProdModal = (prod: ProductVacancy) => {
     setEditingProductId(prod.id);
     setProdName(prod.productName);
@@ -144,93 +234,166 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
     setIsProdModalOpen(true);
   };
 
-  // Salvar Produto (Novo ou Edição)
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prodName.trim()) return;
 
-    if (editingProductId) {
-      setProducts(prev => prev.map(p => p.id === editingProductId ? {
-        ...p,
-        productName: prodName,
-        requestedHeadcount: Number(prodRequested),
-        approvedHeadcount: Number(prodApproved),
-        siteLocation: prodSite,
-        forecastProductivity: prodForecastVal,
-        linkedTeamIds: selectedTeams,
-        statusNote: prodStatusNote
-      } : p));
-      showToast('Produto/Carteira atualizada com sucesso!', 'success');
+    const id = editingProductId || `prod-${Date.now()}`;
+    const payload: ProductVacancy = {
+      id,
+      productName: prodName,
+      requestedHeadcount: Number(prodRequested),
+      approvedHeadcount: Number(prodApproved),
+      siteLocation: prodSite,
+      forecastProductivity: prodForecastVal,
+      linkedTeamIds: selectedTeams,
+      statusNote: prodStatusNote
+    };
+
+    if (sandbox) {
+      setProducts(prev =>
+        editingProductId
+          ? prev.map(p => p.id === editingProductId ? payload : p)
+          : [...prev, payload]
+      );
     } else {
-      const newProd: ProductVacancy = {
-        id: `prod-${Date.now()}`,
-        productName: prodName,
-        requestedHeadcount: Number(prodRequested),
-        approvedHeadcount: Number(prodApproved),
-        siteLocation: prodSite,
-        forecastProductivity: prodForecastVal,
-        linkedTeamIds: selectedTeams,
-        statusNote: prodStatusNote
-      };
-      setProducts(prev => [...prev, newProd]);
-      showToast('Novo Produto/Carteira cadastrado com sucesso!', 'success');
+      try {
+        await setDoc(
+          doc(db, 'organizations', organizationId!, 'operational_products', id),
+          payload
+        );
+      } catch (err) {
+        console.error('[DimensionamentoSites] saveProduct error:', err);
+        showToast('Erro ao salvar no banco de dados.', 'error');
+        return;
+      }
     }
 
+    showToast(editingProductId ? 'Produto/Carteira atualizada com sucesso!' : 'Novo Produto/Carteira cadastrado com sucesso!', 'success');
     setIsProdModalOpen(false);
   };
 
-  // Modal para Adicionar/Editar Site Operacional
+  const handleDeleteProduct = async (prodId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este Produto/Carteira?')) return;
+
+    if (sandbox) {
+      setProducts(prev => prev.filter(p => p.id !== prodId));
+    } else {
+      try {
+        await deleteDoc(doc(db, 'organizations', organizationId!, 'operational_products', prodId));
+      } catch (err) {
+        console.error('[DimensionamentoSites] deleteProduct error:', err);
+        showToast('Erro ao excluir do banco de dados.', 'error');
+        return;
+      }
+    }
+    showToast('Produto/Carteira removido.', 'success');
+  };
+
+  // ── MODAL DE SITE OPERACIONAL ───────────────────────────────────────────────
   const [isSiteModalOpen, setIsSiteModalOpen] = useState(false);
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   const [siteName, setSiteName] = useState('');
   const [siteCity, setSiteCity] = useState('');
   const [siteType, setSiteType] = useState<'Presencial' | 'Remoto'>('Presencial');
+  const [autoSelectForProdModal, setAutoSelectForProdModal] = useState(false);
 
-  const handleSaveSite = (e: React.FormEvent) => {
+  const handleOpenNewSiteModal = (fromProdModal = false) => {
+    setEditingSiteId(null);
+    setSiteName('');
+    setSiteCity('');
+    setSiteType('Presencial');
+    setAutoSelectForProdModal(fromProdModal);
+    setIsSiteModalOpen(true);
+  };
+
+  const handleOpenEditSiteModal = (site: OperationalSite) => {
+    setEditingSiteId(site.id);
+    setSiteName(site.name);
+    setSiteCity(site.city);
+    setSiteType(site.type);
+    setAutoSelectForProdModal(false);
+    setIsSiteModalOpen(true);
+  };
+
+  const handleSaveSite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!siteName.trim()) return;
 
-    const newSite: OperationalSite = {
-      id: `site-${Date.now()}`,
+    const id = editingSiteId || `site-${Date.now()}`;
+    const siteData: OperationalSite = {
+      id,
       name: siteName,
       city: siteCity || 'Brasil',
       type: siteType
     };
-    setSites(prev => [...prev, newSite]);
+
+    if (sandbox) {
+      setSites(prev =>
+        editingSiteId
+          ? prev.map(s => s.id === editingSiteId ? siteData : s)
+          : [...prev, siteData]
+      );
+    } else {
+      try {
+        await setDoc(
+          doc(db, 'organizations', organizationId!, 'operational_sites', id),
+          siteData
+        );
+      } catch (err) {
+        console.error('[DimensionamentoSites] saveSite error:', err);
+        showToast('Erro ao salvar site no banco de dados.', 'error');
+        return;
+      }
+    }
+
+    if (autoSelectForProdModal || !prodSite) {
+      setProdSite(siteName);
+    }
+
     setIsSiteModalOpen(false);
     setSiteName('');
     setSiteCity('');
-    showToast('Novo Site Operacional cadastrado!', 'success');
+    setEditingSiteId(null);
+    setAutoSelectForProdModal(false);
+    showToast(editingSiteId ? 'Site Operacional atualizado!' : 'Novo Site Operacional cadastrado!', 'success');
   };
 
-  // Cálculos Consolidados Dinâmicos por Produto (Somando os Times Vinculados)
+  const handleDeleteSite = async (siteId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este Site Operacional?')) return;
+
+    if (sandbox) {
+      setSites(prev => prev.filter(s => s.id !== siteId));
+    } else {
+      try {
+        await deleteDoc(doc(db, 'organizations', organizationId!, 'operational_sites', siteId));
+      } catch (err) {
+        console.error('[DimensionamentoSites] deleteSite error:', err);
+        showToast('Erro ao excluir site do banco de dados.', 'error');
+        return;
+      }
+    }
+    showToast('Site Operacional removido.', 'success');
+  };
+
+  // ── CÁLCULOS CONSOLIDADOS ───────────────────────────────────────────────────
   const productCalculatedData = useMemo(() => {
     return products.map(prod => {
-      // 1. Filtrar operadores que pertencem a qualquer um dos times vinculados a esta carteira
       const linkedOps = safeTeamMembers.filter(m => 
         prod.linkedTeamIds.includes(m.teamId || '') || 
         (prod.linkedTeamIds.length === 0 && (m.role === 'member' || !m.role))
       );
 
-      // 2. Headcount Ativo Contratado
       const activeHeadcount = linkedOps.length;
-
-      // 3. Logados / Presentes no Dia (Descontando Faltas)
       const loggedOps = linkedOps.filter(m => m.absenteeismRate === undefined || m.absenteeismRate < 50);
       const loggedCount = loggedOps.length;
-
-      // 4. Vagas Abertas Reais (Baseado na Capacidade Aprovada pela Empresa)
       const openVacancies = Math.max(0, prod.approvedHeadcount - activeHeadcount);
-
-      // 5. Ajuste / Repressão Estratégica (Solicitado pelo Produto vs Aprovado pela Empresa)
-      const strategicGap = prod.approvedHeadcount - prod.requestedHeadcount; // ex: 8 - 10 = -2 PAs
-
-      // 6. Nomes dos Times Vinculados
+      const strategicGap = prod.approvedHeadcount - prod.requestedHeadcount;
       const linkedTeamNames = prod.linkedTeamIds.map(tId => {
         const found = safeTeamsData.find(t => t.id === tId);
         return found ? found.name : tId;
       });
 
-      // 7. Status da Vaga
       let status: 'preenchida' | 'selecao' | 'treinamento' | 'aberta' = 'aberta';
       if (openVacancies === 0) status = 'preenchida';
       else if (openVacancies <= 2) status = 'treinamento';
@@ -248,13 +411,14 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
     });
   }, [products, safeTeamMembers, safeTeamsData]);
 
-  // Totais Gerais para os Cards do Topo
   const totalRequested = productCalculatedData.reduce((acc, p) => acc + p.requestedHeadcount, 0);
   const totalApproved = productCalculatedData.reduce((acc, p) => acc + p.approvedHeadcount, 0);
   const totalActive = productCalculatedData.reduce((acc, p) => acc + p.activeHeadcount, 0);
   const totalLogged = productCalculatedData.reduce((acc, p) => acc + p.loggedCount, 0);
   const totalOpenVacancies = productCalculatedData.reduce((acc, p) => acc + p.openVacancies, 0);
   const totalStrategicGap = totalApproved - totalRequested;
+
+  const isLoading = sitesLoading || productsLoading;
 
   return (
     <div className="space-y-8">
@@ -285,6 +449,15 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                 }`}>
                   Gestão Integrada
                 </span>
+                {!sandbox && (
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      : 'bg-emerald-100 text-emerald-800 border-emerald-400'
+                  }`}>
+                    💾 Firestore
+                  </span>
+                )}
               </div>
               <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-900 font-extrabold'}`}>
                 Associe os times às suas respectivas carteiras guarda-chuva, monitore presentes em tempo real e compare a demanda solicitada x capacidade aprovada.
@@ -293,6 +466,17 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => handleOpenNewSiteModal(false)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 cursor-pointer border-2 ${
+                isDark
+                  ? 'bg-sky-900/50 hover:bg-sky-800/60 text-sky-300 border-sky-500/30'
+                  : 'bg-sky-100 hover:bg-sky-200 text-sky-950 border-sky-900'
+              }`}
+            >
+              <MapPin size={16} weight="bold" />
+              + Novo Site
+            </button>
             <button
               onClick={handleOpenNewProdModal}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs transition-all shadow-md active:scale-95 cursor-pointer border-2 border-purple-950"
@@ -335,6 +519,84 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
             📈 Forecast & Ajuste Estratégico de Demanda
           </button>
         </div>
+      </div>
+
+      {/* LISTA DE SITES OPERACIONAIS */}
+      <div className={`p-5 rounded-3xl border-2 transition-all ${
+        isDark ? 'bg-slate-900/40 border-white/10' : 'bg-white border-slate-900 shadow-sm'
+      }`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <MapPin size={18} className={isDark ? 'text-sky-400' : 'text-sky-800'} />
+            <h3 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-950'}`}>
+              Sites Operacionais Cadastrados
+            </h3>
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+              isDark ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'bg-sky-100 text-sky-800 border-sky-400'
+            }`}>
+              {sites.length} sites
+            </span>
+          </div>
+          <button
+            onClick={() => handleOpenNewSiteModal(false)}
+            className={`text-xs font-black px-3 py-1 rounded-xl border transition-all cursor-pointer ${
+              isDark ? 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border-sky-500/30' : 'bg-sky-100 hover:bg-sky-200 text-sky-950 border-sky-900'
+            }`}
+          >
+            + Adicionar Site
+          </button>
+        </div>
+
+        {sitesLoading ? (
+          <div className="flex items-center gap-2 py-4 text-xs text-slate-400">
+            <div className="w-4 h-4 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
+            Carregando sites...
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {sites.map(s => (
+              <div
+                key={s.id}
+                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border-2 text-xs font-bold group ${
+                  s.type === 'Remoto'
+                    ? isDark ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-purple-100 border-purple-900 text-purple-950'
+                    : isDark ? 'bg-sky-500/10 border-sky-500/30 text-sky-300' : 'bg-sky-100 border-sky-900 text-sky-950'
+                }`}
+              >
+                <MapPin size={12} weight="bold" />
+                <span className="font-black">{s.name}</span>
+                <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  · {s.city} · {s.type}
+                </span>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                  <button
+                    onClick={() => handleOpenEditSiteModal(s)}
+                    title="Editar site"
+                    className={`p-0.5 rounded-lg cursor-pointer ${
+                      isDark ? 'text-sky-300 hover:bg-sky-500/20' : 'text-sky-900 hover:bg-sky-200'
+                    }`}
+                  >
+                    <Pencil size={12} weight="bold" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSite(s.id)}
+                    title="Excluir site"
+                    className={`p-0.5 rounded-lg cursor-pointer ${
+                      isDark ? 'text-rose-400 hover:bg-rose-500/20' : 'text-rose-700 hover:bg-rose-100'
+                    }`}
+                  >
+                    <Trash size={12} weight="bold" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {sites.length === 0 && (
+              <p className={`text-xs italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Nenhum site cadastrado. Clique em "+ Novo Site" para adicionar.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* CARDS RESUMO DE CAPACIDADE & PRESENÇA */}
@@ -462,103 +724,128 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className={`border-b-2 font-black uppercase tracking-wider ${
-                    isDark ? 'border-white/10 text-slate-400 bg-white/5' : 'border-slate-900 text-slate-950 bg-slate-200'
-                  }`}>
-                    <th className="py-3.5 px-4">Carteira / Produto</th>
-                    <th className="py-3.5 px-4">Times Vinculados (Guarda-Chuva)</th>
-                    <th className="py-3.5 px-4 text-center">Meta Aprovada (PAs)</th>
-                    <th className="py-3.5 px-4 text-center">Ativos (Contratados)</th>
-                    <th className="py-3.5 px-4 text-center">🟢 Logados / Presentes (Hoje)</th>
-                    <th className="py-3.5 px-4 text-center">Vagas Abertas Reais</th>
-                    <th className="py-3.5 px-4 text-left">Local / Site Operacional</th>
-                    <th className="py-3.5 px-4 text-right">Forecast Produtividade</th>
-                    <th className="py-3.5 px-4 text-center">Status Vaga</th>
-                    <th className="py-3.5 px-4 text-center">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y-2 font-mono ${isDark ? 'divide-white/5' : 'divide-slate-300'}`}>
-                  {productCalculatedData.map(prod => (
-                    <tr key={prod.id} className={`transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-purple-100/70'}`}>
-                      <td className={`py-4 px-4 font-sans font-black ${isDark ? 'text-white' : 'text-slate-950'}`}>
-                        {prod.productName}
-                      </td>
-                      <td className="py-4 px-4 font-sans">
-                        <div className="flex flex-wrap gap-1">
-                          {prod.linkedTeamNames.length > 0 ? (
-                            prod.linkedTeamNames.map((tName, i) => (
-                              <span key={i} className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
-                                isDark ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' : 'bg-purple-100 text-purple-950 border-purple-900'
-                              }`}>
-                                👥 {tName}
-                              </span>
-                            ))
-                          ) : (
-                            <span className={`text-[10px] italic ${isDark ? 'text-slate-500' : 'text-slate-900 font-extrabold'}`}>
-                              Sem times vinculados
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-white font-black' : 'text-slate-950'}`}>
-                        {prod.approvedHeadcount}
-                      </td>
-                      <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-sky-300 font-black' : 'text-sky-950'}`}>
-                        {prod.activeHeadcount}
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-black inline-flex items-center gap-1 border ${
-                          isDark ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-emerald-600 text-white border-slate-950'
-                        }`}>
-                          🟢 {prod.loggedCount} Presente(s)
-                        </span>
-                      </td>
-                      <td className={`py-4 px-4 text-center font-black ${
-                        prod.openVacancies > 0 ? (isDark ? 'text-amber-400' : 'text-amber-950') : (isDark ? 'text-emerald-400' : 'text-emerald-950')
-                      }`}>
-                        {prod.openVacancies}
-                      </td>
-                      <td className={`py-4 px-4 font-sans ${isDark ? 'text-slate-300' : 'text-slate-950 font-bold'}`}>
-                        <div className="flex items-center gap-1">
-                          <MapPin size={14} className={isDark ? 'text-sky-400' : 'text-sky-800'} />
-                          {prod.siteLocation}
-                        </div>
-                      </td>
-                      <td className={`py-4 px-4 text-right font-black ${isDark ? 'text-purple-300' : 'text-purple-950'}`}>
-                        {prod.forecastProductivity}
-                      </td>
-                      <td className="py-4 px-4 text-center whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full text-[11px] font-black whitespace-nowrap inline-flex items-center justify-center ${
-                          prod.status === 'preenchida' 
-                            ? isDark ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-950 border border-emerald-400' 
-                            : prod.status === 'selecao' 
-                              ? isDark ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-950 border border-purple-400' 
-                              : prod.status === 'treinamento' 
-                                ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-100 text-amber-950 border border-amber-400 font-black' 
-                                : isDark ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-sky-100 text-sky-950 border border-sky-400'
-                        }`}>
-                          {prod.status === 'preenchida' ? 'Preenchida' : prod.status === 'selecao' ? 'Em Seleção' : prod.status === 'treinamento' ? 'Em Treinamento' : 'Aberta'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <button
-                          onClick={() => handleOpenEditProdModal(prod)}
-                          className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                            isDark ? 'bg-white/5 hover:bg-white/10 text-white border-white/10' : 'bg-slate-200 hover:bg-slate-300 text-slate-950 border-slate-900'
-                          }`}
-                          title="Editar Dimensionamento / Vínculo de Times"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                      </td>
+            {productsLoading ? (
+              <div className="flex items-center gap-2 p-6 text-xs text-slate-400">
+                <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
+                Carregando produtos...
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className={`border-b-2 font-black uppercase tracking-wider ${
+                      isDark ? 'border-white/10 text-slate-400 bg-white/5' : 'border-slate-900 text-slate-950 bg-slate-200'
+                    }`}>
+                      <th className="py-3.5 px-4">Carteira / Produto</th>
+                      <th className="py-3.5 px-4">Times Vinculados (Guarda-Chuva)</th>
+                      <th className="py-3.5 px-4 text-center">Meta Aprovada (PAs)</th>
+                      <th className="py-3.5 px-4 text-center">Ativos (Contratados)</th>
+                      <th className="py-3.5 px-4 text-center">🟢 Logados / Presentes (Hoje)</th>
+                      <th className="py-3.5 px-4 text-center">Vagas Abertas Reais</th>
+                      <th className="py-3.5 px-4 text-left">Local / Site Operacional</th>
+                      <th className="py-3.5 px-4 text-right">Forecast Produtividade</th>
+                      <th className="py-3.5 px-4 text-center">Status Vaga</th>
+                      <th className="py-3.5 px-4 text-center">Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className={`divide-y-2 font-mono ${isDark ? 'divide-white/5' : 'divide-slate-300'}`}>
+                    {productCalculatedData.map(prod => (
+                      <tr key={prod.id} className={`transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-purple-100/70'}`}>
+                        <td className={`py-4 px-4 font-sans font-black ${isDark ? 'text-white' : 'text-slate-950'}`}>
+                          {prod.productName}
+                        </td>
+                        <td className="py-4 px-4 font-sans">
+                          <div className="flex flex-wrap gap-1">
+                            {prod.linkedTeamNames.length > 0 ? (
+                              prod.linkedTeamNames.map((tName, i) => (
+                                <span key={i} className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                                  isDark ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' : 'bg-purple-100 text-purple-950 border-purple-900'
+                                }`}>
+                                  👥 {tName}
+                                </span>
+                              ))
+                            ) : (
+                              <span className={`text-[10px] italic ${isDark ? 'text-slate-500' : 'text-slate-900 font-extrabold'}`}>
+                                Sem times vinculados
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-white font-black' : 'text-slate-950'}`}>
+                          {prod.approvedHeadcount}
+                        </td>
+                        <td className={`py-4 px-4 text-center font-black text-sm ${isDark ? 'text-sky-300 font-black' : 'text-sky-950'}`}>
+                          {prod.activeHeadcount}
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-black inline-flex items-center gap-1 border ${
+                            isDark ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-emerald-600 text-white border-slate-950'
+                          }`}>
+                            🟢 {prod.loggedCount} Presente(s)
+                          </span>
+                        </td>
+                        <td className={`py-4 px-4 text-center font-black ${
+                          prod.openVacancies > 0 ? (isDark ? 'text-amber-400' : 'text-amber-950') : (isDark ? 'text-emerald-400' : 'text-emerald-950')
+                        }`}>
+                          {prod.openVacancies}
+                        </td>
+                        <td className={`py-4 px-4 font-sans ${isDark ? 'text-slate-300' : 'text-slate-950 font-bold'}`}>
+                          <div className="flex items-center gap-1">
+                            <MapPin size={14} className={isDark ? 'text-sky-400' : 'text-sky-800'} />
+                            {prod.siteLocation}
+                          </div>
+                        </td>
+                        <td className={`py-4 px-4 text-right font-black ${isDark ? 'text-purple-300' : 'text-purple-950'}`}>
+                          {prod.forecastProductivity}
+                        </td>
+                        <td className="py-4 px-4 text-center whitespace-nowrap">
+                          <span className={`px-3 py-1 rounded-full text-[11px] font-black whitespace-nowrap inline-flex items-center justify-center ${
+                            prod.status === 'preenchida' 
+                              ? isDark ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-950 border border-emerald-400' 
+                              : prod.status === 'selecao' 
+                                ? isDark ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-950 border border-purple-400' 
+                                : prod.status === 'treinamento' 
+                                  ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-100 text-amber-950 border border-amber-400 font-black' 
+                                  : isDark ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-sky-100 text-sky-950 border border-sky-400'
+                          }`}>
+                            {prod.status === 'preenchida' ? 'Preenchida' : prod.status === 'selecao' ? 'Em Seleção' : prod.status === 'treinamento' ? 'Em Treinamento' : 'Aberta'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex items-center gap-1 justify-center">
+                            <button
+                              onClick={() => handleOpenEditProdModal(prod)}
+                              className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                                isDark ? 'bg-white/5 hover:bg-white/10 text-white border-white/10' : 'bg-slate-200 hover:bg-slate-300 text-slate-950 border-slate-900'
+                              }`}
+                              title="Editar Dimensionamento / Vínculo de Times"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(prod.id)}
+                              className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                                isDark ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20' : 'bg-rose-100 hover:bg-rose-200 text-rose-700 border-rose-400'
+                              }`}
+                              title="Excluir Produto/Carteira"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {productCalculatedData.length === 0 && (
+                      <tr>
+                        <td colSpan={10} className={`py-8 text-center text-xs italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                          Nenhum produto/carteira cadastrado. Clique em "Novo Produto / Carteira" para começar.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -685,6 +972,104 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
         </div>
       )}
 
+      {/* MODAL: NOVO SITE OPERACIONAL */}
+      {isSiteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`w-full max-w-sm p-6 rounded-3xl border-2 space-y-5 shadow-2xl ${
+              isDark ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-900 text-slate-950'
+            }`}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2">
+                <MapPin size={22} className="text-sky-500" />
+                <h3 className="text-base font-black">
+                  {editingSiteId ? 'Editar Site Operacional' : 'Novo Site Operacional'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsSiteModalOpen(false)}
+                className="p-1 rounded-xl text-slate-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSite} className="space-y-4 text-xs font-sans">
+              <div className="space-y-1">
+                <label className="font-black block uppercase text-[10px] text-slate-400">Nome do Site *</label>
+                <input
+                  type="text"
+                  value={siteName}
+                  onChange={(e) => setSiteName(e.target.value)}
+                  placeholder="Ex: Site Rio de Janeiro - Centro"
+                  required
+                  autoFocus
+                  className={`w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold ${
+                    isDark ? 'bg-slate-950 border border-white/10 text-white' : 'bg-slate-100 border-2 border-slate-900 text-slate-950'
+                  }`}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-black block uppercase text-[10px] text-slate-400">Cidade / Estado</label>
+                <input
+                  type="text"
+                  value={siteCity}
+                  onChange={(e) => setSiteCity(e.target.value)}
+                  placeholder="Ex: Rio de Janeiro - RJ"
+                  className={`w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold ${
+                    isDark ? 'bg-slate-950 border border-white/10 text-white' : 'bg-slate-100 border-2 border-slate-900 text-slate-950'
+                  }`}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-black block uppercase text-[10px] text-slate-400">Tipo</label>
+                <div className="flex gap-2">
+                  {(['Presencial', 'Remoto'] as const).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setSiteType(t)}
+                      className={`flex-1 py-2 rounded-2xl text-xs font-black border-2 transition-all cursor-pointer ${
+                        siteType === t
+                          ? t === 'Presencial'
+                            ? 'bg-sky-600 text-white border-sky-950'
+                            : 'bg-purple-600 text-white border-purple-950'
+                          : isDark
+                            ? 'bg-slate-950 text-slate-400 border-white/10 hover:text-white'
+                            : 'bg-slate-100 text-slate-950 border-slate-900 hover:bg-slate-200'
+                      }`}
+                    >
+                      {t === 'Presencial' ? '🏢' : '🏠'} {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsSiteModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-black text-xs cursor-pointer shadow-md border-2 border-sky-950"
+                >
+                  {editingSiteId ? 'Atualizar Site' : 'Salvar Site'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
       {/* MODAL: CADASTRAR OU EDITAR PRODUTO / CARTEIRA E VÍNCULO DE TIMES */}
       {isProdModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -756,18 +1141,70 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
               </div>
 
               <div className="space-y-1">
-                <label className="font-black block uppercase text-[10px] text-slate-400">Local / Site Operacional</label>
-                <select
-                  value={prodSite}
-                  onChange={(e) => setProdSite(e.target.value)}
+                <div className="flex items-center justify-between">
+                  <label className="font-black block uppercase text-[10px] text-slate-400">Local / Site Operacional</label>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenNewSiteModal(true)}
+                    className="text-[10px] font-black text-sky-400 hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    + Cadastrar Novo Site
+                  </button>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <select
+                    value={prodSite}
+                    onChange={(e) => setProdSite(e.target.value)}
+                    className={`flex-1 px-3.5 py-2.5 rounded-2xl text-xs font-bold ${
+                      isDark ? 'bg-slate-950 border border-white/10 text-white' : 'bg-slate-100 border-2 border-slate-900 text-slate-950'
+                    }`}
+                  >
+                    {sites.map(s => (
+                      <option key={s.id} value={s.name}>{s.name} ({s.city})</option>
+                    ))}
+                  </select>
+                  {prodSite && (() => {
+                    const selectedSiteObj = sites.find(s => s.name === prodSite);
+                    if (!selectedSiteObj) return null;
+                    return (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditSiteModal(selectedSiteObj)}
+                          className={`p-2.5 rounded-2xl border transition-all cursor-pointer ${
+                            isDark ? 'bg-white/5 hover:bg-white/10 text-sky-300 border-white/10' : 'bg-slate-200 hover:bg-slate-300 text-sky-950 border-slate-900'
+                          }`}
+                          title="Editar este site"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSite(selectedSiteObj.id)}
+                          className={`p-2.5 rounded-2xl border transition-all cursor-pointer ${
+                            isDark ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20' : 'bg-rose-100 hover:bg-rose-200 text-rose-700 border-rose-400'
+                          }`}
+                          title="Excluir este site"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-black block uppercase text-[10px] text-slate-400">Forecast de Produtividade</label>
+                <input
+                  type="text"
+                  value={prodForecastVal}
+                  onChange={(e) => setProdForecastVal(e.target.value)}
+                  placeholder="Ex: R$ 120.000 / mês"
                   className={`w-full px-3.5 py-2.5 rounded-2xl text-xs font-bold ${
                     isDark ? 'bg-slate-950 border border-white/10 text-white' : 'bg-slate-100 border-2 border-slate-900 text-slate-950'
                   }`}
-                >
-                  {sites.map(s => (
-                    <option key={s.id} value={s.name}>{s.name} ({s.city})</option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* SELEÇÃO DE TIMES VINCULADOS (GUARDA-CHUVA) */}
