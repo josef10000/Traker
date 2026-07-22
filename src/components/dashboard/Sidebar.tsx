@@ -92,7 +92,7 @@ export const Sidebar = ({
       label: 'Metas & Carteiras',
       description: 'Consolidado de metas, dispersões, projeções e exportações.',
       icon: Target,
-      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin' || profile.role === 'monitor' || (profile.role as string) === 'qa' || profile.organizationId === 'sandbox-test'
+      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin' || profile.role === 'monitor' || (profile.role as string) === 'qa'
     },
     {
       id: 'support',
@@ -106,7 +106,7 @@ export const Sidebar = ({
       label: 'Auditoria & CPF',
       description: 'Trilha histórica de ações de colaboradores sobre CPFs.',
       icon: QaIcon,
-      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin' || profile.organizationId === 'sandbox-test'
+      show: profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin'
     }
   ];
 

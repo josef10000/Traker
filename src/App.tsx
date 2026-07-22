@@ -267,11 +267,16 @@ export function AppContent() {
       email: profile?.email || 'demo@hubsymples.com.br',
       theme: profile?.theme || 'dark'
     } : {
-      uid: 'sandbox-manager-a',
+      uid: simulatedUid || 'sandbox-op-1',
       email: profile?.email || 'demo@hubsymples.com.br',
-      displayName: 'Arthur (Gerente A)',
-      role: 'manager',
+      displayName: simulation.role === 'member' ? 'Ana Souza (Operadora)' : 
+                   simulation.role === 'supervisor' ? 'Carlos (Supervisor)' :
+                   simulation.role === 'coordinator' ? 'Mariana (Coordenadora)' :
+                   simulation.role === 'monitor' ? 'Monitor de Qualidade' :
+                   simulation.role === 'backoffice' ? 'Back Office Principal' : 'Arthur (Gerente)',
+      role: simulation.role,
       organizationId: 'sandbox-test',
+      teamId: simulation.role === 'member' || simulation.role === 'supervisor' || simulation.role === 'backoffice' ? 'team-fenix' : undefined,
       theme: profile?.theme || 'dark',
       createdAt: new Date().toISOString()
     };
