@@ -829,6 +829,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const filteredAgreements = useMemo(() => {
     let filtered = memberFilteredAgreements;
     
+    // Regra de privacidade: O Supervisor vê o resultado numérico do time nos cards, 
+    // mas na listagem individual da tabela só enxerga os acordos que ele próprio registrou.
+    if (profile.role === 'supervisor') {
+      filtered = filtered.filter(a => a.operatorId === profile.uid || a.createdBy === profile.uid);
+    }
+
     if (filterStatus !== 'all') {
       filtered = filtered.filter(a => a.status === filterStatus);
     }
