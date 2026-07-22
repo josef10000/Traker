@@ -6,39 +6,13 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Custom Colors - Themeable */
-  --color-primary: var(--primary-color, #0ea5e9);
-  --color-dashboard-bg: var(--bg-color, #f8fafc);
-  --color-dashboard-surface: var(--surface-color, #ffffff);
-  --color-dashboard-border: var(--border-color, #e2e8f0);
-  --color-main-text: var(--text-main, #0f172a);
-  --color-glass-surface: var(--glass-surface, rgba(255, 255, 255, 0.85));
-  --color-glass-border: var(--glass-border, rgba(226, 232, 240, 0.8));
-
-  /* Map basic slate palette to theme variables for light/dark dynamic theme overrides */
-  --color-slate-50: var(--slate-50);
-  --color-slate-100: var(--slate-100);
-  --color-slate-200: var(--slate-200);
-  --color-slate-300: var(--slate-300);
-  --color-slate-400: var(--slate-400);
-  --color-slate-500: var(--slate-500);
-  --color-slate-600: var(--slate-600);
-  --color-slate-700: var(--slate-700);
-  --color-slate-800: var(--slate-800);
-  --color-slate-900: var(--slate-900);
-  --color-slate-950: var(--slate-950);
-
-  /* Map sky palette dynamically to primary-color variable for unified styling */
-  --color-sky-50: color-mix(in srgb, var(--primary-color) 8%, transparent);
-  --color-sky-100: color-mix(in srgb, var(--primary-color) 15%, transparent);
-  --color-sky-200: color-mix(in srgb, var(--primary-color) 30%, transparent);
-  --color-sky-300: color-mix(in srgb, var(--primary-color) 50%, transparent);
-  --color-sky-400: var(--primary-color);
-  --color-sky-500: var(--primary-color);
-  --color-sky-600: var(--primary-color);
-  --color-sky-700: var(--primary-color);
-  --color-sky-800: var(--primary-color);
-  --color-sky-900: var(--primary-color);
-  --color-sky-950: var(--primary-color);
+  --color-primary: var(--primary-color, #6366f1);
+  --color-dashboard-bg: var(--bg-color, #0d1117);
+  --color-dashboard-surface: var(--surface-color, #161b22);
+  --color-dashboard-border: var(--border-color, rgba(255, 255, 255, 0.08));
+  --color-main-text: var(--text-main, #f1f5f9);
+  --color-glass-surface: var(--glass-surface, rgba(22, 27, 34, 0.75));
+  --color-glass-border: var(--glass-border, rgba(255, 255, 255, 0.08));
 }
 
 :root, [data-theme='light'] {
@@ -885,31 +859,26 @@ option {
 /* --- ESTILO PREMIUM (VISUAL ULTRA-PREMIUM) --- */
 
 [data-design-mode='premium'] {
-  --bg-color: #061224;
-  --surface-color: #0b1e36;
+  --bg-color: #0d1117;
+  --surface-color: #161b22;
   --text-main: #f8fafc;
-  --glass-surface: rgba(11, 30, 54, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --primary-color: #f59e0b; /* Destaque dourado/amber para o premium */
+  --glass-surface: rgba(22, 27, 34, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --primary-color: #6366f1; /* Índigo corporativo pastel */
   
   /* Cores de Fundo dos Cards Premium com gradientes ricos semi-translúcidos */
-  --premium-card-blue: linear-gradient(135deg, rgba(13, 40, 71, 0.8) 0%, rgba(6, 18, 36, 0.95) 100%);
-  --premium-card-emerald: linear-gradient(135deg, rgba(6, 78, 59, 0.8) 0%, rgba(4, 30, 24, 0.95) 100%);
-  --premium-card-rose: linear-gradient(135deg, rgba(159, 18, 57, 0.8) 0%, rgba(76, 5, 25, 0.95) 100%);
-  --premium-card-sky: linear-gradient(135deg, rgba(3, 105, 161, 0.8) 0%, rgba(8, 47, 73, 0.95) 100%);
-  --premium-card-amber: linear-gradient(135deg, rgba(180, 83, 9, 0.8) 0%, rgba(120, 53, 4, 0.95) 100%);
-  --premium-card-indigo: linear-gradient(135deg, rgba(67, 56, 202, 0.8) 0%, rgba(49, 46, 129, 0.95) 100%);
+  --premium-card-blue: linear-gradient(135deg, rgba(22, 27, 34, 0.9) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-emerald: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-rose: linear-gradient(135deg, rgba(159, 18, 57, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-sky: linear-gradient(135deg, rgba(3, 105, 161, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-amber: linear-gradient(135deg, rgba(180, 83, 9, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-indigo: linear-gradient(135deg, rgba(67, 56, 202, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
 }
 
-/* Fundo do Body com gradiente e textura de pontos */
+/* Fundo do Body com tom slate corporativo limpo */
 [data-design-mode='premium'] body {
-  background-color: #061224;
-  background-image: 
-    radial-gradient(circle at 20% 30%, rgba(13, 148, 136, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 20px 20px;
-  background-attachment: fixed;
+  background-color: #0d1117;
+  background-image: none;
 }
 
 /* Card Premium (Glassmorphism + Filete de Luz Interno) */

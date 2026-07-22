@@ -425,7 +425,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
       {/* BARRA SUPERIOR COMPACTA DE NAVEGAÇÃO & AÇÕES */}
       <div className={`p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
         isDark 
-          ? 'bg-slate-900/80 border-slate-800 text-slate-100' 
+          ? 'bg-[#161b22] border-slate-800 text-white' 
           : 'bg-white border-slate-200 text-slate-900 shadow-sm'
       }`}>
         <div className="flex items-center gap-3">
@@ -438,7 +438,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold tracking-tight">Dimensionamento & Sites</h2>
+              <h2 className="text-base font-bold tracking-tight text-white">Dimensionamento & Sites</h2>
               {!sandbox && (
                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
                   isDark ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -456,14 +456,14 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
         {/* CONTROLE DE SUB-ABAS + BOTÕES DE AÇÃO */}
         <div className="flex flex-wrap items-center gap-3">
           <div className={`p-1 rounded-xl border flex items-center gap-1 ${
-            isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-100 border-slate-200'
+            isDark ? 'bg-[#0d1117] border-slate-800' : 'bg-slate-100 border-slate-200'
           }`}>
             <button
               onClick={() => setActiveTab('dimensioning')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'dimensioning'
-                  ? isDark ? 'bg-indigo-600 text-white shadow-sm' : 'bg-indigo-600 text-white shadow-sm'
-                  : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-[#4f46e5] text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               <Headset size={15} />
@@ -471,10 +471,10 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
             </button>
             <button
               onClick={() => setActiveTab('forecast')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'forecast'
-                  ? isDark ? 'bg-indigo-600 text-white shadow-sm' : 'bg-indigo-600 text-white shadow-sm'
-                  : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-[#4f46e5] text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               <ChartPie size={15} />
@@ -485,9 +485,9 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleOpenNewSiteModal(false)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
                 isDark
-                  ? 'bg-slate-800/60 hover:bg-slate-800 text-slate-300 border-slate-700'
+                  ? 'bg-[#1f2937] hover:bg-slate-700 text-slate-200 border-slate-700'
                   : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 shadow-xs'
               }`}
             >
@@ -496,7 +496,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
             </button>
             <button
               onClick={handleOpenNewProdModal}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#4f46e5] hover:bg-[#4338ca] text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
             >
               <Plus size={14} weight="bold" />
               Novo Produto / Carteira
@@ -507,11 +507,11 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
 
       {/* LINHA COMPACTA DE SITES OPERACIONAIS */}
       <div className={`px-4 py-2.5 rounded-xl border flex items-center justify-between gap-4 flex-wrap text-xs ${
-        isDark ? 'bg-slate-900/50 border-slate-800/80 text-slate-300' : 'bg-white border-slate-200 text-slate-700 shadow-xs'
+        isDark ? 'bg-[#161b22] border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-700 shadow-xs'
       }`}>
         <div className="flex items-center gap-2 font-medium">
           <MapPin size={14} className="text-indigo-400" />
-          <span className="font-semibold">Sites Cadastrados ({sites.length}):</span>
+          <span className="font-semibold text-white">Sites Cadastrados ({sites.length}):</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap flex-1">
           {sites.map(s => (
@@ -519,12 +519,12 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
               key={s.id}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium group transition-all ${
                 s.type === 'Remoto'
-                  ? isDark ? 'bg-indigo-950/40 border-indigo-500/20 text-indigo-300' : 'bg-indigo-50 border-indigo-200 text-indigo-800'
-                  : isDark ? 'bg-slate-800/60 border-slate-700/60 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-800'
+                  ? isDark ? 'bg-indigo-950/50 border-indigo-500/30 text-indigo-200' : 'bg-indigo-50 border-indigo-200 text-indigo-900'
+                  : isDark ? 'bg-slate-800/80 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-800'
               }`}
             >
-              <span>{s.name}</span>
-              <span className="text-[10px] opacity-60">({s.city})</span>
+              <span className="text-white font-medium">{s.name}</span>
+              <span className="text-[10px] text-slate-400">({s.city})</span>
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                 <button
                   onClick={() => handleOpenEditSiteModal(s)}
@@ -550,17 +550,17 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         {/* Solicitado pelo Produto */}
         <div className={`p-4 rounded-2xl border space-y-1.5 transition-all ${
-          isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
+          isDark ? 'bg-[#161b22] border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
-          <span className={`text-[11px] font-semibold block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <span className={`text-[11px] font-medium block ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
             📋 Solicitado (Demanda)
           </span>
           <div className="flex items-baseline justify-between">
-            <span className={`text-2xl font-bold font-mono ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>
-              {totalRequested} <span className="text-xs font-normal">PAs</span>
+            <span className="text-2xl font-bold font-mono text-white">
+              {totalRequested} <span className="text-xs font-normal text-slate-400">PAs</span>
             </span>
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
-              isDark ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20' : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+              isDark ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
             }`}>
               Produto
             </span>
@@ -569,19 +569,19 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
 
         {/* Aprovado pela Empresa */}
         <div className={`p-4 rounded-2xl border space-y-1.5 transition-all ${
-          isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
+          isDark ? 'bg-[#161b22] border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
-          <span className={`text-[11px] font-semibold block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <span className={`text-[11px] font-medium block ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
             🛡️ Aprovado (Empresa)
           </span>
           <div className="flex items-baseline justify-between">
-            <span className={`text-2xl font-bold font-mono ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-              {totalApproved} <span className="text-xs font-normal">PAs</span>
+            <span className="text-2xl font-bold font-mono text-white">
+              {totalApproved} <span className="text-xs font-normal text-slate-400">PAs</span>
             </span>
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
               totalStrategicGap < 0 
-                ? isDark ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' : 'bg-amber-50 text-amber-800 border border-amber-200'
-                : isDark ? 'bg-slate-800 text-slate-300 border border-slate-700' : 'bg-slate-100 text-slate-700'
+                ? isDark ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                : isDark ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-slate-100 text-slate-700'
             }`}>
               {totalStrategicGap < 0 ? `${totalStrategicGap} PAs` : '100%'}
             </span>
@@ -590,17 +590,17 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
 
         {/* Contratados Ativos */}
         <div className={`p-4 rounded-2xl border space-y-1.5 transition-all ${
-          isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
+          isDark ? 'bg-[#161b22] border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
-          <span className={`text-[11px] font-semibold block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <span className={`text-[11px] font-medium block ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
             👥 Contratados (Ativos)
           </span>
           <div className="flex items-baseline justify-between">
-            <span className={`text-2xl font-bold font-mono ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-              {totalActive} <span className="text-xs font-normal">PAs</span>
+            <span className="text-2xl font-bold font-mono text-white">
+              {totalActive} <span className="text-xs font-normal text-slate-400">PAs</span>
             </span>
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
-              isDark ? 'bg-slate-800 text-slate-300 border border-slate-700' : 'bg-slate-100 text-slate-700'
+              isDark ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-slate-100 text-slate-700'
             }`}>
               Quadro Efetivo
             </span>
@@ -609,17 +609,17 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
 
         {/* Logados / Presentes no Dia */}
         <div className={`p-4 rounded-2xl border space-y-1.5 transition-all ${
-          isDark ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-emerald-50/50 border-emerald-200 shadow-xs'
+          isDark ? 'bg-emerald-950/30 border-emerald-500/30' : 'bg-emerald-50/50 border-emerald-200 shadow-xs'
         }`}>
-          <span className={`text-[11px] font-semibold block ${isDark ? 'text-emerald-400' : 'text-emerald-800'}`}>
+          <span className={`text-[11px] font-medium block ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>
             🟢 Presentes Hoje
           </span>
           <div className="flex items-baseline justify-between">
-            <span className={`text-2xl font-bold font-mono ${isDark ? 'text-emerald-400' : 'text-emerald-900'}`}>
-              {totalLogged} <span className="text-xs font-normal">Ops</span>
+            <span className="text-2xl font-bold font-mono text-emerald-400">
+              {totalLogged} <span className="text-xs font-normal text-emerald-300">Ops</span>
             </span>
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
-              isDark ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+              isDark ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
             }`}>
               {totalActive > 0 ? `${Math.round((totalLogged / totalActive) * 100)}%` : '0%'}
             </span>
@@ -628,23 +628,19 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
 
         {/* Vagas Abertas Reais */}
         <div className={`p-4 rounded-2xl border space-y-1.5 transition-all ${
-          isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
+          isDark ? 'bg-[#161b22] border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
-          <span className={`text-[11px] font-semibold block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <span className={`text-[11px] font-medium block ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
             ⚡ Vagas Abertas Reais
           </span>
           <div className="flex items-baseline justify-between">
-            <span className={`text-2xl font-bold font-mono ${
-              totalOpenVacancies > 0 
-                ? isDark ? 'text-amber-300' : 'text-amber-900' 
-                : isDark ? 'text-emerald-400' : 'text-emerald-900'
-            }`}>
-              {totalOpenVacancies} <span className="text-xs font-normal">Vagas</span>
+            <span className="text-2xl font-bold font-mono text-white">
+              {totalOpenVacancies} <span className="text-xs font-normal text-slate-400">Vagas</span>
             </span>
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
               totalOpenVacancies > 0 
-                ? isDark ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' : 'bg-amber-50 text-amber-800 border border-amber-200' 
-                : isDark ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                ? isDark ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-amber-50 text-amber-800 border border-amber-200' 
+                : isDark ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
             }`}>
               {totalOpenVacancies > 0 ? 'Em Seleção' : 'Preenchida'}
             </span>
@@ -657,15 +653,15 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
         <div className="space-y-4">
           <div className={`rounded-2xl border overflow-hidden transition-all ${
             isDark 
-              ? 'bg-slate-900/60 border-slate-800 text-slate-100' 
+              ? 'bg-[#161b22] border-slate-800 text-white' 
               : 'bg-white border-slate-200 text-slate-900 shadow-sm'
           }`}>
-            <div className={`px-5 py-3.5 border-b flex items-center justify-between gap-4 ${
+            <div className={`px-5 py-3 border-b flex items-center justify-between gap-4 ${
               isDark ? 'border-slate-800' : 'border-slate-200 bg-slate-50'
             }`}>
               <div className="flex items-center gap-2">
-                <Headset size={16} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
-                <h3 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                <Headset size={16} className="text-indigo-400" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
                   Dimensionamento por Carteira & Presença em Tempo Real
                 </h3>
               </div>
@@ -681,7 +677,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className={`border-b font-semibold uppercase tracking-wider text-[11px] ${
-                      isDark ? 'border-slate-800 text-slate-400 bg-slate-950/40' : 'border-slate-200 text-slate-600 bg-slate-100/70'
+                      isDark ? 'border-slate-800 text-slate-300 bg-[#0d1117]' : 'border-slate-200 text-slate-600 bg-slate-100/70'
                     }`}>
                       <th className="py-3 px-4">Carteira / Produto</th>
                       <th className="py-3 px-4">Times Vinculados (Guarda-Chuva)</th>
@@ -695,10 +691,10 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                       <th className="py-3 px-4 text-center">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className={`divide-y font-mono ${isDark ? 'divide-slate-800/60' : 'divide-slate-200'}`}>
+                  <tbody className={`divide-y font-mono ${isDark ? 'divide-slate-800/80' : 'divide-slate-200'}`}>
                     {productCalculatedData.map(prod => (
-                      <tr key={prod.id} className={`transition-colors ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'}`}>
-                        <td className={`py-3.5 px-4 font-sans font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                      <tr key={prod.id} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
+                        <td className="py-3.5 px-4 font-sans font-semibold text-white">
                           {prod.productName}
                         </td>
                         <td className="py-3.5 px-4 font-sans">
@@ -706,54 +702,52 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                             {prod.linkedTeamNames.length > 0 ? (
                               prod.linkedTeamNames.map((tName, i) => (
                                 <span key={i} className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
-                                  isDark ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' : 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                                  isDark ? 'bg-indigo-500/15 text-indigo-200 border-indigo-500/30' : 'bg-indigo-50 text-indigo-800 border-indigo-200'
                                 }`}>
                                   👥 {tName}
                                 </span>
                               ))
                             ) : (
-                              <span className={`text-[10px] italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span className="text-[10px] italic text-slate-400">
                                 Sem times vinculados
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className={`py-3.5 px-4 text-center font-bold text-xs ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
+                        <td className="py-3.5 px-4 text-center font-bold text-xs text-white">
                           {prod.approvedHeadcount}
                         </td>
-                        <td className={`py-3.5 px-4 text-center font-bold text-xs ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>
+                        <td className="py-3.5 px-4 text-center font-bold text-xs text-white">
                           {prod.activeHeadcount}
                         </td>
                         <td className="py-3.5 px-4 text-center">
                           <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium inline-flex items-center gap-1 border ${
-                            isDark ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            isDark ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                           }`}>
                             🟢 {prod.loggedCount} Presente(s)
                           </span>
                         </td>
-                        <td className={`py-3.5 px-4 text-center font-bold ${
-                          prod.openVacancies > 0 ? (isDark ? 'text-amber-300' : 'text-amber-900') : (isDark ? 'text-emerald-400' : 'text-emerald-900')
-                        }`}>
+                        <td className="py-3.5 px-4 text-center font-bold text-white">
                           {prod.openVacancies}
                         </td>
-                        <td className={`py-3.5 px-4 font-sans ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <td className="py-3.5 px-4 font-sans text-slate-200">
                           <div className="flex items-center gap-1">
-                            <MapPin size={13} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
+                            <MapPin size={13} className="text-indigo-400" />
                             {prod.siteLocation}
                           </div>
                         </td>
-                        <td className={`py-3.5 px-4 text-right font-bold ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>
+                        <td className="py-3.5 px-4 text-right font-bold text-white">
                           {prod.forecastProductivity}
                         </td>
                         <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap inline-flex items-center justify-center border ${
                             prod.status === 'preenchida' 
-                              ? isDark ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                              ? isDark ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-emerald-50 text-emerald-800 border-emerald-200' 
                               : prod.status === 'selecao' 
-                                ? isDark ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' : 'bg-indigo-50 text-indigo-800 border-indigo-200' 
+                                ? isDark ? 'bg-indigo-500/15 text-indigo-200 border-indigo-500/30' : 'bg-indigo-50 text-indigo-800 border-indigo-200' 
                                 : prod.status === 'treinamento' 
-                                  ? isDark ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' : 'bg-amber-50 text-amber-800 border-amber-200' 
-                                  : isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
+                                  ? isDark ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-800 border-amber-200' 
+                                  : isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
                           }`}>
                             {prod.status === 'preenchida' ? 'Preenchida' : prod.status === 'selecao' ? 'Em Seleção' : prod.status === 'treinamento' ? 'Em Treinamento' : 'Aberta'}
                           </span>
@@ -763,7 +757,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                             <button
                               onClick={() => handleOpenEditProdModal(prod)}
                               className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                                isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                                isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
                               }`}
                               title="Editar Produto / Carteira"
                             >
@@ -772,7 +766,7 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                             <button
                               onClick={() => handleDeleteProduct(prod.id)}
                               className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                                isDark ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                                isDark ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border-rose-500/30' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
                               }`}
                               title="Excluir Produto"
                             >
