@@ -19,7 +19,7 @@ import {
 import { UserRole } from '../../types';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { generateSecureToken } from '../../utils/security';
+import { generateSecureToken } from '../../lib/teams';
 
 interface CompanyUserSetupModalProps {
   isOpen: boolean;
