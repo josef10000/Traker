@@ -827,6 +827,254 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         onClose={() => setIsEmailTesterOpen(false)}
         showToast={showToast}
       />
+
+      {/* MODAL DE CRIAÇÃO DE EMPRESA */}
+      {isCreateOrgOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+          <div className="w-full max-w-lg glass-card bg-slate-900/90 border border-white/10 p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6">
+            <div className="flex justify-between items-center border-b border-white/10 pb-4">
+              <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Building2 size={20} className="text-emerald-400" />
+                Criar Nova Empresa
+              </h3>
+              <button 
+                onClick={() => setIsCreateOrgOpen(false)}
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateOrganization} className="space-y-4 text-xs">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nome da Empresa</label>
+                <input 
+                  type="text" 
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                  placeholder="Ex: Noverde Ltda"
+                  required
+                  className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CNPJ (Opcional)</label>
+                <input 
+                  type="text" 
+                  value={newOrgCnpj}
+                  onChange={(e) => setNewOrgCnpj(e.target.value)}
+                  placeholder="Ex: 00.000.000/0001-00"
+                  className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 transition-all font-semibold font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Plano</label>
+                  <select 
+                    value={newOrgPlan}
+                    onChange={(e) => handlePlanChange(e.target.value as Organization['plan'])}
+                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                  >
+                    <option value="free" className="bg-slate-950">Free</option>
+                    <option value="starter" className="bg-slate-950">Starter</option>
+                    <option value="pro" className="bg-slate-950">Pro</option>
+                    <option value="enterprise" className="bg-slate-950">Enterprise</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Usuários</label>
+                  <input 
+                    type="number" 
+                    value={newOrgMaxUsers}
+                    onChange={(e) => setNewOrgMaxUsers(Number(e.target.value))}
+                    min={1}
+                    required
+                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Equipes</label>
+                  <input 
+                    type="number" 
+                    value={newOrgMaxTeams}
+                    onChange={(e) => setNewOrgMaxTeams(Number(e.target.value))}
+                    min={1}
+                    required
+                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-white/10">
+                <button 
+                  type="button"
+                  onClick={() => setIsCreateOrgOpen(false)}
+                  className="flex-1 py-3 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-700 transition-all cursor-pointer text-center"
+                >
+                  Voltar
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-[2] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white py-3 rounded-2xl font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20"
+                >
+                  {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Criar Empresa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE EDIÇÃO DE LIMITES & CRM */}
+      {selectedOrg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+          <div className="w-full max-w-lg glass-card bg-slate-900/90 border border-white/10 p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6">
+            <div className="flex justify-between items-center border-b border-white/10 pb-4">
+              <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Settings size={20} className="text-sky-400" />
+                Editar Empresa: {selectedOrg.name}
+              </h3>
+              <button 
+                onClick={() => setSelectedOrg(null)}
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveLimits(); }} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Plano</label>
+                  <select 
+                    value={editPlan}
+                    onChange={(e) => setEditPlan(e.target.value as Organization['plan'])}
+                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                  >
+                    <option value="free" className="bg-slate-950 font-semibold">Free</option>
+                    <option value="starter" className="bg-slate-950 font-semibold">Starter</option>
+                    <option value="pro" className="bg-slate-950 font-semibold">Pro</option>
+                    <option value="enterprise" className="bg-slate-950 font-semibold">Enterprise</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Status</label>
+                  <select 
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as Organization['status'])}
+                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                  >
+                    <option value="active" className="bg-slate-950 font-semibold">Ativo</option>
+                    <option value="inactive" className="bg-slate-950 font-semibold">Suspenso</option>
+                    <option value="pending" className="bg-slate-950 font-semibold">Pendente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Usuários</label>
+                  <input 
+                    type="number" 
+                    value={editMaxUsers}
+                    onChange={(e) => setEditMaxUsers(Number(e.target.value))}
+                    min={1}
+                    required
+                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Equipes</label>
+                  <input 
+                    type="number" 
+                    value={editMaxTeams}
+                    onChange={(e) => setEditMaxTeams(Number(e.target.value))}
+                    min={1}
+                    required
+                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Expiração do Plano</label>
+                <input 
+                  type="date" 
+                  value={editExpiresAt ? editExpiresAt.split('T')[0] : ''}
+                  onChange={(e) => setEditExpiresAt(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                  className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                />
+              </div>
+
+              <div className="border-t border-white/10 pt-4 space-y-3">
+                <h4 className="text-[11px] font-black text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Globe size={14} /> Integrador Salesforce / Oktor CRM
+                </h4>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Org ID</label>
+                  <input 
+                    type="text" 
+                    value={editCrmOrgId}
+                    onChange={(e) => setEditCrmOrgId(e.target.value)}
+                    placeholder="Ex: 00D8a0000021xyz"
+                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 transition-all font-semibold font-mono"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Client ID</label>
+                    <input 
+                      type="text" 
+                      value={editCrmClientId}
+                      onChange={(e) => setEditCrmClientId(e.target.value)}
+                      placeholder="Identificador do cliente"
+                      className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Public Token</label>
+                    <input 
+                      type="password" 
+                      value={editCrmPublicToken}
+                      onChange={(e) => setEditCrmPublicToken(e.target.value)}
+                      placeholder="Token de acesso público"
+                      className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 transition-all font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-white/10">
+                <button 
+                  type="button"
+                  onClick={() => setSelectedOrg(null)}
+                  className="flex-1 py-3 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-700 transition-all cursor-pointer text-center"
+                >
+                  Voltar
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-[2] bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white py-3 rounded-2xl font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-sky-500/20"
+                >
+                  {isSaving ? <Loader2 className="animate-spin" size={16} /> : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

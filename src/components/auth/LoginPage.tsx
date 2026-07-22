@@ -145,11 +145,11 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-slate-900/40 border border-white/10 p-8 sm:p-10 rounded-3xl backdrop-blur-xl shadow-2xl space-y-8 relative z-10"
+        className="w-full max-w-md glass-card bg-slate-900/45 border border-white/10 p-8 sm:p-10 rounded-3xl backdrop-blur-xl shadow-2xl space-y-8 relative z-10"
       >
         <div className="text-center space-y-3">
-          <div className="inline-flex p-4 rounded-3xl bg-white/5 border border-white/10 text-sky-400 mb-2">
-            <SignIn size={32} weight="duotone" />
+          <div className="inline-flex mb-2">
+            <img src="/logo.png" alt="Tracker Logo" className="h-16 w-auto object-contain" />
           </div>
           <h1 className="text-2xl font-black text-white tracking-wider uppercase">
             {isForgotPassword ? 'Recuperar Senha' : (isLogin ? 'Painel de Acesso' : 'Criar Sua Conta')}
