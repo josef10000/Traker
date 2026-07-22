@@ -14,12 +14,14 @@ import {
   Sparkle,
   Info,
   ListChecks,
-  EnvelopeSimple
+  EnvelopeSimple,
+  PaperPlaneRight
 } from '@phosphor-icons/react';
 import { UserRole } from '../../types';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { generateSecureToken } from '../../lib/teams';
+import { sendInviteEmail } from '../../services/emailService';
 
 interface CompanyUserSetupModalProps {
   isOpen: boolean;
@@ -119,6 +121,23 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
       for (const row of validRows) {
         const token = `inv-${generateSecureToken(8).toLowerCase()}`;
+        const inviteUrl = `${window.location.origin}/register?invite=${token}`;
+        
+        const roleLabel = 
+          row.role === 'manager' ? '🏢 Gerente da Empresa' :
+          row.role === 'coordinator' ? '🎯 Coordenador de Operações' :
+          row.role === 'supervisor' ? '👥 Supervisor de Equipe' :
+          row.role === 'monitor' ? '🛡️ Monitor / QA' :
+          row.role === 'seller' ? '💼 Vendedor' : '🎧 Operador de Cobrança';
+
+        // Disparo automático via Resend
+        const emailRes = await sendInviteEmail({
+          recipientEmail: row.email.trim().toLowerCase(),
+          orgName: orgName,
+          roleName: roleLabel,
+          inviteUrl: inviteUrl
+        });
+
         const inviteDoc: any = {
           organizationId: orgId,
           orgName: orgName,
@@ -126,7 +145,8 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
           role: row.role,
           token,
           createdAt: now,
-          status: 'pending'
+          status: 'pending',
+          emailSent: emailRes.success
         };
 
         if (row.monthlyServiceValue && row.monthlyServiceValue > 0) {
@@ -137,13 +157,38 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
         createdList.push({ id: token, ...inviteDoc });
       }
 
-      showToast(`${createdList.length} link(s) de convite gerado(s) com sucesso para ${orgName}!`, 'success');
+      showToast(`${createdList.length} convite(s) gerado(s) e enviado(s) por e-mail com sucesso!`, 'success');
       setSetupRows([{ email: '', role: 'supervisor', teamId: '', monthlyServiceValue: 0 }]);
     } catch (error) {
       console.error('Erro ao gerar convites de setup:', error);
       showToast('Erro ao gerar links de convite.', 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Reenviar E-mail de Convite Individual via Resend
+  const handleResendEmail = async (inv: PendingInvite) => {
+    const inviteUrl = `${window.location.origin}/register?invite=${inv.token}`;
+    const roleLabel = 
+      inv.role === 'manager' ? '🏢 Gerente da Empresa' :
+      inv.role === 'coordinator' ? '🎯 Coordenador de Operações' :
+      inv.role === 'supervisor' ? '👥 Supervisor de Equipe' :
+      inv.role === 'monitor' ? '🛡️ Monitor / QA' :
+      inv.role === 'seller' ? '💼 Vendedor' : '🎧 Operador de Cobrança';
+
+    showToast(`Reenviando e-mail para ${inv.email}...`, 'success');
+    const emailRes = await sendInviteEmail({
+      recipientEmail: inv.email,
+      orgName: orgName,
+      roleName: roleLabel,
+      inviteUrl: inviteUrl
+    });
+
+    if (emailRes.success) {
+      showToast(`E-mail reenviado com sucesso para ${inv.email}!`, 'success');
+    } else {
+      showToast(`Falha ao reenviar e-mail: ${emailRes.error}`, 'error');
     }
   };
 
@@ -373,6 +418,16 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleResendEmail(inv)}
+                        className="px-3 py-1.5 rounded-xl font-bold text-xs bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Reenviar e-mail de convite via Resend"
+                      >
+                        <PaperPlaneRight size={14} />
+                        Reenviar E-mail
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleCopySingleLink(inv.token)}

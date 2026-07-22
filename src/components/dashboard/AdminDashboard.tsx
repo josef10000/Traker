@@ -53,6 +53,7 @@ import { CustomConfirm } from '../ui/CustomConfirm';
 
 import { ToastType } from '../ui/Toast';
 import { CompanyUserSetupModal } from '../modals/CompanyUserSetupModal';
+import { EmailTesterModal } from '../modals/EmailTesterModal';
 
 interface AdminDashboardProps {
   profile: UserProfile;
@@ -109,6 +110,9 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   // Modal de Setup de Usuários e Convites da Empresa
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [setupOrg, setSetupOrg] = useState<{ id: string; name: string; maxUsers?: number } | null>(null);
+
+  // Modal de Teste de E-mail do Resend (SuperAdmin)
+  const [isEmailTesterOpen, setIsEmailTesterOpen] = useState(false);
 
   const handleOpenUserSetup = (org: Organization) => {
     setSetupOrg({ id: org.id, name: org.name, maxUsers: org.maxUsers });
@@ -822,13 +826,21 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               <h2 className={`text-lg font-bold leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Organizações / Clientes Contratantes</h2>
               <p className="text-xs text-slate-400 mt-1">Gerencie licenças de cargos, expiração de planos e exclusão de dados.</p>
             </div>
-            <button 
-              onClick={() => setIsCreateOrgOpen(true)}
-              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-400 hover:to-teal-500 transition-colors shadow-lg shadow-emerald-500/10 active:scale-95 flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
-            >
-              <Plus size={14} />
-              Nova Organização
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsEmailTesterOpen(true)}
+                className="px-4 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
+              >
+                📧 Testar E-mail Resend
+              </button>
+              <button 
+                onClick={() => setIsCreateOrgOpen(true)}
+                className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-400 hover:to-teal-500 transition-colors shadow-lg shadow-emerald-500/10 active:scale-95 flex items-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
+              >
+                <Plus size={14} />
+                Nova Organização
+              </button>
+            </div>
           </div>
 
           {organizations.length > 0 ? (
@@ -1391,6 +1403,12 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           showToast={showToast}
         />
       )}
+
+      <EmailTesterModal
+        isOpen={isEmailTesterOpen}
+        onClose={() => setIsEmailTesterOpen(false)}
+        showToast={showToast}
+      />
     </div>
   );
 };
