@@ -44,12 +44,13 @@ export const generateInviteEmailHtml = ({
     .header {
       padding: 36px 40px 24px 40px;
       text-align: center;
-      background: linear-gradient(180deg, rgba(14, 165, 233, 0.1) 0%, rgba(15, 23, 42, 0) 100%);
+      background: linear-gradient(180deg, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0) 100%);
       border-bottom: 1px solid #1e293b;
     }
     .logo-img {
-      width: 64px;
-      height: 64px;
+      max-width: 180px;
+      max-height: 60px;
+      height: auto;
       object-fit: contain;
       margin-bottom: 12px;
     }
@@ -141,9 +142,9 @@ export const generateInviteEmailHtml = ({
 <body>
   <div class="wrapper">
     <div class="main-card">
-      <!-- HEADER -->
+      <!-- HEADER COM LOGO DO DOMÍNIO OFICIAL -->
       <div class="header">
-        <img src="https://raw.githubusercontent.com/josef10000/Traker/main/public/s-logo.png" alt="Tracker Logo" class="logo-img" />
+        <img src="https://tracker.hubsymples.com.br/logo.png" alt="Tracker" class="logo-img" />
         <h2 class="brand-name">TRACKER PLATFORM</h2>
       </div>
 

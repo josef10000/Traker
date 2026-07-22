@@ -49,8 +49,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     body { margin: 0; padding: 0; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f3f4f6; }
     .wrapper { width: 100%; table-layout: fixed; background-color: #030712; padding: 40px 0; }
     .main-card { max-width: 580px; margin: 0 auto; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); }
-    .header { padding: 36px 40px 24px 40px; text-align: center; background: linear-gradient(180deg, rgba(14, 165, 233, 0.1) 0%, rgba(15, 23, 42, 0) 100%); border-bottom: 1px solid #1e293b; }
-    .logo-img { width: 64px; height: 64px; object-fit: contain; margin-bottom: 12px; }
+    .header { padding: 36px 40px 24px 40px; text-align: center; background: linear-gradient(180deg, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0) 100%); border-bottom: 1px solid #1e293b; }
+    .logo-img { max-width: 180px; max-height: 60px; height: auto; object-fit: contain; margin-bottom: 12px; }
     .brand-name { font-size: 20px; font-weight: 900; letter-spacing: 0.1em; color: #38bdf8; text-transform: uppercase; margin: 0; }
     .body-content { padding: 36px 40px; }
     .title { font-size: 22px; font-weight: 800; color: #ffffff; margin-top: 0; margin-bottom: 16px; line-height: 1.3; }
@@ -68,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <div class="wrapper">
     <div class="main-card">
       <div class="header">
-        <img src="https://raw.githubusercontent.com/josef10000/Traker/main/public/s-logo.png" alt="Tracker Logo" class="logo-img" />
+        <img src="https://tracker.hubsymples.com.br/logo.png" alt="Tracker" class="logo-img" />
         <h2 class="brand-name">TRACKER PLATFORM</h2>
       </div>
       <div class="body-content">
