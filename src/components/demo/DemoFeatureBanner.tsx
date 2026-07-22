@@ -6,7 +6,7 @@ import {
   CaretDown, 
   Sparkle, 
   CheckCircle,
-  FileSpreadsheet,
+  FileCsv as FileSpreadsheet,
   ChartLine,
   Target,
   ArrowUUpLeft as RecoveryIcon,
