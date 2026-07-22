@@ -181,7 +181,7 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
                 </span>
                 <span className="text-sm font-black text-white">{detail.title}</span>
               </div>
-              <p className="text-xs text-slate-200 font-semibold line-clamp-1 mt-0.5">
+              <p className="text-xs text-white font-bold line-clamp-1 mt-0.5 opacity-100">
                 {detail.whatItDoes}
               </p>
             </div>
@@ -208,50 +208,51 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
               className="overflow-hidden"
             >
               <div className="mt-5 pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* CARD 1: O QUE FAZ */}
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-700/80 shadow-md space-y-2 flex flex-col justify-between">
+                
+                {/* CARD 1: O QUE ESTA TELA FAZ (TÍTULO AMARELO FORTE + LETRA BRANCA BRILHANTE) */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-amber-500/30 shadow-md space-y-2 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2 text-sky-300">
-                      <Target size={18} weight="bold" />
-                      <span className="text-[11px] font-black uppercase tracking-wider">
+                    <div className="flex items-center gap-2" style={{ color: '#fbbf24' }}>
+                      <Target size={18} weight="bold" style={{ color: '#fbbf24' }} />
+                      <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: '#fbbf24' }}>
                         O que esta tela faz
                       </span>
                     </div>
-                    <p className="text-xs text-slate-100 leading-relaxed font-semibold mt-2">
+                    <p className="text-xs font-bold leading-relaxed mt-2.5 opacity-100" style={{ color: '#ffffff' }}>
                       {detail.whatItDoes}
                     </p>
                   </div>
                 </div>
 
-                {/* CARD 2: BENEFÍCIO PARA O CARGO */}
+                {/* CARD 2: BENEFÍCIO PARA O CARGO (TÍTULO ROXO + LETRA BRANCA BRILHANTE) */}
                 <div className="p-4 rounded-2xl bg-purple-950/70 border border-purple-500/50 shadow-md space-y-2 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2 text-purple-200">
-                      <RocketLaunch size={18} weight="bold" />
-                      <span className="text-[11px] font-black uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-purple-300">
+                      <RocketLaunch size={18} weight="bold" className="text-purple-300" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-purple-300">
                         Benefício para {role === 'member' ? 'Operador' : role === 'supervisor' ? 'Supervisor' : role === 'manager' ? 'Gerente' : role === 'coordinator' ? 'Coordenador' : role === 'monitor' ? 'Monitor' : 'Back Office'}
                       </span>
                     </div>
-                    <p className="text-xs text-white leading-relaxed font-bold mt-2">
+                    <p className="text-xs font-bold leading-relaxed mt-2.5 opacity-100" style={{ color: '#ffffff' }}>
                       {benefitText}
                     </p>
                   </div>
                 </div>
 
-                {/* CARD 3: DESTAQUES PRINCIPAIS (ALTO CONTRASTE) */}
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-700/80 shadow-md space-y-2 flex flex-col justify-between">
+                {/* CARD 3: DESTAQUES PRINCIPAIS (TÍTULO AMARELO FORTE + PÍLULAS VERDES NÍTIDAS) */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-amber-500/30 shadow-md space-y-2 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2 text-amber-300">
-                      <Lightbulb size={18} weight="bold" />
-                      <span className="text-[11px] font-black uppercase tracking-wider">
+                    <div className="flex items-center gap-2" style={{ color: '#fbbf24' }}>
+                      <Lightbulb size={18} weight="bold" style={{ color: '#fbbf24' }} />
+                      <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: '#fbbf24' }}>
                         Destaques Principais
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-2.5">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       {detail.highlights.map((item, idx) => (
                         <span 
                           key={idx} 
-                          className="text-[11px] font-black text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-xl border border-emerald-500/40 shadow-sm flex items-center gap-1.5"
+                          className="text-[11px] font-black text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-xl border border-emerald-500/50 shadow-sm flex items-center gap-1.5 opacity-100"
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           {item}
@@ -260,6 +261,7 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
                     </div>
                   </div>
                 </div>
+
               </div>
             </motion.div>
           )}

@@ -507,15 +507,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [qaScores, profile.uid]);
 
   // Filtragem de acordos por cargo:
-  // - member (operador): sempre os seus próprios
-  // - supervisor: pode ver por membro selecionado ou toda a equipe
+  // - member (operador) e supervisor: sempre os seus próprios
   // - demais cargos: não relevante (lista não é renderizada)
   const operatorIdForAgreements =
-    profile.role === 'member'
+    profile.role === 'member' || profile.role === 'supervisor'
       ? profile.uid
-      : profile.role === 'supervisor'
-        ? selectedMemberId
-        : 'all';
+      : 'all';
 
   // 2. CARREGAMENTO DOS ACORDOS DA PÁGINA ATUAL E ESTATÍSTICAS DO MÊS VIA CUSTOM HOOK
   const {
@@ -777,6 +774,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
     selectedMonth,
     selectedYear
   });
+
+  const personalChecklistCount = useMemo(() => {
+    const todayZero = new Date();
+    todayZero.setHours(0, 0, 0, 0);
+    const today = new Date();
+    
+    return monthAgreements.filter(a => {
+      if (!a || a.isAdjustment) return false;
+      if (profile.role === 'member' || profile.role === 'supervisor') {
+        if (a.operatorId !== profile.uid) return false;
+      }
+      
+      const dueDate = parseLocalDate(a.dueDate);
+      const wasCheckedToday = a.lastCheckedAt && 
+        new Date(a.lastCheckedAt).toLocaleDateString() === today.toLocaleDateString();
+      const isOverdue = dueDate < todayZero;
+      const isDueToday = dueDate.getTime() === todayZero.getTime();
+      const wasCheckedAtAnyTime = !!a.lastCheckedAt;
+
+      if (isDueToday) {
+        return a.status === AgreementStatus.WAITING && !wasCheckedToday;
+      }
+      if (isOverdue) {
+        return a.status === AgreementStatus.WAITING && !wasCheckedAtAnyTime;
+      }
+      return false;
+    }).length;
+  }, [monthAgreements, profile.uid, profile.role]);
 
   const totalPaidMonth = useMemo(() => {
     return memberFilteredAgreements
@@ -2469,9 +2494,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         >
                           <CheckSquare size={16} />
                           <span>{isChecklistMode ? 'Conferindo' : 'Verificar'}</span>
-                          {stats.counts.checklist > 0 && !isChecklistMode && (
+                          {personalChecklistCount > 0 && !isChecklistMode && (
                             <span className="bg-sky-500 text-white px-1.5 py-0.5 rounded-full text-[9px] font-bold animate-pulse">
-                              {stats.counts.checklist}
+                              {personalChecklistCount}
                             </span>
                           )}
                         </button>

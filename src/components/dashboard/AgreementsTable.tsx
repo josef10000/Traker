@@ -362,7 +362,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                     <td className="px-6 py-4 text-right no-print">
                       <div className="flex items-center justify-end gap-1.5">
                         {(() => {
-                          const canAct = profile.role === 'member' && agreement.operatorId === profile.uid;
+                          const canAct = (profile.role === 'member' || profile.role === 'supervisor') && agreement.operatorId === profile.uid;
                           if (!canAct) {
                             return (
                               <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
