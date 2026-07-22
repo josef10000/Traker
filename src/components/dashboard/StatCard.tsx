@@ -15,6 +15,12 @@ interface StatCardProps {
   chartData?: any[];
   chartType?: 'area' | 'bar' | 'pie';
   extra?: React.ReactNode;
+  /** Variação percentual em relação ao período comparado (positivo = melhora, negativo = piora) */
+  comparisonDelta?: number;
+  /** Valor absoluto formatado do período de comparação */
+  comparisonValue?: string;
+  /** Se true, inverte a lógica de cor (delta positivo = ruim, ex: vencidos) */
+  invertDelta?: boolean;
 }
 
 export const StatCard = ({ 
@@ -27,8 +33,17 @@ export const StatCard = ({
   id,
   chartData = [],
   chartType = 'area',
-  extra
+  extra,
+  comparisonDelta,
+  comparisonValue,
+  invertDelta = false
 }: StatCardProps) => {
+  // Determina se o delta é positivo do ponto de vista do negócio
+  const deltaIsGood = comparisonDelta !== undefined
+    ? (invertDelta ? comparisonDelta < 0 : comparisonDelta > 0)
+    : null;
+  const deltaAbs = comparisonDelta !== undefined ? Math.abs(comparisonDelta) : 0;
+  const deltaSign = comparisonDelta !== undefined && comparisonDelta > 0 ? '+' : '';
   const [designMode] = useDesignMode();
   const [isHovered, setIsHovered] = useState(false);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
@@ -189,6 +204,18 @@ export const StatCard = ({
                 {extra}
               </div>
             )}
+            {comparisonDelta !== undefined && (
+              <span
+                title={comparisonValue ? `Período anterior: ${comparisonValue}` : undefined}
+                className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border shadow-sm ${
+                  deltaIsGood
+                    ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                    : 'text-rose-400 bg-rose-500/10 border-rose-500/20'
+                }`}
+              >
+                {deltaIsGood ? '▲' : '▼'} {deltaSign}{deltaAbs.toFixed(1)}%
+              </span>
+            )}
             {trend && (
               <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-500/20 shadow-sm">
                 <TrendingUp size={10} />
@@ -260,6 +287,18 @@ export const StatCard = ({
                 <Icon size={24} />
               </div>
               <div className="flex flex-col items-end gap-1 preserve-3d" style={{ transform: 'translateZ(20px)' }}>
+                {comparisonDelta !== undefined && (
+                  <span
+                    title={comparisonValue ? `Período anterior: ${comparisonValue}` : undefined}
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border shadow-sm ${
+                      deltaIsGood
+                        ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                        : 'text-rose-500 bg-rose-500/10 border-rose-500/20'
+                    }`}
+                  >
+                    {deltaIsGood ? '▲' : '▼'} {deltaSign}{deltaAbs.toFixed(1)}%
+                  </span>
+                )}
                 {trend && (
                   <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-500/20 shadow-sm">
                     <TrendingUp size={10} />

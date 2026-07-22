@@ -12,6 +12,7 @@ import { DashboardStats } from '../../types';
 
 interface StatsGridProps {
   stats: DashboardStats;
+  comparisonStats?: DashboardStats;
   statTrends: {
     projected: { name: string; value: number }[];
     paid: { name: string; value: number }[];
@@ -26,6 +27,7 @@ interface StatsGridProps {
 
 export const StatsGrid = ({
   stats,
+  comparisonStats,
   statTrends,
   monthlyGoal,
   localHiddenCards,
@@ -33,6 +35,11 @@ export const StatsGrid = ({
   operatorQaScore,
   onHelpClick
 }: StatsGridProps) => {
+  // Calcula delta percentual entre o valor atual e o valor do período comparado
+  const delta = (current: number, compare: number | undefined): number | undefined => {
+    if (compare === undefined || compare === 0) return undefined;
+    return ((current - compare) / Math.abs(compare)) * 100;
+  };
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center px-2">
@@ -54,6 +61,8 @@ export const StatsGrid = ({
         color="primary" 
         chartData={statTrends.projected}
         chartType="area"
+        comparisonDelta={delta(stats.totalProjected, comparisonStats?.totalProjected)}
+        comparisonValue={comparisonStats ? formatCurrency(comparisonStats.totalProjected) : undefined}
       />
       <StatCard 
         title="Produtividade Diária (Pagos)" 
@@ -64,6 +73,8 @@ export const StatsGrid = ({
         chartData={statTrends.paid}
         chartType="bar"
         extra={stats.todayEffectiveness !== undefined ? `Efet. Dia: ${stats.todayEffectiveness.toFixed(1)}%` : undefined}
+        comparisonDelta={delta(stats.filteredPaidValue, comparisonStats?.filteredPaidValue)}
+        comparisonValue={comparisonStats ? formatCurrency(comparisonStats.filteredPaidValue) : undefined}
       />
       <StatCard 
         title="Falta para Meta" 
@@ -76,6 +87,9 @@ export const StatsGrid = ({
           { name: 'Restante', value: Math.max(0, monthlyGoal - stats.totalPaid) }
         ]}
         chartType="pie"
+        comparisonDelta={comparisonStats ? delta(stats.remainingToGoal, comparisonStats.remainingToGoal) : undefined}
+        comparisonValue={comparisonStats ? formatCurrency(comparisonStats.remainingToGoal) : undefined}
+        invertDelta
       />
       <StatCard 
         title="Projeção p/ Mês" 
@@ -85,6 +99,8 @@ export const StatsGrid = ({
         subtitle="Baseado no ritmo atual"
         chartData={statTrends.paid}
         chartType="area"
+        comparisonDelta={delta(stats.projection, comparisonStats?.projection)}
+        comparisonValue={comparisonStats ? formatCurrency(comparisonStats.projection) : undefined}
       />
       
       <StatCard 
@@ -96,6 +112,9 @@ export const StatsGrid = ({
         subtitle={`${stats.counts.month.overdue} acordos não pagos até ontem`}
         chartData={statTrends.overdue}
         chartType="bar"
+        comparisonDelta={delta(stats.totalOverdue, comparisonStats?.totalOverdue)}
+        comparisonValue={comparisonStats ? formatCurrency(comparisonStats.totalOverdue) : undefined}
+        invertDelta
       />
       <StatCard 
         title="Vencendo Hoje" 
@@ -105,6 +124,9 @@ export const StatsGrid = ({
         subtitle={`${stats.counts.month.pendingToday} acordos pendentes p/ hoje`}
         chartData={statTrends.overdue}
         chartType="bar"
+        comparisonDelta={delta(stats.totalPendingToday, comparisonStats?.totalPendingToday)}
+        comparisonValue={comparisonStats ? formatCurrency(comparisonStats.totalPendingToday) : undefined}
+        invertDelta
       />
       {!localHiddenCards.includes('cadastradosHoje') && (
         <StatCard 
