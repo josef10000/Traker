@@ -37,62 +37,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // HTML ultra leve e moderno com o emblema do Tracker
+    // HTML corporativo clássico com fundo preto
     const htmlContent = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Convite para Acessar o Tracker — ${orgName}</title>
+  <title>Convite de Acesso Corporativo — ${orgName}</title>
   <style>
-    body { margin: 0; padding: 0; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f3f4f6; }
-    .wrapper { width: 100%; table-layout: fixed; background-color: #030712; padding: 40px 0; }
-    .main-card { max-width: 580px; margin: 0 auto; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); }
-    .header { padding: 36px 40px 24px 40px; text-align: center; background: linear-gradient(180deg, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0) 100%); border-bottom: 1px solid #1e293b; }
-    .logo-badge { display: inline-block; padding: 10px 24px; background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%); border-radius: 16px; color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3); margin-bottom: 10px; }
-    .brand-subtitle { font-size: 11px; font-weight: 800; letter-spacing: 0.15em; color: #38bdf8; text-transform: uppercase; }
-    .body-content { padding: 36px 40px; }
-    .title { font-size: 22px; font-weight: 800; color: #ffffff; margin-top: 0; margin-bottom: 16px; line-height: 1.3; }
-    .paragraph { font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px; }
-    .badge-card { background-color: #1e1b4b; border: 1px solid #4338ca; border-radius: 16px; padding: 16px 20px; margin-bottom: 28px; }
-    .badge-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #a5b4fc; margin-bottom: 4px; display: block; }
-    .badge-value { font-size: 16px; font-weight: 800; color: #ffffff; }
-    .btn-container { text-align: center; margin-top: 32px; margin-bottom: 32px; }
-    .btn-action { display: inline-block; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: #ffffff !important; font-size: 14px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; padding: 16px 36px; border-radius: 14px; text-decoration: none; box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4); }
-    .fallback-box { background-color: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 14px; margin-top: 24px; word-break: break-all; font-family: monospace; font-size: 12px; color: #38bdf8; }
-    .footer { padding: 24px 40px; background-color: #020617; border-top: 1px solid #1e293b; text-align: center; font-size: 12px; color: #64748b; }
+    body { margin: 0; padding: 0; background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #e5e5e5; -webkit-font-smoothing: antialiased; }
+    .wrapper { width: 100%; table-layout: fixed; background-color: #000000; padding: 48px 12px; }
+    .main-card { max-width: 560px; margin: 0 auto; background-color: #0a0a0a; border: 1px solid #262626; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); }
+    .header { padding: 40px 40px 28px 40px; text-align: center; background-color: #0d0d0d; border-bottom: 1px solid #1f1f1f; }
+    .brand-title { font-size: 20px; font-weight: 900; letter-spacing: 0.2em; color: #ffffff; text-transform: uppercase; margin: 0; }
+    .brand-subtitle { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; color: #a3a3a3; text-transform: uppercase; margin-top: 6px; }
+    .body-content { padding: 40px; }
+    .salutation { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #737373; margin: 0 0 12px 0; }
+    .title { font-size: 22px; font-weight: 700; color: #ffffff; margin-top: 0; margin-bottom: 20px; line-height: 1.35; letter-spacing: -0.01em; }
+    .paragraph { font-size: 14px; line-height: 1.7; color: #a3a3a3; margin-bottom: 28px; }
+    .info-box { background-color: #121212; border: 1px solid #262626; border-left: 3px solid #ffffff; border-radius: 8px; padding: 18px 24px; margin-bottom: 32px; }
+    .info-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #737373; margin-bottom: 6px; display: block; }
+    .info-value { font-size: 15px; font-weight: 700; color: #ffffff; }
+    .btn-container { text-align: center; margin-top: 36px; margin-bottom: 36px; }
+    .btn-action { display: inline-block; background-color: #ffffff; color: #000000 !important; font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 16px 40px; border-radius: 8px; text-decoration: none; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15); }
+    .fallback-container { border-top: 1px dashed #262626; padding-top: 24px; margin-top: 24px; }
+    .fallback-text { font-size: 12px; color: #737373; margin-bottom: 10px; }
+    .fallback-box { background-color: #050505; border: 1px solid #1f1f1f; border-radius: 6px; padding: 12px 14px; word-break: break-all; font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 11px; color: #a3a3a3; }
+    .footer { padding: 28px 40px; background-color: #050505; border-top: 1px solid #171717; text-align: center; font-size: 11px; line-height: 1.6; color: #525252; }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="main-card">
       <div class="header">
-        <div class="logo-badge">TRACKER</div>
-        <div class="brand-subtitle">PLATFORM ONBOARDING</div>
+        <h2 class="brand-title">TRACKER</h2>
+        <div class="brand-subtitle">CORPORATE PLATFORM</div>
       </div>
       <div class="body-content">
-        <h1 class="title">Você foi convidado para ingressar em ${orgName}!</h1>
+        <div class="salutation">CONVITE DE ACESSO OFICIAL</div>
+        <h1 class="title">Sua credencial para acessar a empresa ${orgName} está pronta.</h1>
         <p class="paragraph">
-          Olá! Você recebeu um convite oficial de acesso à plataforma <strong>Tracker</strong> para integrar a equipe da empresa <strong>${orgName}</strong>.
+          Você foi convidado para integrar o sistema corporativo da empresa <strong>${orgName}</strong> na plataforma <strong>Tracker</strong>.
         </p>
-        <div class="badge-card">
-          <span class="badge-label">Sua Função Atribuída:</span>
-          <div class="badge-value">${roleName}</div>
+        <div class="info-box">
+          <span class="info-label">Cargo / Função Atribuída:</span>
+          <div class="info-value">${roleName}</div>
         </div>
         <div class="btn-container">
           <a href="${inviteUrl}" target="_blank" class="btn-action">
-            🚀 Aceitar Convite & Acessar Empresa
+            ACEITAR CONVITE DE ACESSO
           </a>
         </div>
-        <p class="paragraph" style="margin-bottom: 8px;">
-          Se o botão acima não funcionar, copie e cole o link direto no seu navegador:
-        </p>
-        <div class="fallback-box">${inviteUrl}</div>
+        <div class="fallback-container">
+          <p class="fallback-text">
+            Se o botão acima não abrir automaticamente, utilize o link direto corporativo:
+          </p>
+          <div class="fallback-box">${inviteUrl}</div>
+        </div>
       </div>
       <div class="footer">
-        <p style="margin: 0 0 8px 0;">Este é um convite individual e exclusivo atrelado ao e-mail <strong>${recipientEmail}</strong>.</p>
-        <p style="margin: 0;">Se você não esperava por este e-mail, pode ignorá-lo com segurança.</p>
+        <p style="margin: 0 0 6px 0;">Este convite corporativo é de uso exclusivo do e-mail <strong>${recipientEmail}</strong>.</p>
+        <p style="margin: 0;">Tracker Platform • Todos os direitos reservados.</p>
       </div>
     </div>
   </div>
@@ -110,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         from: `${fromName} <notificacoes@hubsymples.com.br>`,
         to: [recipientEmail],
-        subject: `🚀 Convite de Acesso — ${orgName} (Tracker Platform)`,
+        subject: `🚀 Convite de Acesso Corporativo — ${orgName} (Tracker Platform)`,
         html: htmlContent
       })
     });
