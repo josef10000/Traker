@@ -304,64 +304,60 @@ export const RecoveryPoolTab = ({
     <div className="space-y-6 animate-fade-in no-print">
       {/* Quadro de Resumo e KPIs de Recuperação */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
-          theme === 'dark' ? 'bg-slate-900/60 border-emerald-500/30' : 'bg-white border-emerald-200'
+        {/* Card 1: Valor Recuperado */}
+        <div className={`p-5 rounded-2xl border border-t-2 border-t-emerald-500 shadow-md transition-all ${
+          theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
         }`}>
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block">💰 Valor Recuperado (Pago)</span>
-            <span className="text-2xl font-black text-emerald-400 mt-1 block">
-              {formatCurrency(recoveryKPIs.totalRecoveredValue)}
-            </span>
-            <span className="text-[10px] text-slate-500 font-medium">Acordos pagos de leads resgatados</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Valor Recuperado</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Pago</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0 font-bold text-lg">
-            R$
-          </div>
+          <span className="text-2xl font-black text-white mt-2 block tracking-tight">
+            {formatCurrency(recoveryKPIs.totalRecoveredValue)}
+          </span>
+          <span className="text-[11px] text-slate-400 font-medium block mt-1">Acordos pagos de leads resgatados</span>
         </div>
 
-        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
-          theme === 'dark' ? 'bg-slate-900/60 border-sky-500/30' : 'bg-white border-sky-200'
+        {/* Card 2: Acordos Resgatados */}
+        <div className={`p-5 rounded-2xl border border-t-2 border-t-sky-500 shadow-md transition-all ${
+          theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
         }`}>
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-sky-400 block">🎯 Acordos Resgatados</span>
-            <span className="text-2xl font-black text-white mt-1 block">
-              {recoveryKPIs.recoveredCount} resgatados
-            </span>
-            <span className="text-[10px] text-slate-500 font-medium">Acordos salvos por CPF</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Acordos Resgatados</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">Salvos</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 shrink-0 font-bold text-lg">
-            ✓
-          </div>
+          <span className="text-2xl font-black text-white mt-2 block tracking-tight">
+            {recoveryKPIs.recoveredCount} resgatados
+          </span>
+          <span className="text-[11px] text-slate-400 font-medium block mt-1">Acordos salvos por CPF</span>
         </div>
 
-        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
-          theme === 'dark' ? 'bg-slate-900/60 border-rose-500/20' : 'bg-white border-rose-200'
+        {/* Card 3: Em Recuperação */}
+        <div className={`p-5 rounded-2xl border border-t-2 border-t-rose-500 shadow-md transition-all ${
+          theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
         }`}>
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block">🚨 Em Recuperação (Pendente)</span>
-            <span className="text-2xl font-black text-white mt-1 block">
-              {recoveryKPIs.pendingBrokenCount} leads
-            </span>
-            <span className="text-[10px] text-slate-500 font-medium">Fila de acordos quebrados</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Em Recuperação</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">Fila Ativa</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-400/30 flex items-center justify-center text-rose-400 shrink-0 font-bold text-lg">
-            ⚠️
-          </div>
+          <span className="text-2xl font-black text-white mt-2 block tracking-tight">
+            {recoveryKPIs.pendingBrokenCount} leads
+          </span>
+          <span className="text-[11px] text-slate-400 font-medium block mt-1">Fila de acordos quebrados</span>
         </div>
 
-        <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-lg ${
-          theme === 'dark' ? 'bg-slate-900/60 border-amber-500/20' : 'bg-white border-amber-200'
+        {/* Card 4: Volume em Risco */}
+        <div className={`p-5 rounded-2xl border border-t-2 border-t-amber-500 shadow-md transition-all ${
+          theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
         }`}>
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block">💵 Volume em Risco</span>
-            <span className="text-2xl font-black text-amber-400 mt-1 block">
-              {formatCurrency(recoveryKPIs.pendingBrokenValue)}
-            </span>
-            <span className="text-[10px] text-slate-500 font-medium">Total em aberto na fila</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Volume em Risco</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Em Aberto</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0 font-bold text-lg">
-            📊
-          </div>
+          <span className="text-2xl font-black text-white mt-2 block tracking-tight">
+            {formatCurrency(recoveryKPIs.pendingBrokenValue)}
+          </span>
+          <span className="text-[11px] text-slate-400 font-medium block mt-1">Total em aberto na fila</span>
         </div>
       </div>
 
