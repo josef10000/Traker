@@ -26,7 +26,14 @@ export function AppContent() {
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-  const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean } | null>(null);
+  const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean } | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('tracker_demo_simulation');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [simulatedUid, setSimulatedUid] = useState<string>('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState<string>('profile');
@@ -40,6 +47,7 @@ export function AppContent() {
 
   useEffect(() => {
     if (simulation?.active) {
+      sessionStorage.setItem('tracker_demo_simulation', JSON.stringify(simulation));
       if (simulation.role === 'manager') {
         setSimulatedUid('sandbox-manager-a');
       } else if (simulation.role === 'coordinator') {
@@ -55,6 +63,7 @@ export function AppContent() {
       }
       sandboxService.resetSandbox();
     } else {
+      sessionStorage.removeItem('tracker_demo_simulation');
       setSimulatedUid('');
     }
   }, [simulation]);
@@ -307,9 +316,11 @@ export function AppContent() {
           <div className="flex items-center gap-4">
             <button 
               onClick={async () => {
+                sessionStorage.removeItem('tracker_demo_simulation');
                 sandboxService.resetSandbox();
+                const wasDemo = simulation?.isDemoMode;
                 setSimulation(null);
-                if (simulation.isDemoMode) {
+                if (wasDemo) {
                   navigate('/demo');
                 } else if (profile?.role !== 'super_admin') {
                   await signOut(auth);

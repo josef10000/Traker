@@ -687,6 +687,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               </button>
             </div>
 
+            {deletingProgress && (
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-bold text-xs flex items-center gap-3 animate-pulse">
+                <Loader2 size={18} className="animate-spin text-rose-400" />
+                <span>{deletingProgress}</span>
+              </div>
+            )}
+
             {/* TABELA DE EMPRESAS */}
             <div className="rounded-3xl border border-white/10 bg-slate-900/40 overflow-hidden shadow-2xl">
               <div className="overflow-x-auto">
@@ -760,17 +767,36 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                               </button>
 
                               {!isSandbox && (
-                                <button
-                                  onClick={() => handleToggleStatus(org)}
-                                  className={`p-2 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                                    org.status === 'active'
-                                      ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20'
-                                      : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
-                                  }`}
-                                  title={org.status === 'active' ? 'Suspender Empresa' : 'Ativar Empresa'}
-                                >
-                                  <Power size={14} />
-                                </button>
+                                <>
+                                  <button
+                                    onClick={() => handleToggleStatus(org)}
+                                    className={`p-2 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                                      org.status === 'active'
+                                        ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20'
+                                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                                    }`}
+                                    title={org.status === 'active' ? 'Suspender Empresa' : 'Ativar Empresa'}
+                                  >
+                                    <Power size={14} />
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      setConfirmDialog({
+                                        isOpen: true,
+                                        title: 'Excluir Empresa Permanentemente',
+                                        message: `Tem certeza que deseja EXCLUIR a empresa "${org.name}" e TODOS os seus dados vinculados (acordos, equipes, usuários, etc.)? Esta ação é irreversível!`,
+                                        type: 'danger',
+                                        onConfirm: () => handleDeleteOrganization(org.id, org.name)
+                                      });
+                                    }}
+                                    disabled={isDeleting === org.id}
+                                    className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+                                    title="Excluir Empresa e Todos os Dados Vinculados"
+                                  >
+                                    {isDeleting === org.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                  </button>
+                                </>
                               )}
                             </div>
                           </td>
@@ -1074,6 +1100,18 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           </div>
         </div>
       )}
+      {/* DIÁLOGO DE CONFIRMAÇÃO DE EXCLUSÃO DE EMPRESA */}
+      <CustomConfirm
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type={confirmDialog.type}
+        onConfirm={() => {
+          confirmDialog.onConfirm();
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        }}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
