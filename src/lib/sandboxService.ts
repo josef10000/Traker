@@ -433,6 +433,35 @@ class SandboxService {
     }
   }
 
+  public updateBackofficeImport(importId: string, updates: Partial<BackOfficeImport>): void {
+    if (this.backofficeImports[importId]) {
+      this.backofficeImports[importId] = {
+        ...this.backofficeImports[importId],
+        ...updates
+      };
+      this.notify();
+    }
+  }
+
+  public renameBackofficeColumnHeader(importId: string, oldHeader: string, newHeader: string): void {
+    Object.keys(this.backofficeClients).forEach(key => {
+      const cli = this.backofficeClients[key];
+      if (cli.importId === importId) {
+        const customFields = { ...cli.customFields };
+        if (oldHeader in customFields) {
+          customFields[newHeader] = customFields[oldHeader];
+          delete customFields[oldHeader];
+        }
+        this.backofficeClients[key] = {
+          ...cli,
+          customFields,
+          updatedAt: new Date().toISOString()
+        };
+      }
+    });
+    this.notify();
+  }
+
   // --- MÉTODOS DE CONVITES DO SANDBOX ---
   
   public getPendingInvites(orgId: string): Invite[] {

@@ -267,27 +267,25 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   }, [selectedImportId, profile.organizationId]);
 
   // Renomear cabeçalho de coluna customizada dinamicamente
+  // Renomear cabeçalho de coluna customizada dinamicamente
   const handleRenameHeader = async (oldHeader: string) => {
     const trimmed = newHeaderName.trim();
     if (!trimmed) {
       showToast('O nome da coluna não pode ser vazio.', 'warning');
       return;
     }
-    if (trimmed === oldHeader || !selectedImportId) {
+    if (trimmed === oldHeader || !selectedImportId || selectedImportId === 'all') {
       setEditingHeader(null);
       return;
     }
 
     setIsSavingHeader(true);
     try {
-      const importRef = doc(db, 'backoffice_imports', selectedImportId);
       const activeImportObj = imports.find(i => i.id === selectedImportId);
       if (!activeImportObj) return;
 
-      // 1. Atualiza os headers na importação
       const updatedHeaders = activeImportObj.headers.map(h => h === oldHeader ? trimmed : h);
       
-      // Atualiza o mapping caso estivesse mapeado
       const updatedMapping = { ...activeImportObj.columnMapping };
       Object.keys(updatedMapping).forEach(key => {
         if (updatedMapping[key as keyof typeof updatedMapping] === oldHeader) {
@@ -295,6 +293,20 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         }
       });
 
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.updateBackofficeImport(selectedImportId, {
+          headers: updatedHeaders,
+          columnMapping: updatedMapping
+        });
+        sandboxService.renameBackofficeColumnHeader(selectedImportId, oldHeader, trimmed);
+        showToast(`Coluna renomeada para '${trimmed}' com sucesso!`, 'success');
+        setEditingHeader(null);
+        setNewHeaderName('');
+        return;
+      }
+
+      // 1. Atualiza os headers na importação no Firestore
+      const importRef = doc(db, 'backoffice_imports', selectedImportId);
       await updateDoc(importRef, {
         headers: updatedHeaders,
         columnMapping: updatedMapping
@@ -307,7 +319,6 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       );
       const snap = await getDocs(q);
 
-      // Usando batch para atualizar de 500 em 500
       const batchSize = 500;
       const docsArray = snap.docs;
 
@@ -1303,28 +1314,91 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                       >
                         {headerGroup.headers.map(header => {
                           const isSortable = header.column.id !== 'actions' && header.column.id !== 'status';
+                          const headerText = String(header.column.columnDef.header || '');
+                          const isEditingThisHeader = editingHeader === headerText;
+                          const isDynamicHeader = header.column.id.startsWith('dyn_');
+
                           return (
                             <th 
                               key={header.id} 
-                              className={`p-4 font-bold text-slate-400 uppercase tracking-wider relative group ${
-                                isSortable ? 'cursor-pointer select-none hover:text-white transition-colors' : ''
+                              className={`p-4 font-bold text-slate-400 uppercase tracking-wider relative group/th ${
+                                isSortable && !isEditingThisHeader ? 'cursor-pointer select-none hover:text-white transition-colors' : ''
                               }`}
-                              onClick={isSortable ? header.column.getToggleSortingHandler() : undefined}
+                              onClick={isSortable && !isEditingThisHeader ? header.column.getToggleSortingHandler() : undefined}
                             >
-                              <div className="flex items-center gap-1.5">
-                                {flexRender(header.column.columnDef.header, header.getContext())}
-                                
-                                {isSortable && (
-                                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300">
-                                    {{
-                                      asc: <CaretUp size={10} weight="bold" />,
-                                      desc: <CaretDown size={10} weight="bold" />,
-                                    }[header.column.getIsSorted() as string] ?? (
-                                      <ArrowsDownUp size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                              {isEditingThisHeader ? (
+                                <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleRenameHeader(headerText);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1.5 min-w-[150px]"
+                                >
+                                  <input
+                                    type="text"
+                                    value={newHeaderName}
+                                    onChange={(e) => setNewHeaderName(e.target.value)}
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Escape') setEditingHeader(null);
+                                    }}
+                                    className="bg-slate-950 border border-orange-500/80 rounded-lg px-2 py-1 text-xs text-white outline-none w-full shadow-inner"
+                                  />
+                                  <button
+                                    type="submit"
+                                    disabled={isSavingHeader}
+                                    title="Salvar novo nome"
+                                    className="p-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-md transition-all cursor-pointer shrink-0"
+                                  >
+                                    <Check size={12} weight="bold" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingHeader(null);
+                                    }}
+                                    title="Cancelar"
+                                    className="p-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white rounded-md transition-all cursor-pointer shrink-0"
+                                  >
+                                    <XIcon size={12} weight="bold" />
+                                  </button>
+                                </form>
+                              ) : (
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1.5">
+                                    {flexRender(header.column.columnDef.header, header.getContext())}
+                                    
+                                    {isSortable && (
+                                      <span className="text-[10px] text-slate-500 group-hover/th:text-slate-300">
+                                        {{
+                                          asc: <CaretUp size={10} weight="bold" />,
+                                          desc: <CaretDown size={10} weight="bold" />,
+                                        }[header.column.getIsSorted() as string] ?? (
+                                          <ArrowsDownUp size={10} className="opacity-0 group-hover/th:opacity-100 transition-opacity" />
+                                        )}
+                                      </span>
                                     )}
-                                  </span>
-                                )}
-                              </div>
+                                  </div>
+
+                                  {/* Lápis de Edição Manual do Nome da Coluna */}
+                                  {isDynamicHeader && selectedImportId !== 'all' && (
+                                    <button
+                                      type="button"
+                                      title="Renomear esta coluna"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingHeader(headerText);
+                                        setNewHeaderName(headerText);
+                                      }}
+                                      className="opacity-0 group-hover/th:opacity-100 p-1 hover:bg-orange-500/20 text-slate-400 hover:text-orange-400 rounded-md transition-all cursor-pointer"
+                                    >
+                                      <PencilSimple size={12} weight="bold" />
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </th>
                           );
                         })}
