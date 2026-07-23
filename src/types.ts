@@ -81,6 +81,8 @@ export interface UserProfile {
   qaCycleStatus?: 'pending' | 'evaluated';
   avatarStyle?: string;
   avatarSeed?: string;
+  photoURL?: string;
+  avatarType?: 'custom' | 'api';
 }
 
 export interface QaSettings {

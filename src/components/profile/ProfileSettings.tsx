@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { uploadImage } from '../../lib/imageUpload';
 import { 
   User as UserIcon, 
   Briefcase, 
@@ -25,7 +26,10 @@ import {
   Calendar,
   CaretLeft,
   Info,
-  Calculator
+  Calculator,
+  Camera,
+  UploadSimple,
+  CircleNotch
 } from '@phosphor-icons/react';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -68,9 +72,42 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
   const [avatarStyle, setAvatarStyle] = useState(profile.avatarStyle || 'initials');
   const [avatarSeed, setAvatarSeed] = useState(profile.avatarSeed || '');
+  const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
+  const [avatarType, setAvatarType] = useState<'custom' | 'api'>(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers' | 'schedule' | 'closing_pj'>('profile');
+
+  useEffect(() => {
+    setDisplayName(profile.displayName || '');
+    setJobTitle(profile.jobTitle || '');
+    setAvatarStyle(profile.avatarStyle || 'initials');
+    setAvatarSeed(profile.avatarSeed || '');
+    setPhotoURL(profile.photoURL || '');
+    setAvatarType(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
+  }, [profile]);
+
+  const handleProfilePhotoUpload = async (file: File | Blob) => {
+    setIsUploadingPhoto(true);
+    try {
+      const url = await uploadImage(file, { folder: 'profile_photos' });
+      setPhotoURL(url);
+      setAvatarType('custom');
+      showToast('Foto de perfil enviada com sucesso!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao processar foto de perfil.', 'error');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleDeleteProfilePhoto = () => {
+    setPhotoURL('');
+    setAvatarType('api');
+    showToast('Foto removida. Revertido para o avatar da API.', 'info');
+  };
   
   useEffect(() => {
     if (initialTab && isOpen) {
@@ -611,7 +648,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           displayName,
           jobTitle,
           avatarStyle,
-          avatarSeed
+          avatarSeed,
+          photoURL,
+          avatarType
         });
         setIsSaveSuccess(true);
         setTimeout(() => setIsSaveSuccess(false), 2500);
@@ -620,7 +659,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           displayName,
           jobTitle,
           avatarStyle,
-          avatarSeed
+          avatarSeed,
+          photoURL,
+          avatarType
         });
         return;
       }
@@ -630,7 +671,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
         displayName,
         jobTitle,
         avatarStyle,
-        avatarSeed
+        avatarSeed,
+        photoURL,
+        avatarType
       });
       setIsSaveSuccess(true);
       setTimeout(() => setIsSaveSuccess(false), 2500);
@@ -639,7 +682,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
         displayName,
         jobTitle,
         avatarStyle,
-        avatarSeed
+        avatarSeed,
+        photoURL,
+        avatarType
       });
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
@@ -1259,20 +1304,123 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       email={profile.email}
                       avatarStyle={avatarStyle}
                       avatarSeed={avatarSeed}
+                      photoURL={photoURL}
+                      avatarType={avatarType}
                       theme={profile.theme}
                       size="xl"
-                      className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30"
+                      className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30 w-24 h-24"
                     />
+                    {avatarType === 'api' && (
+                      <button
+                        type="button"
+                        onClick={() => setAvatarSeed(Math.random().toString(36).substring(7))}
+                        className="absolute -bottom-1 -right-1 p-2 bg-primary hover:bg-primary/80 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
+                        title="Gerar Novo Avatar Aleatório"
+                      >
+                        <Palette size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                    {avatarType === 'custom' ? 'Foto de Perfil Personalizada' : 'Avatar Dinâmico da API'}
+                  </span>
+                </div>
+
+                {/* Alternância de Modo: Imagem da API vs Foto Própria */}
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Opções da Foto de Perfil
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => setAvatarSeed(Math.random().toString(36).substring(7))}
-                      className="absolute -bottom-1 -right-1 p-1.5 bg-primary hover:bg-primary/80 text-white rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
-                      title="Gerar Aleatório"
+                      onClick={() => setAvatarType('api')}
+                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        avatarType === 'api'
+                          ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-md shadow-sky-500/10'
+                          : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
                     >
-                      <Palette size={12} />
+                      <Palette size={16} />
+                      <span>Imagem da API (DiceBear)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setAvatarType('custom')}
+                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        avatarType === 'custom'
+                          ? 'bg-purple-500/20 border-purple-500 text-purple-300 shadow-md shadow-purple-500/10'
+                          : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Camera size={16} />
+                      <span>Usar Foto Própria</span>
                     </button>
                   </div>
-                  <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Pré-visualização do Avatar</span>
+
+                  {/* Gerenciamento de Foto Personalizada */}
+                  {avatarType === 'custom' && (
+                    <div className="pt-3 border-t border-white/5 space-y-3">
+                      {photoURL ? (
+                        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-950/60 border border-white/10">
+                          <div className="flex items-center gap-3">
+                            <img src={photoURL} alt="Foto de perfil" className="w-10 h-10 object-cover rounded-lg border border-white/10" />
+                            <div>
+                              <span className="text-xs font-bold text-white block">Foto Ativa</span>
+                              <span className="text-[10px] text-slate-400 block">Personalizada enviada</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <label className={`px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''
+                            }`}>
+                              {isUploadingPhoto ? <CircleNotch size={14} className="animate-spin" /> : <UploadSimple size={14} />}
+                              <span>{isUploadingPhoto ? 'Enviando...' : 'Editar Foto'}</span>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleProfilePhotoUpload(file);
+                                }}
+                              />
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={handleDeleteProfilePhoto}
+                              className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                              title="Excluir foto e voltar para o avatar da API"
+                            >
+                              <Trash2 size={14} />
+                              <span>Excluir</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className={`w-full p-4 rounded-xl border border-dashed border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 text-purple-300 flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                          isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''
+                        }`}>
+                          {isUploadingPhoto ? <CircleNotch size={18} className="animate-spin text-purple-400" /> : <UploadSimple size={18} className="text-purple-400" />}
+                          <span className="text-xs font-bold">
+                            {isUploadingPhoto ? 'Enviando sua foto de perfil...' : 'Clique para Enviar Foto de Perfil'}
+                          </span>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleProfilePhotoUpload(file);
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -5,6 +5,8 @@ interface AvatarProps {
   email?: string;
   avatarStyle?: string;
   avatarSeed?: string;
+  photoURL?: string;
+  avatarType?: 'custom' | 'api';
   theme?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
@@ -15,6 +17,8 @@ export function Avatar({
   email, 
   avatarStyle = 'initials', 
   avatarSeed,
+  photoURL,
+  avatarType = 'api',
   theme = 'dark',
   size = 'md', 
   className = '' 
@@ -24,7 +28,7 @@ export function Avatar({
   // Reinicia o estado de erro se a url do avatar mudar
   useEffect(() => {
     setHasError(false);
-  }, [avatarStyle, avatarSeed, email, displayName]);
+  }, [avatarStyle, avatarSeed, photoURL, avatarType, email, displayName]);
 
   const sizeClasses = {
     xs: 'w-6 h-6 text-[10px]',
@@ -41,12 +45,13 @@ export function Avatar({
     return '0f172a,1e293b,334155,475569';
   };
 
-  // Se houver avatarSeed customizado, usa ele como seed principal para mudar a aparência.
-  // Caso contrário, cai de volta para o email ou displayName do colaborador.
+  // Se o modo for customizado e houver foto válida, exibe a foto do perfil enviada
+  const isCustomPhoto = avatarType === 'custom' && !!photoURL;
   const activeSeed = avatarSeed || email || displayName || 'noverde';
   const seed = encodeURIComponent(activeSeed);
   const colors = getThemeColors(theme);
-  const src = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${seed}&backgroundColor=${colors}`;
+  const apiSrc = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${seed}&backgroundColor=${colors}`;
+  const src = isCustomPhoto ? photoURL : apiSrc;
 
   // Calcula iniciais para fallback
   const initials = displayName
@@ -60,7 +65,7 @@ export function Avatar({
     : 'U';
 
   return (
-    <div className={`rounded-full border border-white/5 overflow-hidden shrink-0 flex items-center justify-center bg-slate-900 text-sky-500 font-bold ${sizeClasses[size]} ${className}`}>
+    <div className={`rounded-full border border-white/10 overflow-hidden shrink-0 flex items-center justify-center bg-slate-900 text-sky-500 font-bold ${sizeClasses[size]} ${className}`}>
       {!hasError ? (
         <img 
           src={src} 
