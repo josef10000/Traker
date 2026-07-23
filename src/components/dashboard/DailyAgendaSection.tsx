@@ -141,16 +141,18 @@ export const DailyAgendaSection = ({
                     <td className="px-4 py-3 font-bold text-white max-w-[160px] truncate" title={agreement.clientName}>
                       {agreement.clientName || 'Cliente sem nome'}
                     </td>
-                    <td 
-                      className="px-4 py-3 font-mono cursor-pointer hover:text-sky-400 transition-colors"
-                      onClick={() => handleCopyCpf(agreement.clientCpf)}
-                      title="Clique para copiar CPF"
-                    >
-                      <span className="underline decoration-dashed decoration-sky-500/40 underline-offset-4 font-bold">{agreement.clientCpf}</span>
+                    <td className="px-4 py-3 font-mono">
+                      <button
+                        onClick={() => handleCopyCpf(agreement.clientCpf)}
+                        className="text-xs font-mono text-slate-300 hover:text-indigo-400 font-medium cursor-pointer transition-colors"
+                        title="Clique para copiar CPF"
+                      >
+                        {agreement.clientCpf}
+                      </button>
                     </td>
                     <td className="px-4 py-3 font-mono">
                       <div className="flex items-center gap-1.5">
-                        <span>{agreement.phone || 'Sem tel'}</span>
+                        <span className="text-slate-300">{agreement.phone || 'Sem tel'}</span>
                         {agreement.phone && (
                           <a
                             href={`https://wa.me/${agreement.phone.replace(/\D/g, '')}`}
@@ -166,7 +168,7 @@ export const DailyAgendaSection = ({
                     </td>
                     <td className="px-4 py-3 max-w-[250px]">
                       <div className="space-y-0.5">
-                        <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
                           <Clock size={10} />
                           {formattedTime}
                         </span>
@@ -178,7 +180,7 @@ export const DailyAgendaSection = ({
                         {onConfirmContact && (
                           <button
                             onClick={() => onConfirmContact(agreement)}
-                            className="px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 text-[10px] font-bold rounded-lg transition-colors cursor-pointer border border-sky-500/30 active:scale-95"
+                            className="px-2.5 py-1 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-[11px] font-medium rounded-lg transition-all cursor-pointer border border-slate-700 active:scale-95 flex items-center gap-1"
                             title="Confirmar que entrou em contato"
                           >
                             📞 Contatado
@@ -186,7 +188,7 @@ export const DailyAgendaSection = ({
                         )}
                         <button
                           onClick={() => onAttend(agreement)}
-                          className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold uppercase rounded-lg transition-colors cursor-pointer shadow-sm active:scale-95"
+                          className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[11px] font-semibold rounded-lg transition-all cursor-pointer border border-indigo-500/30 active:scale-95 flex items-center gap-1"
                           title="Registrar Acordo"
                         >
                           🤝 Acordo
@@ -194,7 +196,7 @@ export const DailyAgendaSection = ({
                         {onDeleteFromAgenda && (
                           <button
                             onClick={() => onDeleteFromAgenda(agreement)}
-                            className="px-2 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-[10px] font-bold rounded-lg transition-colors cursor-pointer border border-rose-500/30 active:scale-95"
+                            className="px-2 py-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 text-[11px] font-medium rounded-lg transition-all cursor-pointer border border-transparent hover:border-rose-500/20 active:scale-95 flex items-center gap-1"
                             title="Excluir da Agenda do Dia"
                           >
                             🗑️ Excluir
