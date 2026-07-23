@@ -3,6 +3,7 @@ import { doc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, AgreementStatus } from '../../types';
 import { CustomSelect } from '../ui/CustomSelect';
+import { uploadImage } from '../../lib/imageUpload';
 import { 
   Lifebuoy, 
   PaperPlane, 
@@ -14,7 +15,10 @@ import {
   X,
   Lock,
   ClipboardText,
-  Check
+  Check,
+  Image as ImageIcon,
+  Trash,
+  ArrowsOut
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -91,7 +95,40 @@ export const SupportTab = ({
   const [category, setCategory] = useState('Dúvida');
   const [priority, setPriority] = useState('media');
   const [message, setMessage] = useState('');
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Manipulador de upload de arquivo ou print colado via Ctrl+V
+  const handleImageFile = async (file: File | Blob) => {
+    setIsUploadingImage(true);
+    try {
+      const url = await uploadImage(file, { folder: 'support_prints' });
+      setAttachmentUrl(url);
+      showToast('Print anexado com sucesso!', 'success');
+    } catch (err) {
+      console.error('Erro ao processar imagem:', err);
+      showToast('Falha ao processar print anexado.', 'error');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          handleImageFile(file);
+          break;
+        }
+      }
+    }
+  };
 
   // Chat réplica
   const [replyMessage, setReplyMessage] = useState('');
@@ -156,10 +193,14 @@ export const SupportTab = ({
           repliedAt: null,
           createdAt: new Date().toISOString()
         };
+        if (attachmentUrl) {
+          (newTicket as any).attachmentUrl = attachmentUrl;
+        }
         setRequests(prev => [newTicket, ...prev]);
         showToast('Chamado de simulação aberto com sucesso!', 'success');
         setSubject('');
         setMessage('');
+        setAttachmentUrl(null);
         setIsSubmitting(false);
       }, 500);
       return;
@@ -177,7 +218,8 @@ export const SupportTab = ({
           category,
           priority,
           subject,
-          message
+          message,
+          attachmentUrl
         })
       });
       const data = await response.json();
@@ -185,6 +227,7 @@ export const SupportTab = ({
         showToast('Chamado aberto com sucesso!', 'success');
         setSubject('');
         setMessage('');
+        setAttachmentUrl(null);
         loadTickets();
       } else {
         showToast('Erro ao abrir chamado: ' + data.error, 'error');
@@ -475,19 +518,72 @@ export const SupportTab = ({
               <textarea
                 required
                 rows={4}
-                placeholder="Descreva detalhadamente sua dúvida ou problema técnico..."
+                placeholder="Descreva detalhadamente sua dúvida ou problema técnico... (Pode colar print com Ctrl+V aqui!)"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onPaste={handlePaste}
                 className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all outline-none text-xs resize-none ${
                   theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                 }`}
               />
             </div>
 
+            {/* ÁREA DE ANEXAR PRINT DE EVIDÊNCIA */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 block">
+                Anexar Print / Evidência (Opcional)
+              </label>
+
+              {attachmentUrl ? (
+                <div className="relative group rounded-2xl overflow-hidden border border-sky-500/30 bg-slate-950/40 p-2 flex items-center gap-3">
+                  <img 
+                    src={attachmentUrl} 
+                    alt="Print anexado" 
+                    className="w-14 h-14 object-cover rounded-xl border border-white/10 cursor-pointer"
+                    onClick={() => setPreviewImage(attachmentUrl)}
+                  />
+                  <div className="flex-1 overflow-hidden">
+                    <span className="text-xs font-bold text-sky-400 block truncate">Print Anexado</span>
+                    <span className="text-[10px] text-slate-400 block">Clique na imagem para ampliar</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAttachmentUrl(null)}
+                    className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all cursor-pointer mr-1"
+                    title="Remover anexo"
+                  >
+                    <Trash size={16} />
+                  </button>
+                </div>
+              ) : (
+                <label className={`w-full p-3 rounded-xl border border-dashed flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                  isUploadingImage ? 'opacity-50 pointer-events-none' : ''
+                } ${
+                  theme === 'dark' 
+                    ? 'border-white/15 bg-white/5 hover:bg-white/10 hover:border-sky-500/50 text-slate-300' 
+                    : 'border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}>
+                  {isUploadingImage ? <CircleNotch size={18} className="animate-spin text-sky-400" /> : <ImageIcon size={18} className="text-sky-400" />}
+                  <span className="text-xs font-semibold">
+                    {isUploadingImage ? 'Processando print...' : 'Anexar Print (ou Cole Ctrl+V)'}
+                  </span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageFile(file);
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full py-4 bg-sky-500 text-white rounded-xl hover:bg-sky-400 transition-all font-bold text-xs active:scale-95 shadow-lg shadow-sky-500/10 flex items-center justify-center gap-2 cursor-pointer"
+              disabled={isSubmitting || isUploadingImage}
+              className="w-full py-4 bg-sky-500 text-white rounded-xl hover:bg-sky-400 transition-all font-bold text-xs active:scale-95 shadow-lg shadow-sky-500/10 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? <CircleNotch className="animate-spin" size={16} /> : <PaperPlane size={16} />}
               {isSubmitting ? 'Enviando chamado...' : 'Abrir chamado suporte'}
@@ -624,10 +720,25 @@ export const SupportTab = ({
                   {/* Pergunta Original */}
                   <div className="flex flex-col items-start gap-1 max-w-[85%]">
                     <span className="text-[9px] text-slate-550 dark:text-slate-500 font-bold ml-3">{organizationName} (Você)</span>
-                    <div className={`p-4 rounded-3xl rounded-tl-none border text-xs leading-relaxed shadow-sm ${
+                    <div className={`p-4 rounded-3xl rounded-tl-none border text-xs leading-relaxed shadow-sm space-y-3 ${
                       theme === 'dark' ? 'bg-slate-950 border-white/5 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-800'
                     }`}>
-                      {selectedRequest.message}
+                      <p>{selectedRequest.message}</p>
+                      {selectedRequest.attachmentUrl && (
+                        <div className="mt-2 pt-2 border-t border-white/10">
+                          <span className="text-[10px] font-bold text-sky-400 block mb-1">Evidência Anexada:</span>
+                          <div 
+                            onClick={() => setPreviewImage(selectedRequest.attachmentUrl!)}
+                            className="relative group inline-block rounded-xl overflow-hidden border border-sky-500/30 cursor-pointer max-w-[240px]"
+                          >
+                            <img src={selectedRequest.attachmentUrl} alt="Print da evidência" className="w-full h-32 object-cover" />
+                            <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
+                              <ArrowsOut size={16} />
+                              Ampliar Print
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -775,6 +886,41 @@ export const SupportTab = ({
                   {isCanceling ? 'Cancelando...' : 'Confirmar e Cancelar'}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Lightbox de Zoom de Imagem */}
+      <AnimatePresence>
+        {previewImage && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setPreviewImage(null)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-md cursor-pointer"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl max-h-[90vh] z-10 flex flex-col items-center justify-center space-y-3"
+            >
+              <img 
+                src={previewImage} 
+                alt="Visualização do Print" 
+                className="max-w-full max-h-[80vh] object-contain rounded-2xl border border-white/20 shadow-2xl" 
+              />
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer border border-white/10"
+              >
+                <X size={16} />
+                Fechar Imagem
+              </button>
             </motion.div>
           </div>
         )}

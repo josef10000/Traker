@@ -263,6 +263,7 @@ export interface BackOfficeNote {
   authorId: string;
   authorName: string;
   content: string;
+  attachmentUrl?: string;
   createdAt: string;
 }
 
@@ -291,6 +292,8 @@ export interface BackOfficeClient {
   dueDate: string;
   customFields: Record<string, string>;
   notes: BackOfficeNote[];
+  attachmentUrl?: string;
+  attachments?: string[];
   status: 'pending' | 'in_progress' | 'treated' | 'ignored';
   createdAt: string;
   updatedAt: string;

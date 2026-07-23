@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { uploadImage } from '../../lib/imageUpload';
 import { 
   FileCsv as FileSpreadsheet, 
   UploadSimple, 
@@ -19,7 +20,9 @@ import {
   ArrowsDownUp,
   SlidersHorizontal,
   Eye,
-  EyeSlash
+  EyeSlash,
+  Image as ImageIcon,
+  ArrowsOut
 } from '@phosphor-icons/react';
 import { 
   collection, 
@@ -131,7 +134,39 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   // Gaveta Lateral (Drawer) de Notas
   const [activeClientForNotes, setActiveClientForNotes] = useState<BackOfficeClient | null>(null);
   const [newNoteText, setNewNoteText] = useState('');
+  const [noteAttachmentUrl, setNoteAttachmentUrl] = useState<string | null>(null);
+  const [isUploadingNoteImage, setIsUploadingNoteImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
+
+  const handleNoteImageFile = async (file: File | Blob) => {
+    setIsUploadingNoteImage(true);
+    try {
+      const url = await uploadImage(file, { folder: 'backoffice_prints' });
+      setNoteAttachmentUrl(url);
+      showToast('Print da tratativa anexado com sucesso!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Falha ao processar print.', 'error');
+    } finally {
+      setIsUploadingNoteImage(false);
+    }
+  };
+
+  const handleNotePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          handleNoteImageFile(file);
+          break;
+        }
+      }
+    }
+  };
 
   // Listener para carregar as importações da organização
   useEffect(() => {
@@ -630,15 +665,17 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     setIsSavingNote(true);
 
     if (profile.organizationId === 'sandbox-test') {
-      const newNote = {
+      const newNote: BackOfficeNote = {
         id: `note-${Date.now()}`,
         authorId: profile.uid,
         authorName: profile.displayName || 'Colaborador',
         content: newNoteText.trim(),
+        attachmentUrl: noteAttachmentUrl || undefined,
         createdAt: new Date().toISOString()
       };
       sandboxService.addBackofficeClientNote(activeClientForNotes.id, newNote);
       setNewNoteText('');
+      setNoteAttachmentUrl(null);
       showToast('Nota adicionada ao cliente em memória!', 'success');
       setIsSavingNote(false);
       return;
@@ -650,6 +687,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         authorId: profile.uid,
         authorName: profile.displayName || 'Colaborador',
         content: newNoteText.trim(),
+        attachmentUrl: noteAttachmentUrl || undefined,
         createdAt: new Date().toISOString()
       };
 
@@ -662,6 +700,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       });
 
       setNewNoteText('');
+      setNoteAttachmentUrl(null);
       showToast('Nota adicionada ao cliente.', 'success');
     } catch (err) {
       console.error(err);
@@ -1494,12 +1533,27 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 </div>
               ) : (
                 activeClientForNotes.notes.map(note => (
-                  <div key={note.id} className="p-3 bg-slate-900 border border-white/[0.03] rounded-2xl space-y-1.5">
+                  <div key={note.id} className="p-3 bg-slate-900 border border-white/[0.03] rounded-2xl space-y-2">
                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
                       <span>{note.authorName}</span>
                       <span>{new Date(note.createdAt).toLocaleString('pt-BR')}</span>
                     </div>
                     <p className="text-xs text-slate-300 leading-normal font-medium">{note.content}</p>
+                    {note.attachmentUrl && (
+                      <div className="pt-2 border-t border-white/5">
+                        <span className="text-[9px] font-bold text-sky-400 block mb-1">Print Anexado:</span>
+                        <div 
+                          onClick={() => setPreviewImage(note.attachmentUrl!)}
+                          className="relative group inline-block rounded-xl overflow-hidden border border-sky-500/30 cursor-pointer max-w-[200px]"
+                        >
+                          <img src={note.attachmentUrl} alt="Print da tratativa" className="w-full h-24 object-cover" />
+                          <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-[10px] font-bold">
+                            <ArrowsOut size={14} />
+                            Ampliar Print
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -1507,12 +1561,59 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
           </div>
 
           {/* Campo de Input */}
-          <div className="pt-4 border-t border-white/[0.05] space-y-2 shrink-0">
+          <div className="pt-4 border-t border-white/[0.05] space-y-3 shrink-0">
+            {/* Pré-visualização de anexo antes de enviar */}
+            {noteAttachmentUrl ? (
+              <div className="relative rounded-xl overflow-hidden border border-sky-500/30 bg-slate-900 p-2 flex items-center gap-3">
+                <img 
+                  src={noteAttachmentUrl} 
+                  alt="Anexo de tratativa" 
+                  className="w-12 h-12 object-cover rounded-lg border border-white/10 cursor-pointer"
+                  onClick={() => setPreviewImage(noteAttachmentUrl)}
+                />
+                <div className="flex-1 overflow-hidden">
+                  <span className="text-xs font-bold text-sky-400 block truncate">Print Anexado à Nota</span>
+                  <span className="text-[9px] text-slate-500 block">Clique para ampliar</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNoteAttachmentUrl(null)}
+                  className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer"
+                  title="Remover print"
+                >
+                  <Trash size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed text-xs font-semibold cursor-pointer transition-all ${
+                  isUploadingNoteImage ? 'opacity-50 pointer-events-none' : ''
+                } ${
+                  theme === 'dark' 
+                    ? 'border-white/10 bg-white/5 hover:bg-white/10 text-slate-300' 
+                    : 'border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}>
+                  {isUploadingNoteImage ? <Spinner size={14} className="animate-spin text-sky-400" /> : <ImageIcon size={14} className="text-sky-400" />}
+                  <span>{isUploadingNoteImage ? 'Processando print...' : 'Anexar Print (ou Ctrl+V)'}</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleNoteImageFile(file);
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+
             <div className="relative">
               <textarea
-                placeholder="Escreva uma nova nota sobre o cliente..."
+                placeholder="Escreva uma nova nota sobre o cliente... (Cole o print diretamente com Ctrl+V!)"
                 value={newNoteText}
                 onChange={(e) => setNewNoteText(e.target.value)}
+                onPaste={handleNotePaste}
                 className="w-full h-24 p-3 bg-slate-900 border border-white/[0.06] rounded-2xl text-xs text-white placeholder-slate-600 outline-none focus:border-orange-500 resize-none"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -1523,7 +1624,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
               />
               <button
                 onClick={handleAddNote}
-                disabled={isSavingNote || !newNoteText.trim()}
+                disabled={isSavingNote || isUploadingNoteImage || (!newNoteText.trim() && !noteAttachmentUrl)}
                 className={`absolute bottom-3 right-3 p-2 text-white rounded-xl hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 ${
                   theme === 'dark' 
                     ? 'bg-gradient-to-r from-orange-600 to-amber-500 shadow shadow-orange-500/10' 
@@ -1549,6 +1650,31 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         onConfirm={confirmDialog.onConfirm}
         onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Modal Lightbox de Zoom de Print */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md cursor-pointer animate-fade-in"
+            onClick={() => setPreviewImage(null)}
+          />
+          <div className="relative max-w-4xl max-h-[90vh] z-10 flex flex-col items-center justify-center space-y-3 animate-scale-in">
+            <img 
+              src={previewImage} 
+              alt="Print da tratativa" 
+              className="max-w-full max-h-[80vh] object-contain rounded-2xl border border-white/20 shadow-2xl" 
+            />
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer border border-white/10"
+            >
+              <XIcon size={16} />
+              Fechar Imagem
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
