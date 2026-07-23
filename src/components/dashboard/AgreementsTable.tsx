@@ -242,10 +242,10 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                               }, profile?.name || 'Operador', profile?.organizationId);
                               if (onCopyCpf) onCopyCpf(agreement.id, agreement.clientCpf);
                             }}
-                            className={`text-xs font-mono font-bold tracking-wider px-1.5 py-0.5 rounded-md transition-all cursor-pointer border border-transparent active:scale-95 ${
+                            className={`text-xs font-mono font-medium tracking-wider px-1 py-0.5 rounded-md transition-all cursor-pointer ${
                               theme === 'dark' 
-                                ? 'text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 hover:border-sky-500/30' 
-                                : 'text-slate-700 hover:text-sky-600 hover:bg-sky-50 hover:border-sky-200'
+                                ? 'text-slate-300 hover:text-indigo-400' 
+                                : 'text-slate-700 hover:text-indigo-600'
                             }`}
                             title="Clique para copiar o CPF limpo (somente números)"
                           >
@@ -257,8 +257,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             onClick={() => toggleRevealCpf(agreement.id, agreement.clientCpf)}
                             className={`p-1 rounded-md transition-all cursor-pointer ${
                               theme === 'dark' 
-                                ? 'text-slate-400 hover:text-sky-400 hover:bg-sky-400/10' 
-                                : 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
+                                ? 'text-slate-400 hover:text-white hover:bg-slate-800' 
+                                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                             }`}
                             title={revealedCpfs[agreement.id] ? "Ocultar CPF completo" : "Revelar CPF completo"}
                           >
@@ -270,8 +270,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             onClick={() => handleClientClick(agreement.clientCpf)}
                             className={`p-1 rounded-md transition-all cursor-pointer ${
                               theme === 'dark' 
-                                ? 'text-slate-400 hover:text-sky-400 hover:bg-sky-400/10' 
-                                : 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
+                                ? 'text-slate-400 hover:text-white hover:bg-slate-800' 
+                                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                             }`}
                             title="Ver Histórico de Negociações do Cliente"
                           >
@@ -377,10 +377,10 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                               {agreement.status !== AgreementStatus.PAID && (
                                 <button 
                                   onClick={() => handleEfetivar(agreement.id)}
-                                  className="p-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-xs border border-emerald-500/20 active:scale-95 cursor-pointer"
+                                  className="p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-500/20 active:scale-95 cursor-pointer"
                                   title="Efetivar Pagamento (Marcar acordo como pago)"
                                 >
-                                  <Check size={16} weight="bold" />
+                                  <Check size={14} weight="bold" />
                                 </button>
                               )}
                               
@@ -388,16 +388,16 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                               {agreement.status !== AgreementStatus.PAID && (
                                 <button 
                                   onClick={() => handleToggleChecked(agreement.id, agreement.lastCheckedAt)}
-                                  className={`p-2 rounded-xl transition-all border active:scale-95 cursor-pointer ${
+                                  className={`p-1.5 rounded-lg transition-all border active:scale-95 cursor-pointer ${
                                     isCheckedToday 
-                                      ? 'bg-sky-500 text-white border-sky-400 shadow-md shadow-sky-500/20' 
+                                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs' 
                                       : theme === 'dark' 
-                                        ? 'bg-slate-900 border-white/10 text-slate-400 hover:text-sky-400 hover:bg-sky-500/10' 
-                                        : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-slate-200'
+                                        ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700' 
+                                        : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                                   }`}
                                   title={isCheckedToday ? 'Remover marcação de conferido hoje' : 'Conferir Acordo (Marcar como checado no turno de hoje)'}
                                 >
-                                  <Search size={16} weight="bold" />
+                                  <Search size={14} weight="bold" />
                                 </button>
                               )}
 
@@ -407,27 +407,27 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                   setEditingAgreement(agreement);
                                   setIsModalOpen(true);
                                 }}
-                                className={`p-2 rounded-xl transition-all border active:scale-95 cursor-pointer ${
+                                className={`p-1.5 rounded-lg transition-all border active:scale-95 cursor-pointer ${
                                   theme === 'dark' 
-                                    ? 'bg-slate-900 border-white/10 text-slate-400 hover:text-sky-400 hover:bg-sky-500/10' 
-                                    : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-slate-200'
+                                    ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700' 
+                                    : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                                 }`}
                                 title="Editar Acordo (Alterar dados, valores ou observações)"
                               >
-                                <Edit3 size={16} weight="bold" />
+                                <Edit3 size={14} weight="bold" />
                               </button>
 
                               {/* Slot 4: Excluir Acordo */}
                               <button 
                                 onClick={() => handleDelete(agreement.id)}
-                                className={`p-2 rounded-xl transition-all border active:scale-95 cursor-pointer ${
+                                className={`p-1.5 rounded-lg transition-all border active:scale-95 cursor-pointer ${
                                   theme === 'dark' 
-                                    ? 'bg-slate-900 border-white/10 text-rose-400 hover:bg-rose-500 hover:text-white' 
-                                    : 'bg-slate-100 border-slate-200 text-rose-600 hover:bg-rose-500 hover:text-white'
+                                    ? 'bg-transparent border-transparent text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20' 
+                                    : 'bg-transparent border-transparent text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200'
                                 }`}
                                 title="Excluir Acordo (Remover registro permanentemente)"
                               >
-                                <Trash2 size={16} weight="bold" />
+                                <Trash2 size={14} weight="bold" />
                               </button>
                             </>
                           );
