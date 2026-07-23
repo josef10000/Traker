@@ -1576,6 +1576,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                               email={member.email}
                               avatarStyle={member.avatarStyle}
                               avatarSeed={member.avatarSeed}
+                              photoURL={member.photoURL}
+                              avatarType={member.avatarType}
                               theme={member.theme}
                               size="md"
                             />
@@ -1995,6 +1997,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                               email={op.email}
                               avatarStyle={op.avatarStyle}
                               avatarSeed={op.avatarSeed}
+                              photoURL={op.photoURL}
+                              avatarType={op.avatarType}
                               theme={op.theme}
                               size="sm"
                             />

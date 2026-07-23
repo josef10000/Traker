@@ -152,6 +152,8 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                       email={collab.email}
                       avatarStyle={collab.avatarStyle}
                       avatarSeed={collab.avatarSeed}
+                      photoURL={collab.photoURL}
+                      avatarType={collab.avatarType}
                       theme={theme}
                       size="xs"
                     />

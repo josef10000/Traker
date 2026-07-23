@@ -2581,6 +2581,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               email={m?.email}
                               avatarStyle={m?.avatarStyle}
                               avatarSeed={m?.avatarSeed}
+                              photoURL={m?.photoURL}
+                              avatarType={m?.avatarType}
                               theme={theme}
                               size="sm"
                               className="w-9 h-9 border-sky-500/30 text-sky-400 bg-sky-500/20"
@@ -3252,6 +3254,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                           email={op.email}
                                           avatarStyle={op.avatarStyle}
                                           avatarSeed={op.avatarSeed}
+                                          photoURL={op.photoURL}
+                                          avatarType={op.avatarType}
                                           theme={theme}
                                           size="sm"
                                         />

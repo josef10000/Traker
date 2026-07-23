@@ -216,6 +216,8 @@ export const TeamsManagementSection: React.FC<TeamsManagementSectionProps> = ({
                         email={member.email}
                         avatarStyle={member.avatarStyle}
                         avatarSeed={member.avatarSeed}
+                        photoURL={member.photoURL}
+                        avatarType={member.avatarType}
                         theme={theme}
                         size="md"
                       />
