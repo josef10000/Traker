@@ -27,6 +27,7 @@ import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { markStatsStale } from '../../lib/statsCache';
 import { 
   Agreement, 
+  AgreementNote,
   AgreementStatus, 
   AgreementOrigin, 
   AgreementType,
@@ -216,7 +217,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       await updateDoc(doc(db, 'agreements', agreementId), { notesHistory: updatedHistory });
     }
 
-    setMonthAgreements(prev => prev.map(a => a.id === agreementId ? { ...a, notesHistory: updatedHistory } : a));
+    if (refreshAgreements) {
+      refreshAgreements();
+    }
     if (notesModalAgreement?.id === agreementId) {
       setNotesModalAgreement(prev => prev ? { ...prev, notesHistory: updatedHistory } : null);
     }
