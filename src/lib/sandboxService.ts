@@ -61,6 +61,11 @@ class SandboxService {
     };
   }
 
+  // Força notificação para todos os ouvintes inscritos
+  public forceNotify(): void {
+    this.notify();
+  }
+
   private notifyScheduled = false;
 
   // Notifica todos os inscritos (com batching em microtask para otimizar a performance no Modo Demo)

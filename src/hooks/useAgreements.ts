@@ -191,10 +191,22 @@ export const useAgreements = ({
   }, []);
 
   /** Dispara uma nova busca manual dos dados do mês (sempre vai ao servidor, ignora cache) */
-  const refreshAgreements = useCallback(() => {
+  const refreshAgreements = useCallback(async () => {
+    setIsRefreshing(true);
+    setLastRefreshed(new Date());
+
+    if (organizationId === 'sandbox-test' || isSandbox) {
+      sandboxService.forceNotify();
+      await new Promise(resolve => setTimeout(resolve, 450));
+      if (isMounted.current) {
+        setIsRefreshing(false);
+      }
+      return;
+    }
+
     forceServerRefreshRef.current = true;
     setRefreshTrigger(prev => prev + 1);
-  }, []);
+  }, [organizationId, isSandbox]);
 
   /** Auto-refresh silencioso a cada 30 minutos */
   useEffect(() => {

@@ -571,6 +571,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
     refreshAgreements();
   }, [profile.organizationId, teamsToWatch, selectedMonth, selectedYear, refreshAgreements]);
 
+  const handleManualRefresh = React.useCallback(async () => {
+    try {
+      showToast('Atualizando dados do sistema...', 'info');
+      doMarkStale();
+      if (refreshAgreements) {
+        await refreshAgreements();
+      }
+      setTimeout(() => {
+        showToast('Dados atualizados com sucesso!', 'success');
+      }, 400);
+    } catch (err) {
+      console.error('[Dashboard] Erro ao atualizar dados:', err);
+      showToast('Erro ao atualizar dados.', 'error');
+    }
+  }, [doMarkStale, refreshAgreements, showToast]);
+
   const handleSaveLeadNote = async (agreementId: string, noteData: Omit<AgreementNote, 'id' | 'createdAt'>) => {
     const newNote: AgreementNote = {
       id: `note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -2344,7 +2360,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               setIsModalOpen={setIsModalOpen}
               showToast={showToast}
               onSearchCpf={handleSearchCpf}
-              onRefreshData={refreshAgreements}
+              onRefreshData={handleManualRefresh}
               lastRefreshed={lastRefreshed}
               isRefreshing={isRefreshing}
               organizationName={organizationName}

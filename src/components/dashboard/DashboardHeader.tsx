@@ -289,21 +289,22 @@ export const DashboardHeader = ({
 
           {/* Botão de Atualizar Dados */}
           <button
+            type="button"
             onClick={onRefreshData}
             disabled={isRefreshing}
-            className={`transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center justify-center ${
+            className={`transition-all border shrink-0 cursor-pointer active:scale-90 flex items-center justify-center relative group ${
               isRefreshing
-                ? 'text-primary bg-primary/10 border-primary/20 cursor-wait w-10 h-10 rounded-full'
+                ? 'text-primary bg-primary/10 border-primary/30 cursor-wait w-10 h-10 rounded-xl shadow-lg shadow-primary/10'
                 : theme === 'dark'
-                  ? 'p-2 rounded-xl border-transparent text-slate-500 hover:text-primary hover:bg-primary/10'
-                  : 'w-10 h-10 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-750 bg-white'
+                  ? 'w-10 h-10 rounded-xl border-white/5 bg-white/5 text-slate-300 hover:text-primary hover:bg-primary/10 hover:border-primary/20'
+                  : 'w-10 h-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-primary bg-white shadow-xs'
             }`}
-            title={`Atualizar dados do mês (Atualizado: ${formatLastRefreshed(lastRefreshed)})`}
+            title={`Atualizar dados do sistema (Última atualização: ${formatLastRefreshed(lastRefreshed)})`}
           >
             <ArrowsClockwise
-              size={16}
+              size={18}
               weight="duotone"
-              className={isRefreshing ? 'animate-spin' : ''}
+              className={`transition-transform duration-500 ${isRefreshing ? 'animate-spin text-primary' : 'group-hover:rotate-180'}`}
             />
           </button>
 
