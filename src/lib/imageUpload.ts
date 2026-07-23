@@ -75,6 +75,22 @@ export async function compressImage(
 }
 
 /**
+ * Converte dataUrl de imagem para Blob em memória sem fazer requisição fetch (evita erro de CSP)
+ */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(',');
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/webp';
+  const bstr = atob(parts[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
+/**
  * Tenta fazer o upload para o Cloudflare R2 caso as variáveis VITE_R2_* estejam configuradas.
  * Se não estiverem ou em ambiente Sandbox, retorna a string compactada com sucesso.
  */
@@ -100,9 +116,8 @@ export async function uploadImage(
       const cleanPublicBaseUrl = publicUrl.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
       const fileUrl = `${cleanPublicBaseUrl}/${filename}`;
 
-      // Converte dataUrl de volta para blob para envio HTTP PUT
-      const response = await fetch(compressedDataUrl);
-      const blob = await response.blob();
+      // Converte dataUrl em Blob em memória (sem fetch de data:)
+      const blob = dataUrlToBlob(compressedDataUrl);
 
       // Envio via HTTP PUT
       const uploadResponse = await fetch(fileUrl, {
@@ -117,7 +132,7 @@ export async function uploadImage(
         return fileUrl;
       }
     } catch (error) {
-      console.warn('Upload direto via R2 indisponível ou bloqueado por CORS. Utilizando armazenamento otimizado integrado:', error);
+      console.info('Upload direto R2 não configurado ou aguardando credenciais. Utilizando imagem otimizada:', error);
     }
   }
 
