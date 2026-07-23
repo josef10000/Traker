@@ -109,17 +109,17 @@ export async function uploadImage(
   const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
   const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
 
-  // Se o R2 estiver com domínio público configurado, realiza a requisição de upload
+  // Se o R2 estiver com domínio público configurado, realiza a tentativa de upload
   if (accountId && bucketName && accessKeyId && secretAccessKey && publicUrl) {
     try {
       const filename = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.webp`;
       const cleanPublicBaseUrl = publicUrl.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
       const fileUrl = `${cleanPublicBaseUrl}/${filename}`;
 
-      // Converte dataUrl em Blob em memória (sem fetch de data:)
+      // Converte dataUrl em Blob em memória
       const blob = dataUrlToBlob(compressedDataUrl);
 
-      // Envio via HTTP PUT
+      // Envio via HTTP PUT para o R2
       const uploadResponse = await fetch(fileUrl, {
         method: 'PUT',
         headers: {
@@ -132,10 +132,13 @@ export async function uploadImage(
         return fileUrl;
       }
     } catch (error) {
-      console.info('Upload direto R2 não configurado ou aguardando credenciais. Utilizando imagem otimizada:', error);
+      console.info(
+        'Upload direto R2 indisponível ou bloqueado por CORS no Cloudflare R2 (configure o CORS do Bucket para permitir seu domínio). Utilizando armazenamento base64 otimizado:',
+        error
+      );
     }
   }
 
-  // Fallback seguro: retorna a imagem compactada otimizada
+  // Fallback seguro: retorna a imagem compactada otimizada em WebP
   return compressedDataUrl;
 }
