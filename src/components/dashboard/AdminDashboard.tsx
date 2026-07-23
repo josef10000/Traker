@@ -1110,7 +1110,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           confirmDialog.onConfirm();
           setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         }}
-        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   );
