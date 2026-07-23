@@ -29,7 +29,8 @@ import {
   Calculator,
   Camera,
   UploadSimple,
-  CircleNotch
+  CircleNotch,
+  Pencil
 } from '@phosphor-icons/react';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -1336,7 +1337,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               </div>
 
               <form onSubmit={handleSave} className="space-y-6">
-                {/* Pré-visualização do Avatar */}
+                {/* Pré-visualização do Avatar / Foto Grande com Ações Sobrepostas */}
                 <div className="flex flex-col items-center justify-center space-y-3 pb-2">
                   <div className="relative group">
                     <Avatar
@@ -1350,7 +1351,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       size="xl"
                       className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30 w-24 h-24"
                     />
-                    {avatarType === 'api' && (
+
+                    {/* Botão Canto Inferior Direito: Sorteia Avatar (se modo API) ou Envia/Troca Foto (se modo Foto) */}
+                    {avatarType === 'api' ? (
                       <button
                         type="button"
                         onClick={() => setAvatarSeed(Math.random().toString(36).substring(7))}
@@ -1359,17 +1362,48 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       >
                         <Palette size={14} />
                       </button>
+                    ) : (
+                      <label 
+                        className={`absolute -bottom-1 -right-1 p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10 ${
+                          isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''
+                        }`}
+                        title={photoURL ? "Trocar Foto de Perfil" : "Enviar Foto de Perfil"}
+                      >
+                        {isUploadingPhoto ? <CircleNotch size={14} className="animate-spin" /> : <Pencil size={14} />}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleProfilePhotoUpload(file);
+                          }}
+                        />
+                      </label>
+                    )}
+
+                    {/* Botão Canto Superior Direito: Excluir Foto (quando em modo foto e com foto ativa) */}
+                    {avatarType === 'custom' && !!photoURL && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteProfilePhoto}
+                        className="absolute -top-1 -right-1 p-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
+                        title="Excluir foto de perfil e voltar ao avatar"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     )}
                   </div>
+
                   <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
-                    {avatarType === 'custom' ? 'Foto de Perfil Personalizada' : 'Avatar Dinâmico da API'}
+                    {avatarType === 'custom' ? (photoURL ? 'Foto de Perfil Personalizada' : 'Nenhuma Foto Enviada (Clique no lápis)') : 'Avatar Dinâmico'}
                   </span>
                 </div>
 
-                {/* Alternância de Modo: Imagem da API vs Foto Própria */}
+                {/* Alternância de Modo: Usar Avatar vs Usar Foto */}
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Opções da Foto de Perfil
+                    Modo de Exibição
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
@@ -1382,7 +1416,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       }`}
                     >
                       <Palette size={16} />
-                      <span>Imagem da API (DiceBear)</span>
+                      <span>Usar Avatar</span>
                     </button>
 
                     <button
@@ -1395,72 +1429,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       }`}
                     >
                       <Camera size={16} />
-                      <span>Usar Foto Própria</span>
+                      <span>Usar Foto</span>
                     </button>
                   </div>
-
-                  {/* Gerenciamento de Foto Personalizada */}
-                  {avatarType === 'custom' && (
-                    <div className="pt-3 border-t border-white/5 space-y-3">
-                      {photoURL ? (
-                        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-950/60 border border-white/10">
-                          <div className="flex items-center gap-3">
-                            <img src={photoURL} alt="Foto de perfil" className="w-10 h-10 object-cover rounded-lg border border-white/10" />
-                            <div>
-                              <span className="text-xs font-bold text-white block">Foto Ativa</span>
-                              <span className="text-[10px] text-slate-400 block">Personalizada enviada</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <label className={`px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                              isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''
-                            }`}>
-                              {isUploadingPhoto ? <CircleNotch size={14} className="animate-spin" /> : <UploadSimple size={14} />}
-                              <span>{isUploadingPhoto ? 'Enviando...' : 'Editar Foto'}</span>
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleProfilePhotoUpload(file);
-                                }}
-                              />
-                            </label>
-
-                            <button
-                              type="button"
-                              onClick={handleDeleteProfilePhoto}
-                              className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                              title="Excluir foto e voltar para o avatar da API"
-                            >
-                              <Trash2 size={14} />
-                              <span>Excluir</span>
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <label className={`w-full p-4 rounded-xl border border-dashed border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 text-purple-300 flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                          isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''
-                        }`}>
-                          {isUploadingPhoto ? <CircleNotch size={18} className="animate-spin text-purple-400" /> : <UploadSimple size={18} className="text-purple-400" />}
-                          <span className="text-xs font-bold">
-                            {isUploadingPhoto ? 'Enviando sua foto de perfil...' : 'Clique para Enviar Foto de Perfil'}
-                          </span>
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleProfilePhotoUpload(file);
-                            }}
-                          />
-                        </label>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
