@@ -31,64 +31,62 @@ export const PdiManager: React.FC<PdiManagerProps> = ({
           return (
             <div 
               key={p.id}
-              className={`p-6 rounded-3xl border flex flex-col justify-between gap-4 transition-all shadow-md ${
+              className={`p-5 rounded-2xl border flex flex-col justify-between gap-4 transition-all ${
                 p.status === 'completed' 
-                  ? 'bg-emerald-500/5 border-emerald-500/20 shadow-emerald-500/5' 
+                  ? 'bg-emerald-500/5 border-emerald-500/20' 
                   : p.status === 'failed' || p.status === 'expired'
-                    ? 'bg-rose-500/5 border-rose-500/20 shadow-rose-500/5'
-                    : theme === 'dark' ? 'bg-slate-900/60 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                    ? 'bg-rose-500/5 border-rose-500/20'
+                    : theme === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900 shadow-sm'
               }`}
             >
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 {/* Header do Card */}
                 <div className="flex justify-between items-start gap-2">
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 block">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
                       Colaborador
                     </span>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                       {opName}
                     </h4>
                   </div>
 
-                  <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-xl border tracking-wider shadow-2xs ${
+                  <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border tracking-wider ${
                     p.status === 'completed'
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40'
-                      : p.status === 'failed'
-                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 border-rose-300 dark:border-rose-500/40'
-                        : p.status === 'expired'
-                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 border-rose-300 dark:border-rose-500/40'
-                          : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border-amber-300 dark:border-amber-500/40'
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      : p.status === 'failed' || p.status === 'expired'
+                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                   }`}>
                     {p.status === 'completed' ? 'Cumprido' : p.status === 'failed' ? 'Não Cumprido' : p.status === 'expired' ? 'Expirado' : 'Pendente'}
                   </span>
                 </div>
 
                 {/* Competência em Foco */}
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 block">
-                    Competência em Foco
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Foco:
                   </span>
-                  <span className="text-xs font-black text-teal-600 dark:text-teal-400 mt-0.5 block">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                     {p.competenceName}
                   </span>
                 </div>
 
-                {/* Citação do Plano de Ação */}
-                <div className={`p-3.5 rounded-2xl border text-xs italic font-medium leading-relaxed shadow-xs ${
+                {/* Plano de Ação com Barra Lateral */}
+                <div className={`p-3 rounded-r-xl border-l-2 border-l-indigo-500 text-xs font-normal leading-relaxed ${
                   theme === 'dark'
-                    ? 'bg-slate-950/60 border-white/10 text-slate-200'
-                    : 'bg-slate-100 border-slate-200 text-slate-800'
+                    ? 'bg-slate-950/40 text-slate-300'
+                    : 'bg-slate-50 text-slate-700'
                 }`}>
-                  &quot;{p.actionPlan}&quot;
+                  {p.actionPlan}
                 </div>
               </div>
 
               {/* Rodapé e Ações */}
-              <div className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-t pt-3.5 ${
-                theme === 'dark' ? 'border-white/10' : 'border-slate-100'
+              <div className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-t pt-3 ${
+                theme === 'dark' ? 'border-slate-800/80' : 'border-slate-100'
               }`}>
-                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
                   <Calendar size={13} className="text-slate-400" />
                   Limite: {p.dueDate.split('-').reverse().join('/')}
                 </span>
@@ -97,19 +95,19 @@ export const PdiManager: React.FC<PdiManagerProps> = ({
                   <div className="flex gap-2 self-end sm:self-auto">
                     <button
                       onClick={() => onResolvePdi(p.id, 'completed')}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                       title="Marcar como Cumprido"
                     >
-                      <CheckCircle2 size={12} weight="bold" />
-                      Cumprido
+                      <CheckCircle2 size={13} weight="bold" />
+                      <span>Cumprido</span>
                     </button>
                     <button
                       onClick={() => onResolvePdi(p.id, 'failed')}
-                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-rose-600/20 flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                       title="Marcar como Não Cumprido"
                     >
-                      <X size={12} weight="bold" />
-                      Não Cumprido
+                      <X size={13} weight="bold" />
+                      <span>Não Cumprido</span>
                     </button>
                   </div>
                 )}
