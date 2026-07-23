@@ -1036,7 +1036,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
         </div>
 
         {/* Coluna da Direita (Conteúdo) */}
-        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-slate-950/20 relative flex flex-col">
+        <div className="flex-1 p-5 md:p-6 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-slate-950/20 relative flex flex-col">
           {/* Botão de Fechar no topo superior direito */}
           <button 
             type="button"
@@ -1330,15 +1330,15 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
 
           {/* ABA: MEU PERFIL */}
           {activeTab === 'profile' && (
-            <div className="space-y-6 max-w-2xl">
+            <div className="space-y-3.5 max-w-xl">
               <div>
-                <h3 className="text-xl font-bold text-white">Meu Perfil</h3>
-                <p className="text-xs text-slate-400 mt-1">Gerencie suas informações cadastrais básicas.</p>
+                <h3 className="text-lg font-bold text-white">Meu Perfil</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">Gerencie suas informações cadastrais básicas.</p>
               </div>
 
-              <form onSubmit={handleSave} className="space-y-6">
+              <form onSubmit={handleSave} className="space-y-3.5">
                 {/* Pré-visualização do Avatar / Foto Grande com Ações Sobrepostas */}
-                <div className="flex flex-col items-center justify-center space-y-3 pb-2">
+                <div className="flex flex-col items-center justify-center space-y-1.5 pb-1">
                   <div className="relative group">
                     <Avatar
                       displayName={displayName}
@@ -1349,7 +1349,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       avatarType={avatarType}
                       theme={profile.theme}
                       size="xl"
-                      className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30 w-24 h-24"
+                      className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30 w-20 h-20"
                     />
 
                     {/* Botão Canto Inferior Direito: Sorteia Avatar (se modo API) ou Envia/Troca Foto (se modo Foto) */}
@@ -1357,19 +1357,19 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       <button
                         type="button"
                         onClick={() => setAvatarSeed(Math.random().toString(36).substring(7))}
-                        className="absolute -bottom-1 -right-1 p-2 bg-primary hover:bg-primary/80 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
+                        className="absolute -bottom-1 -right-1 p-1.5 bg-primary hover:bg-primary/80 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
                         title="Gerar Novo Avatar Aleatório"
                       >
-                        <Palette size={14} />
+                        <Palette size={13} />
                       </button>
                     ) : (
                       <label 
-                        className={`absolute -bottom-1 -right-1 p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10 ${
+                        className={`absolute -bottom-1 -right-1 p-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10 ${
                           isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''
                         }`}
                         title={photoURL ? "Trocar Foto de Perfil" : "Enviar Foto de Perfil"}
                       >
-                        {isUploadingPhoto ? <CircleNotch size={14} className="animate-spin" /> : <Pencil size={14} />}
+                        {isUploadingPhoto ? <CircleNotch size={13} className="animate-spin" /> : <Pencil size={13} />}
                         <input 
                           type="file" 
                           accept="image/*" 
@@ -1387,78 +1387,78 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       <button
                         type="button"
                         onClick={handleDeleteProfilePhoto}
-                        className="absolute -top-1 -right-1 p-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
+                        className="absolute -top-1 -right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
                         title="Excluir foto de perfil e voltar ao avatar"
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={11} />
                       </button>
                     )}
                   </div>
 
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">
                     {avatarType === 'custom' ? (photoURL ? 'Foto de Perfil Personalizada' : 'Nenhuma Foto Enviada (Clique no lápis)') : 'Avatar Dinâmico'}
                   </span>
                 </div>
 
                 {/* Alternância de Modo: Usar Avatar vs Usar Foto */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block ml-0.5">
                     Modo de Exibição
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => handleSwitchAvatarType('api')}
-                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         avatarType === 'api'
                           ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-md shadow-sky-500/10'
                           : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <Palette size={16} />
+                      <Palette size={15} />
                       <span>Usar Avatar</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleSwitchAvatarType('custom')}
-                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         avatarType === 'custom'
                           ? 'bg-purple-500/20 border-purple-500 text-purple-300 shadow-md shadow-purple-500/10'
                           : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <Camera size={16} />
+                      <Camera size={15} />
                       <span>Usar Foto</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Nome Completo</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Nome Completo</label>
                     <div className="relative group">
-                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={20} />
+                      <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={18} />
                       <input
                         type="text"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-3.5 text-xs text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
                         placeholder="Seu nome"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Cargo / Função</label>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Cargo / Função</label>
                     <div className="relative group">
-                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={20} />
+                      <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={18} />
                       <input
                         type="text"
                         value={jobTitle}
                         onChange={(e) => setJobTitle(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-3.5 text-xs text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
                         placeholder="Ex: Gerente de Receptivo"
                       />
                     </div>
@@ -1466,8 +1466,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 </div>
 
                 {/* Seletor de Estilo de Avatar */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Estilo do Avatar (DiceBear)</label>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Estilo do Avatar (DiceBear)</label>
                   <CustomSelect
                     value={avatarStyle}
                     onChange={(val) => setAvatarStyle(val)}
@@ -1486,7 +1486,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className={`w-full flex items-center justify-center font-bold py-4 rounded-2xl transition-all shadow-xl active:scale-[0.98] cursor-pointer ${
+                  className={`w-full flex items-center justify-center font-bold py-3 text-xs rounded-xl transition-all shadow-lg active:scale-[0.98] cursor-pointer ${
                     isSaveSuccess
                       ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
                       : 'bg-primary hover:bg-primary/80 disabled:bg-primary/50 text-white shadow-primary/20'
@@ -1494,12 +1494,12 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 >
                   {isSaveSuccess ? (
                     <>
-                      <Check size={20} className="mr-2" />
+                      <Check size={18} className="mr-1.5" />
                       Alterações Salvas!
                     </>
                   ) : (
                     <>
-                      <Save size={20} className="mr-2" />
+                      <Save size={18} className="mr-1.5" />
                       {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </>
                   )}
