@@ -18,7 +18,8 @@ import {
   Scales,
   Info,
   ShieldCheck,
-  Funnel
+  Funnel,
+  Lightbulb
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
 import { db } from '../../lib/firebase';
@@ -469,17 +470,35 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
               <Headset size={15} />
               Dimensionamento & Presença
             </button>
-            <button
-              onClick={() => setActiveTab('forecast')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'forecast'
-                  ? 'bg-[#4f46e5] text-white shadow-xs'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <ChartPie size={15} />
-              Forecast
-            </button>
+            <div className="relative flex items-center group">
+              <button
+                onClick={() => setActiveTab('forecast')}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'forecast'
+                    ? 'bg-[#4f46e5] text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <ChartPie size={15} />
+                Forecast
+              </button>
+              <button
+                type="button"
+                className="p-1 rounded-md text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors cursor-pointer ml-1"
+                title="Como funciona o Forecast de Demanda"
+              >
+                <Lightbulb size={15} weight="fill" />
+              </button>
+              {/* Tooltip ao passar o mouse */}
+              <div className="absolute right-0 top-full mt-2 w-80 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl text-[11px] text-slate-300 z-50 hidden group-hover:block space-y-1">
+                <strong className="text-amber-400 font-bold block flex items-center gap-1">
+                  💡 Como Funciona o Forecast:
+                </strong>
+                <p className="leading-relaxed text-slate-300 font-normal">
+                  O Produto solicita PAs (demanda). A empresa aprova um limite por orçamento. A diferença reflete a <span className="text-amber-300 font-bold">Repressão Estratégica de Demanda</span>.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -502,47 +521,6 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
               Novo Produto / Carteira
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* LINHA COMPACTA DE SITES OPERACIONAIS */}
-      <div className={`px-4 py-2.5 rounded-xl border flex items-center justify-between gap-4 flex-wrap text-xs ${
-        isDark ? 'bg-[#161b22] border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-700 shadow-xs'
-      }`}>
-        <div className="flex items-center gap-2 font-medium">
-          <MapPin size={14} className="text-indigo-400" />
-          <span className="font-semibold text-white">Sites Cadastrados ({sites.length}):</span>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap flex-1">
-          {sites.map(s => (
-            <div
-              key={s.id}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium group transition-all ${
-                s.type === 'Remoto'
-                  ? isDark ? 'bg-indigo-950/50 border-indigo-500/30 text-indigo-200' : 'bg-indigo-50 border-indigo-200 text-indigo-900'
-                  : isDark ? 'bg-slate-800/80 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-800'
-              }`}
-            >
-              <span className="text-white font-medium">{s.name}</span>
-              <span className="text-[10px] text-slate-400">({s.city})</span>
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                <button
-                  onClick={() => handleOpenEditSiteModal(s)}
-                  className="p-0.5 rounded hover:bg-white/10 text-slate-300 cursor-pointer"
-                  title="Editar site"
-                >
-                  <Pencil size={11} />
-                </button>
-                <button
-                  onClick={() => handleDeleteSite(s.id)}
-                  className="p-0.5 rounded hover:bg-rose-500/20 text-rose-400 cursor-pointer"
-                  title="Excluir site"
-                >
-                  <Trash size={11} />
-                </button>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -794,26 +772,6 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
       {/* CONTEÚDO DA ABA 2: FORECAST & AJUSTE ESTRATÉGICO DE DEMANDA */}
       {activeTab === 'forecast' && (
         <div className="space-y-6">
-          <div className={`p-5 rounded-3xl border-2 flex items-start gap-4 transition-all ${
-            isDark 
-              ? 'bg-slate-900 border-sky-500/50 text-sky-400 shadow-lg' 
-              : 'bg-sky-50 border-slate-900 text-slate-950 font-extrabold shadow-sm'
-          }`}>
-            <div className={`p-2.5 rounded-2xl border ${
-              isDark ? 'bg-sky-500/20 text-sky-400 border-sky-500/40' : 'bg-sky-200 text-sky-950 border-sky-900'
-            }`}>
-              <Info size={24} weight="bold" />
-            </div>
-            <div className="space-y-1.5 text-xs leading-relaxed">
-              <h4 className={`font-black text-sm flex items-center gap-2 ${isDark ? 'text-sky-400' : 'text-sky-950'}`}>
-                <span>💡 Como Funciona o Forecast de Demanda:</span>
-              </h4>
-              <p className={isDark ? 'text-sky-400 font-bold' : 'text-slate-900 font-extrabold'}>
-                O Produto pode solicitar uma quantidade inicial de PAs (ex: <strong className={isDark ? 'text-white font-black underline' : 'text-purple-950 font-black'}>10 PAs</strong>). A Diretoria/Empresa aprova uma capacidade limite por decisão estratégica de orçamento (ex: <strong className={isDark ? 'text-white font-black underline' : 'text-sky-950 font-black'}>8 PAs</strong>). Mesmo quando 100% dos 8 PAs aprovados estiverem contratados (<strong className={isDark ? 'text-emerald-300 font-black' : 'text-emerald-950 font-black'}>0 Vagas Abertas</strong>), a diferença de -2 PAs reflete a <strong className={isDark ? 'text-amber-300 font-black' : 'text-amber-950 font-black'}>Repressão Estratégica de Demanda</strong>.
-              </p>
-            </div>
-          </div>
-
           <div className={`rounded-3xl border-2 overflow-hidden transition-all ${
             isDark 
               ? 'bg-slate-900/40 border-white/10 text-white' 
@@ -827,6 +785,23 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
                 <h3 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-950'}`}>
                   Comparativo: Demanda Solicitada (Produto) vs Capacidade Aprovada (Empresa)
                 </h3>
+                <div className="relative group ml-1">
+                  <button
+                    type="button"
+                    className="p-1 rounded-md text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                    title="Como funciona o Forecast de Demanda"
+                  >
+                    <Lightbulb size={16} weight="fill" />
+                  </button>
+                  <div className="absolute left-0 top-full mt-2 w-80 p-3.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl text-[11px] text-slate-300 z-50 hidden group-hover:block space-y-1.5">
+                    <strong className="text-amber-400 font-bold block flex items-center gap-1">
+                      💡 Como Funciona o Forecast:
+                    </strong>
+                    <p className="leading-relaxed text-slate-300 font-normal">
+                      O Produto pode solicitar uma quantidade inicial de PAs (ex: 10 PAs). A Diretoria aprova um limite por orçamento (ex: 8 PAs). Mesmo com 100% dos PAs contratados, a diferença reflete a <span className="text-amber-300 font-bold">Repressão Estratégica de Demanda</span>.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
