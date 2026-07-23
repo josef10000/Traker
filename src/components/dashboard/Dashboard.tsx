@@ -2759,7 +2759,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                       <div className="flex flex-wrap gap-2 items-center">
                         <button
-                          onClick={() => setIsChecklistMode(!isChecklistMode)}
+                          type="button"
+                          onClick={() => {
+                            setIsChecklistMode(!isChecklistMode);
+                            if (!isChecklistMode) {
+                              // Ao ativar conferência, remove qualquer filtro de status ativo
+                              setFilterStatus('all');
+                            }
+                          }}
                           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${
                             isChecklistMode 
                               ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' 
@@ -2778,37 +2785,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           )}
                         </button>
                         <button
-                          onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.PAID : 'all')}
+                          type="button"
+                          onClick={() => {
+                            const next = filterStatus === AgreementStatus.PAID ? 'all' : AgreementStatus.PAID;
+                            setFilterStatus(next);
+                            if (next !== 'all') setIsChecklistMode(false);
+                          }}
                           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                             filterStatus === AgreementStatus.PAID 
-                              ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/20' 
+                              ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30' 
                               : theme === 'dark'
-                                ? 'bg-slate-800 text-slate-400 border-slate-700/50'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                                ? 'bg-slate-800 text-slate-400 border-slate-700/50 hover:text-emerald-400 hover:border-emerald-500/30'
+                                : 'bg-slate-100 text-slate-600 border-slate-200 hover:text-emerald-600 hover:border-emerald-500/30'
                           }`}
                         >
                           Pagos
                         </button>
                         <button
-                          onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.WAITING : 'all')}
+                          type="button"
+                          onClick={() => {
+                            const next = filterStatus === AgreementStatus.WAITING ? 'all' : AgreementStatus.WAITING;
+                            setFilterStatus(next);
+                            if (next !== 'all') setIsChecklistMode(false);
+                          }}
                           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                             filterStatus === AgreementStatus.WAITING 
-                              ? 'bg-amber-500/20 text-amber-500 border-amber-500/20' 
+                              ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' 
                               : theme === 'dark'
-                                ? 'bg-slate-800 text-slate-400 border-slate-700/50'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                                ? 'bg-slate-800 text-slate-400 border-slate-700/50 hover:text-amber-400 hover:border-amber-500/30'
+                                : 'bg-slate-100 text-slate-600 border-slate-200 hover:text-amber-600 hover:border-amber-500/30'
                           }`}
                         >
                           Aguardando
                         </button>
                         <button
-                          onClick={() => setFilterStatus(filterStatus === 'all' ? AgreementStatus.BROKEN : 'all')}
+                          type="button"
+                          onClick={() => {
+                            const next = filterStatus === AgreementStatus.BROKEN ? 'all' : AgreementStatus.BROKEN;
+                            setFilterStatus(next);
+                            if (next !== 'all') setIsChecklistMode(false);
+                          }}
                           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                             filterStatus === AgreementStatus.BROKEN 
-                              ? 'bg-rose-500/20 text-rose-500 border-rose-500/20' 
+                              ? 'bg-rose-500/20 text-rose-500 border-rose-500/30' 
                               : theme === 'dark'
-                                ? 'bg-slate-800 text-slate-400 border-slate-700/50'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                                ? 'bg-slate-800 text-slate-400 border-slate-700/50 hover:text-rose-400 hover:border-rose-500/30'
+                                : 'bg-slate-100 text-slate-600 border-slate-200 hover:text-rose-600 hover:border-rose-500/30'
                           }`}
                         >
                           Quebrados
