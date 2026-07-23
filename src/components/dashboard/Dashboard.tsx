@@ -82,6 +82,7 @@ import { FinancialPerformanceInsights } from './FinancialPerformanceInsights';
 // Modais do sistema
 import { DashboardModals } from './DashboardModals';
 import { HelpDrawer } from './HelpDrawer';
+import { LeadNotesModal } from '../modals/LeadNotesModal';
 import { exportToCsv } from '../../utils/csvExporter';
 import { startTour } from '../../utils/tour';
 import { DemoFeatureBanner } from '../demo/DemoFeatureBanner';
@@ -197,6 +198,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [attendanceModalData, setAttendanceModalData] = useState<{ collab: UserProfile; dateStr: string; note?: CollaborationNote } | null>(null);
   const [isCalendarEventModalOpen, setIsCalendarEventModalOpen] = useState(false);
+  const [notesModalAgreement, setNotesModalAgreement] = useState<Agreement | null>(null);
+
+  const handleSaveLeadNote = async (agreementId: string, noteData: Omit<AgreementNote, 'id' | 'createdAt'>) => {
+    const newNote: AgreementNote = {
+      id: `note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      ...noteData,
+      createdAt: new Date().toISOString()
+    };
+
+    const targetAgreement = monthAgreements.find(a => a.id === agreementId);
+    const updatedHistory = [...(targetAgreement?.notesHistory || []), newNote];
+
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.updateAgreement(agreementId, { notesHistory: updatedHistory });
+    } else {
+      await updateDoc(doc(db, 'agreements', agreementId), { notesHistory: updatedHistory });
+    }
+
+    setMonthAgreements(prev => prev.map(a => a.id === agreementId ? { ...a, notesHistory: updatedHistory } : a));
+    if (notesModalAgreement?.id === agreementId) {
+      setNotesModalAgreement(prev => prev ? { ...prev, notesHistory: updatedHistory } : null);
+    }
+
+    showToast('Observação de transição salva com sucesso!', 'success');
+  };
 
   // Escuta todas as anotações/presenças da organização
   useEffect(() => {
@@ -2779,6 +2805,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       prevPage={prevPage}
                       showToast={showToast}
                       theme={theme}
+                      onOpenNotes={(ag) => setNotesModalAgreement(ag)}
                     />
                   </section>
                   )}
@@ -4017,6 +4044,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       )}
+
+      <LeadNotesModal
+        isOpen={!!notesModalAgreement}
+        onClose={() => setNotesModalAgreement(null)}
+        agreement={notesModalAgreement}
+        profile={profile}
+        onSaveNote={handleSaveLeadNote}
+        theme={theme}
+      />
 
       <HelpDrawer 
         isOpen={isHelpOpen}

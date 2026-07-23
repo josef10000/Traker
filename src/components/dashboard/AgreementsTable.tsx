@@ -29,6 +29,7 @@ interface AgreementsTableProps {
   showToast: (message: string, type: 'success' | 'error') => void;
   theme?: 'light' | 'dark';
   onCopyCpf?: (id: string, cpf: string) => void;
+  onOpenNotes?: (agreement: Agreement) => void;
 }
 
 export const AgreementsTable: React.FC<AgreementsTableProps> = ({
@@ -49,7 +50,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
   prevPage,
   showToast,
   theme = 'dark',
-  onCopyCpf
+  onCopyCpf,
+  onOpenNotes
 }) => {
   return (
     <section className={`rounded-2xl overflow-hidden border ${
@@ -277,6 +279,29 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                           >
                             <History size={13} />
                           </button>
+
+                          {/* Notas de Transição do Lead */}
+                          {onOpenNotes && (
+                            <button 
+                              onClick={() => onOpenNotes(agreement)}
+                              className={`p-1 rounded-md transition-all cursor-pointer relative ${
+                                (agreement.notesHistory && agreement.notesHistory.length > 0)
+                                  ? 'text-indigo-400 bg-indigo-500/15 border border-indigo-500/30'
+                                  : theme === 'dark' 
+                                    ? 'text-slate-400 hover:text-white hover:bg-slate-800' 
+                                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                              }`}
+                              title={`Notas de Transição do Lead (${agreement.notesHistory?.length || 0})`}
+                            >
+                              <MessageSquare size={13} />
+                              {agreement.notesHistory && agreement.notesHistory.length > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                </span>
+                              )}
+                            </button>
+                          )}
                         </div>
 
                         {/* Data em que o acordo foi feito */}

@@ -104,6 +104,16 @@ export interface Team {
   createdAt: string;
 }
 
+export interface AgreementNote {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorRole?: string;
+  content: string;
+  category: 'phone' | 'whatsapp' | 'warning' | 'general';
+  createdAt: string;
+}
+
 export interface Agreement {
   id: string;
   clientName: string;
@@ -119,7 +129,7 @@ export interface Agreement {
   // Campos de Parcelamento
   installmentCount?: number;   // Quantidade de parcelas (informativo)
   hasEntry?: boolean;           // Se o parcelamento tem entrada
-  installmentValue?: number;   // Valor de cada parcela (informativo — não conta nas métricas)
+  installmentValue?: number;   // Valor de each parcela (informativo — não conta nas métricas)
 
   operatorId: string; // Quem registrou
   teamId: string;     // A qual equipe pertence
@@ -129,6 +139,7 @@ export interface Agreement {
   lastCheckedAt?: string;
   isAdjustment?: boolean;
   notes?: string;
+  notesHistory?: AgreementNote[]; // Linha do tempo de notas de transição do lead
   scheduledAt?: string; // Data/Hora agendada para retorno
   forcedCollision?: boolean; // Bypass manual de colisão de CPF
 }
@@ -347,9 +358,10 @@ export interface MonthlyPayment {
 export interface AppNotification {
   id: string;
   userId: string;                // Destinatário
+  senderUserId?: string;          // Quem executou a ação (para filtro de auto-notificação)
   title: string;
   message: string;
-  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled';
+  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled' | 'high_value_break' | 'agenda_reminder' | 'lead_assigned' | 'agreement_note';
   referenceId?: string;          // ID do fechamento de pagamento ou transferência associado
   read: boolean;
   createdAt: string;
