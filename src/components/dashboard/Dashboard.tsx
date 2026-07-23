@@ -201,32 +201,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isCalendarEventModalOpen, setIsCalendarEventModalOpen] = useState(false);
   const [notesModalAgreement, setNotesModalAgreement] = useState<Agreement | null>(null);
 
-  const handleSaveLeadNote = async (agreementId: string, noteData: Omit<AgreementNote, 'id' | 'createdAt'>) => {
-    const newNote: AgreementNote = {
-      id: `note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      ...noteData,
-      createdAt: new Date().toISOString()
-    };
-
-    const targetAgreement = monthAgreements.find(a => a.id === agreementId);
-    const updatedHistory = [...(targetAgreement?.notesHistory || []), newNote];
-
-    if (profile.organizationId === 'sandbox-test') {
-      sandboxService.updateAgreement(agreementId, { notesHistory: updatedHistory });
-    } else {
-      await updateDoc(doc(db, 'agreements', agreementId), { notesHistory: updatedHistory });
-    }
-
-    if (refreshAgreements) {
-      refreshAgreements();
-    }
-    if (notesModalAgreement?.id === agreementId) {
-      setNotesModalAgreement(prev => prev ? { ...prev, notesHistory: updatedHistory } : null);
-    }
-
-    showToast('Observação de transição salva com sucesso!', 'success');
-  };
-
   // Escuta todas as anotações/presenças da organização
   useEffect(() => {
     if (!profile.organizationId) return;
@@ -584,6 +558,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
     ).catch(err => console.error('[Dashboard] Erro ao marcar cache stale:', err));
     refreshAgreements();
   }, [profile.organizationId, teamsToWatch, selectedMonth, selectedYear, refreshAgreements]);
+
+  const handleSaveLeadNote = async (agreementId: string, noteData: Omit<AgreementNote, 'id' | 'createdAt'>) => {
+    const newNote: AgreementNote = {
+      id: `note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      ...noteData,
+      createdAt: new Date().toISOString()
+    };
+
+    const targetAgreement = monthAgreements.find(a => a.id === agreementId);
+    const updatedHistory = [...(targetAgreement?.notesHistory || []), newNote];
+
+    if (profile.organizationId === 'sandbox-test') {
+      sandboxService.updateAgreement(agreementId, { notesHistory: updatedHistory });
+    } else {
+      await updateDoc(doc(db, 'agreements', agreementId), { notesHistory: updatedHistory });
+    }
+
+    if (refreshAgreements) {
+      refreshAgreements();
+    }
+    if (notesModalAgreement?.id === agreementId) {
+      setNotesModalAgreement(prev => prev ? { ...prev, notesHistory: updatedHistory } : null);
+    }
+
+    showToast('Observação de transição salva com sucesso!', 'success');
+  };
 
   // Atualiza metas reativamente com base na seleção de equipes gerenciadas do hook
   useEffect(() => {
