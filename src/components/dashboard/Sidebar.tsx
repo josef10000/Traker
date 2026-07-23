@@ -33,10 +33,10 @@ export const Sidebar = ({
   const menuItems = [
     {
       id: 'backoffice',
-      label: profile.role === 'backoffice' ? (profile.jobTitle || 'Back Office') : 'Back Office',
+      label: profile.jobTitle || 'Back Office',
       description: 'Importação e conciliação de planilhas financeiras.',
       icon: FileSpreadsheet,
-      show: profile.role === 'backoffice' || profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin' || profile.organizationId === 'sandbox-test'
+      show: profile.role === 'backoffice'
     },
     {
       id: 'carga_acordos',

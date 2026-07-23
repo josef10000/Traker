@@ -10,7 +10,8 @@ import {
   ArrowRight,
   Eye,
   Crown,
-  Briefcase
+  Briefcase,
+  FileCsv as FileSpreadsheet
 } from '@phosphor-icons/react';
 import { UserRole, UserProfile } from '../../types';
 
@@ -49,6 +50,13 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
       desc: 'Visão do colaborador, registro de pontos, batimento de metas individuais e extratos.',
       icon: Briefcase,
       color: 'from-amber-500 to-orange-600'
+    },
+    {
+      role: 'backoffice',
+      label: '📑 Back Office',
+      desc: 'Importação de planilhas financeiras, conciliação e tratamento de bases de dados.',
+      icon: FileSpreadsheet,
+      color: 'from-cyan-500 to-teal-600'
     },
     {
       role: 'monitor',

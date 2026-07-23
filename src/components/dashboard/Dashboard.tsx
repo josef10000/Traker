@@ -257,9 +257,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setDashboardTab('qa');
     } else if (profile?.role === 'backoffice') {
       setDashboardTab('backoffice');
-    } else if (profile?.role === 'member') {
-      // Se trocou para operador comum e a aba atual é restrita a monitor, força a ida para 'financial'
-      setDashboardTab(prev => (prev === 'qa' ? 'financial' : prev));
+    } else if (profile?.role) {
+      // Se trocou para um cargo comum e a aba atual é restrita a monitor/backoffice, força a ida para 'financial'
+      setDashboardTab(prev => (prev === 'backoffice' || prev === 'qa' ? 'financial' : prev));
     }
   }, [profile?.role]);
 
