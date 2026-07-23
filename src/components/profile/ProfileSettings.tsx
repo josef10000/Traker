@@ -79,14 +79,47 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers' | 'schedule' | 'closing_pj'>('profile');
 
+  const saveProfileFields = async (fields: Partial<UserProfile>) => {
+    const updatedData = {
+      displayName,
+      jobTitle,
+      avatarStyle,
+      avatarSeed,
+      photoURL,
+      avatarType,
+      ...fields
+    };
+
+    try {
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.setProfile({
+          ...profile,
+          ...updatedData
+        });
+        onUpdate(updatedData);
+        return;
+      }
+
+      if (profile.uid) {
+        const userRef = doc(db, 'users', profile.uid);
+        await updateDoc(userRef, updatedData);
+        onUpdate(updatedData);
+      }
+    } catch (err) {
+      console.error('Erro ao salvar alterações no perfil:', err);
+    }
+  };
+
   useEffect(() => {
-    setDisplayName(profile.displayName || '');
-    setJobTitle(profile.jobTitle || '');
-    setAvatarStyle(profile.avatarStyle || 'initials');
-    setAvatarSeed(profile.avatarSeed || '');
-    setPhotoURL(profile.photoURL || '');
-    setAvatarType(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
-  }, [profile]);
+    if (profile) {
+      setDisplayName(profile.displayName || '');
+      setJobTitle(profile.jobTitle || '');
+      setAvatarStyle(profile.avatarStyle || 'initials');
+      setAvatarSeed(profile.avatarSeed || '');
+      if (profile.photoURL !== undefined) setPhotoURL(profile.photoURL);
+      if (profile.avatarType) setAvatarType(profile.avatarType);
+    }
+  }, [profile.displayName, profile.jobTitle, profile.avatarStyle, profile.avatarSeed, profile.photoURL, profile.avatarType]);
 
   const handleProfilePhotoUpload = async (file: File | Blob) => {
     setIsUploadingPhoto(true);
@@ -94,7 +127,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       const url = await uploadImage(file, { folder: 'profile_photos' });
       setPhotoURL(url);
       setAvatarType('custom');
-      showToast('Foto de perfil enviada com sucesso!', 'success');
+      await saveProfileFields({ photoURL: url, avatarType: 'custom' });
+      showToast('Foto de perfil salva com sucesso!', 'success');
     } catch (err) {
       console.error(err);
       showToast('Erro ao processar foto de perfil.', 'error');
@@ -103,10 +137,16 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     }
   };
 
-  const handleDeleteProfilePhoto = () => {
+  const handleDeleteProfilePhoto = async () => {
     setPhotoURL('');
     setAvatarType('api');
+    await saveProfileFields({ photoURL: '', avatarType: 'api' });
     showToast('Foto removida. Revertido para o avatar da API.', 'info');
+  };
+
+  const handleSwitchAvatarType = async (type: 'custom' | 'api') => {
+    setAvatarType(type);
+    await saveProfileFields({ avatarType: type });
   };
   
   useEffect(() => {
@@ -1334,7 +1374,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => setAvatarType('api')}
+                      onClick={() => handleSwitchAvatarType('api')}
                       className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         avatarType === 'api'
                           ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-md shadow-sky-500/10'
@@ -1347,7 +1387,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
 
                     <button
                       type="button"
-                      onClick={() => setAvatarType('custom')}
+                      onClick={() => handleSwitchAvatarType('custom')}
                       className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         avatarType === 'custom'
                           ? 'bg-purple-500/20 border-purple-500 text-purple-300 shadow-md shadow-purple-500/10'
