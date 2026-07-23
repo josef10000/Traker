@@ -43,7 +43,7 @@ import { formatCurrency, maskCPF } from '../../utils/masks';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
-import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus } from '@phosphor-icons/react';
+import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus, SlidersHorizontal } from '@phosphor-icons/react';
 import { sandboxService } from '../../lib/sandboxService';
 import { createNotification } from '../../lib/notifications';
 import { useTheme } from '../../hooks/useTheme';
@@ -2330,33 +2330,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 theme={theme}
               />
             )}
-            {/* Barra Superior Executiva Unificada (Meta, Filtros, Seletores & Comparação) */}
+            {/* Barra Superior Executiva Unificada de 1 Linha (Opção B) */}
             {dashboardTab === 'financial' && (
-              <div className={`flex flex-col gap-4 p-5 rounded-[2rem] border transition-all ${
-                theme === 'dark' ? 'bg-slate-900/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+              <div className={`flex flex-col gap-3 p-4 rounded-2xl border transition-all ${
+                theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'
               }`}>
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-                  {/* Total do Mês e Meta Mensal */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl border ${
-                      theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
-                    }`}>
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total do Mês (Pago)</span>
-                      <span className="text-base font-black text-emerald-500 tabular-nums">{formatCurrency(stats.totalPaid)}</span>
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                  {/* Total do Mês e Meta Mensal em Chip Único */}
+                  <div className={`flex items-center gap-3.5 px-3.5 py-1.5 rounded-xl border ${
+                    theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Pago</span>
+                      <span className="text-sm font-black text-emerald-400 tabular-nums">{formatCurrency(stats.totalPaid)}</span>
                     </div>
-
-                    <div className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl border ${
-                      theme === 'dark' ? 'bg-slate-950 border-white/5' : 'bg-slate-50 border-slate-200'
-                    }`}>
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta do Mês</span>
-                      <span className="text-base font-black text-sky-500 tabular-nums">{formatCurrency(monthlyGoal)}</span>
+                    <span className="text-slate-700 font-bold text-xs">•</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Meta</span>
+                      <span className="text-sm font-black text-sky-400 tabular-nums">{formatCurrency(monthlyGoal)}</span>
                     </div>
                   </div>
 
                   {/* Controles Unificados: Filtro de Período, Seletor Mês/Ano & Ações */}
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Pills de Período */}
-                    <div className={`flex items-center p-1 rounded-xl border ${
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Pills de Período Otimizadas */}
+                    <div className={`flex items-center p-0.5 rounded-xl border ${
                       theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
                     }`}>
                       {(['today', 'week', 'month', 'year', 'custom'] as const).map((filter) => {
@@ -2365,14 +2363,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           week: 'Semanal',
                           month: 'Mensal',
                           year: 'Anual',
-                          custom: 'Período Específico'
+                          custom: 'Custom'
                         };
                         return (
                           <button
                             key={filter}
                             type="button"
                             onClick={() => setCardDateFilter(filter)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                               cardDateFilter === filter
                                 ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
                                 : theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
@@ -2397,7 +2395,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsComparisonMode(!isComparisonMode)}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                         isComparisonMode
                           ? 'bg-violet-600 text-white border-violet-500 shadow-md shadow-violet-500/30'
                           : theme === 'dark'
@@ -2406,28 +2404,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       }`}
                     >
                       <span>⚡</span>
-                      <span>{isComparisonMode ? 'Comparação Ativa' : 'Comparar'}</span>
+                      <span>{isComparisonMode ? 'Comparação' : 'Comparar'}</span>
                     </button>
 
+                    {/* Botão Personalizar com Ícone */}
                     <button
                       onClick={() => setIsPreferencesModalOpen(true)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                         theme === 'dark'
                           ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
                           : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                       }`}
+                      title="Personalizar visualização de cards"
                     >
-                      Personalizar
-                    </button>
-                    <button
-                      onClick={togglePresentMode}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                        theme === 'dark'
-                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      {isPresentMode ? 'Sair do Modo TV' : 'Modo TV'}
+                      <SlidersHorizontal size={14} weight="bold" />
+                      <span>Personalizar</span>
                     </button>
                   </div>
                 </div>
