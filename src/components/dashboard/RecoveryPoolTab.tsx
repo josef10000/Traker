@@ -361,113 +361,116 @@ export const RecoveryPoolTab = ({
         </div>
       </div>
 
-      {/* Sub-abas de Navegação */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900/60 border border-white/5 w-fit">
-        <button
-          onClick={() => { setSubTab('pool'); setSelectedIds([]); }}
-          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-            subTab === 'pool'
-              ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <span>🌐 Balcão Geral</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-            subTab === 'pool' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-          }`}>
-            {poolCount}
-          </span>
-        </button>
-
-        <button
-          onClick={() => { setSubTab('my_batch'); setSelectedIds([]); }}
-          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-            subTab === 'my_batch'
-              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <span>🎒 Meu Lote</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-            subTab === 'my_batch' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-          }`}>
-            {myBatchCount}
-          </span>
-        </button>
-      </div>
-
-      {/* Ações e Filtros */}
-      <div className={`p-6 rounded-3xl border space-y-4 ${
-        theme === 'dark' ? 'bg-slate-900/10 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+      {/* Barra Integrada Unificada de 1 Linha (Sub-abas, Filtros e Ações) */}
+      <div className={`p-3.5 rounded-2xl border flex flex-col xl:flex-row xl:items-center justify-between gap-3 ${
+        theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'
       }`}>
-        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
-          <div className="flex flex-wrap gap-3">
-            {/* Equipe */}
-            <div className="w-44">
-              <CustomSelect 
-                value={filterTeam}
-                onChange={(val) => setFilterTeam(val)}
-                placeholder="Todas as Equipes"
-                options={[
-                  { value: "all", label: "Todas as Equipes" },
-                  ...managedTeamsData.map(t => ({ value: t.id, label: t.name }))
-                ]}
-              />
-            </div>
+        {/* Esquerda: Sub-abas Balcão Geral vs Meu Lote */}
+        <div className={`flex items-center p-1 rounded-xl border ${
+          theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
+        }`}>
+          <button
+            onClick={() => { setSubTab('pool'); setSelectedIds([]); }}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              subTab === 'pool'
+                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🌐 Balcão Geral</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              subTab === 'pool' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            }`}>
+              {poolCount}
+            </span>
+          </button>
 
-            <div className="w-44">
-              <CustomSelect 
-                value={filterType}
-                onChange={(val) => setFilterType(val)}
-                placeholder="Todos os Tipos"
-                options={[
-                  { value: "all", label: "Todos os Tipos" },
-                  { value: "quitacao", label: "Quitação" },
-                  { value: "parcelamento", label: "Parcelamento" },
-                  { value: "parcela_atrasada", label: "Parcela Atrasada" },
-                  { value: "antecipacao", label: "Antecipação" }
-                ]}
-              />
-            </div>
+          <button
+            onClick={() => { setSubTab('my_batch'); setSelectedIds([]); }}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              subTab === 'my_batch'
+                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🎒 Meu Lote</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              subTab === 'my_batch' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            }`}>
+              {myBatchCount}
+            </span>
+          </button>
+        </div>
 
-            <div className="w-44">
-              <CustomSelect 
-                value={filterCategory}
-                onChange={(val) => setFilterCategory(val)}
-                placeholder="Todas as Categorias"
-                options={[
-                  { value: "all", label: "Todas as Categorias" },
-                  { value: "fixa", label: "Fixa" },
-                  { value: "variavel", label: "Variável" }
-                ]}
-              />
-            </div>
+        {/* Centro & Direita: Filtros Dropdown + Ações */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Dropdown Equipe */}
+          <div className="w-40">
+            <CustomSelect 
+              value={filterTeam}
+              onChange={(val) => setFilterTeam(val)}
+              placeholder="Todas as Equipes"
+              options={[
+                { value: "all", label: "Todas as Equipes" },
+                ...managedTeamsData.map(t => ({ value: t.id, label: t.name }))
+              ]}
+            />
           </div>
 
-          <div className="flex gap-2">
+          {/* Dropdown Tipo */}
+          <div className="w-40">
+            <CustomSelect 
+              value={filterType}
+              onChange={(val) => setFilterType(val)}
+              placeholder="Todos os Tipos"
+              options={[
+                { value: "all", label: "Todos os Tipos" },
+                { value: "quitacao", label: "Quitação" },
+                { value: "parcelamento", label: "Parcelamento" },
+                { value: "parcela_atrasada", label: "Parcela Atrasada" },
+                { value: "antecipacao", label: "Antecipação" }
+              ]}
+            />
+          </div>
+
+          {/* Dropdown Categoria */}
+          <div className="w-40">
+            <CustomSelect 
+              value={filterCategory}
+              onChange={(val) => setFilterCategory(val)}
+              placeholder="Todas as Categorias"
+              options={[
+                { value: "all", label: "Todas as Categorias" },
+                { value: "fixa", label: "Fixa" },
+                { value: "variavel", label: "Variável" }
+              ]}
+            />
+          </div>
+
+          {/* Botão Exportar */}
+          <button
+            onClick={() => setIsExportModalOpen(true)}
+            className={`px-3 py-1.5 font-bold rounded-xl text-xs uppercase tracking-wider border flex items-center justify-center gap-1.5 cursor-pointer ${
+              theme === 'dark' 
+                ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50' 
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-250 shadow-sm'
+            }`}
+          >
+            <Download size={14} />
+            <span>Exportar</span>
+          </button>
+
+          {/* Botão Assumir Lote */}
+          {subTab === 'pool' && (
             <button
-              onClick={() => setIsExportModalOpen(true)}
-              className={`px-4 py-2.5 font-bold rounded-xl text-xs uppercase tracking-wider border flex items-center justify-center gap-2 cursor-pointer ${
-                theme === 'dark' 
-                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50' 
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-250 shadow-sm'
-              }`}
+              onClick={handleTakeOver}
+              disabled={selectedIds.length === 0}
+              className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-sky-500/20 active:scale-95 cursor-pointer transition-all"
             >
-              <Download size={14} />
-              Exportar
+              <Users size={14} />
+              <span>Assumir Lote{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}</span>
             </button>
-
-            {subTab === 'pool' && (
-              <button
-                onClick={handleTakeOver}
-                disabled={selectedIds.length === 0}
-                className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-555/10 active:scale-95 cursor-pointer"
-              >
-                <Users size={14} />
-                Assumir Lote
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
