@@ -56,7 +56,7 @@ export const WebhookSettingsModal = ({ isOpen, onClose, organizationId, currentW
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm cursor-pointer"
         />
 
         {/* Content */}
@@ -64,7 +64,8 @@ export const WebhookSettingsModal = ({ isOpen, onClose, organizationId, currentW
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-10"
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10 text-white cursor-default"
         >
           {/* Header */}
           <div className="px-8 py-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50 backdrop-blur-xl shrink-0">

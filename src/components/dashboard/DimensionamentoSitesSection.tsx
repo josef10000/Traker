@@ -22,6 +22,7 @@ import {
   Lightbulb
 } from '@phosphor-icons/react';
 import { UserProfile, Team } from '../../types';
+import { ConfirmModal } from '../modals/ConfirmModal';
 import { db } from '../../lib/firebase';
 import {
   collection,
@@ -274,21 +275,38 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
     setIsProdModalOpen(false);
   };
 
-  const handleDeleteProduct = async (prodId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir este Produto/Carteira?')) return;
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
-    if (sandbox) {
-      setProducts(prev => prev.filter(p => p.id !== prodId));
-    } else {
-      try {
-        await deleteDoc(doc(db, 'organizations', organizationId!, 'operational_products', prodId));
-      } catch (err) {
-        console.error('[DimensionamentoSites] deleteProduct error:', err);
-        showToast('Erro ao excluir do banco de dados.', 'error');
-        return;
+  const handleDeleteProduct = (prodId: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir Produto/Carteira',
+      message: 'Tem certeza que deseja excluir este Produto/Carteira?',
+      onConfirm: async () => {
+        if (sandbox) {
+          setProducts(prev => prev.filter(p => p.id !== prodId));
+        } else {
+          try {
+            await deleteDoc(doc(db, 'organizations', organizationId!, 'operational_products', prodId));
+          } catch (err) {
+            console.error('[DimensionamentoSites] deleteProduct error:', err);
+            showToast('Erro ao excluir do banco de dados.', 'error');
+            return;
+          }
+        }
+        showToast('Produto/Carteira removido.', 'success');
       }
-    }
-    showToast('Produto/Carteira removido.', 'success');
+    });
   };
 
   // ── MODAL DE SITE OPERACIONAL ───────────────────────────────────────────────
@@ -360,21 +378,26 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
     showToast(editingSiteId ? 'Site Operacional atualizado!' : 'Novo Site Operacional cadastrado!', 'success');
   };
 
-  const handleDeleteSite = async (siteId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir este Site Operacional?')) return;
-
-    if (sandbox) {
-      setSites(prev => prev.filter(s => s.id !== siteId));
-    } else {
-      try {
-        await deleteDoc(doc(db, 'organizations', organizationId!, 'operational_sites', siteId));
-      } catch (err) {
-        console.error('[DimensionamentoSites] deleteSite error:', err);
-        showToast('Erro ao excluir site do banco de dados.', 'error');
-        return;
+  const handleDeleteSite = (siteId: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir Site Operacional',
+      message: 'Tem certeza que deseja excluir este Site Operacional?',
+      onConfirm: async () => {
+        if (sandbox) {
+          setSites(prev => prev.filter(s => s.id !== siteId));
+        } else {
+          try {
+            await deleteDoc(doc(db, 'organizations', organizationId!, 'operational_sites', siteId));
+          } catch (err) {
+            console.error('[DimensionamentoSites] deleteSite error:', err);
+            showToast('Erro ao excluir site do banco de dados.', 'error');
+            return;
+          }
+        }
+        showToast('Site Operacional removido.', 'success');
       }
-    }
-    showToast('Site Operacional removido.', 'success');
+    });
   };
 
   // ── CÁLCULOS CONSOLIDADOS ───────────────────────────────────────────────────
@@ -890,11 +913,15 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
 
       {/* MODAL: NOVO SITE OPERACIONAL */}
       {isSiteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm cursor-pointer"
+          onClick={() => setIsSiteModalOpen(false)}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-sm p-5 rounded-2xl border space-y-4 shadow-xl ${
+            onClick={(e) => e.stopPropagation()}
+            className={`w-full max-w-sm p-5 rounded-2xl border space-y-4 shadow-xl cursor-default ${
               isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
             }`}
           >
@@ -986,11 +1013,15 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
 
       {/* MODAL: CADASTRAR OU EDITAR PRODUTO / CARTEIRA E VÍNCULO DE TIMES */}
       {isProdModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm cursor-pointer"
+          onClick={() => setIsProdModalOpen(false)}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-lg p-5 rounded-2xl border space-y-4 shadow-xl ${
+            onClick={(e) => e.stopPropagation()}
+            className={`w-full max-w-lg p-5 rounded-2xl border space-y-4 shadow-xl cursor-default ${
               isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
             }`}
           >
@@ -1188,6 +1219,16 @@ export const DimensionamentoSitesSection: React.FC<DimensionamentoSitesSectionPr
           </motion.div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant="danger"
+        theme={isDark ? 'dark' : 'light'}
+      />
     </div>
   );
 };

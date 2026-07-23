@@ -50,7 +50,8 @@ export const TeamSelectorModal = ({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="relative glass-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900 border border-white/10 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-white"
       >
         <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl">
           <div>

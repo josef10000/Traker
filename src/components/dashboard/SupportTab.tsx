@@ -849,6 +849,7 @@ export const SupportTab = ({
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
               className={`relative w-full max-w-md rounded-3xl shadow-2xl border p-8 space-y-6 ${
                 theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
               }`}

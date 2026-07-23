@@ -50,6 +50,7 @@ import { createNotification } from '../../lib/notifications';
 import { useTheme } from '../../hooks/useTheme';
 
 import { Avatar } from '../ui/Avatar';
+import { ConfirmModal } from '../modals/ConfirmModal';
 import { AttendanceModal } from '../modals/AttendanceModal';
 import { CalendarEventModal } from '../modals/CalendarEventModal';
 import { AttendanceCalendarSection } from './AttendanceCalendarSection';
@@ -191,6 +192,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [cpfToConfirm, setCpfToConfirm] = useState<{ id: string; cpf: string; actionType: 'reveal' | 'copy' } | null>(null);
   const [agreementIdToDelete, setAgreementIdToDelete] = useState<string | null>(null);
   const [dontShowLgpdAgain, setDontShowLgpdAgain] = useState(false);
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
   // Novos estados para Coordenação e Calendários
   const [activeTeamDrillDown, setActiveTeamDrillDown] = useState<string | null>(null);
@@ -3495,9 +3507,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                       </div>
                                       <button
                                         onClick={() => {
-                                          if (confirm(`Tem certeza que deseja desligar o Supervisor ${sup.displayName || sup.email}?`)) {
-                                            handleDismissUser(sup.uid, sup.displayName || sup.email.split('@')[0], 'supervisor');
-                                          }
+                                          const name = sup.displayName || sup.email.split('@')[0];
+                                          setConfirmModalState({
+                                            isOpen: true,
+                                            title: 'Desligar Colaborador',
+                                            message: `Tem certeza que deseja desligar o Supervisor ${sup.displayName || sup.email}?`,
+                                            onConfirm: () => handleDismissUser(sup.uid, name, 'supervisor')
+                                          });
                                         }}
                                         className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg text-[9px] uppercase tracking-wider font-extrabold border border-rose-500/20 transition-all cursor-pointer"
                                       >
@@ -3516,9 +3532,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                         <button
                                           onClick={() => {
-                                            if (confirm(`Tem certeza que deseja desligar o Operador ${op.displayName || op.email}?`)) {
-                                              handleDismissUser(op.uid, op.displayName || op.email.split('@')[0], 'member');
-                                            }
+                                            const name = op.displayName || op.email.split('@')[0];
+                                            setConfirmModalState({
+                                              isOpen: true,
+                                              title: 'Desligar Colaborador',
+                                              message: `Tem certeza que deseja desligar o Operador ${op.displayName || op.email}?`,
+                                              onConfirm: () => handleDismissUser(op.uid, name, 'member')
+                                            });
                                           }}
                                           className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg text-[9px] uppercase tracking-wider font-extrabold border border-rose-500/20 transition-all cursor-pointer"
                                         >
@@ -3931,10 +3951,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Modal Personalizado de Confirmação de Exclusão de Acordo */}
       {agreementIdToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md" onClick={() => setAgreementIdToDelete(null)} />
-          <div className={`relative glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl border text-center space-y-4 ${
-            theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
-          }`}>
+          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md cursor-pointer" onClick={() => setAgreementIdToDelete(null)} />
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`relative glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl border text-center space-y-4 cursor-default ${
+              theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
+            }`}
+          >
             <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto border border-rose-500/20">
               <Trash size={24} />
             </div>
@@ -3994,10 +4017,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Modal Personalizado de Consentimento LGPD para Revelação/Cópia de CPF */}
       {cpfToConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md" onClick={() => setCpfToConfirm(null)} />
-          <div className={`relative glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl border text-center space-y-5 ${
-            theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
-          }`}>
+          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md cursor-pointer" onClick={() => setCpfToConfirm(null)} />
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`relative glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl border text-center space-y-5 cursor-default ${
+              theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
+            }`}
+          >
             <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/20">
               <ShieldWarning size={24} />
             </div>
@@ -4062,6 +4088,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         onClose={() => setIsHelpOpen(false)}
         theme={theme}
         userRole={profile?.role}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModalState.isOpen}
+        onClose={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModalState.onConfirm}
+        title={confirmModalState.title}
+        message={confirmModalState.message}
+        variant="danger"
+        theme={theme}
       />
     </div>
   );

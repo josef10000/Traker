@@ -67,11 +67,15 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto cursor-pointer"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-4xl my-8 p-6 rounded-3xl border-2 bg-slate-900 border-white/10 text-white shadow-2xl space-y-6"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-4xl my-8 p-6 rounded-3xl border-2 bg-slate-900 border-white/10 text-white shadow-2xl space-y-6 cursor-default"
       >
         {/* CABEÇALHO */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">

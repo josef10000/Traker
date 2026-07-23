@@ -11,6 +11,7 @@ import { UserProfile, Team } from '../../types';
 import { removeTeamMember, getTeamMembers, deleteTeam } from '../../lib/teams';
 import { sandboxService } from '../../lib/sandboxService';
 import { Avatar } from '../ui/Avatar';
+import { ConfirmModal } from '../modals/ConfirmModal';
 
 interface TeamsManagementSectionProps {
   profile: UserProfile;
@@ -69,51 +70,73 @@ export const TeamsManagementSection: React.FC<TeamsManagementSectionProps> = ({
     setMemberCurrentPage(1);
   };
 
-  const handleRemoveMember = async (memberUid: string, memberName: string) => {
-    if (!confirm(`Remover ${memberName} desta equipe?`)) return;
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
-    try {
-      if (profile.organizationId === 'sandbox-test') {
-        const user = sandboxService.getUser(memberUid);
-        if (user) {
-          sandboxService.setProfile({ ...user, teamId: '' });
+  const handleRemoveMember = (memberUid: string, memberName: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Remover Membro',
+      message: `Tem certeza que deseja remover ${memberName} desta equipe?`,
+      onConfirm: async () => {
+        try {
+          if (profile.organizationId === 'sandbox-test') {
+            const user = sandboxService.getUser(memberUid);
+            if (user) {
+              sandboxService.setProfile({ ...user, teamId: '' });
+            }
+            setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
+            showToast('Membro removido no Sandbox com sucesso!', 'success');
+            if (onRefreshData) onRefreshData();
+            return;
+          }
+          await removeTeamMember(memberUid);
+          setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
+          showToast('Membro removido com sucesso!', 'success');
+          if (onRefreshData) onRefreshData();
+        } catch (error) {
+          showToast('Erro ao remover membro.', 'error');
         }
-        setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
-        showToast('Membro removido no Sandbox com sucesso!', 'success');
-        if (onRefreshData) onRefreshData();
-        return;
       }
-      await removeTeamMember(memberUid);
-      setTeamMembers(prev => prev.filter(m => m.uid !== memberUid));
-      showToast('Membro removido com sucesso!', 'success');
-      if (onRefreshData) onRefreshData();
-    } catch (error) {
-      showToast('Erro ao remover membro.', 'error');
-    }
+    });
   };
 
-  const handleDeleteTeamClick = async (teamId: string, teamName: string) => {
-    if (!confirm(`Tem certeza que deseja excluir a equipe "${teamName}"? Esta ação não pode ser desfeita.`)) return;
-
-    try {
-      if (profile.organizationId === 'sandbox-test') {
-        sandboxService.deleteTeam(teamId);
-        if (setManagedTeamsData) {
-          setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
+  const handleDeleteTeamClick = (teamId: string, teamName: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Excluir Equipe',
+      message: `Tem certeza que deseja excluir a equipe "${teamName}"? Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        try {
+          if (profile.organizationId === 'sandbox-test') {
+            sandboxService.deleteTeam(teamId);
+            if (setManagedTeamsData) {
+              setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
+            }
+            showToast('Equipe excluída do Sandbox com sucesso!', 'success');
+            if (onRefreshData) onRefreshData();
+            return;
+          }
+          await deleteTeam(profile.uid, teamId);
+          if (setManagedTeamsData) {
+            setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
+          }
+          showToast('Equipe excluída com sucesso!', 'success');
+          if (onRefreshData) onRefreshData();
+        } catch (error) {
+          showToast('Erro ao excluir equipe.', 'error');
         }
-        showToast('Equipe excluída do Sandbox com sucesso!', 'success');
-        if (onRefreshData) onRefreshData();
-        return;
       }
-      await deleteTeam(profile.uid, teamId);
-      if (setManagedTeamsData) {
-        setManagedTeamsData(prev => prev.filter(t => t.id !== teamId));
-      }
-      showToast('Equipe excluída com sucesso!', 'success');
-      if (onRefreshData) onRefreshData();
-    } catch (error) {
-      showToast('Erro ao excluir equipe.', 'error');
-    }
+    });
   };
 
   const filteredTeamMembers = teamMembers.filter(m => 
@@ -320,6 +343,16 @@ export const TeamsManagementSection: React.FC<TeamsManagementSectionProps> = ({
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        theme={theme}
+      />
     </div>
   );
 };

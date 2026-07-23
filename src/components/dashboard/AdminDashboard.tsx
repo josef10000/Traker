@@ -856,8 +856,14 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
       {/* MODAL DE CRIAÇÃO DE EMPRESA */}
       {isCreateOrgOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-          <div className="w-full max-w-lg glass-card bg-slate-900/90 border border-white/10 p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto cursor-pointer"
+          onClick={() => setIsCreateOrgOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg glass-card bg-slate-900/90 border border-white/10 p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center border-b border-white/10 pb-4">
               <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
                 <Building2 size={20} className="text-emerald-400" />
@@ -958,8 +964,14 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
       {/* MODAL DE EDIÇÃO DE LIMITES & CRM */}
       {selectedOrg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-          <div className="w-full max-w-lg glass-card bg-slate-900/90 border border-white/10 p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto cursor-pointer"
+          onClick={() => setSelectedOrg(null)}
+        >
+          <div 
+            className="w-full max-w-lg glass-card bg-slate-900/90 border border-white/10 p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center border-b border-white/10 pb-4">
               <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
                 <Settings size={20} className="text-sky-400" />

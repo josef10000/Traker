@@ -924,10 +924,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const showAdminTabs = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator';
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer"
+      onClick={onClose}
+    >
       {/* Modal Container */}
       <div 
-        className="w-full max-w-5xl h-[85vh] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row bg-[#090d16] text-white relative"
+        className="w-full max-w-5xl h-[85vh] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row bg-[#090d16] text-white relative cursor-default"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Coluna da Esquerda (Menu de Abas) */}
         <div className="w-full md:w-64 border-r border-white/5 bg-slate-950/40 p-6 flex flex-col justify-between shrink-0">
@@ -2458,8 +2462,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
 
           {/* Modal de confirmação da Transferência */}
           {showTransferModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-              <div className="w-full max-w-md rounded-3xl border border-white/10 p-6 space-y-4 shadow-2xl bg-[#090d16] text-white">
+            <div 
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 cursor-pointer"
+              onClick={() => setShowTransferModal(null)}
+            >
+              <div 
+                className="w-full max-w-md rounded-3xl border border-white/10 p-6 space-y-4 shadow-2xl bg-[#090d16] text-white cursor-default"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="flex items-center justify-between border-b border-white/5 pb-3">
                   <h4 className="text-base font-black flex items-center gap-1.5">
                     <Globe size={18} className="text-primary" />
