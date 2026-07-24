@@ -321,6 +321,7 @@ export function AppContent() {
                 const wasDemo = simulation?.isDemoMode;
                 setSimulation(null);
                 if (wasDemo) {
+                  window.history.replaceState({}, '', '/demo');
                   navigate('/demo');
                 } else if (profile?.role !== 'super_admin') {
                   await signOut(auth);

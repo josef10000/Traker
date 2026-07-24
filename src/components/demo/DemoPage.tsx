@@ -22,6 +22,15 @@ interface DemoPageProps {
 export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>('manager');
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roleParam = params.get('role') as UserRole | null;
+    const validRoles: UserRole[] = ['manager', 'coordinator', 'supervisor', 'member', 'backoffice', 'monitor'];
+    if (roleParam && validRoles.includes(roleParam)) {
+      onStartDemo(roleParam);
+    }
+  }, [onStartDemo]);
+
   const rolesList: Array<{ role: UserRole; label: string; desc: string; icon: any; color: string }> = [
     {
       role: 'manager',

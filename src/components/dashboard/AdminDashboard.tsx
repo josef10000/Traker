@@ -30,7 +30,8 @@ import {
   EnvelopeSimple,
   PaperPlaneRight,
   ShieldCheck,
-  ChartLineUp
+  ChartLineUp,
+  CaretDown
 } from '@phosphor-icons/react';
 import { useDesignMode } from '../../hooks/useDesignMode';
 import { useTheme } from '../../hooks/useTheme';
@@ -51,7 +52,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
-import { Organization, UserProfile, Team } from '../../types';
+import { Organization, UserProfile, Team, UserRole } from '../../types';
 import { logAudit } from '../../lib/audit';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
@@ -128,12 +129,28 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     setIsSetupModalOpen(true);
   };
 
-  const handleCopyDemoLink = () => {
-    const demoUrl = `${window.location.origin}/demo`;
-    navigator.clipboard.writeText(demoUrl);
-    setCopiedDemo(true);
-    showToast('Link de Demonstração (/demo) copiado para a área de transferência!', 'success');
-    setTimeout(() => setCopiedDemo(false), 3000);
+  const [isDemoMenuOpen, setIsDemoMenuOpen] = useState(false);
+  const [copiedDemoRole, setCopiedDemoRole] = useState<string | null>(null);
+
+  const handleCopyDemoUrl = (role?: UserRole) => {
+    const origin = window.location.origin;
+    const url = role ? `${origin}/demo?role=${role}` : `${origin}/demo`;
+    navigator.clipboard.writeText(url);
+    setCopiedDemoRole(role || 'general');
+
+    const roleLabels: Record<string, string> = {
+      general: 'Geral (/demo)',
+      member: 'Operador (/demo?role=member)',
+      supervisor: 'Supervisor (/demo?role=supervisor)',
+      coordinator: 'Coordenador (/demo?role=coordinator)',
+      manager: 'Gerente (/demo?role=manager)',
+      backoffice: 'Back Office (/demo?role=backoffice)',
+      monitor: 'Monitor/QA (/demo?role=monitor)'
+    };
+
+    showToast(`Link de Demonstração ${roleLabels[role || 'general']} copiado!`, 'success');
+    setTimeout(() => setCopiedDemoRole(null), 3000);
+    setIsDemoMenuOpen(false);
   };
 
   useEffect(() => {
@@ -548,15 +565,148 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {/* BOTÃO PARA COPIAR LINK DE DEMONSTRAÇÃO /demo */}
-            <button
-              onClick={handleCopyDemoLink}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-purple-500/20 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
-              title="Copiar link publico da rota /demo para enviar a clientes"
-            >
-              {copiedDemo ? <Check size={16} className="text-emerald-300" /> : <ShareNetwork size={16} weight="bold" />}
-              {copiedDemo ? 'Link /demo Copiado!' : 'Copiar Link de Demonstração (/demo)'}
-            </button>
+            {/* MENU DROPDOWN DE LINKS DE DEMONSTRAÇÃO */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsDemoMenuOpen(!isDemoMenuOpen)}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-purple-500/20 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                title="Copiar link de demonstração geral ou específico por cargo"
+              >
+                {copiedDemoRole ? <Check size={16} className="text-emerald-300" /> : <ShareNetwork size={16} weight="bold" />}
+                <span>{copiedDemoRole ? 'Link Copiado!' : 'Links de Demonstração'}</span>
+                <CaretDown size={14} className={`transition-transform ${isDemoMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isDemoMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsDemoMenuOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-72 bg-slate-950 border border-purple-500/30 rounded-2xl p-2 z-50 shadow-2xl space-y-1 animate-fade-in text-xs">
+                    <div className="px-3 py-1.5 text-[10px] font-black uppercase text-purple-400 tracking-wider">
+                      Selecione o Link para Copiar:
+                    </div>
+
+                    {/* Link Geral */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyDemoUrl()}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-purple-500/10 text-white font-bold flex items-center justify-between transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-purple-400">🔗</span>
+                        <div>
+                          <p className="font-bold text-white group-hover:text-purple-300">Link Geral (/demo)</p>
+                          <p className="text-[10px] text-slate-400">Escolha livre de cargos</p>
+                        </div>
+                      </div>
+                      {copiedDemoRole === 'general' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-slate-500 group-hover:text-purple-300" />}
+                    </button>
+
+                    <div className="border-t border-white/10 my-1" />
+
+                    <div className="px-3 py-1 text-[9px] font-black uppercase text-slate-500 tracking-wider">
+                      Links Diretos por Cargo (Acesso Restrito):
+                    </div>
+
+                    {/* Operador */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyDemoUrl('member')}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 text-white flex items-center justify-between transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>🎧</span>
+                        <div>
+                          <p className="font-bold text-slate-200 group-hover:text-amber-400">Operador de Cobrança</p>
+                          <p className="text-[10px] text-slate-500">/demo?role=member</p>
+                        </div>
+                      </div>
+                      {copiedDemoRole === 'member' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-slate-500 group-hover:text-amber-400" />}
+                    </button>
+
+                    {/* Supervisor */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyDemoUrl('supervisor')}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 text-white flex items-center justify-between transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>👥</span>
+                        <div>
+                          <p className="font-bold text-slate-200 group-hover:text-emerald-400">Supervisor de Equipe</p>
+                          <p className="text-[10px] text-slate-500">/demo?role=supervisor</p>
+                        </div>
+                      </div>
+                      {copiedDemoRole === 'supervisor' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-slate-500 group-hover:text-emerald-400" />}
+                    </button>
+
+                    {/* Coordenador */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyDemoUrl('coordinator')}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 text-white flex items-center justify-between transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>🎯</span>
+                        <div>
+                          <p className="font-bold text-slate-200 group-hover:text-sky-400">Coordenador de Operações</p>
+                          <p className="text-[10px] text-slate-500">/demo?role=coordinator</p>
+                        </div>
+                      </div>
+                      {copiedDemoRole === 'coordinator' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-slate-500 group-hover:text-sky-400" />}
+                    </button>
+
+                    {/* Gerente */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyDemoUrl('manager')}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 text-white flex items-center justify-between transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>🏢</span>
+                        <div>
+                          <p className="font-bold text-slate-200 group-hover:text-purple-400">Gerente da Empresa</p>
+                          <p className="text-[10px] text-slate-500">/demo?role=manager</p>
+                        </div>
+                      </div>
+                      {copiedDemoRole === 'manager' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-slate-500 group-hover:text-purple-400" />}
+                    </button>
+
+                    {/* Back Office */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyDemoUrl('backoffice')}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 text-white flex items-center justify-between transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>📑</span>
+                        <div>
+                          <p className="font-bold text-slate-200 group-hover:text-cyan-400">Back Office</p>
+                          <p className="text-[10px] text-slate-500">/demo?role=backoffice</p>
+                        </div>
+                      </div>
+                      {copiedDemoRole === 'backoffice' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-slate-500 group-hover:text-cyan-400" />}
+                    </button>
+
+                    {/* Monitor / QA */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyDemoUrl('monitor')}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 text-white flex items-center justify-between transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>🛡️</span>
+                        <div>
+                          <p className="font-bold text-slate-200 group-hover:text-rose-400">Monitor / QA</p>
+                          <p className="text-[10px] text-slate-500">/demo?role=monitor</p>
+                        </div>
+                      </div>
+                      {copiedDemoRole === 'monitor' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-slate-500 group-hover:text-rose-400" />}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* BOTÃO TESTAR E-MAIL RESEND */}
             <button
