@@ -421,6 +421,20 @@ class SandboxService {
     }
   }
 
+  public updateBackofficeClientStatusBatch(clientIds: string[], status: 'pending' | 'in_progress' | 'treated' | 'ignored'): void {
+    const now = new Date().toISOString();
+    clientIds.forEach(id => {
+      if (this.backofficeClients[id]) {
+        this.backofficeClients[id] = {
+          ...this.backofficeClients[id],
+          status,
+          updatedAt: now
+        };
+      }
+    });
+    this.notify();
+  }
+
   public addBackofficeClientNote(clientId: string, note: any): void {
     if (this.backofficeClients[clientId]) {
       const notes = this.backofficeClients[clientId].notes || [];

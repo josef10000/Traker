@@ -22,7 +22,8 @@ import {
   Eye,
   EyeSlash,
   Image as ImageIcon,
-  ArrowsOut
+  ArrowsOut,
+  CheckSquare
 } from '@phosphor-icons/react';
 import { 
   collection, 
@@ -99,6 +100,79 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'treated' | 'ignored'>('all');
+
+  // Estado para Seleção em Massa de Clientes
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+  const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
+
+  // Reseta seleção em massa ao trocar de importação
+  useEffect(() => {
+    setSelectedClientIds([]);
+  }, [selectedImportId]);
+
+  const handleToggleSelectAllVisible = (visibleClients: BackOfficeClient[]) => {
+    const visibleIds = visibleClients.map(c => c.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedClientIds.includes(id));
+
+    if (allSelected) {
+      setSelectedClientIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    } else {
+      const combined = new Set([...selectedClientIds, ...visibleIds]);
+      setSelectedClientIds(Array.from(combined));
+    }
+  };
+
+  const handleToggleSelectClient = (clientId: string) => {
+    setSelectedClientIds(prev => 
+      prev.includes(clientId) ? prev.filter(id => id !== clientId) : [...prev, clientId]
+    );
+  };
+
+  const handleSelectFirstN = (n: number) => {
+    const firstN = filteredClients.slice(0, n).map(c => c.id);
+    setSelectedClientIds(firstN);
+    showToast(`${firstN.length} primeiro(s) cliente(s) selecionado(s)!`, 'info');
+  };
+
+  const handleBulkUpdateStatus = async (newStatus: 'pending' | 'in_progress' | 'treated' | 'ignored') => {
+    if (selectedClientIds.length === 0) return;
+
+    setIsUpdatingBulk(true);
+    try {
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.updateBackofficeClientStatusBatch(selectedClientIds, newStatus);
+      } else {
+        const batchSize = 500;
+        for (let i = 0; i < selectedClientIds.length; i += batchSize) {
+          const batch = writeBatch(db);
+          const chunk = selectedClientIds.slice(i, i + batchSize);
+          chunk.forEach(id => {
+            const ref = doc(db, 'backoffice_clients', id);
+            batch.update(ref, {
+              status: newStatus,
+              updatedAt: new Date().toISOString()
+            });
+          });
+          await batch.commit();
+        }
+      }
+
+      const statusLabels: Record<string, string> = {
+        pending: 'Pendente',
+        in_progress: 'Em Tratativa',
+        treated: 'Tratado',
+        ignored: 'Ignorado'
+      };
+
+      showToast(`${selectedClientIds.length} cliente(s) alterado(s) para '${statusLabels[newStatus]}' com sucesso!`, 'success');
+      setSelectedClientIds([]);
+    } catch (error) {
+      console.error('[BackOfficeTab] Erro ao atualizar status em massa:', error);
+      showToast('Erro ao atualizar status dos clientes selecionados.', 'error');
+    } finally {
+      setIsUpdatingBulk(false);
+    }
+  };
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -978,8 +1052,48 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       }
     };
 
-    return [...dynColumns, statusColumn, actionsColumn];
-  }, [activeImport, theme, onAttend, profile]);
+    // Coluna 0: Checkbox de Seleção em Massa
+    const selectColumn: ColumnDef<BackOfficeClient> = {
+      id: 'select',
+      header: ({ table }) => {
+        const visibleRows = table.getRowModel().rows.map(r => r.original);
+        const visibleIds = visibleRows.map(c => c.id);
+        const isAllSelected = visibleIds.length > 0 && visibleIds.every(id => selectedClientIds.includes(id));
+        const isSomeSelected = visibleIds.some(id => selectedClientIds.includes(id)) && !isAllSelected;
+
+        return (
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              ref={(input) => {
+                if (input) input.indeterminate = isSomeSelected;
+              }}
+              onChange={() => handleToggleSelectAllVisible(visibleRows)}
+              className="rounded border-slate-700 text-orange-500 focus:ring-orange-500 cursor-pointer w-4 h-4"
+              title="Selecionar visíveis nesta página"
+            />
+          </div>
+        );
+      },
+      cell: ({ row }) => {
+        const cli = row.original;
+        const isSelected = selectedClientIds.includes(cli.id);
+        return (
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => handleToggleSelectClient(cli.id)}
+              className="rounded border-slate-700 text-orange-500 focus:ring-orange-500 cursor-pointer w-4 h-4"
+            />
+          </div>
+        );
+      }
+    };
+
+    return [selectColumn, ...dynColumns, statusColumn, actionsColumn];
+  }, [activeImport, theme, onAttend, profile, selectedClientIds]);
 
   // Inst instanciação do Hook useReactTable
   const table = useReactTable({
@@ -1192,6 +1306,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                   {(['all', 'pending', 'in_progress', 'treated', 'ignored'] as const).map(st => (
                     <button
                       key={st}
+                      type="button"
                       onClick={() => setStatusFilter(st)}
                       className={`px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer whitespace-nowrap ${
                         statusFilter === st
@@ -1203,6 +1318,47 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Seleção Rápida em Lote */}
+              <div className="flex items-center gap-1 overflow-x-auto">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Lote:</span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectFirstN(10)}
+                  className="px-2 py-1 rounded-md text-[10px] font-bold border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                  title="Selecionar os primeiros 10 clientes"
+                >
+                  +10
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectFirstN(50)}
+                  className="px-2 py-1 rounded-md text-[10px] font-bold border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                  title="Selecionar os primeiros 50 clientes"
+                >
+                  +50
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectFirstN(100)}
+                  className="px-2 py-1 rounded-md text-[10px] font-bold border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                  title="Selecionar os primeiros 100 clientes"
+                >
+                  +100
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allIds = filteredClients.map(c => c.id);
+                    setSelectedClientIds(allIds);
+                    showToast(`${allIds.length} cliente(s) selecionado(s)!`, 'info');
+                  }}
+                  className="px-2 py-1 rounded-md text-[10px] font-bold border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 transition-all cursor-pointer"
+                  title="Selecionar todos os clientes filtrados"
+                >
+                  Todos ({filteredClients.length})
+                </button>
               </div>
             </div>
 
@@ -1217,6 +1373,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                   />
                 )}
                 <button
+                  type="button"
                   onClick={() => setIsColumnDropdownOpen(!isColumnDropdownOpen)}
                   className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer z-30 relative ${
                     theme === 'dark' 
@@ -1242,7 +1399,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                     </div>
                     <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 select-none">
                       {table.getAllLeafColumns()
-                        .filter(column => column.id !== 'actions' && column.id !== 'status')
+                        .filter(column => column.id !== 'actions' && column.id !== 'status' && column.id !== 'select')
                         .map(column => {
                           const isVisible = column.getIsVisible();
                           return (
@@ -1745,6 +1902,79 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
             >
               <XIcon size={16} />
               Fechar Imagem
+            </button>
+          </div>
+        </div>
+      )}
+      {/* BARRA FLUTUANTE DE AÇÕES EM MASSA */}
+      {selectedClientIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-bounce-in no-print">
+          <div className={`px-5 py-3 rounded-2xl border shadow-2xl flex items-center gap-4 flex-wrap backdrop-blur-md ${
+            theme === 'dark'
+              ? 'bg-slate-950/95 border-orange-500/40 text-white shadow-orange-500/10'
+              : 'bg-white/95 border-slate-300 text-slate-900 shadow-slate-400/30'
+          }`}>
+            <div className="flex items-center gap-2 border-r border-white/10 pr-4">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-ping" />
+              <span className="text-xs font-black">
+                {selectedClientIds.length} {selectedClientIds.length === 1 ? 'cliente selecionado' : 'clientes selecionados'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+                Ações em Massa:
+              </span>
+
+              {/* Marcar Pendente */}
+              <button
+                type="button"
+                disabled={isUpdatingBulk}
+                onClick={() => handleBulkUpdateStatus('pending')}
+                className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 border border-amber-500/30 font-bold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isUpdatingBulk ? <Spinner size={12} className="animate-spin" /> : '📌'} Pendente
+              </button>
+
+              {/* Marcar Em Tratativa */}
+              <button
+                type="button"
+                disabled={isUpdatingBulk}
+                onClick={() => handleBulkUpdateStatus('in_progress')}
+                className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500 text-sky-300 border border-sky-500/30 font-bold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isUpdatingBulk ? <Spinner size={12} className="animate-spin" /> : '⏳'} Em Tratativa
+              </button>
+
+              {/* Marcar Tratado */}
+              <button
+                type="button"
+                disabled={isUpdatingBulk}
+                onClick={() => handleBulkUpdateStatus('treated')}
+                className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 border border-emerald-500/30 font-bold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isUpdatingBulk ? <Spinner size={12} className="animate-spin" /> : '✅'} Tratado
+              </button>
+
+              {/* Marcar Ignorado */}
+              <button
+                type="button"
+                disabled={isUpdatingBulk}
+                onClick={() => handleBulkUpdateStatus('ignored')}
+                className="px-3 py-1.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-slate-300 border border-slate-600 font-bold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isUpdatingBulk ? <Spinner size={12} className="animate-spin" /> : '🚫'} Ignorar
+              </button>
+            </div>
+
+            {/* Cancelar Seleção */}
+            <button
+              type="button"
+              onClick={() => setSelectedClientIds([])}
+              className="ml-2 p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              title="Cancelar Seleção"
+            >
+              <XIcon size={16} weight="bold" />
             </button>
           </div>
         </div>
