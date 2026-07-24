@@ -23,7 +23,8 @@ import {
   EyeSlash,
   Image as ImageIcon,
   ArrowsOut,
-  CheckSquare
+  CheckSquare,
+  Minus
 } from '@phosphor-icons/react';
 import { 
   collection, 
@@ -1052,7 +1053,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       }
     };
 
-    // Coluna 0: Checkbox de Seleção em Massa
+    // Coluna 0: Checkbox Customizado de Seleção em Massa (14px)
     const selectColumn: ColumnDef<BackOfficeClient> = {
       id: 'select',
       header: ({ table }) => {
@@ -1063,16 +1064,21 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
 
         return (
           <div className="flex items-center justify-center">
-            <input
-              type="checkbox"
-              checked={isAllSelected}
-              ref={(input) => {
-                if (input) input.indeterminate = isSomeSelected;
-              }}
-              onChange={() => handleToggleSelectAllVisible(visibleRows)}
-              className="rounded border-slate-700 text-orange-500 focus:ring-orange-500 cursor-pointer w-4 h-4"
-              title="Selecionar visíveis nesta página"
-            />
+            <button
+              type="button"
+              onClick={() => handleToggleSelectAllVisible(visibleRows)}
+              className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all cursor-pointer ${
+                isAllSelected
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-400 shadow-xs shadow-orange-500/20 scale-105'
+                  : isSomeSelected
+                    ? 'bg-orange-500/20 text-orange-400 border-orange-500/50'
+                    : (theme === 'dark' ? 'bg-white/[0.03] border-white/20 text-transparent hover:border-orange-500/50 hover:bg-orange-500/10' : 'bg-slate-100 border-slate-300 text-transparent hover:border-orange-500/50')
+              }`}
+              title={isAllSelected ? "Desmarcar todos desta página" : "Selecionar todos desta página"}
+            >
+              {isAllSelected && <Check size={11} weight="bold" />}
+              {isSomeSelected && <Minus size={11} weight="bold" />}
+            </button>
           </div>
         );
       },
@@ -1081,12 +1087,17 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         const isSelected = selectedClientIds.includes(cli.id);
         return (
           <div className="flex items-center justify-center">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={() => handleToggleSelectClient(cli.id)}
-              className="rounded border-slate-700 text-orange-500 focus:ring-orange-500 cursor-pointer w-4 h-4"
-            />
+            <button
+              type="button"
+              onClick={() => handleToggleSelectClient(cli.id)}
+              className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all cursor-pointer ${
+                isSelected
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-400 shadow-xs shadow-orange-500/20 scale-105'
+                  : (theme === 'dark' ? 'bg-white/[0.03] border-white/20 text-transparent hover:border-orange-500/50 hover:bg-orange-500/10' : 'bg-slate-100 border-slate-300 text-transparent hover:border-orange-500/50')
+              }`}
+            >
+              {isSelected && <Check size={11} weight="bold" />}
+            </button>
           </div>
         );
       }
@@ -1563,20 +1574,26 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                     ))}
                   </thead>
                   <tbody className="divide-y divide-white/[0.02]">
-                    {currentClientsRows.map(row => (
-                      <tr 
-                        key={row.id} 
-                        className={`transition-colors group ${
-                          theme === 'dark' ? 'hover:bg-slate-900/20' : 'hover:bg-slate-50/50'
-                        }`}
-                      >
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id} className="p-4">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
+                    {currentClientsRows.map(row => {
+                      const clientObj = row.original as BackOfficeClient;
+                      const isRowSelected = Boolean(clientObj?.id && selectedClientIds.includes(clientObj.id));
+                      return (
+                        <tr 
+                          key={row.id} 
+                          className={`transition-all group ${
+                            isRowSelected
+                              ? (theme === 'dark' ? 'bg-orange-500/[0.07] shadow-xs' : 'bg-orange-50/80')
+                              : (theme === 'dark' ? 'hover:bg-slate-900/20' : 'hover:bg-slate-50/50')
+                          }`}
+                        >
+                          {row.getVisibleCells().map(cell => (
+                            <td key={cell.id} className="p-4">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
