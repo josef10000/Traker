@@ -59,7 +59,8 @@ A plataforma conta com 5 níveis de controle de permissões dinâmicos (Roles):
    - Modo de conferência rápida (Checklist / Botão "Verificar") para focar na checagem de CPFs de clientes pendentes de pagamento.
  7. **📊 Back Office (Tratador / Auditor de Planilhas)**:
    - Acesso exclusivo a painéis de tratamento de planilhas locais para processar e higienizar clientes.
-   - Autonomia para mapear colunas, ler dados, adicionar notas e realizar a exportação consolidada sem acessar informações de QA, BI ou metas financeiras.
+   - **Ações em Massa (Bulk Actions)**: Seleção flexível por checkboxes, atalhos de lotes rápidos (+10, +50, +100, Todos) e barra flutuante para atualização atômica em lote de status (Pendente, Em Tratativa, Tratado, Ignorado).
+   - Autonomia para mapear e renomear colunas, ler dados, adicionar notas e realizar a exportação consolidada sem acessar informações de QA, BI ou metas financeiras.
    - Cargo visualmente editável pelo supervisor/gerente no painel de equipe.
 
 ---
