@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Warning as AlertTriangle, X } from '@phosphor-icons/react';
+import { Warning as AlertTriangle, Info, CheckCircle } from '@phosphor-icons/react';
+import { LinearModal } from '../ui/LinearModal';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -25,67 +25,57 @@ export const ConfirmModal = ({
   variant = 'danger',
   theme = 'dark'
 }: ConfirmModalProps) => {
-  if (!isOpen) return null;
-
   const colors = {
-    danger: 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20',
-    warning: 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20',
-    info: 'bg-primary hover:bg-primary/80 shadow-primary/20'
+    danger: 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/25',
+    warning: 'bg-amber-600 hover:bg-amber-500 shadow-amber-500/25',
+    info: 'bg-primary hover:bg-primary/80 shadow-primary/25'
   };
 
-  const Icon = variant === 'danger' ? AlertTriangle : AlertTriangle;
+  const iconColors = {
+    danger: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    info: 'bg-sky-500/10 text-sky-400 border-sky-500/20'
+  };
+
+  const icons = {
+    danger: <AlertTriangle size={28} weight="duotone" />,
+    warning: <AlertTriangle size={28} weight="duotone" />,
+    info: <Info size={28} weight="duotone" />
+  };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer"
-        />
-        <motion.div 
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          onClick={(e) => e.stopPropagation()}
-          className={`relative w-full max-w-md rounded-3xl border p-6 overflow-hidden shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] cursor-default ${
-            theme === 'dark' ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200/90 text-slate-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)]'
-          }`}
-        >
-          <div className="p-8 text-center">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 ${
-              variant === 'danger' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'
-            }`}>
-              <Icon size={32} />
-            </div>
-            
-            <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-              {message}
-            </p>
+    <LinearModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-md">
+      <div className="text-center pt-2 pb-1">
+        <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center mx-auto mb-4 ${iconColors[variant]} shadow-lg`}>
+          {icons[variant]}
+        </div>
 
-            <div className="flex gap-3">
-              <button 
-                onClick={onClose}
-                className="flex-1 px-6 py-3 rounded-xl border border-slate-800 font-bold text-slate-400 hover:bg-slate-800 transition-all active:scale-95"
-              >
-                {cancelText}
-              </button>
-              <button 
-                onClick={() => {
-                  onConfirm();
-                  onClose();
-                }}
-                className={`flex-1 px-6 py-3 rounded-xl text-white font-bold transition-all shadow-lg active:scale-95 ${colors[variant]}`}
-              >
-                {confirmText}
-              </button>
-            </div>
-          </div>
-        </motion.div>
+        <h3 className="text-xl font-black text-white mb-2 tracking-tight">{title}</h3>
+        <p className="text-slate-400 text-sm leading-relaxed mb-6 font-medium">
+          {message}
+        </p>
+
+        <div className="flex gap-3">
+          <button 
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-5 py-3 rounded-2xl border border-white/10 font-bold text-slate-300 hover:bg-white/5 transition-all active:scale-95 cursor-pointer text-xs uppercase tracking-wider"
+          >
+            {cancelText}
+          </button>
+          <button 
+            type="button"
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className={`flex-1 px-5 py-3 rounded-2xl text-white font-black transition-all shadow-xl active:scale-95 cursor-pointer text-xs uppercase tracking-wider ${colors[variant]}`}
+          >
+            {confirmText}
+          </button>
+        </div>
       </div>
-    </AnimatePresence>
+    </LinearModal>
   );
 };
+
