@@ -951,7 +951,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   {profile.displayName}
                 </h4>
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-1 block truncate">
-                  {profile.role === 'member' ? 'Operador' : profile.role}
+                  {profile.role === 'member' ? 'Operador' : profile.role === 'backoffice' ? 'Back Office' : profile.role === 'monitor' ? 'Monitor / QA' : profile.role === 'supervisor' ? 'Supervisor' : profile.role === 'manager' ? 'Gerente' : profile.role}
                 </span>
               </div>
             </div>

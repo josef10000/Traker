@@ -544,14 +544,12 @@ export const DashboardHeader = ({
           {/* Perfil Menu */}
           <div 
             id="user-profile-menu"
-            className={`flex items-center gap-2.5 transition-all group shrink-0 ${
-              profile.role === 'backoffice' ? '' : 'cursor-pointer active:scale-[0.98]'
-            } ${
+            className={`flex items-center gap-2.5 cursor-pointer transition-all group shrink-0 active:scale-[0.98] ${
               theme === 'dark' 
                 ? 'px-3 py-1.5 border border-white/10 bg-white/5 hover:bg-white/10 rounded-xl' 
                 : 'pl-4 border-l border-slate-200 bg-transparent'
             }`}
-            onClick={profile.role === 'backoffice' ? undefined : onSettingsClick}
+            onClick={onSettingsClick}
           >
             <div className="flex flex-col items-end">
               <span className={`text-xs font-bold group-hover:text-primary transition-colors leading-none ${
