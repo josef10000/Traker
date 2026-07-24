@@ -26,7 +26,7 @@ export function AppContent() {
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-  const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean } | null>(() => {
+  const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean; demoRestrictedRole?: UserRole } | null>(() => {
     try {
       const saved = sessionStorage.getItem('tracker_demo_simulation');
       return saved ? JSON.parse(saved) : null;
@@ -221,6 +221,21 @@ export function AppContent() {
     );
   }
 
+  const handleStartDemo = (role: UserRole) => {
+    const params = new URLSearchParams(window.location.search);
+    const roleParam = params.get('role') as UserRole | null;
+    const validRoles: UserRole[] = ['manager', 'coordinator', 'supervisor', 'member', 'backoffice', 'monitor'];
+    const restrictedRole = (roleParam && validRoles.includes(roleParam)) ? roleParam : simulation?.demoRestrictedRole;
+
+    setSimulation({ 
+      active: true, 
+      role, 
+      isDemoMode: true, 
+      demoRestrictedRole: restrictedRole 
+    });
+    showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
+  };
+
   // ROTA /demo PÚBLICA PARA VISITANTES E CLIENTES DE TESTE
   if (isDemoRoute && !simulation?.active) {
     return (
@@ -235,10 +250,7 @@ export function AppContent() {
           )}
         </AnimatePresence>
         <DemoPage 
-          onStartDemo={(role) => {
-            setSimulation({ active: true, role, isDemoMode: true });
-            showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
-          }} 
+          onStartDemo={handleStartDemo} 
         />
       </>
     );
@@ -316,13 +328,15 @@ export function AppContent() {
           <div className="flex items-center gap-4">
             <button 
               onClick={async () => {
+                const restrictedRole = simulation?.demoRestrictedRole;
                 sessionStorage.removeItem('tracker_demo_simulation');
                 sandboxService.resetSandbox();
                 const wasDemo = simulation?.isDemoMode;
                 setSimulation(null);
                 if (wasDemo) {
-                  window.history.replaceState({}, '', '/demo');
-                  navigate('/demo');
+                  const targetUrl = restrictedRole ? `/demo?role=${restrictedRole}` : '/demo';
+                  window.history.replaceState({}, '', targetUrl);
+                  navigate(targetUrl);
                 } else if (profile?.role !== 'super_admin') {
                   await signOut(auth);
                   navigate('/login');
@@ -416,10 +430,7 @@ export function AppContent() {
           <Route path="/register" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
           <Route path="/demo" element={
             <DemoPage 
-              onStartDemo={(role) => {
-                setSimulation({ active: true, role, isDemoMode: true });
-                showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
-              }} 
+              onStartDemo={handleStartDemo} 
             />
           } />
           <Route path="*" element={<Navigate to={`/login${window.location.search}`} replace />} />
@@ -477,10 +488,7 @@ export function AppContent() {
           } />
           <Route path="/demo" element={
             <DemoPage 
-              onStartDemo={(role) => {
-                setSimulation({ active: true, role, isDemoMode: true });
-                showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
-              }} 
+              onStartDemo={handleStartDemo} 
             />
           } />
           <Route path="*" element={<Navigate to="/" replace />} />

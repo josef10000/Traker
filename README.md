@@ -69,6 +69,10 @@ A plataforma conta com 5 níveis de controle de permissões dinâmicos (Roles):
 ## 🌙 Design System & Modo Escuro Único (Dark Mode Only)
 - O sistema é padronizado exclusivamente em **Modo Escuro (Dark Mode)** de alto desempenho com estética Glassmorphism, removendo seleções e botões de alternância para garantir máxima consistência visual em todas as telas e cargos.
 
+## 🔗 Isolamento Rígido de Links de Demonstração por Cargo
+- Links específicos enviados para testes de cargos (ex: `/demo?role=backoffice`, `/demo?role=member`) mantêm o isolamento estrito.
+- Ao clicar em **"Encerrar Demonstração"**, o sistema retorna exclusivamente para a página de início contendo apenas o card do cargo correspondente ao link recebido, sem expor os outros cargos.
+
 ## 🌟 Funcionalidades Avançadas de Cobrança e Inteligência (Fases 1 a 5)
 
 Adicionamos recursos poderosos voltados para aumentar o índice de recuperação de crédito, monitoramento de qualidade e insights preditivos:
