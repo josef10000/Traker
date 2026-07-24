@@ -435,6 +435,13 @@ class SandboxService {
     this.notify();
   }
 
+  public deleteBackofficeClient(clientId: string): void {
+    if (this.backofficeClients[clientId]) {
+      delete this.backofficeClients[clientId];
+      this.notify();
+    }
+  }
+
   public addBackofficeClientNote(clientId: string, note: any): void {
     if (this.backofficeClients[clientId]) {
       const notes = this.backofficeClients[clientId].notes || [];

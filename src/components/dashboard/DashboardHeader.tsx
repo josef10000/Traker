@@ -308,20 +308,7 @@ export const DashboardHeader = ({
             />
           </button>
 
-          {/* Botão Toggle de Tema ☀️/🌙 */}
-          {onToggleTheme && (
-            <button
-              onClick={onToggleTheme}
-              className={`transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center justify-center ${
-                theme === 'dark'
-                  ? 'p-2 rounded-xl bg-white/5 border-white/10 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10'
-                  : 'w-10 h-10 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-750 bg-white'
-              }`}
-              title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
-            >
-              {theme === 'dark' ? <Sun size={16} weight="duotone" /> : <Moon size={16} weight="duotone" />}
-            </button>
-          )}
+
 
           {/* Sino de Notificações */}
           <div className="relative shrink-0" ref={notificationsMenuRef}>
@@ -535,18 +522,20 @@ export const DashboardHeader = ({
 
 
                   {/* Relatório PDF */}
-                  <button
-                    onClick={() => {
-                      setIsToolsOpen(false);
-                      window.print();
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] cursor-pointer border-t pt-2 mt-1 ${
-                      theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white border-white/5' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950 border-slate-100'
-                    }`}
-                  >
-                    <FileText size={16} className="text-purple-500" />
-                    <span>Gerar Relatório PDF</span>
-                  </button>
+                  {profile.role !== 'backoffice' && (
+                    <button
+                      onClick={() => {
+                        setIsToolsOpen(false);
+                        window.print();
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] cursor-pointer border-t pt-2 mt-1 ${
+                        theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white border-white/5' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950 border-slate-100'
+                      }`}
+                    >
+                      <FileText size={16} className="text-purple-500" />
+                      <span>Gerar Relatório PDF</span>
+                    </button>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -555,12 +544,14 @@ export const DashboardHeader = ({
           {/* Perfil Menu */}
           <div 
             id="user-profile-menu"
-            className={`flex items-center gap-2.5 cursor-pointer transition-all group shrink-0 active:scale-[0.98] ${
+            className={`flex items-center gap-2.5 transition-all group shrink-0 ${
+              profile.role === 'backoffice' ? '' : 'cursor-pointer active:scale-[0.98]'
+            } ${
               theme === 'dark' 
                 ? 'px-3 py-1.5 border border-white/10 bg-white/5 hover:bg-white/10 rounded-xl' 
                 : 'pl-4 border-l border-slate-200 bg-transparent'
             }`}
-            onClick={onSettingsClick}
+            onClick={profile.role === 'backoffice' ? undefined : onSettingsClick}
           >
             <div className="flex flex-col items-end">
               <span className={`text-xs font-bold group-hover:text-primary transition-colors leading-none ${

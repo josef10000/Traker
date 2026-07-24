@@ -24,7 +24,10 @@ import {
   Image as ImageIcon,
   ArrowsOut,
   CheckSquare,
-  Minus
+  Minus,
+  Broom,
+  WarningOctagon,
+  ChatCircleText
 } from '@phosphor-icons/react';
 import { 
   collection, 
@@ -100,7 +103,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   const [clients, setClients] = useState<BackOfficeClient[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'treated' | 'ignored'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'treated' | 'ignored' | 'has_notes' | 'invalid_cpf'>('all');
 
   // Estado para Seleção em Massa de Clientes
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
@@ -885,15 +888,113 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     const inProgress = clients.filter(c => c.status === 'in_progress').length;
     const treated = clients.filter(c => c.status === 'treated').length;
     const ignored = clients.filter(c => c.status === 'ignored').length;
-    return { total, pending, inProgress, treated, ignored };
+    const totalNotes = clients.reduce((acc, c) => acc + (c.notes?.length || 0), 0);
+    const progressPercent = total > 0 ? Math.round(((treated + ignored) / total) * 100) : 0;
+
+    // Detectar CPFs inválidos ou fora do padrão de 11 dígitos
+    const invalidCpfsCount = clients.filter(c => {
+      const clean = c.clientCpf.replace(/\D/g, '');
+      return clean.length !== 11 || /^(\d)\1{10}$/.test(clean);
+    }).length;
+
+    // Detectar CPFs duplicados na carga
+    const cpfCounts = new Map<string, number>();
+    clients.forEach(c => {
+      const clean = c.clientCpf.replace(/\D/g, '');
+      if (clean) {
+        cpfCounts.set(clean, (cpfCounts.get(clean) || 0) + 1);
+      }
+    });
+    const duplicateCpfsCount = Array.from(cpfCounts.values())
+      .filter(count => count > 1)
+      .reduce((acc, count) => acc + (count - 1), 0);
+
+    return { 
+      total, 
+      pending, 
+      inProgress, 
+      treated, 
+      ignored, 
+      totalNotes, 
+      progressPercent, 
+      invalidCpfsCount, 
+      duplicateCpfsCount 
+    };
   }, [clients]);
 
-  // Filtros de Tabela (dados originais filtrados - agora memoizados para estabilidade do TanStack)
+  // Função para Remover Registros Duplicados mantendo a primeira ocorrência
+  const handleRemoveDuplicates = async () => {
+    if (stats.duplicateCpfsCount === 0) {
+      showToast('Nenhum CPF duplicado encontrado nesta carga.', 'info');
+      return;
+    }
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remover CPFs Duplicados',
+      message: `Encontrados ${stats.duplicateCpfsCount} registro(s) duplicado(s) nesta planilha. Deseja manter apenas a primeira ocorrência de cada CPF e excluir os excedentes?`,
+      type: 'warning',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        setIsLoadingClients(true);
+
+        const seenCpfs = new Set<string>();
+        const idsToRemove: string[] = [];
+
+        clients.forEach(cli => {
+          const clean = cli.clientCpf.replace(/\D/g, '');
+          if (clean) {
+            if (seenCpfs.has(clean)) {
+              idsToRemove.push(cli.id);
+            } else {
+              seenCpfs.add(clean);
+            }
+          }
+        });
+
+        try {
+          if (profile.organizationId === 'sandbox-test') {
+            idsToRemove.forEach(id => sandboxService.deleteBackofficeClient(id));
+          } else {
+            const batchSize = 500;
+            for (let i = 0; i < idsToRemove.length; i += batchSize) {
+              const batch = writeBatch(db);
+              const chunk = idsToRemove.slice(i, i + batchSize);
+              chunk.forEach(id => {
+                const ref = doc(db, 'backoffice_clients', id);
+                batch.delete(ref);
+              });
+              await batch.commit();
+            }
+          }
+
+          showToast(`${idsToRemove.length} registro(s) duplicado(s) removido(s) com sucesso!`, 'success');
+        } catch (error) {
+          console.error('[BackOfficeTab] Erro ao remover duplicados:', error);
+          showToast('Erro ao remover registros duplicados.', 'error');
+        } finally {
+          setIsLoadingClients(false);
+        }
+      }
+    });
+  };
+
+  // Filtros de Tabela (dados originais filtrados)
   const filteredClients = useMemo(() => {
     return clients.filter(cli => {
       const matchesSearch = cli.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             cli.clientCpf.includes(searchTerm.replace(/\D/g, ''));
-      const matchesStatus = statusFilter === 'all' || cli.status === statusFilter;
+
+      let matchesStatus = true;
+      if (statusFilter === 'has_notes') {
+        matchesStatus = Boolean(cli.notes && cli.notes.length > 0);
+      } else if (statusFilter === 'invalid_cpf') {
+        const clean = cli.clientCpf.replace(/\D/g, '');
+        matchesStatus = clean.length !== 11 || /^(\d)\1{10}$/.test(clean);
+      } else if (statusFilter !== 'all') {
+        matchesStatus = cli.status === statusFilter;
+      }
+
       return matchesSearch && matchesStatus;
     });
   }, [clients, searchTerm, statusFilter]);
@@ -1222,15 +1323,25 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       ) : (
         <div className="space-y-4">
           {/* CARDS DE MÉTRICAS E DESEMPENHO DA PLANILHA ATIVA */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {/* Total CPFs */}
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
+            <div className={`p-4 rounded-2xl border flex flex-col justify-between relative overflow-hidden ${
               theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-xs'
             }`}>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total CPFs</span>
-              <div className="flex items-baseline gap-2 mt-1">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Carga</span>
+                <span className="text-[10px] font-bold text-orange-400 font-mono">{stats.progressPercent}%</span>
+              </div>
+              <div className="flex items-baseline gap-1 mt-1">
                 <span className="text-2xl font-black text-white">{stats.total}</span>
-                <span className="text-[10px] font-bold text-slate-500">casos</span>
+                <span className="text-[10px] font-bold text-slate-500">CPFs</span>
+              </div>
+              {/* Barra de Progresso Visual */}
+              <div className="w-full bg-slate-800/60 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-orange-500 to-amber-400 h-full transition-all duration-500 rounded-full"
+                  style={{ width: `${stats.progressPercent}%` }}
+                />
               </div>
             </div>
 
@@ -1285,15 +1396,26 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Anotações / Prints Anexadas */}
+            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
+              theme === 'dark' ? 'bg-purple-500/5 border-purple-500/20' : 'bg-purple-50 border-purple-200 shadow-xs'
+            }`}>
+              <span className="text-[10px] font-black uppercase tracking-widest text-purple-400">💬 Anotações / Prints</span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-purple-400">{stats.totalNotes}</span>
+                <span className="text-[10px] font-bold text-purple-500/70">anexos</span>
+              </div>
+            </div>
           </div>
 
-          {/* Ações e Filtros de Clientes */}
+          {/* BARRA DE HIGIENIZAÇÃO DE DADOS E FILTROS */}
           <div className={`flex flex-col md:flex-row justify-between items-stretch md:items-center p-4 rounded-2xl border gap-4 ${
             theme === 'dark' ? 'bg-slate-900/20 border-white/[0.04]' : 'bg-slate-50 border-slate-200'
           }`}>
-            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            <div className="flex flex-col sm:flex-row gap-3 flex-1 flex-wrap items-center">
               {/* Busca */}
-              <div className="relative flex-1 max-w-xs">
+              <div className="relative flex-1 min-w-[200px] max-w-xs">
                 <span className="absolute inset-y-0 left-3 flex items-center text-slate-500">
                   <MagnifyingGlass size={16} />
                 </span>
@@ -1310,26 +1432,58 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 />
               </div>
 
-              {/* Filtro de Status */}
+              {/* Filtros de Status & Higienização */}
               <div className="flex items-center gap-1.5 overflow-x-auto">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Filtro:</span>
-                <div className="flex bg-slate-950/40 p-0.5 rounded-lg border border-white/[0.02]">
-                  {(['all', 'pending', 'in_progress', 'treated', 'ignored'] as const).map(st => (
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold shrink-0">Filtro:</span>
+                <div className="flex bg-slate-950/40 p-0.5 rounded-lg border border-white/[0.02] gap-0.5">
+                  {(['all', 'pending', 'in_progress', 'treated', 'ignored', 'has_notes', 'invalid_cpf'] as const).map(st => (
                     <button
                       key={st}
                       type="button"
                       onClick={() => setStatusFilter(st)}
-                      className={`px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
                         statusFilter === st
                           ? (theme === 'dark' ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-sm' : 'bg-primary text-white shadow-sm')
                           : (theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-850')
                       }`}
                     >
-                      {st === 'all' ? `Tudo (${stats.total})` : (st === 'pending' ? `Pendente (${stats.pending})` : (st === 'in_progress' ? `Em Tratativa (${stats.inProgress})` : (st === 'treated' ? `Tratado (${stats.treated})` : `Ignorado (${stats.ignored})`)))}
+                      {st === 'all' && `Tudo (${stats.total})`}
+                      {st === 'pending' && `Pendente (${stats.pending})`}
+                      {st === 'in_progress' && `Em Tratativa (${stats.inProgress})`}
+                      {st === 'treated' && `Tratado (${stats.treated})`}
+                      {st === 'ignored' && `Ignorado (${stats.ignored})`}
+                      {st === 'has_notes' && (
+                        <>
+                          <ChatCircleText size={12} className="text-purple-400" />
+                          <span>Com Anotações ({stats.totalNotes})</span>
+                        </>
+                      )}
+                      {st === 'invalid_cpf' && (
+                        <>
+                          <WarningOctagon size={12} className={stats.invalidCpfsCount > 0 ? "text-rose-400" : "text-slate-400"} />
+                          <span className={stats.invalidCpfsCount > 0 ? "text-rose-400" : ""}>
+                            CPFs Inválidos ({stats.invalidCpfsCount})
+                          </span>
+                        </>
+                      )}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Botão Higienizador: Remover Duplicados */}
+              {stats.duplicateCpfsCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleRemoveDuplicates}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 animate-pulse shrink-0"
+                  title="Detectar e remover CPFs duplicados mantendo o primeiro registro"
+                >
+                  <Broom size={14} />
+                  <span>Remover Duplicados ({stats.duplicateCpfsCount})</span>
+                </button>
+              )}
+            </div>
 
               {/* Seleção Rápida em Lote */}
               <div className="flex items-center gap-1 overflow-x-auto">

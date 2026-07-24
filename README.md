@@ -57,13 +57,17 @@ A plataforma conta com 5 níveis de controle de permissões dinâmicos (Roles):
  6. **👤 Operador (Colaborador que Atende)**:
    - Registro e consulta de acordos individuais e visualização da meta diária pessoal.
    - Modo de conferência rápida (Checklist / Botão "Verificar") para focar na checagem de CPFs de clientes pendentes de pagamento.
- 7. **📊 Back Office (Tratador / Auditor de Planilhas)**:
-   - Acesso exclusivo a painéis de tratamento de planilhas locais para processar e higienizar clientes.
-   - **Ações em Massa (Bulk Actions)**: Seleção flexível por checkboxes, atalhos de lotes rápidos (+10, +50, +100, Todos) e barra flutuante para atualização atômica em lote de status (Pendente, Em Tratativa, Tratado, Ignorado).
-   - Autonomia para mapear e renomear colunas, ler dados, adicionar notas e realizar a exportação consolidada sem acessar informações de QA, BI ou metas financeiras.
-   - Cargo visualmente editável pelo supervisor/gerente no painel de equipe.
+  7. **📊 Back Office (Tratador / Auditor de Planilhas)**:
+    - Acesso exclusivo a painéis de tratamento de planilhas locais para processar e higienizar dados de clientes.
+    - **Higienização de Dados & Diagnóstico de CPFs**: Botão para remover CPFs duplicados da carga em 1 clique mantendo o primeiro registro, detector e filtro de CPFs inválidos/incompletos e filtro por clientes com anotações/prints.
+    - **Ações em Massa (Bulk Actions)**: Seleção flexível por checkboxes customizados (14px), highlight de linha selecionada, atalhos de lotes (+10, +50, +100, Todos) e barra flutuante para atualização atômica em lote de status.
+    - **Cards de Métricas da Carga**: Percentual de progresso em tempo real, barra visual de progresso e contagem total de anexos/notas.
+    - **Interface Enxuta e Focada**: Sem exposição de valores financeiros, relatórios de vendas ou telas de configurações.
 
 ---
+
+## 🌙 Design System & Modo Escuro Único (Dark Mode Only)
+- O sistema é padronizado exclusivamente em **Modo Escuro (Dark Mode)** de alto desempenho com estética Glassmorphism, removendo seleções e botões de alternância para garantir máxima consistência visual em todas as telas e cargos.
 
 ## 🌟 Funcionalidades Avançadas de Cobrança e Inteligência (Fases 1 a 5)
 
