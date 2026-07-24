@@ -1483,7 +1483,6 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                   <span>Remover Duplicados ({stats.duplicateCpfsCount})</span>
                 </button>
               )}
-            </div>
 
               {/* Seleção Rápida em Lote */}
               <div className="flex items-center gap-1 overflow-x-auto">
