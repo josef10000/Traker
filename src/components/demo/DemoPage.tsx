@@ -20,16 +20,18 @@ interface DemoPageProps {
 }
 
 export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
-  const [selectedRole, setSelectedRole] = useState<UserRole>('manager');
+  const params = new URLSearchParams(window.location.search);
+  const roleParam = params.get('role') as UserRole | null;
+  const validRoles: UserRole[] = ['manager', 'coordinator', 'supervisor', 'member', 'backoffice', 'monitor'];
+  const isRestrictedRole = Boolean(roleParam && validRoles.includes(roleParam));
+
+  const [selectedRole, setSelectedRole] = useState<UserRole>(isRestrictedRole && roleParam ? roleParam : 'manager');
 
   React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const roleParam = params.get('role') as UserRole | null;
-    const validRoles: UserRole[] = ['manager', 'coordinator', 'supervisor', 'member', 'backoffice', 'monitor'];
-    if (roleParam && validRoles.includes(roleParam)) {
-      onStartDemo(roleParam);
+    if (isRestrictedRole && roleParam) {
+      setSelectedRole(roleParam);
     }
-  }, [onStartDemo]);
+  }, [isRestrictedRole, roleParam]);
 
   const rolesList: Array<{ role: UserRole; label: string; desc: string; icon: any; color: string }> = [
     {
@@ -63,7 +65,7 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
     {
       role: 'backoffice',
       label: '📑 Back Office',
-      desc: 'Importação de planilhas financeiras, conciliação e tratamento de bases de dados.',
+      desc: 'Agilidade para subir e baixar planilhas, dar nomes às colunas, melhorar a visualização, verificar o seu trabalho e buscar dados como CPF com velocidade e centralização.',
       icon: FileSpreadsheet,
       color: 'from-cyan-500 to-teal-600'
     },
@@ -75,6 +77,10 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
       color: 'from-rose-500 to-pink-600'
     }
   ];
+
+  const displayedRoles = isRestrictedRole 
+    ? rolesList.filter(r => r.role === roleParam)
+    : rolesList;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
@@ -99,13 +105,15 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
           </h1>
 
           <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Selecione qualquer cargo abaixo para acessar a plataforma instantaneamente sem necessidade de login. Teste as telas, ocorrências e recursos em tempo real!
+            {isRestrictedRole 
+              ? 'Ambiente seguro de demonstração para o cargo selecionado. Clique abaixo para iniciar seu teste!'
+              : 'Selecione qualquer cargo abaixo para acessar a plataforma instantaneamente sem necessidade de login. Teste as telas, ocorrências e recursos em tempo real!'}
           </p>
         </div>
 
         {/* LISTA DE CARGOS SIMULADOS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rolesList.map((item) => {
+        <div className={`grid gap-4 ${isRestrictedRole ? 'max-w-md mx-auto grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+          {displayedRoles.map((item) => {
             const IconComp = item.icon;
             const isSelected = selectedRole === item.role;
 

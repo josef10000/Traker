@@ -135,13 +135,16 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
     highlights: ['Convites Automatizados', 'Vinculação Rápida', 'Gestão de Time']
   },
   backoffice: {
-    title: 'Back Office & Conciliação',
+    title: 'Back Office',
     icon: FileSpreadsheet,
-    whatItDoes: 'Importação em massa de planilhas financeiras e conciliação bancária automatizada.',
+    whatItDoes: 'Agilidade total para subir e baixar planilhas. Ao carregar seus arquivos, você consegue visualizar os dados da melhor forma possível, dar nomes às colunas, melhorar a visualização operacional, verificar o seu trabalho e ter agilidade na busca de dados como CPF.',
     benefitByRole: {
-      backoffice: 'Processe grandes volumes de contratos e valide os extratos financeiros do sistema.'
+      backoffice: 'Velocidade, agilidade operacional e a centralização do seu trabalho em um só local.',
+      manager: 'Velocidade, agilidade e centralização total do tratamento de dados em um só local.',
+      supervisor: 'Agilidade no acompanhamento e centralização das planilhas operacionais.',
+      coordinator: 'Velocidade e centralização no fluxo de carga e download de planilhas.'
     },
-    highlights: ['Carga em Massa', 'Conciliação Bancária', 'Processamento Rápido']
+    highlights: ['Agilidade em Planilhas', 'Nomes às Colunas', 'Busca Rápida por CPF', 'Centralização Total']
   }
 };
 
