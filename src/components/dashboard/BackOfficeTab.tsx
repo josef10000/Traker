@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion } from 'motion/react';
 import { uploadImage } from '../../lib/imageUpload';
 import { 
   FileCsv as FileSpreadsheet, 
@@ -1726,13 +1727,25 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                       </tr>
                     ))}
                   </thead>
-                  <tbody className="divide-y divide-white/[0.02]">
+                  <motion.tbody
+                    className="divide-y divide-white/[0.02]"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                      visible: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
+                      hidden: {},
+                    }}
+                  >
                     {currentClientsRows.map(row => {
                       const clientObj = row.original as BackOfficeClient;
                       const isRowSelected = Boolean(clientObj?.id && selectedClientIds.includes(clientObj.id));
                       return (
-                        <tr 
-                          key={row.id} 
+                        <motion.tr
+                          key={row.id}
+                          variants={{
+                            hidden: { opacity: 0, y: 8 },
+                            visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 30 } },
+                          }}
                           className={`transition-all group ${
                             isRowSelected
                               ? (theme === 'dark' ? 'bg-orange-500/[0.07] shadow-xs' : 'bg-orange-50/80')
@@ -1744,10 +1757,10 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </td>
                           ))}
-                        </tr>
+                        </motion.tr>
                       );
                     })}
-                  </tbody>
+                  </motion.tbody>
                 </table>
               </div>
             )}

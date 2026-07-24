@@ -72,7 +72,15 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right no-print">Ações</th>
             </tr>
           </thead>
-          <tbody className={`divide-y ${theme === 'dark' ? 'divide-white/5' : 'divide-slate-100'}`}>
+          <motion.tbody
+            className={`divide-y ${theme === 'dark' ? 'divide-white/5' : 'divide-slate-100'}`}
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.035, delayChildren: 0.05 } },
+              hidden: {},
+            }}
+          >
             {isLoading ? (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">
@@ -207,8 +215,10 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                 return (
                   <motion.tr 
                     key={agreement.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    variants={{
+                      hidden: { opacity: 0, y: 8 },
+                      visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 30 } },
+                    }}
                     className={`group transition-colors relative border-l-4 ${getRowBgClass()}`}
                   >
                     {/* Cliente & CPF */}
@@ -463,7 +473,7 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                 );
               })
             )}
-          </tbody>
+          </motion.tbody>
         </table>
       </div>
 

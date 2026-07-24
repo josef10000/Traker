@@ -100,8 +100,8 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
             <span>Ambiente Interativo de Demonstração</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
-            Simulador de Experiência Tracker
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight">
+            <span className="animated-gradient-text">Simulador de Experiência Tracker</span>
           </h1>
 
           <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
@@ -112,26 +112,49 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
         </div>
 
         {/* LISTA DE CARGOS SIMULADOS */}
-        <div className={`grid gap-4 ${isRestrictedRole ? 'max-w-md mx-auto grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+        <motion.div
+          className={`grid gap-4 ${isRestrictedRole ? 'max-w-md mx-auto grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.1, delayChildren: 0.15 } },
+            hidden: {},
+          }}
+        >
           {displayedRoles.map((item) => {
             const IconComp = item.icon;
             const isSelected = selectedRole === item.role;
 
             return (
-              <button
+              <motion.button
                 key={item.role}
                 type="button"
                 onClick={() => setSelectedRole(item.role)}
-                className={`p-5 rounded-3xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 350, damping: 28 } },
+                }}
+                whileHover={{
+                  scale: isSelected ? 1.02 : 1.04,
+                  rotateX: -2,
+                  rotateY: 2,
+                  transition: { type: 'spring', stiffness: 300, damping: 20 },
+                }}
+                whileTap={{ scale: 0.97 }}
+                className={`p-5 rounded-3xl border text-left cursor-pointer relative overflow-hidden flex flex-col justify-between perspective-1000 ${
                   isSelected
                     ? 'bg-slate-900 border-purple-500/60 shadow-xl shadow-purple-500/10 scale-[1.02]'
                     : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
                 }`}
               >
                 <div className="space-y-3">
-                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white shadow-lg`}>
+                  <motion.div
+                    className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white shadow-lg`}
+                    whileHover={{ scale: 1.15, rotate: 5 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                  >
                     <IconComp size={24} weight="bold" />
-                  </div>
+                  </motion.div>
 
                   <div>
                     <h3 className="font-bold text-base text-white">{item.label}</h3>
@@ -147,21 +170,29 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
                     {isSelected && <div className="w-2 h-2 rounded-full bg-purple-400" />}
                   </div>
                 </div>
-              </button>
+              </motion.button>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* BOTÃO DE ENTRADA NO SANDBOX */}
         <div className="flex flex-col items-center justify-center space-y-4 pt-4 border-t border-white/10">
-          <button
+          <motion.button
             type="button"
             onClick={() => onStartDemo(selectedRole)}
-            className="px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-sky-600 hover:from-purple-500 hover:to-sky-500 text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-purple-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-3"
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+            className="liquid-glass-btn px-8 py-4 rounded-2xl text-white font-black text-sm uppercase tracking-wider cursor-pointer flex items-center gap-3 bg-gradient-to-r from-purple-600/80 via-indigo-600/80 to-sky-600/80"
           >
             <span>Iniciar Demonstração como {rolesList.find(r => r.role === selectedRole)?.label}</span>
-            <ArrowRight size={20} weight="bold" />
-          </button>
+            <motion.span
+              animate={{ x: [0, 4, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <ArrowRight size={20} weight="bold" />
+            </motion.span>
+          </motion.button>
 
           <p className="text-xs text-slate-500">
             🔒 Ambiente seguro de demonstração. Recursos confidenciais de infraestrutura do sistema são mantidos protegidos.

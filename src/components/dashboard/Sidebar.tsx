@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { 
   ChartLine, 
   ArrowUUpLeft as RecoveryIcon, 
@@ -154,13 +155,26 @@ export const Sidebar = ({
                 className="relative group w-full flex justify-center py-1 cursor-pointer active:scale-95 transition-all"
                 style={{ overflow: 'visible' }}
               >
+                {/* Pill deslizante — layoutId do Framer Motion (pqoqubbw pattern) */}
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active-pill"
+                    className="absolute inset-0 rounded-xl bg-primary/15 border border-primary/30 shadow-[0_0_15px_var(--primary-color)]"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
                 {/* Ícone Glassmorphism */}
-                <div className={`glass-icon-container p-2.5 rounded-xl transition-all duration-300 ${
+                <div className={`glass-icon-container p-2.5 rounded-xl transition-colors duration-200 relative z-10 ${
                   isActive
-                    ? 'bg-primary/15 border border-primary/30 text-primary shadow-[0_0_15px_var(--primary-color)]'
+                    ? 'text-primary'
                     : 'bg-white/5 border border-white/5 text-slate-400 group-hover:bg-white/10 group-hover:text-white group-hover:border-white/10'
                 }`}>
-                  <Icon size={18} weight={isActive ? 'duotone' : 'regular'} className="shrink-0" />
+                  <motion.span
+                    animate={{ scale: isActive ? 1.1 : 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  >
+                    <Icon size={18} weight={isActive ? 'duotone' : 'regular'} className="shrink-0" />
+                  </motion.span>
                 </div>
 
                 {/* Tooltip Premium Flutuante à Direita */}

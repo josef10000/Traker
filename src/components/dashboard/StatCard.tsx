@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { TrendUp as TrendingUp, Icon as LucideIcon, Info } from '@phosphor-icons/react';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { useDesignMode } from '../../hooks/useDesignMode';
+import { useCountUp } from '../../hooks/useCountUp';
 
 interface StatCardProps {
   title: string;
@@ -46,6 +47,41 @@ export const StatCard = ({
   const deltaSign = comparisonDelta !== undefined && comparisonDelta > 0 ? '+' : '';
   const [designMode] = useDesignMode();
   const [isHovered, setIsHovered] = useState(false);
+
+  // Hover 3D tilt state
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const rx = ((e.clientY - cy) / (rect.height / 2)) * -6;
+    const ry = ((e.clientX - cx) / (rect.width / 2)) * 6;
+    setTilt({ x: rx, y: ry });
+  }, []);
+
+  const handleMouseLeaveCard = useCallback(() => {
+    setIsHovered(false);
+    setTilt({ x: 0, y: 0 });
+  }, []);
+
+  // Count-up: extrai número do valor formatado (ex: "R$ 1.234,56" -> 1234.56)
+  const numericValue = typeof value === 'number'
+    ? value
+    : parseFloat(String(value).replace(/[^0-9,.-]/g, '').replace(',', '.')) || 0;
+  const animatedNumber = useCountUp(numericValue, 900);
+
+  // Reconstrói o valor exibido substituindo o número pelo animado
+  const displayValue = typeof value === 'number'
+    ? animatedNumber
+    : String(value).replace(
+        /[0-9]+([.,][0-9]+)*/,
+        numericValue > 0
+          ? animatedNumber.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+          : '0'
+      );
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   // Observa mudanças de tema na tag html/body
@@ -253,17 +289,27 @@ export const StatCard = ({
   }
 
   return (
-    <div 
-      className="relative h-40 w-full cursor-pointer perspective-1000 group hover:-translate-y-1.5 transition-all duration-300 ease-out"
+    <div
+      ref={cardRef}
+      className="relative h-40 w-full cursor-pointer perspective-1000 group"
       onClick={() => setIsFlipped(!isFlipped)}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={handleMouseLeaveCard}
+      onMouseMove={handleMouseMove}
       id={id}
     >
       <motion.div
-        className="relative w-full h-full transition-all preserve-3d"
-        animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="relative w-full h-full preserve-3d"
+        animate={{
+          rotateY: isFlipped ? 180 : tilt.y,
+          rotateX: isFlipped ? 0 : tilt.x,
+          translateY: isHovered && !isFlipped ? -4 : 0,
+        }}
+        transition={{
+          rotateX: { type: 'spring', stiffness: 300, damping: 30 },
+          rotateY: isFlipped ? { duration: 0.3, ease: [0.22, 1, 0.36, 1] } : { type: 'spring', stiffness: 300, damping: 30 },
+          translateY: { type: 'spring', stiffness: 300, damping: 30 },
+        }}
       >
         {/* Face Frontal */}
         <div className="absolute inset-0 backface-hidden preserve-3d">
@@ -280,12 +326,16 @@ export const StatCard = ({
             <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] -mr-8 -mt-8 rounded-full blur-2xl group-hover:opacity-[0.07] transition-all" />
             
             <div className="flex justify-between items-start mb-4 preserve-3d">
-              <div 
+              <motion.div
                 className={`p-3 rounded-xl border ${colorClasses[color]} shadow-lg`}
                 style={{ transform: 'translateZ(30px)' }}
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 }}
+                whileHover={{ scale: 1.12, transition: { type: 'spring', stiffness: 400, damping: 15 } }}
               >
                 <Icon size={24} />
-              </div>
+              </motion.div>
               <div className="flex flex-col items-end gap-1 preserve-3d" style={{ transform: 'translateZ(20px)' }}>
                 {comparisonDelta !== undefined && (
                   <span
@@ -312,7 +362,7 @@ export const StatCard = ({
             </div>
             <div className="preserve-3d" style={{ transform: 'translateZ(40px)' }}>
               <p className="text-[9px] font-black text-slate-500 dark:text-white/50 uppercase tracking-[0.2em]">{title}</p>
-              <h3 className="text-2xl font-black text-slate-950 dark:text-white mt-1 leading-none drop-shadow-md">{value}</h3>
+              <h3 className="text-2xl font-black text-slate-950 dark:text-white mt-1 leading-none drop-shadow-md">{displayValue}</h3>
               {subtitle && (
                 <p className="text-[9px] font-bold text-slate-400 dark:text-white/30 mt-2 uppercase tracking-wider truncate">{subtitle}</p>
               )}
@@ -343,7 +393,7 @@ export const StatCard = ({
             
             <div className="relative z-10 pointer-events-none mt-1 preserve-3d" style={{ transform: 'translateZ(30px)' }}>
               <p className="text-[9px] font-bold text-slate-500 dark:text-white/60 truncate uppercase tracking-tighter">{title}</p>
-              <p className="text-sm font-black text-slate-950 dark:text-white drop-shadow-sm">{value}</p>
+              <p className="text-sm font-black text-slate-950 dark:text-white drop-shadow-sm">{displayValue}</p>
             </div>
           </div>
         </div>

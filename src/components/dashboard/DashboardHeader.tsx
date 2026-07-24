@@ -23,6 +23,7 @@ import {
 import { UserProfile, Team, AppNotification } from '../../types';
 import { Avatar } from '../ui/Avatar';
 import { ToastType } from '../ui/Toast';
+import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { useDesignMode } from '../../hooks/useDesignMode';
 import { query, collection, where, getDocs, onSnapshot, writeBatch } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -301,10 +302,14 @@ export const DashboardHeader = ({
             }`}
             title={`Atualizar dados do sistema (Última atualização: ${formatLastRefreshed(lastRefreshed)})`}
           >
-            <ArrowsClockwise
+            <AnimatedIcon
+              icon={ArrowsClockwise}
               size={18}
               weight="duotone"
-              className={`transition-transform duration-500 ${isRefreshing ? 'animate-spin text-primary' : 'group-hover:rotate-180'}`}
+              animation="spin"
+              trigger="loop"
+              active={isRefreshing}
+              className={`transition-colors ${isRefreshing ? 'text-primary' : ''}`}
             />
           </button>
 
@@ -323,7 +328,15 @@ export const DashboardHeader = ({
               }`}
               title="Notificações"
             >
-              <Bell size={18} weight={notificationCount > 0 ? "fill" : "duotone"} className={notificationCount > 0 ? 'text-primary' : ''} />
+              <AnimatedIcon
+                icon={Bell}
+                size={18}
+                weight={notificationCount > 0 ? 'fill' : 'duotone'}
+                animation="shake"
+                trigger="manual"
+                active={notificationCount > 0}
+                className={notificationCount > 0 ? 'text-primary' : ''}
+              />
               {notificationCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
                   {notificationCount}
