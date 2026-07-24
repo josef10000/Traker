@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'motion/react';
+import { SpotlightCard } from '../ui/SpotlightCard';
+import { NumberShuffle } from '../ui/NumberShuffle';
 import { uploadImage } from '../../lib/imageUpload';
 import { 
   FileCsv as FileSpreadsheet, 
@@ -1323,18 +1325,21 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         </div>
       ) : (
         <div className="space-y-4">
-          {/* CARDS DE MÉTRICAS E DESEMPENHO DA PLANILHA ATIVA */}
+          {/* CARDS DE MÉTRICAS E DESEMPENHO DA PLANILHA ATIVA (Spotlight + NumberShuffle) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {/* Total CPFs */}
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between relative overflow-hidden ${
-              theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-xs'
-            }`}>
+            <SpotlightCard
+              spotlightColor="rgba(249, 115, 22, 0.25)"
+              className={`p-4 flex flex-col justify-between ${
+                theme === 'dark' ? 'bg-slate-900/60 border-orange-500/20' : 'bg-white border-slate-200 shadow-xs'
+              }`}
+            >
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Carga</span>
                 <span className="text-[10px] font-bold text-orange-400 font-mono">{stats.progressPercent}%</span>
               </div>
               <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-2xl font-black text-white">{stats.total}</span>
+                <NumberShuffle value={stats.total} className="text-2xl font-black text-white" />
                 <span className="text-[10px] font-bold text-slate-500">CPFs</span>
               </div>
               {/* Barra de Progresso Visual */}
@@ -1344,70 +1349,85 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                   style={{ width: `${stats.progressPercent}%` }}
                 />
               </div>
-            </div>
+            </SpotlightCard>
 
             {/* Pendentes */}
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
-              theme === 'dark' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-200 shadow-xs'
-            }`}>
+            <SpotlightCard
+              spotlightColor="rgba(245, 158, 11, 0.25)"
+              className={`p-4 flex flex-col justify-between ${
+                theme === 'dark' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-200 shadow-xs'
+              }`}
+            >
               <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">📌 Pendentes</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-amber-400">{stats.pending}</span>
+                <NumberShuffle value={stats.pending} className="text-2xl font-black text-amber-400" />
                 <span className="text-[10px] font-bold text-amber-500/70">
                   {stats.total > 0 ? `${((stats.pending / stats.total) * 100).toFixed(0)}%` : '0%'}
                 </span>
               </div>
-            </div>
+            </SpotlightCard>
 
             {/* Em Tratativa */}
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
-              theme === 'dark' ? 'bg-sky-500/5 border-sky-500/20' : 'bg-sky-50 border-sky-200 shadow-xs'
-            }`}>
+            <SpotlightCard
+              spotlightColor="rgba(14, 165, 233, 0.25)"
+              className={`p-4 flex flex-col justify-between ${
+                theme === 'dark' ? 'bg-sky-500/5 border-sky-500/20' : 'bg-sky-50 border-sky-200 shadow-xs'
+              }`}
+            >
               <span className="text-[10px] font-black uppercase tracking-widest text-sky-400">⏳ Em Tratativa</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-sky-400">{stats.inProgress}</span>
+                <NumberShuffle value={stats.inProgress} className="text-2xl font-black text-sky-400" />
                 <span className="text-[10px] font-bold text-sky-500/70">
                   {stats.total > 0 ? `${((stats.inProgress / stats.total) * 100).toFixed(0)}%` : '0%'}
                 </span>
               </div>
-            </div>
+            </SpotlightCard>
 
             {/* Tratados */}
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
-              theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200 shadow-xs'
-            }`}>
+            <SpotlightCard
+              spotlightColor="rgba(16, 185, 129, 0.25)"
+              className={`p-4 flex flex-col justify-between ${
+                theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200 shadow-xs'
+              }`}
+            >
               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">✅ Tratados</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-emerald-400">{stats.treated}</span>
+                <NumberShuffle value={stats.treated} className="text-2xl font-black text-emerald-400" />
                 <span className="text-[10px] font-bold text-emerald-500/70">
                   {stats.total > 0 ? `${((stats.treated / stats.total) * 100).toFixed(0)}%` : '0%'}
                 </span>
               </div>
-            </div>
+            </SpotlightCard>
 
             {/* Ignorados */}
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
-              theme === 'dark' ? 'bg-slate-500/5 border-slate-500/20' : 'bg-slate-100 border-slate-200 shadow-xs'
-            }`}>
+            <SpotlightCard
+              spotlightColor="rgba(148, 163, 184, 0.25)"
+              className={`p-4 flex flex-col justify-between ${
+                theme === 'dark' ? 'bg-slate-500/5 border-slate-500/20' : 'bg-slate-100 border-slate-200 shadow-xs'
+              }`}
+            >
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">🚫 Ignorados</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-slate-400">{stats.ignored}</span>
+                <NumberShuffle value={stats.ignored} className="text-2xl font-black text-slate-400" />
                 <span className="text-[10px] font-bold text-slate-500/70">
                   {stats.total > 0 ? `${((stats.ignored / stats.total) * 100).toFixed(0)}%` : '0%'}
                 </span>
               </div>
-            </div>
+            </SpotlightCard>
 
             {/* Anotações / Prints Anexadas */}
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
-              theme === 'dark' ? 'bg-purple-500/5 border-purple-500/20' : 'bg-purple-50 border-purple-200 shadow-xs'
-            }`}>
+            <SpotlightCard
+              spotlightColor="rgba(168, 85, 247, 0.25)"
+              className={`p-4 flex flex-col justify-between ${
+                theme === 'dark' ? 'bg-purple-500/5 border-purple-500/20' : 'bg-purple-50 border-purple-200 shadow-xs'
+              }`}
+            >
               <span className="text-[10px] font-black uppercase tracking-widest text-purple-400">💬 Anotações / Prints</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-purple-400">{stats.totalNotes}</span>
+                <NumberShuffle value={stats.totalNotes} className="text-2xl font-black text-purple-400" />
                 <span className="text-[10px] font-bold text-purple-500/70">anexos</span>
               </div>
-            </div>
+            </SpotlightCard>
           </div>
 
           {/* BARRA DE HIGIENIZAÇÃO DE DADOS E FILTROS */}

@@ -48,13 +48,17 @@ export const StatCard = ({
   const [designMode] = useDesignMode();
   const [isHovered, setIsHovered] = useState(false);
 
-  // Hover 3D tilt state
+  // Hover 3D tilt & Spotlight state
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [mousePos, setMousePos] = useState({ x: 100, y: 50 });
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMousePos({ x, y });
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     const rx = ((e.clientY - cy) / (rect.height / 2)) * -6;
@@ -323,6 +327,14 @@ export const StatCard = ({
                   : '0 12px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)' 
             }}
           >
+            {/* Efeito Spotlight Feixe de Luz (UI-Layouts) */}
+            <div
+              className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
+              style={{
+                background: `radial-gradient(280px circle at ${mousePos.x}px ${mousePos.y}px, rgba(99, 102, 241, 0.28), transparent 70%)`,
+              }}
+            />
+
             <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] -mr-8 -mt-8 rounded-full blur-2xl group-hover:opacity-[0.07] transition-all" />
             
             <div className="flex justify-between items-start mb-4 preserve-3d">

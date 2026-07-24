@@ -14,6 +14,7 @@ import {
   FileCsv as FileSpreadsheet
 } from '@phosphor-icons/react';
 import { UserRole, UserProfile } from '../../types';
+import { SpotlightCard } from '../ui/SpotlightCard';
 
 interface DemoPageProps {
   onStartDemo: (simulatedRole: UserRole) => void;
@@ -126,51 +127,47 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
             const isSelected = selectedRole === item.role;
 
             return (
-              <motion.button
+              <motion.div
                 key={item.role}
-                type="button"
-                onClick={() => setSelectedRole(item.role)}
                 variants={{
                   hidden: { opacity: 0, y: 20 },
                   visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 350, damping: 28 } },
                 }}
-                whileHover={{
-                  scale: isSelected ? 1.02 : 1.04,
-                  rotateX: -2,
-                  rotateY: 2,
-                  transition: { type: 'spring', stiffness: 300, damping: 20 },
-                }}
-                whileTap={{ scale: 0.97 }}
-                className={`p-5 rounded-3xl border text-left cursor-pointer relative overflow-hidden flex flex-col justify-between perspective-1000 ${
-                  isSelected
-                    ? 'bg-slate-900 border-purple-500/60 shadow-xl shadow-purple-500/10 scale-[1.02]'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-                }`}
               >
-                <div className="space-y-3">
-                  <motion.div
-                    className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white shadow-lg`}
-                    whileHover={{ scale: 1.15, rotate: 5 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                  >
-                    <IconComp size={24} weight="bold" />
-                  </motion.div>
+                <SpotlightCard
+                  spotlightColor={isSelected ? 'rgba(168, 85, 247, 0.35)' : 'rgba(99, 102, 241, 0.2)'}
+                  onClick={() => setSelectedRole(item.role)}
+                  className={`p-5 text-left cursor-pointer transition-all flex flex-col justify-between h-full ${
+                    isSelected
+                      ? 'bg-slate-900/90 border-purple-500/80 shadow-2xl shadow-purple-500/20 ring-2 ring-purple-500/50'
+                      : 'bg-slate-900/40 border-white/10 hover:border-purple-500/30'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <motion.div
+                      className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white shadow-lg`}
+                      whileHover={{ scale: 1.15, rotate: 5 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                    >
+                      <IconComp size={24} weight="bold" />
+                    </motion.div>
 
-                  <div>
-                    <h3 className="font-bold text-base text-white">{item.label}</h3>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{item.desc}</p>
+                    <div>
+                      <h3 className="font-bold text-base text-white">{item.label}</h3>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">{item.desc}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-purple-400">
-                  <span>{isSelected ? 'Cargo Selecionado' : 'Clique para Selecionar'}</span>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                    isSelected ? 'border-purple-400 bg-purple-400/20' : 'border-slate-600'
-                  }`}>
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-purple-400" />}
+                  <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-purple-400">
+                    <span>{isSelected ? 'Cargo Selecionado' : 'Clique para Selecionar'}</span>
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      isSelected ? 'border-purple-400 bg-purple-400/20' : 'border-slate-600'
+                    }`}>
+                      {isSelected && <div className="w-2 h-2 rounded-full bg-purple-400" />}
+                    </div>
                   </div>
-                </div>
-              </motion.button>
+                </SpotlightCard>
+              </motion.div>
             );
           })}
         </motion.div>
