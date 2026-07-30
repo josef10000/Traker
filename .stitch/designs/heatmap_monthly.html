@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Calendário de Calor Macro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Manrope:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb596",
+                        "surface-container-low": "#f3f3fe",
+                        "surface-container": "#ededf9",
+                        "outline": "#737686",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface": "#FFFFFF",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-container": "#eeefff",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "outline-variant": "#c3c6d7",
+                        "on-surface-variant": "#434655",
+                        "warning-amber": "#F59E0B",
+                        "primary-fixed": "#dbe1ff",
+                        "on-surface": "#191b23",
+                        "surface-variant": "#e1e2ed",
+                        "inverse-on-surface": "#f0f0fb",
+                        "primary-container": "#2563eb",
+                        "secondary-container": "#d0e1fb",
+                        "divider": "#F3F4F6",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#ffdbcd",
+                        "surface-container-high": "#e7e7f3",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#943700",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2e3039",
+                        "on-secondary-container": "#54647a",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-background": "#191b23",
+                        "on-tertiary-container": "#ffede6",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#b4c5ff",
+                        "alert-red": "#EF4444",
+                        "surface-dim": "#d9d9e5",
+                        "surface-container-highest": "#e1e2ed",
+                        "surface-bright": "#faf8ff",
+                        "on-secondary-fixed": "#0b1c30",
+                        "secondary": "#505f76",
+                        "tertiary-container": "#bc4800",
+                        "success-emerald": "#10B981",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "error-container": "#ffdad6",
+                        "background": "#F8F9FA",
+                        "surface-tint": "#0053db",
+                        "primary": "#2563EB",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "text-main": "#1F2937",
+                        "secondary-fixed": "#d3e4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "0.5rem",
+                        "margin-page": "2rem",
+                        "gutter": "1.5rem",
+                        "stack-md": "1.5rem",
+                        "stack-lg": "2.5rem",
+                        "container-max-width": "1200px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Manrope"],
+                        "label-bold": ["Inter"],
+                        "headline-lg-mobile": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-lg": ["30px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-bold": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+        .cell-shadow {
+            box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.03);
+        }
+    </style>
+</head>
+<body class="bg-background text-text-main font-body-md min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-page md:p-8 lg:p-12 flex justify-center">
+<div class="w-full max-w-[1400px]">
+<!-- Main Card Container -->
+<div class="glass-panel rounded-xl p-8 lg:p-10 border-0">
+<!-- Header Section -->
+<div class="mb-stack-lg flex flex-col space-y-1">
+<span class="font-label-bold text-label-bold text-outline uppercase tracking-wider">Heatmap Mensal</span>
+<h1 class="font-headline-lg text-headline-lg text-text-main">Calendário de Calor Macro <span class="font-headline-md text-headline-md text-on-surface-variant font-normal">(Geração VS Liquidez)</span></h1>
+</div>
+<!-- Calendar Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+<!-- Day 1 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 1</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 2 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 2</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 3 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 3</span>
+<div class="flex justify-between items-end mt-2">
+<span class="font-label-bold text-label-bold text-primary">G:</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">R$ 9.939,00</span>
+</div>
+</div>
+<!-- Day 4 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 4</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 5 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-success-emerald"></div>
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 5</span>
+<div class="flex justify-between items-end mt-2">
+<span class="font-label-bold text-label-bold text-success-emerald">L:</span>
+<span class="font-label-sm text-label-sm text-success-emerald font-semibold">R$ 9.939,00</span>
+</div>
+</div>
+<!-- Day 6 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 6</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 7 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 7</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 8 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 8</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 9 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 9</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 10 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 10</span>
+<div class="flex justify-between items-end mt-2">
+<span class="font-label-bold text-label-bold text-primary">G:</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">R$ 3.064,00</span>
+</div>
+</div>
+<!-- Day 11 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 11</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 12 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 12</span>
+<div class="flex justify-between items-end mt-2">
+<span class="font-label-bold text-label-bold text-primary">G:</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">R$ 4.238,00</span>
+</div>
+</div>
+<!-- Day 13 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 13</span>
+<div class="flex justify-between items-end mt-2">
+<span class="font-label-bold text-label-bold text-primary">G:</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">R$ 15.610,00</span>
+</div>
+</div>
+<!-- Day 14 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-success-emerald"></div>
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 14</span>
+<div class="flex justify-between items-end mt-2">
+<span class="font-label-bold text-label-bold text-success-emerald">L:</span>
+<span class="font-label-sm text-label-sm text-success-emerald font-semibold">R$ 15.610,00</span>
+</div>
+</div>
+<!-- Day 15 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 15</span>
+<div class="flex justify-between items-end mt-2">
+<span class="font-label-bold text-label-bold text-primary">G:</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">R$ 23.458,00</span>
+</div>
+</div>
+<!-- Day 16 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 16</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 17 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 17</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 18 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 18</span>
+<div class="flex justify-between items-end mt-2">
+<span class="font-label-bold text-label-bold text-primary">G:</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">R$ 11.406,00</span>
+</div>
+</div>
+<!-- Day 19 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 19</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 20 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 20</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 21 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 21</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 22 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 22</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 23 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 23</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 24 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 24</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 25 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 25</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 26 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 26</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 27 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 27</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 28 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 28</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 29 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 29</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 30 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 30</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+<!-- Day 31 -->
+<div class="bg-surface rounded-lg p-4 flex flex-col justify-between h-28 cell-shadow border border-divider/50">
+<span class="font-headline-md text-headline-md text-text-main text-sm">Dia 31</span>
+<span class="font-label-sm text-label-sm text-outline italic">Sem dados</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

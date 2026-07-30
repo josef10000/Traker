@@ -1,0 +1,1232 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Custom Colors - Themeable */
+  --color-primary: var(--primary-color, #6366f1);
+  --color-dashboard-bg: var(--bg-color, #0d1117);
+  --color-dashboard-surface: var(--surface-color, #161b22);
+  --color-dashboard-border: var(--border-color, rgba(255, 255, 255, 0.08));
+  --color-main-text: var(--text-main, #f1f5f9);
+  --color-glass-surface: var(--glass-surface, rgba(22, 27, 34, 0.75));
+  --color-glass-border: var(--glass-border, rgba(255, 255, 255, 0.08));
+}
+
+:root, [data-theme='light'] {
+  /* Remapeamento da paleta slate para o light mode */
+  --slate-50: #F1F4F9;   /* page background — exato do mockup */
+  --slate-100: #f8fafc;  /* surface-container-low */
+  --slate-200: #E2E8F0;  /* card borders — exato do mockup */
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;  /* muted text */
+  --slate-500: #64748b;  /* secondary text */
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;  /* primary text dark */
+  --slate-900: #f8fafc;  /* light grey surface */
+  --slate-950: #ffffff;  /* white surface/cards */
+
+  --primary-color: #2D9C95;  /* teal do botão "Novo Acordo" — exato do mockup */
+  --bg-color: #F1F4F9;        /* page background */
+  --surface-color: #ffffff;   /* cards e sidebar */
+  --border-color: #E2E8F0;    /* bordas de card */
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #475569;
+  --glass-surface: rgba(255, 255, 255, 0.85);
+  --glass-border: #E2E8F0;
+  --row-hover-bg: rgba(0, 0, 0, 0.04);
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+
+  /* Cores semânticas extras do mockup */
+  --modal-primary: #2a7eb0;
+  --icon-circle-bg: #1e6091;
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
+}
+
+
+[data-theme='dark'] {
+  --slate-50: #0d1117;
+  --slate-100: #161b22;
+  --slate-200: rgba(255, 255, 255, 0.08);
+  --slate-300: #94a3b8;
+  --slate-400: #64748b;
+  --slate-500: #94a3b8;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: rgba(22, 27, 34, 0.6);
+  --slate-950: #0d1117;
+
+  --primary-color: #6366f1; /* Índigo corporativo pastel */
+  --bg-color: #0d1117;      /* Slate/zinc neutro corporativo (sem azul neon) */
+  --surface-color: #161b22;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --card-bg: rgba(22, 27, 34, 0.7);
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --glass-surface: rgba(22, 27, 34, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --row-hover-bg: rgba(255, 255, 255, 0.04);
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+@layer base {
+  body {
+    @apply bg-dashboard-bg text-main-text antialiased;
+  }
+}
+
+.glass-card {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--card-shadow);
+  @apply backdrop-blur-xl;
+}
+
+.data-row {
+  @apply transition-all duration-200;
+}
+.data-row:hover {
+  background-color: var(--row-hover-bg);
+}
+
+/* Global Custom Scrollbar matching system primary color */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary-color);
+  opacity: 0.8;
+}
+
+/* Fix for dark date inputs */
+input[type="date"].color-scheme-dark {
+  color-scheme: dark;
+}
+
+/* Prevent browser autofill from changing input background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: var(--text-main) !important;
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: inset 0 0 20px 20px transparent;
+}
+
+/* Ensure inputs stay integrated with the background */
+input {
+  background-color: transparent !important;
+}
+
+/* Dropdown (Select/Option) Styling */
+select {
+  color-scheme: dark;
+}
+
+option {
+  background-color: #0f172a !important; /* Dark slate base for options */
+  color: white !important;
+}
+
+[data-theme='light'] select {
+  color-scheme: light;
+}
+
+[data-theme='light'] option {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+
+[data-theme='purple'] option {
+  background-color: #1c1917 !important;
+}
+
+[data-theme='sky'] option {
+  background-color: #020617 !important;
+}
+
+/* Custom Select Arrow */
+.select-custom-arrow {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.25em;
+  padding-right: 2.5rem;
+}
+
+/* Light mode: seta escura para selects */
+[data-theme='light'] .select-custom-arrow {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%231e293b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+}
+
+
+
+/* 3D Utilities */
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+}
+
+.shadow-glow {
+  filter: blur(2px);
+}
+
+.perspective-2000 {
+  perspective: 2000px;
+}
+
+/* Print/PDF Layout */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 15mm 12mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  .glass-card {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    color: #000000 !important;
+    backdrop-filter: none !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6, p, span, div {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+  
+  /* Formatação de Tabelas */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    color: #000000 !important;
+    page-break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  thead {
+    display: table-header-group;
+  }
+  
+  th {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    font-weight: 700 !important;
+    padding: 8px 12px !important;
+    font-size: 10pt !important;
+    text-align: left;
+  }
+  
+  td {
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #334155 !important;
+    padding: 8px 12px !important;
+    font-size: 9.5pt !important;
+  }
+  
+  .print-section {
+    page-break-inside: avoid;
+  }
+  
+  /* Removendo scrollbars e fundos dinâmicos */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Oculta layout de performance do Dashboard se o modal de ocorrências estiver aberto */
+  body.occurrences-modal-open .print-only {
+    display: none !important;
+  }
+
+  /* Oculta modais/overlays durante a impressão de performance */
+  body:not(.occurrences-modal-open) .fixed.inset-0,
+  body:not(.occurrences-modal-open) [role="dialog"],
+  body:not(.occurrences-modal-open) .modal {
+    display: none !important;
+  }
+}
+
+/* Esconde elementos exclusivos de impressão na tela */
+.print-only {
+  display: none;
+}
+
+/* =====================================================
+   LIGHT MODE — CLÁSSICO LIMPO (Baseado nas imagens)
+   Neutraliza TODAS as regras do premium design mode.
+   Fundo #f8fafc, cards brancos, sombras suaves.
+   ===================================================== */
+
+/* Variáveis base - sobrescreve premium com !important */
+[data-theme='light'] {
+  --bg-color: #f8fafc !important;
+  --surface-color: #ffffff !important;
+  --text-main: #0f172a !important;
+  --text-muted: #64748b !important;
+  --glass-surface: rgba(255, 255, 255, 0.97) !important;
+  --glass-border: #e2e8f0 !important;
+  --border-color: #e2e8f0 !important;
+  --card-bg: #ffffff !important;
+  --primary-color: #2D9C95 !important;
+}
+
+/* Body: fundo claro, sem gradientes/texturas premium */
+[data-theme='light'] body {
+  background-color: #f8fafc !important;
+  background-image: none !important;
+  color: #0f172a !important;
+}
+
+/* Glass cards: branco sólido com sombra suave (sem glassmorphism) */
+[data-theme='light'] .glass-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04) !important;
+}
+
+[data-theme='light'] .glass-card::before {
+  display: none !important;
+}
+
+[data-theme='light'] .glass-card:hover {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08) !important;
+  transform: none !important;
+}
+
+/* Premium cards: branco sólido no light */
+[data-theme='light'] .premium-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06) !important;
+  background: #ffffff !important;
+}
+
+[data-theme='light'] .premium-card::before {
+  display: none !important;
+}
+
+[data-theme='light'] .premium-card:hover {
+  transform: none !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08) !important;
+}
+
+/* Premium icon box: clean no light */
+[data-theme='light'] .premium-icon-box {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme='light'] .premium-icon-box::after {
+  display: none !important;
+}
+
+/* Modais: branco puro */
+[data-theme='light'] div[role="dialog"] > div,
+[data-theme='light'] .bg-slate-900.rounded-3xl,
+[data-theme='light'] .bg-slate-950.rounded-3xl {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15) !important;
+}
+
+/* Fundo desfocado de modais no light */
+[data-theme='light'] div.fixed.inset-0.bg-black\/80,
+[data-theme='light'] div.fixed.inset-0.bg-slate-950\/80 {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* Tabelas: clean */
+[data-theme='light'] thead tr {
+  background-color: #f8fafc !important;
+}
+
+[data-theme='light'] tr.border-b {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .data-row:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Barra de abas no light */
+[data-theme='light'] div.flex.flex-wrap.bg-slate-950 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  backdrop-filter: none !important;
+}
+
+/* Scrollbar no light */
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1 !important;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8 !important;
+}
+
+/* Botões que o premium muda para dourado: restaurar no light */
+[data-theme='light'] .bg-sky-500,
+[data-theme='light'] button[class*="bg-sky-"] {
+  background: initial;
+  color: initial;
+  box-shadow: initial;
+  border: initial;
+  text-shadow: initial;
+}
+
+/* --- SIDEBAR: branco com ícones escuros --- */
+[data-theme='light'] .sidebar-glass {
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .sidebar-glass .text-slate-300,
+[data-theme='light'] .sidebar-glass .text-slate-400,
+[data-theme='light'] .sidebar-glass .text-slate-500 {
+  color: #475569 !important;
+}
+
+[data-theme='light'] .sidebar-glass .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .sidebar-glass .text-sky-400 {
+  color: #2D9C95 !important;
+}
+
+[data-theme='light'] .sidebar-glass .border-white\/5,
+[data-theme='light'] .sidebar-glass .border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .sidebar-glass .bg-white\/5,
+[data-theme='light'] .sidebar-glass .bg-white\/10 {
+  background-color: transparent !important;
+}
+
+[data-theme='light'] .sidebar-glass .group-hover\:bg-white\/10:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme='light'] .sidebar-glass .group-hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .sidebar-glass .bg-gradient-to-br {
+  background: #e0f2f1 !important;
+}
+
+[data-theme='light'] .sidebar-glass .bg-sky-500\/15 {
+  background-color: rgba(45, 156, 149, 0.12) !important;
+}
+
+[data-theme='light'] .sidebar-glass .border-sky-500\/25,
+[data-theme='light'] .sidebar-glass .border-sky-500\/30 {
+  border-color: rgba(45, 156, 149, 0.3) !important;
+}
+
+[data-theme='light'] .sidebar-glass .shadow-lg {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06) !important;
+}
+
+/* Tooltip no light: branco com sombra */
+[data-theme='light'] .glass-tooltip {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05) !important;
+}
+
+[data-theme='light'] .glass-tooltip::after {
+  background: #ffffff !important;
+  border-left: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .glass-tooltip .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .glass-tooltip .text-slate-400 {
+  color: #64748b !important;
+}
+
+[data-theme='light'] .glass-tooltip .text-rose-400 {
+  color: #e11d48 !important;
+}
+
+/* --- CONTAINERS PRINCIPAIS: fundos brancos/claros --- */
+[data-theme='light'] .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+
+[data-theme='light'] .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+
+[data-theme='light'] .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme='light'] .bg-\[\#090d16\] {
+  background-color: #ffffff !important;
+}
+
+[data-theme='light'] .bg-\[\#0f172a\] {
+  background-color: #f8fafc !important;
+}
+
+[data-theme='light'] .bg-\[\#020617\] {
+  background-color: #f8fafc !important;
+}
+
+[data-theme='light'] .bg-\[\#061224\] {
+  background-color: #f8fafc !important;
+}
+
+/* Override inline styles de backgrounds dark (ProfileSettings etc) */
+[data-theme='light'] [style*="background-color: rgb(9, 13, 22)"],
+[data-theme='light'] [style*="background-color: #090d16"],
+[data-theme='light'] [style*="backgroundColor: '#090d16'"] {
+  background-color: #ffffff !important;
+}
+
+/* Semi-transparentes escuros */
+[data-theme='light'] .bg-slate-950\/40,
+[data-theme='light'] .bg-slate-950\/60,
+[data-theme='light'] .bg-slate-950\/80,
+[data-theme='light'] .bg-slate-900\/40,
+[data-theme='light'] .bg-slate-900\/60,
+[data-theme='light'] .bg-slate-900\/80,
+[data-theme='light'] .bg-slate-900\/50 {
+  background-color: #f8fafc !important;
+}
+
+[data-theme='light'] .bg-black\/60,
+[data-theme='light'] .bg-black\/80 {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* --- TEXTO: escuro e legível --- */
+[data-theme='light'] .text-white:not(button):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-teal"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-orange"]) {
+  color: #0f172a !important;
+}
+
+/* Texto em botões coloridos MANTÉM branco */
+[data-theme='light'] button .text-white,
+[data-theme='light'] [class*="bg-emerald"] .text-white,
+[data-theme='light'] [class*="bg-green"] .text-white,
+[data-theme='light'] [class*="bg-teal"] .text-white,
+[data-theme='light'] [class*="bg-sky"] .text-white,
+[data-theme='light'] [class*="bg-blue"] .text-white,
+[data-theme='light'] [class*="bg-red"] .text-white,
+[data-theme='light'] [class*="bg-rose"] .text-white,
+[data-theme='light'] [class*="bg-amber"] .text-white {
+  color: #ffffff !important;
+}
+
+[data-theme='light'] .text-slate-100 {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .text-slate-200 {
+  color: #1e293b !important;
+}
+
+[data-theme='light'] .text-slate-300 {
+  color: #334155 !important;
+}
+
+[data-theme='light'] .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* --- BORDAS: claras --- */
+[data-theme='light'] .border-white\/5,
+[data-theme='light'] .border-white\/8,
+[data-theme='light'] .border-white\/10,
+[data-theme='light'] .border-white\/15,
+[data-theme='light'] .border-white\/20 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .border-slate-700,
+[data-theme='light'] .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .divide-white\/5 > * + * {
+  border-color: #e2e8f0 !important;
+}
+
+/* --- INPUTS e SELECTS --- */
+[data-theme='light'] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme='light'] textarea,
+[data-theme='light'] select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] input::placeholder,
+[data-theme='light'] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme='light'] select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* --- HOVER e INTERAÇÃO --- */
+[data-theme='light'] .hover\:bg-white\/5:hover,
+[data-theme='light'] .hover\:bg-white\/10:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme='light'] .hover\:bg-slate-800:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme='light'] .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* --- BADGES e STATUS: manter cores mas ajustar fundos --- */
+[data-theme='light'] .bg-white\/5,
+[data-theme='light'] .bg-white\/10 {
+  background-color: #f1f5f9 !important;
+}
+
+/* --- ANIMAÇÕES e EFEITOS --- */
+[data-theme='light'] .animate-pulse {
+  animation: none !important;
+}
+
+/* --- TABELAS GERAIS --- */
+[data-theme='light'] th {
+  color: #475569 !important;
+  background-color: #f8fafc !important;
+}
+
+[data-theme='light'] td {
+  color: #1e293b !important;
+}
+
+/* --- MODAIS (ProfileSettings etc) --- */
+[data-theme='light'] .fixed.inset-0 > div[class*="bg-"] {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .rounded-3xl.border.border-white\/10 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Ajusta fundo do DynamicBackground */
+[data-theme='light'] .absolute.inset-0.bg-\[\#020617\] {
+  background-color: transparent !important;
+}
+
+/* =====================================================
+   CARDS: NÚMEROS VISÍVEIS, BORDAS DEFINIDAS, NEGRITO
+   ===================================================== */
+
+/* Borda dos cards mais escura e definida */
+[data-theme='light'] .glass-card {
+  border: 1.5px solid #94a3b8 !important;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.06) !important;
+}
+
+[data-theme='light'] .glass-card:hover {
+  border: 1.5px solid #64748b !important;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.12) !important;
+  transform: none !important;
+}
+
+/* Números principais dos StatCards: pretos, grandes, em negrito */
+[data-theme='light'] .glass-card h3,
+[data-theme='light'] .glass-card h2,
+[data-theme='light'] .glass-card h1 {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+
+/* Valores monetários e números (geralmente em h3/p.text-2xl) */
+[data-theme='light'] .glass-card .text-2xl,
+[data-theme='light'] .glass-card .text-3xl,
+[data-theme='light'] .glass-card .text-xl {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+/* Títulos dos cards (label acima do número) */
+[data-theme='light'] .glass-card .text-\[9px\],
+[data-theme='light'] .glass-card .text-\[10px\],
+[data-theme='light'] .glass-card .text-\[11px\],
+[data-theme='light'] .glass-card .text-xs,
+[data-theme='light'] .glass-card .text-sm {
+  color: #334155 !important;
+  font-weight: 700 !important;
+}
+
+/* Subtítulos dos cards */
+[data-theme='light'] .glass-card .text-slate-500,
+[data-theme='light'] .glass-card .text-slate-400 {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+/* text-white/50 e variantes nos cards */
+[data-theme='light'] .glass-card [class*="text-white"] {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+/* Borda dos premium-card também mais escura */
+[data-theme='light'] .premium-card {
+  border: 1.5px solid #94a3b8 !important;
+}
+
+/* =====================================================
+   NOME DA EMPRESA: LEGÍVEL E EM NEGRITO
+   ===================================================== */
+
+[data-theme='light'] h1.text-slate-900,
+[data-theme='light'] h1.text-white,
+[data-theme='light'] h1[class*="font-black"],
+[data-theme='light'] h1[class*="font-bold"] {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+/* Header principal: garantir que todo texto seja visível */
+[data-theme='light'] header h1,
+[data-theme='light'] header h2,
+[data-theme='light'] header h3 {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+[data-theme='light'] header p,
+[data-theme='light'] header span:not([class*="bg-"]) {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+/* =====================================================
+   NEGRITO GERAL: TÍTULOS, LABELS, SUBTÍTULOS NO LIGHT
+   ===================================================== */
+
+/* Todos os títulos de seção */
+[data-theme='light'] h1:not([class*="text-"]):not([class*="bg-"]),
+[data-theme='light'] h2:not([class*="text-"]):not([class*="bg-"]),
+[data-theme='light'] h3:not([class*="text-"]):not([class*="bg-"]) {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+/* Spans e labels que eram claros demais */
+[data-theme='light'] .uppercase.tracking-widest,
+[data-theme='light'] .uppercase.tracking-wider,
+[data-theme='light'] .uppercase.font-black,
+[data-theme='light'] .uppercase.font-bold {
+  font-weight: 800 !important;
+  color: #334155 !important;
+}
+
+/* =====================================================
+   TOUR DRIVER.JS: LIGHT MODE
+   ===================================================== */
+
+/* Popover do driver.js: fundo branco, texto preto */
+[data-theme='light'] #driver-popover-content,
+[data-theme='light'] .driver-popover {
+  background-color: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 0.15) !important;
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .driver-popover-title {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+[data-theme='light'] .driver-popover-description {
+  color: #334155 !important;
+  font-weight: 500 !important;
+}
+
+[data-theme='light'] .driver-popover-footer {
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .driver-popover-progress-text {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme='light'] .driver-popover-prev-btn {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .driver-popover-next-btn,
+[data-theme='light'] .driver-popover-done-btn {
+  background: #2D9C95 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+[data-theme='light'] .driver-popover-arrow-side-top::after,
+[data-theme='light'] .driver-popover-arrow-side-bottom::after,
+[data-theme='light'] .driver-popover-arrow-side-left::after,
+[data-theme='light'] .driver-popover-arrow-side-right::after {
+  border-color: #ffffff transparent transparent transparent !important;
+}
+
+/* =====================================================
+   FIM DO LIGHT MODE
+   ===================================================== */
+
+/* --- ESTILO PREMIUM (VISUAL ULTRA-PREMIUM) --- */
+
+[data-design-mode='premium'] {
+  --bg-color: #0d1117;
+  --surface-color: #161b22;
+  --text-main: #f8fafc;
+  --glass-surface: rgba(22, 27, 34, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --primary-color: #6366f1; /* Índigo corporativo pastel */
+  
+  /* Cores de Fundo dos Cards Premium com gradientes ricos semi-translúcidos */
+  --premium-card-blue: linear-gradient(135deg, rgba(22, 27, 34, 0.9) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-emerald: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-rose: linear-gradient(135deg, rgba(159, 18, 57, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-sky: linear-gradient(135deg, rgba(3, 105, 161, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-amber: linear-gradient(135deg, rgba(180, 83, 9, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+  --premium-card-indigo: linear-gradient(135deg, rgba(67, 56, 202, 0.4) 0%, rgba(13, 17, 23, 0.95) 100%);
+}
+
+/* Fundo do Body com tom slate corporativo limpo */
+[data-design-mode='premium'] body {
+  background-color: #0d1117;
+  background-image: none;
+}
+
+/* Card Premium (Glassmorphism + Filete de Luz Interno) */
+.premium-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.15), 
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  z-index: 1;
+}
+
+.premium-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 20px 40px -15px rgba(0, 0, 0, 0.7);
+}
+
+/* Caixa de Ícone Premium Relevo Metálico 3D */
+.premium-icon-box {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.3), 
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.4), 
+    0 4px 12px rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.premium-icon-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 13px;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.premium-icon-box:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    inset 0 2px 3px rgba(255, 255, 255, 0.4), 
+    inset 0 -2px 3px rgba(0, 0, 0, 0.5), 
+    0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+
+
+/* Animações e Pulsações */
+[data-design-mode='premium'] .animate-pulse {
+  animation: premium-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes premium-pulse {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4));
+  }
+  50% {
+    opacity: .5;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
+  }
+}
+
+/* Custom Premium Theme for Driver.js Popover */
+.driver-popover {
+  background-color: #0b1329 !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 24px !important;
+  padding: 24px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  font-family: "Inter", sans-serif !important;
+  max-width: 350px !important;
+}
+
+.driver-popover-title {
+  color: #38bdf8 !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  margin-bottom: 8px !important;
+  font-family: "Inter", sans-serif !important;
+}
+
+.driver-popover-description {
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  font-weight: 500 !important;
+  font-family: "Inter", sans-serif !important;
+}
+
+.driver-popover-progress-text {
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.driver-popover-arrow {
+  border-bottom-color: #0b1329 !important;
+  border-top-color: #0b1329 !important;
+  border-left-color: #0b1329 !important;
+  border-right-color: #0b1329 !important;
+}
+
+/* Custom buttons for Driver.js */
+.driver-popover-footer button {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 8px 16px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.driver-popover-footer .driver-popover-next-btn {
+  background-color: #0ea5e9 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2) !important;
+}
+
+.driver-popover-footer .driver-popover-next-btn:hover {
+  background-color: #38bdf8 !important;
+  transform: translateY(-1px) !important;
+}
+
+.driver-popover-footer .driver-popover-prev-btn {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.driver-popover-footer .driver-popover-prev-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.driver-popover-close-btn {
+  color: #64748b !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: #f1f5f9 !important;
+}
+
+/* Sidebar Glassmorphic & Premium Tooltips */
+.sidebar-glass {
+  background-color: rgba(9, 15, 30, 0.7) !important;
+  backdrop-filter: blur(24px) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.glass-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-tooltip {
+  background: rgba(9, 15, 30, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 1px 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+.glass-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -4px;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: rgba(9, 15, 30, 0.95);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: -1;
+}
+
+
+/* =====================================================
+   DRIVER.JS TOUR: OVERRIDES GLOBAIS (funciona mesmo 
+   sem escopo de data-theme pois driver.js injeta em body)
+   ===================================================== */
+
+html[data-theme='light'] .driver-popover-content,
+html[data-theme='light'] .driver-popover {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 25px 50px rgb(0 0 0 / 0.18) !important;
+}
+
+html[data-theme='light'] .driver-popover-title {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  font-size: 1rem !important;
+}
+
+html[data-theme='light'] .driver-popover-description {
+  color: #334155 !important;
+}
+
+html[data-theme='light'] .driver-popover-navigation-btns button {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme='light'] .driver-popover-next-btn,
+html[data-theme='light'] .driver-popover-done-btn {
+  background: #2D9C95 !important;
+  color: #ffffff !important;
+  border-color: #2D9C95 !important;
+}
+
+html[data-theme='light'] .driver-popover-progress-text {
+  color: #64748b !important;
+}
+
+/* ============================================================
+   VISUAL UPGRADE — Pixel-Perfect + pqoqubbw/icons patterns
+   ============================================================ */
+
+/* --- Shimmer Skeleton Loader --- */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 0%,
+    rgba(255,255,255,0.10) 40%,
+    rgba(255,255,255,0.03) 80%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+  border-radius: 0.5rem;
+}
+
+/* --- Animated Gradient Text --- */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+.animated-gradient-text {
+  background: linear-gradient(
+    270deg,
+    #a78bfa,
+    #818cf8,
+    #38bdf8,
+    #34d399,
+    #a78bfa
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-x 4s ease infinite;
+}
+
+/* --- Liquid Glass Button (SVG filter — Pixel-Perfect) --- */
+.liquid-glass-btn {
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  transition: all 0.25s ease;
+}
+
+.liquid-glass-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.18) 0%,
+    rgba(255,255,255,0.00) 60%
+  );
+  pointer-events: none;
+}
+
+.liquid-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+}
+
+.liquid-glass-btn:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+/* --- Row Stagger helper --- */
+.stagger-row {
+  opacity: 0;
+}
+
+/* --- Hover glow para ícones animados --- */
+.icon-hover-scale {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.icon-hover-scale:hover {
+  transform: scale(1.18);
+}
+
+/* --- Pill de navegação active indicator --- */
+.tab-pill-active {
+  @apply absolute inset-0 rounded-lg;
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}

@@ -1,0 +1,218 @@
+<!DOCTYPE html><html lang="pt-br"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>DataStore Snapshot - Debt Collection Table</title>
+<!-- Tailwind CSS v3 CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter for modern UI -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Lucide Icons (CDN for development) -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<style data-purpose="base-typography">
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f9fafb; /* Subtle light background */
+      color: #374151;
+    }
+  </style>
+<style data-purpose="table-customizations">
+    .status-badge {
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    .action-btn {
+      transition: all 0.2s ease;
+    }
+    .action-btn:hover {
+      background-color: #e5e7eb;
+      color: #111827;
+    }
+    .row-hover:hover {
+      background-color: #fcfcfc;
+    }
+    /* Custom border for side-accented badges */
+    .border-l-accent {
+      border-left-width: 4px;
+    }
+  </style>
+</head>
+<body class="p-8">
+<!-- BEGIN: MainContentContainer -->
+<main class="max-w-7xl mx-auto bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100" data-purpose="table-wrapper">
+<table class="w-full text-left border-collapse">
+<!-- BEGIN: TableHeader -->
+<thead class="bg-white border-b border-gray-100"><tr>
+<th class="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Cliente</th>
+<th class="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Origem</th>
+<th class="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tipo</th>
+<th class="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Vencimento</th>
+<th class="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Valor</th>
+<th class="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+</tr></thead>
+<!-- END: TableHeader -->
+<tbody class="divide-y divide-gray-100">
+<!-- BEGIN: Row Devedor 2 -->
+<tr class="row-hover">
+<td class="px-6 py-5">
+<div class="flex items-center gap-4">
+<div>
+<div class="text-sm font-semibold text-gray-900">Devedor 2</div>
+<div class="text-sm text-gray-500">(Ana Souza)</div>
+</div>
+<div class="flex gap-1 ml-4" data-purpose="row-actions">
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="copy"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="eye"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="history"></i></button>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<span class="px-4 py-1.5 rounded-full border border-teal-500 text-teal-600 text-xs font-medium">Salesforce</span>
+</td>
+<td class="px-6 py-5 text-sm text-gray-700">Quitação</td>
+<td class="px-6 py-5 text-sm text-gray-700">05/07/2026</td>
+<td class="px-6 py-5 text-sm font-bold text-gray-900">R$ 2.445,00</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2 text-green-600 status-badge">
+<i class="w-5 h-5 fill-green-600 text-white" data-lucide="check-circle-2"></i>
+<span>PAGO</span>
+</div>
+</td>
+</tr>
+<!-- END: Row Devedor 2 -->
+<!-- BEGIN: Row Devedor 3 -->
+<tr class="row-hover">
+<td class="px-6 py-5">
+<div class="flex items-center gap-4">
+<div>
+<div class="text-sm font-semibold text-gray-900">Devedor 3</div>
+<div class="text-sm text-gray-500">(Ana Souza)</div>
+</div>
+<div class="flex gap-1 ml-4">
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="copy"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="eye"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="history"></i></button>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<span class="px-4 py-1.5 rounded-full border border-purple-400 text-purple-500 text-xs font-medium">Oktor</span>
+</td>
+<td class="px-6 py-5 text-sm text-gray-700">Parcelamento</td>
+<td class="px-6 py-5 text-sm text-gray-700">15/07/2026</td>
+<td class="px-6 py-5 text-sm font-bold text-gray-900">R$ 1.637,00</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2 text-green-600 status-badge">
+<i class="w-5 h-5 fill-green-600 text-white" data-lucide="check-circle-2"></i>
+<span>PAGO</span>
+</div>
+</td>
+</tr>
+<!-- END: Row Devedor 3 -->
+<!-- BEGIN: Row Devedor 4 -->
+<tr class="row-hover">
+<td class="px-6 py-5">
+<div class="flex items-center gap-4">
+<div>
+<div class="text-sm font-semibold text-gray-900">Devedor 4</div>
+<div class="text-sm text-gray-500">(Ana Souza)</div>
+</div>
+<div class="flex gap-1 ml-4">
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="copy"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="eye"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="history"></i></button>
+</div>
+<!-- Status Badge inside name col -->
+<div class="flex flex-col gap-1 ml-2">
+<span class="bg-gray-200 text-[9px] font-bold px-2 py-0.5 border-l-accent border-orange-500 text-gray-700">CICLO HOJE</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<span class="px-4 py-1.5 rounded-full border border-blue-900 text-blue-900 text-xs font-medium">Callix</span>
+</td>
+<td class="px-6 py-5 text-sm text-gray-700">Pcl Atrasada</td>
+<td class="px-6 py-5 text-sm text-gray-700">18/07/2026</td>
+<td class="px-6 py-5 text-sm font-bold text-gray-900">R$ 5.568,00</td>
+<td class="px-6 py-5">
+<input class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" type="checkbox">
+</td>
+</tr>
+<!-- END: Row Devedor 4 -->
+<!-- BEGIN: Row Devedor 5 -->
+<tr class="row-hover">
+<td class="px-6 py-5">
+<div class="flex items-center gap-4">
+<div>
+<div class="text-sm font-semibold text-gray-900">Devedor 5</div>
+<div class="text-sm text-gray-500">(Ana Souza)</div>
+</div>
+<div class="flex gap-1 ml-4">
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="copy"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="eye"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="history"></i></button>
+</div>
+<div class="flex flex-col gap-1 ml-2">
+<span class="bg-gray-200 text-[9px] font-bold px-2 py-0.5 border-l-accent border-yellow-400 text-gray-700">CICLO SEG.</span>
+<span class="bg-gray-200 text-[9px] font-bold px-2 py-0.5 border-l-accent border-orange-500 text-gray-700">PRIORIDADE ONTEM</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<span class="px-4 py-1.5 rounded-full border border-green-600 text-green-700 text-xs font-medium">WhatsApp</span>
+</td>
+<td class="px-6 py-5 text-sm text-gray-700">Antecipação</td>
+<td class="px-6 py-5 text-sm text-gray-700">15/07/2026</td>
+<td class="px-6 py-5 text-sm font-bold text-gray-900">R$ 6.666,00</td>
+<td class="px-6 py-5">
+<input class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" type="checkbox">
+</td>
+</tr>
+<!-- END: Row Devedor 5 -->
+<!-- BEGIN: Row Devedor 6 (Overdue) -->
+<tr class="row-hover">
+<td class="px-6 py-5">
+<div class="flex items-center gap-4">
+<div>
+<div class="text-sm font-semibold text-gray-900">Devedor 6</div>
+<div class="text-sm text-gray-500">(Ana Souza)</div>
+</div>
+<div class="flex gap-1 ml-4">
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="copy"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="eye"></i></button>
+<button class="action-btn p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="history"></i></button>
+</div>
+<div class="flex flex-col gap-1 ml-2">
+<span class="bg-gray-200 text-[9px] font-bold px-2 py-0.5 border-l-accent border-orange-500 text-gray-700">CICLO HOJE</span>
+<span class="bg-gray-200 text-[9px] font-bold px-2 py-0.5 border-l-accent border-yellow-400 text-gray-700">PRIORIDADE ONTEM</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<span class="px-4 py-1.5 rounded-full border border-amber-800 text-amber-800 text-xs font-medium">Webphone</span>
+</td>
+<td class="px-6 py-5 text-sm text-gray-700">parcela_atual</td>
+<td class="px-6 py-5 text-sm">
+<div class="text-red-700 font-medium">12/07/2026</div>
+<div class="text-[10px] font-bold text-red-700 uppercase">Vencido</div>
+</td>
+<td class="px-6 py-5 text-sm font-bold text-gray-900">R$ 2.409,00</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<i class="w-5 h-5 text-red-600 fill-red-100" data-lucide="alert-triangle"></i>
+<input class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" type="checkbox">
+<button class="p-1.5 bg-gray-100 text-gray-500 rounded-md"><i class="w-4 h-4" data-lucide="search"></i></button>
+</div>
+</td>
+</tr>
+<!-- END: Row Devedor 6 -->
+</tbody>
+</table>
+</main>
+<!-- END: MainContentContainer -->
+<script data-purpose="icon-initialization">
+    // Initialize Lucide icons
+    lucide.createIcons();
+  </script>
+</body></html>

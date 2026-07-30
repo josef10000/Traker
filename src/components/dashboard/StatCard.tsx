@@ -1,0 +1,415 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'motion/react';
+import { TrendUp as TrendingUp, Icon as LucideIcon, Info } from '@phosphor-icons/react';
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { useDesignMode } from '../../hooks/useDesignMode';
+import { useCountUp } from '../../hooks/useCountUp';
+
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  trend?: string;
+  subtitle?: string;
+  color: 'primary' | 'emerald' | 'rose' | 'amber' | 'sky' | 'indigo';
+  id?: string;
+  chartData?: any[];
+  chartType?: 'area' | 'bar' | 'pie';
+  extra?: React.ReactNode;
+  /** Variação percentual em relação ao período comparado (positivo = melhora, negativo = piora) */
+  comparisonDelta?: number;
+  /** Valor absoluto formatado do período de comparação */
+  comparisonValue?: string;
+  /** Se true, inverte a lógica de cor (delta positivo = ruim, ex: vencidos) */
+  invertDelta?: boolean;
+}
+
+export const StatCard = ({ 
+  title, 
+  value, 
+  icon: Icon, 
+  trend, 
+  subtitle,
+  color,
+  id,
+  chartData = [],
+  chartType = 'area',
+  extra,
+  comparisonDelta,
+  comparisonValue,
+  invertDelta = false
+}: StatCardProps) => {
+  // Determina se o delta é positivo do ponto de vista do negócio
+  const deltaIsGood = comparisonDelta !== undefined
+    ? (invertDelta ? comparisonDelta < 0 : comparisonDelta > 0)
+    : null;
+  const deltaAbs = comparisonDelta !== undefined ? Math.abs(comparisonDelta) : 0;
+  const deltaSign = comparisonDelta !== undefined && comparisonDelta > 0 ? '+' : '';
+  const [designMode] = useDesignMode();
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Hover 3D tilt & Spotlight state
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [mousePos, setMousePos] = useState({ x: 100, y: 50 });
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMousePos({ x, y });
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const rx = ((e.clientY - cy) / (rect.height / 2)) * -6;
+    const ry = ((e.clientX - cx) / (rect.width / 2)) * 6;
+    setTilt({ x: rx, y: ry });
+  }, []);
+
+  const handleMouseLeaveCard = useCallback(() => {
+    setIsHovered(false);
+    setTilt({ x: 0, y: 0 });
+  }, []);
+
+  // Count-up: extrai número do valor formatado (ex: "R$ 1.234,56" -> 1234.56)
+  const numericValue = typeof value === 'number'
+    ? value
+    : parseFloat(String(value).replace(/[^0-9,.-]/g, '').replace(',', '.')) || 0;
+  const animatedNumber = useCountUp(numericValue, 900);
+
+  // Reconstrói o valor exibido substituindo o número pelo animado
+  const displayValue = typeof value === 'number'
+    ? animatedNumber
+    : String(value).replace(
+        /[0-9]+([.,][0-9]+)*/,
+        numericValue > 0
+          ? animatedNumber.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+          : '0'
+      );
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  // Observa mudanças de tema na tag html/body
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  // Inicializa o estado a partir do localStorage para persistência entre F5
+  const [isFlipped, setIsFlipped] = useState(() => {
+    if (id) {
+      return localStorage.getItem(`stat_card_flipped_${id}`) === 'true';
+    }
+    return false;
+  });
+
+  // Salva o estado no localStorage sempre que mudar
+  useEffect(() => {
+    if (id) {
+      localStorage.setItem(`stat_card_flipped_${id}`, isFlipped.toString());
+    }
+  }, [isFlipped, id]);
+
+  // Ícone: fundo sólido em gradiente, ícone branco, sombra colorida
+  const colorClasses = {
+    primary: 'bg-gradient-to-br from-sky-600 to-sky-400 text-white border-sky-400 shadow-sky-500/50',
+    emerald: 'bg-gradient-to-br from-emerald-600 to-emerald-400 text-white border-emerald-400 shadow-emerald-500/50',
+    rose: 'bg-gradient-to-br from-rose-600 to-pink-500 text-white border-rose-400 shadow-rose-500/50',
+    amber: 'bg-gradient-to-br from-amber-600 to-amber-400 text-white border-amber-400 shadow-amber-500/50',
+    sky: 'bg-gradient-to-br from-blue-600 to-sky-400 text-white border-sky-400 shadow-sky-500/50',
+    indigo: 'bg-gradient-to-br from-indigo-700 to-purple-500 text-white border-indigo-400 shadow-indigo-500/50'
+  };
+
+  // Sombra colorida do card correspondente à cor do ícone
+  const cardColorShadows: Record<string, string> = {
+    primary: '0 6px 24px rgba(14, 165, 233, 0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    emerald: '0 6px 24px rgba(16, 185, 129, 0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    rose:    '0 6px 24px rgba(244, 63,  94,  0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    amber:   '0 6px 24px rgba(245, 158, 11,  0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    sky:     '0 6px 24px rgba(14,  165, 233, 0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+    indigo:  '0 6px 24px rgba(99,  102, 241, 0.22), 0 1.5px 4px rgba(0,0,0,0.07)',
+  };
+
+  const chartColors = {
+    primary: '#0ea5e9',
+    emerald: '#10b981',
+    rose: '#f43f5e',
+    amber: '#f59e0b',
+    sky: '#0ea5e9',
+    indigo: '#6366f1'
+  };
+
+  const renderChart = () => {
+    if (!chartData || chartData.length === 0) {
+      return (
+        <div className="h-full flex items-center justify-center text-white/10 text-[10px] uppercase font-bold tracking-widest">
+          Sem dados
+        </div>
+      );
+    }
+
+    if (chartType === 'bar') {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData}>
+            <Bar 
+              dataKey="value" 
+              fill={chartColors[color]} 
+              radius={[4, 4, 0, 0]}
+              isAnimationActive={true}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (chartType === 'pie') {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              innerRadius="60%"
+              outerRadius="85%"
+              paddingAngle={5}
+              dataKey="value"
+              isAnimationActive={true}
+              stroke="none"
+            >
+              {chartData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={index === 0 ? chartColors[color] : 'rgba(255,255,255,0.05)'} 
+                />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // Default: Area Chart
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData}>
+          <defs>
+            <linearGradient id={`gradient-${color}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={chartColors[color]} stopOpacity={0.3}/>
+              <stop offset="95%" stopColor={chartColors[color]} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <Area 
+            type="monotone" 
+            dataKey="value" 
+            stroke={chartColors[color]} 
+            strokeWidth={2}
+            fillOpacity={1} 
+            fill={`url(#gradient-${color})`} 
+            isAnimationActive={true}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  if (designMode === 'premium') {
+    const premiumBgGradients = {
+      primary: 'var(--premium-card-blue)',
+      emerald: 'var(--premium-card-emerald)',
+      rose: 'var(--premium-card-rose)',
+      amber: 'var(--premium-card-amber)',
+      sky: 'var(--premium-card-sky)',
+      indigo: 'var(--premium-card-indigo)'
+    };
+
+    return (
+      <div 
+        className="premium-card h-40 w-full rounded-2xl p-5 flex flex-col justify-between shadow-xl relative overflow-hidden group border border-white/10"
+        style={{ background: premiumBgGradients[color] }}
+        id={id}
+      >
+        {/* Efeito de luz de fundo */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-current opacity-[0.02] -mr-8 -mt-8 rounded-full blur-3xl group-hover:opacity-[0.06] transition-all" />
+        
+        {/* Barra Superior: Ícone no contêiner metálico e Trend/Informações */}
+        <div className="flex justify-between items-start w-full z-10">
+          <div className="premium-icon-box w-11 h-11 text-white">
+            <Icon size={20} weight="duotone" />
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            {extra && (
+              <div className="text-[11px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full border border-white/20 shadow-md backdrop-blur-sm uppercase tracking-wider">
+                {extra}
+              </div>
+            )}
+            {comparisonDelta !== undefined && (
+              <span
+                title={comparisonValue ? `Período anterior: ${comparisonValue}` : undefined}
+                className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border shadow-sm ${
+                  deltaIsGood
+                    ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                    : 'text-rose-400 bg-rose-500/10 border-rose-500/20'
+                }`}
+              >
+                {deltaIsGood ? '▲' : '▼'} {deltaSign}{deltaAbs.toFixed(1)}%
+              </span>
+            )}
+            {trend && (
+              <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-500/20 shadow-sm">
+                <TrendingUp size={10} />
+                {trend}
+              </span>
+            )}
+            {subtitle && (
+              <div 
+                className="text-white/70 hover:text-white transition-colors cursor-help p-0.5"
+                title={subtitle}
+              >
+                <Info size={14} weight="duotone" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Barra Inferior: Título/Valor na Esquerda e Gráfico na Direita */}
+        <div className="flex justify-between items-end w-full mt-2 z-10">
+          <div className="flex-1 min-w-0 pr-2 relative z-10">
+            <p className="text-[9px] font-black text-white/90 uppercase tracking-[0.2em] truncate">{title}</p>
+            <h3 className="text-2xl font-black text-white mt-1 leading-none drop-shadow-md tracking-tight">{value}</h3>
+            {subtitle && (
+              <p className="text-[8px] font-bold text-white/75 mt-1.5 uppercase tracking-wider truncate">{subtitle}</p>
+            )}
+          </div>
+          
+          {/* Micro gráfico na direita inferior */}
+          <div className="w-[45%] h-14 opacity-80 group-hover:opacity-100 transition-opacity relative z-0">
+            {renderChart()}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={cardRef}
+      className="relative h-40 w-full cursor-pointer perspective-1000 group"
+      onClick={() => setIsFlipped(!isFlipped)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={handleMouseLeaveCard}
+      onMouseMove={handleMouseMove}
+      id={id}
+    >
+      <motion.div
+        className="relative w-full h-full preserve-3d"
+        animate={{
+          rotateY: isFlipped ? 180 : tilt.y,
+          rotateX: isFlipped ? 0 : tilt.x,
+          translateY: isHovered && !isFlipped ? -4 : 0,
+        }}
+        transition={{
+          rotateX: { type: 'spring', stiffness: 300, damping: 30 },
+          rotateY: isFlipped ? { duration: 0.3, ease: [0.22, 1, 0.36, 1] } : { type: 'spring', stiffness: 300, damping: 30 },
+          translateY: { type: 'spring', stiffness: 300, damping: 30 },
+        }}
+      >
+        {/* Face Frontal */}
+        <div className="absolute inset-0 backface-hidden preserve-3d">
+          <div 
+            className="glass-card h-full p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden preserve-3d border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/60 transition-all duration-300"
+            style={{ 
+              boxShadow: isDark 
+                ? cardColorShadows[color] 
+                : isHovered 
+                  ? '0 25px 50px rgba(0, 0, 0, 0.08), 0 4px 18px rgba(0, 0, 0, 0.03)' 
+                  : '0 12px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)' 
+            }}
+          >
+            {/* Efeito Spotlight Feixe de Luz (UI-Layouts) */}
+            <div
+              className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
+              style={{
+                background: `radial-gradient(280px circle at ${mousePos.x}px ${mousePos.y}px, rgba(99, 102, 241, 0.28), transparent 70%)`,
+              }}
+            />
+
+            <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] -mr-8 -mt-8 rounded-full blur-2xl group-hover:opacity-[0.07] transition-all" />
+            
+            <div className="flex justify-between items-start mb-4 preserve-3d">
+              <motion.div
+                className={`p-3 rounded-xl border ${colorClasses[color]} shadow-lg`}
+                style={{ transform: 'translateZ(30px)' }}
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 }}
+                whileHover={{ scale: 1.12, transition: { type: 'spring', stiffness: 400, damping: 15 } }}
+              >
+                <Icon size={24} />
+              </motion.div>
+              <div className="flex flex-col items-end gap-1 preserve-3d" style={{ transform: 'translateZ(20px)' }}>
+                {comparisonDelta !== undefined && (
+                  <span
+                    title={comparisonValue ? `Período anterior: ${comparisonValue}` : undefined}
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border shadow-sm ${
+                      deltaIsGood
+                        ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                        : 'text-rose-500 bg-rose-500/10 border-rose-500/20'
+                    }`}
+                  >
+                    {deltaIsGood ? '▲' : '▼'} {deltaSign}{deltaAbs.toFixed(1)}%
+                  </span>
+                )}
+                {trend && (
+                  <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-500/20 shadow-sm">
+                    <TrendingUp size={10} />
+                    {trend}
+                  </span>
+                )}
+                <div className="text-slate-400 hover:text-slate-600 dark:text-white/20 dark:group-hover:text-white/40 transition-colors">
+                  <Info size={14} />
+                </div>
+              </div>
+            </div>
+            <div className="preserve-3d" style={{ transform: 'translateZ(40px)' }}>
+              <p className="text-[9px] font-black text-slate-500 dark:text-white/50 uppercase tracking-[0.2em]">{title}</p>
+              <h3 className="text-2xl font-black text-slate-950 dark:text-white mt-1 leading-none drop-shadow-md">{displayValue}</h3>
+              {subtitle && (
+                <p className="text-[9px] font-bold text-slate-400 dark:text-white/30 mt-2 uppercase tracking-wider truncate">{subtitle}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Face Traseira */}
+        <div className="absolute inset-0 backface-hidden rotate-y-180 preserve-3d">
+          <div
+            className="glass-card h-full p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden preserve-3d border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/60 transition-all duration-300"
+            style={{ 
+              boxShadow: isDark 
+                ? cardColorShadows[color] 
+                : isHovered 
+                  ? '0 25px 50px rgba(0, 0, 0, 0.08), 0 4px 18px rgba(0, 0, 0, 0.03)' 
+                  : '0 12px 30px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)' 
+            }}
+          >
+            <div className="flex justify-between items-center mb-1 preserve-3d" style={{ transform: 'translateZ(20px)' }}>
+              <p className="text-[9px] font-black text-slate-500 dark:text-white/50 uppercase tracking-[0.2em]">Visão Analítica</p>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-glow`} style={{ backgroundColor: chartColors[color], boxShadow: `0 0 10px ${chartColors[color]}` }} />
+            </div>
+            
+            <div className="flex-1 -mx-2 mt-1 opacity-90 group-hover:opacity-100 transition-opacity preserve-3d" style={{ transform: 'translateZ(10px)' }}>
+              {renderChart()}
+            </div>
+            
+            <div className="relative z-10 pointer-events-none mt-1 preserve-3d" style={{ transform: 'translateZ(30px)' }}>
+              <p className="text-[9px] font-bold text-slate-500 dark:text-white/60 truncate uppercase tracking-tighter">{title}</p>
+              <p className="text-sm font-black text-slate-950 dark:text-white drop-shadow-sm">{displayValue}</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
