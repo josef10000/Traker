@@ -75,7 +75,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [copiedDemo, setCopiedDemo] = useState(false);
   const [activeTab, setActiveTab] = useState<'companies' | 'metrics' | 'email'>('companies');
 
@@ -154,22 +154,29 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   };
 
   useEffect(() => {
+    // Safety timer para garantir liberação visual imediata sem travamentos
+    const safetyTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 150);
+
     // Carregar todas as organizações
     const unsubscribeOrgs = onSnapshot(collection(db, 'organizations'), (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Organization));
       setOrganizations(data);
+      setIsLoading(false);
     }, (error) => {
       console.error(error);
-      showToast('Erro ao carregar organizações.', 'error');
+      setIsLoading(false);
     });
 
     // Carregar todos os usuários do sistema
     const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const data = snapshot.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile));
       setUsers(data);
+      setIsLoading(false);
     }, (error) => {
       console.error(error);
-      showToast('Erro ao carregar usuários.', 'error');
+      setIsLoading(false);
     });
 
     // Carregar todos os times do sistema
@@ -179,13 +186,14 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       setIsLoading(false);
     }, (error) => {
       console.error(error);
-      showToast('Erro ao carregar equipes.', 'error');
+      setIsLoading(false);
     });
 
     return () => {
       unsubscribeOrgs();
       unsubscribeUsers();
       unsubscribeTeams();
+      clearTimeout(safetyTimer);
     };
   }, []);
 
