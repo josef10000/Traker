@@ -83,6 +83,9 @@ export interface UserProfile {
   avatarSeed?: string;
   photoURL?: string;
   avatarType?: 'custom' | 'api';
+  shiftStartHour?: number;    // Padrão: 8 (08:00)
+  shiftEndHour?: number;      // Padrão: 17 (17:00)
+  dailyPauseAllowance?: number; // Padrão: 72 (minutos de pausa permitidos por dia)
 }
 
 export interface QaSettings {
@@ -315,6 +318,8 @@ export interface Invite {
   createdAt: string;
   expiresAt: string;
   monthlyServiceValue?: number; // Valor da prestação PJ mensal
+  shiftStartHour?: number;
+  shiftEndHour?: number;
 }
 
 export interface TransferRequest {

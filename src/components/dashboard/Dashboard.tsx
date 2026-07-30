@@ -5,6 +5,7 @@ import { AuditTab } from './AuditTab';
 import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { BiAnalyticsTab } from './BiAnalyticsTab';
 import { DimensionamentoSitesSection } from './DimensionamentoSitesSection';
+import { HourlyActivityTrackerSection } from './HourlyActivityTrackerSection';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -3060,6 +3061,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     />
                   )}
                 </div>
+              )}
+
+              {/* CONTEÚDO DA ABA JORNADA */}
+              {dashboardTab === 'jornada' && (profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin' || profile.role === 'monitor') && (
+                <HourlyActivityTrackerSection
+                  profile={profile}
+                  teamMembers={currentTeamMembers}
+                  agreements={agreements}
+                  attendances={collaborationNotes}
+                  managedTeamsData={managedTeamsData}
+                  selectedMonth={selectedMonth}
+                  selectedYear={selectedYear}
+                  theme={theme}
+                />
               )}
 
               {/* CONTEÚDO DA ABA DE SUPORTE */}

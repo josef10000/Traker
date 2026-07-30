@@ -12,7 +12,8 @@ import {
   FileCsv as FileSpreadsheet,
   Target,
   PhoneCall as TabulationIcon,
-  MonitorPlay as ExecutiveIcon
+  MonitorPlay as ExecutiveIcon,
+  Clock
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
 
@@ -80,6 +81,13 @@ export const Sidebar = ({
           description: 'Inteligência preditiva, Heatmap, Ticket Médio, Metas e Ofensores.',
           icon: BiIcon,
           show: profile.role !== 'backoffice'
+        },
+        {
+          id: 'jornada',
+          label: 'Jornada',
+          description: 'Acompanhamento passivo de atividade hora a hora, banco de pausas (72 min) e consistência da equipe.',
+          icon: Clock,
+          show: isSuperUser && profile.role !== 'backoffice'
         },
         {
           id: 'people',
