@@ -8,7 +8,7 @@ describe('formatAudioStreamUrl', () => {
   });
 
   it('deve converter URLs do SharePoint/OneDrive adicionando &download=1', () => {
-    const sharepointUrl = 'https://skydigitaltechcompany-my.sharepoint.com/:u:/g/personal/eldenia_silva_digitaltech_company/IQAeqvJe-ZeBQ61SPFVZvo1hAb-Mh8-uMvGNHVMEMIdFuC0?e=2gKBWM';
+    const sharepointUrl = 'https://tenant-my.sharepoint.com/:u:/g/personal/operador_teste_company/IQAeqvJe-ZeBQ61SPFVZvo1hAb-Mh8-uMvGNHVMEMIdFuC0?e=2gKBWM';
     const expected = `${sharepointUrl}&download=1`;
     expect(formatAudioStreamUrl(sharepointUrl)).toBe(expected);
   });
