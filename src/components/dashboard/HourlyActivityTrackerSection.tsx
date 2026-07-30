@@ -5,7 +5,7 @@ import {
   Coffee, 
   Sparkle, 
   Calendar, 
-  FileSpreadsheet, 
+  FileCsv as FileSpreadsheet, 
   CheckCircle, 
   WarningCircle, 
   Lightning, 
@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   Crown
 } from '@phosphor-icons/react';
-import { UserProfile, Agreement, AuditLog, Team } from '../../types';
+import { UserProfile, Agreement, Team } from '../../types';
+import { AuditLog } from '../../lib/audit';
 import { formatCurrency } from '../../utils/masks';
 
 interface HourlyActivityTrackerSectionProps {

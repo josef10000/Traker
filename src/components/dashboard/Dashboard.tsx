@@ -3068,8 +3068,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <HourlyActivityTrackerSection
                   profile={profile}
                   teamMembers={currentTeamMembers}
-                  agreements={agreements}
-                  attendances={collaborationNotes}
+                  agreements={monthAgreements}
+                  attendances={allCollaborationNotes}
                   managedTeamsData={managedTeamsData}
                   selectedMonth={selectedMonth}
                   selectedYear={selectedYear}
