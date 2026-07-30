@@ -4,7 +4,7 @@ import { WarningCircle, IconContext } from '@phosphor-icons/react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { useDesignMode } from './hooks/useDesignMode';
 import { auth, db } from './lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LoginPage } from './components/auth/LoginPage';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
