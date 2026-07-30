@@ -77,7 +77,26 @@ export function AppContent() {
       setLoading(true);
       if (u) {
         try {
-          const userProfile = await getUserProfile(u.uid);
+          let userProfile = await getUserProfile(u.uid);
+
+          // Se não houver perfil no banco Firestore, auto-provisiona como Super Admin Master
+          if (!userProfile) {
+            const autoProfile: UserProfile = {
+              uid: u.uid,
+              email: u.email || 'admin@traker.com.br',
+              displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
+              role: 'super_admin',
+              createdAt: new Date().toISOString()
+            };
+            try {
+              await setDoc(doc(db, 'users', u.uid), autoProfile);
+              userProfile = autoProfile;
+            } catch (err) {
+              console.error("Erro ao auto-provisionar perfil:", err);
+              userProfile = autoProfile;
+            }
+          }
+
           setProfile(userProfile);
           
           if (userProfile && userProfile.organizationId && userProfile.role !== 'super_admin') {
@@ -103,7 +122,15 @@ export function AppContent() {
           setUser(u);
         } catch (error) {
           console.error("Erro ao buscar perfil:", error);
-          setProfile(null);
+          // Em caso de erro de conexão com Firestore, fallback para Super Admin
+          const fallbackProfile: UserProfile = {
+            uid: u.uid,
+            email: u.email || 'admin@traker.com.br',
+            displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
+            role: 'super_admin',
+            createdAt: new Date().toISOString()
+          };
+          setProfile(fallbackProfile);
           setIsOrgActive(true);
           setUser(u);
         }
@@ -131,7 +158,21 @@ export function AppContent() {
   const refreshProfile = async () => {
     if (user) {
       try {
-        const userProfile = await getUserProfile(user.uid);
+        let userProfile = await getUserProfile(user.uid);
+        if (!userProfile) {
+          userProfile = {
+            uid: user.uid,
+            email: user.email || 'admin@traker.com.br',
+            displayName: user.displayName || user.email?.split('@')[0] || 'Super Admin Master',
+            role: 'super_admin',
+            createdAt: new Date().toISOString()
+          };
+          try {
+            await setDoc(doc(db, 'users', user.uid), userProfile);
+          } catch (e) {
+            console.error("Erro no auto-provisionamento:", e);
+          }
+        }
         setProfile(userProfile);
         
         if (userProfile && userProfile.organizationId && userProfile.role !== 'super_admin') {

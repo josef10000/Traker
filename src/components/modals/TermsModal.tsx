@@ -33,7 +33,7 @@ export const TermsModal = ({ isOpen, onAccept }: TermsModalProps) => {
             1. Objeto e Consentimento
           </div>
           <p>
-            O presente documento estabelece as condições de uso do sistema Tracker RNV Gestão. Ao utilizar esta plataforma, você concorda expressamente com a coleta, processamento e armazenamento de suas ações operacionais, com foco na transparência e rastreabilidade exigidas pela Lei Geral de Proteção de Dados (LGPD).
+            O presente documento estabelece as condições de uso do sistema Tracker SaaS. Ao utilizar esta plataforma, você concorda expressamente com a coleta, processamento e armazenamento de suas ações operacionais, com foco na transparência e rastreabilidade exigidas pela Lei Geral de Proteção de Dados (LGPD).
           </p>
 
           <div className="flex items-center gap-2 text-white font-bold text-base">
@@ -76,7 +76,7 @@ export const TermsModal = ({ isOpen, onAccept }: TermsModalProps) => {
               className="peer mt-1 rounded border-slate-800 bg-slate-950 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-900"
             />
             <span className="text-xs text-slate-400 group-hover:text-slate-200 transition-colors leading-relaxed select-none">
-              Li e concordo com os Termos de Uso e Política de Privacidade do Tracker RNV Gestão, comprometendo-me a agir em conformidade com as diretrizes da LGPD no manuseio de dados pessoais.
+              Li e concordo com os Termos de Uso e Política de Privacidade do Tracker SaaS, comprometendo-me a agir em conformidade com as diretrizes da LGPD no manuseio de dados pessoais.
             </span>
           </label>
 

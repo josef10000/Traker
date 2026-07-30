@@ -259,7 +259,7 @@ export const PeopleReportModal = ({
                 <div className="border-t border-slate-400 w-64 mx-auto" />
                 <div className="text-center text-xs text-slate-600">
                   <p className="font-bold">Assinatura do Gestor Responsável</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Gestão de Operações de Cobrança / RNV</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Gestão de Operações de Cobrança / Tracker</p>
                 </div>
               </div>
             </>

@@ -196,7 +196,7 @@ export const Onboarding = ({ user, profile, onComplete, isAdditionalTeam, onBack
         )}
         <div className="text-center">
           <h2 className="text-3xl font-bold text-white tracking-tight">
-            {isAdditionalTeam ? 'Criar Nova Equipe' : 'Bem-vindo ao RNV Gestão'}
+            {isAdditionalTeam ? 'Criar Nova Equipe' : 'Bem-vindo ao Tracker SaaS'}
           </h2>
           <p className="mt-2 text-slate-400">
             {isAdditionalTeam 
