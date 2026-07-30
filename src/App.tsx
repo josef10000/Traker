@@ -22,7 +22,14 @@ import { DynamicBackground } from './components/ui/DynamicBackground';
 export function AppContent() {
   const [designMode, setDesignMode] = useDesignMode();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
+    try {
+      const cached = localStorage.getItem('tracker_cached_profile');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -73,56 +80,66 @@ export function AppContent() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setLoading(true);
-      if (u) {
-        try {
-          let userProfile = await getUserProfile(u.uid);
+    // Safety timer: Desbloqueia o carregamento em no máximo 800ms independente de rede/Firestore
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
 
-          // Se não houver perfil no banco Firestore, auto-provisiona como Super Admin Master
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u);
+        // Se já houver perfil no estado (via localStorage), desbloqueia a tela na hora
+        if (profile) {
+          setLoading(false);
+        }
+
+        const fetchProfilePromise = getUserProfile(u.uid);
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 800));
+
+        try {
+          let userProfile = await Promise.race([fetchProfilePromise, timeoutPromise]);
+
           if (!userProfile) {
-            const autoProfile: UserProfile = {
-              uid: u.uid,
-              email: u.email || 'admin@traker.com.br',
-              displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
-              role: 'super_admin',
-              createdAt: new Date().toISOString()
-            };
-            try {
-              await setDoc(doc(db, 'users', u.uid), autoProfile);
-              userProfile = autoProfile;
-            } catch (err) {
-              console.error("Erro ao auto-provisionar perfil:", err);
-              userProfile = autoProfile;
+            const cached = localStorage.getItem('tracker_cached_profile');
+            if (cached) {
+              try { userProfile = JSON.parse(cached); } catch {}
+            }
+            if (!userProfile) {
+              userProfile = {
+                uid: u.uid,
+                email: u.email || 'admin@traker.com.br',
+                displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
+                role: 'super_admin',
+                createdAt: new Date().toISOString()
+              };
+              setDoc(doc(db, 'users', u.uid), userProfile).catch(() => {});
             }
           }
 
           setProfile(userProfile);
-          
+          try {
+            localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
+          } catch {}
+
           if (userProfile && userProfile.organizationId && userProfile.role !== 'super_admin') {
-            const orgSnap = await getDoc(doc(db, 'organizations', userProfile.organizationId));
-            if (orgSnap.exists()) {
-              const orgData = orgSnap.data();
-              let active = orgData.status === 'active';
-              if (active && orgData.planExpiresAt) {
-                const expiresDate = new Date(orgData.planExpiresAt + 'T23:59:59');
-                const today = new Date();
-                if (today > expiresDate) {
-                  active = false;
+            getDoc(doc(db, 'organizations', userProfile.organizationId)).then(orgSnap => {
+              if (orgSnap.exists()) {
+                const orgData = orgSnap.data();
+                let active = orgData.status === 'active';
+                if (active && orgData.planExpiresAt) {
+                  const expiresDate = new Date(orgData.planExpiresAt + 'T23:59:59');
+                  if (new Date() > expiresDate) active = false;
                 }
+                setIsOrgActive(active);
+              } else {
+                setIsOrgActive(false);
               }
-              setIsOrgActive(active);
-            } else {
-              setIsOrgActive(false);
-            }
+            }).catch(() => setIsOrgActive(true));
           } else {
             setIsOrgActive(true);
           }
-
-          setUser(u);
         } catch (error) {
           console.error("Erro ao buscar perfil:", error);
-          // Em caso de erro de conexão com Firestore, fallback para Super Admin
           const fallbackProfile: UserProfile = {
             uid: u.uid,
             email: u.email || 'admin@traker.com.br',
@@ -132,16 +149,21 @@ export function AppContent() {
           };
           setProfile(fallbackProfile);
           setIsOrgActive(true);
-          setUser(u);
         }
       } else {
         setUser(null);
         setProfile(null);
         setIsOrgActive(true);
+        localStorage.removeItem('tracker_cached_profile');
       }
       setLoading(false);
+      clearTimeout(safetyTimer);
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribe();
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
   useEffect(() => {
