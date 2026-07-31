@@ -137,3 +137,42 @@ export const markAllNotificationsAsRead = async (
     console.error('Erro ao marcar todas as notificações como lidas no Firestore:', err);
   }
 };
+
+/**
+ * Dispara notificações sobre comunicados da operação na WIKI da Base de Conhecimento
+ */
+export const notifyAnnouncementPublished = async (
+  orgId: string,
+  articleTitle: string,
+  articleId: string,
+  senderUserId: string,
+  isSandbox: boolean = false
+): Promise<void> => {
+  try {
+    let targetUserIds: string[] = [];
+
+    if (isSandbox || orgId === 'sandbox-test') {
+      const collabs = sandboxService.getCollaborators();
+      targetUserIds = collabs.map(c => c.uid).filter(uid => uid !== senderUserId);
+    } else {
+      const q = query(collection(db, 'users'), where('organizationId', '==', orgId));
+      const snap = await getDocs(q);
+      targetUserIds = snap.docs
+        .map(d => d.id)
+        .filter(uid => uid !== senderUserId);
+    }
+
+    for (const userId of targetUserIds) {
+      await createNotification({
+        userId,
+        senderUserId,
+        title: '🚨 Novo Comunicado da Operação',
+        message: `Novo comunicado publicado: "${articleTitle}". Clique para consultar na Base de Conhecimento.`,
+        type: 'announcement',
+        referenceId: articleId
+      }, isSandbox || orgId === 'sandbox-test');
+    }
+  } catch (err) {
+    console.error('Erro ao notificar comunicado da operação:', err);
+  }
+};

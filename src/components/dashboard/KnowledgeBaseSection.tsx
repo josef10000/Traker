@@ -23,6 +23,8 @@ import {
   saveKnowledgeArticle, 
   deleteKnowledgeArticle 
 } from '../../lib/knowledgeBaseService';
+import { notifyAnnouncementPublished } from '../../lib/notifications';
+import { auth } from '../../lib/firebase';
 
 interface KnowledgeBaseSectionProps {
   profile: UserProfile;
@@ -49,6 +51,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   const [formTitle, setFormTitle] = useState('');
   const [formCategory, setFormCategory] = useState<KnowledgeCategory>('script');
   const [formContent, setFormContent] = useState('');
+  const [enableCopyableScript, setEnableCopyableScript] = useState(false);
   const [formCopyableScript, setFormCopyableScript] = useState('');
   const [formTagsStr, setFormTagsStr] = useState('');
   const [formIsPinned, setFormIsPinned] = useState(false);
@@ -94,6 +97,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     setFormTitle('');
     setFormCategory('script');
     setFormContent('');
+    setEnableCopyableScript(false);
     setFormCopyableScript('');
     setFormTagsStr('');
     setFormIsPinned(false);
@@ -106,6 +110,8 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     setFormTitle(art.title);
     setFormCategory(art.category);
     setFormContent(art.content);
+    const hasScript = Boolean(art.copyableScript && art.copyableScript.trim().length > 0);
+    setEnableCopyableScript(hasScript);
     setFormCopyableScript(art.copyableScript || '');
     setFormTagsStr(art.tags ? art.tags.join(', ') : '');
     setFormIsPinned(art.isPinned);
@@ -124,13 +130,15 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
         .map(t => t.trim())
         .filter(t => t.length > 0);
 
-      await saveKnowledgeArticle({
+      const finalScript = (enableCopyableScript && formCopyableScript.trim()) ? formCopyableScript.trim() : undefined;
+
+      const articleId = await saveKnowledgeArticle({
         id: editingArticleId || undefined,
         organizationId: profile.organizationId || 'sandbox-test',
         title: formTitle.trim(),
         category: formCategory,
         content: formContent.trim(),
-        copyableScript: formCopyableScript.trim() || undefined,
+        copyableScript: finalScript,
         tags: tags.length > 0 ? tags : undefined,
         isPinned: formIsPinned,
         isUrgent: formIsUrgent,
@@ -138,6 +146,17 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
         createdByName: profile.displayName || profile.email.split('@')[0],
         createdByRole: profile.role
       });
+
+      // Se for um comunicado ou for urgente, dispara notificação para todos os operadores
+      if (formCategory === 'announcement' || formIsUrgent) {
+        await notifyAnnouncementPublished(
+          profile.organizationId || 'sandbox-test',
+          formTitle.trim(),
+          articleId,
+          profile.uid,
+          !auth.currentUser
+        );
+      }
 
       if (showToast) {
         showToast(editingArticleId ? 'Artigo atualizado com sucesso!' : 'Novo artigo publicado na Base de Conhecimento!', 'success');
@@ -165,7 +184,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   const getCategoryBadge = (cat: KnowledgeCategory) => {
     switch (cat) {
       case 'script':
-        return <span className="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><ChatTeardropText size={12} /> Script de Vendas</span>;
+        return <span className="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><ChatTeardropText size={12} /> Script de Negociação</span>;
       case 'announcement':
         return <span className="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><Megaphone size={12} /> Comunicado</span>;
       case 'policy':
@@ -221,7 +240,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
           <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar">
             {[
               { id: 'all', label: 'Todos os Conteúdos' },
-              { id: 'script', label: '💬 Scripts de Vendas' },
+              { id: 'script', label: '💬 Scripts de Negociação' },
               { id: 'announcement', label: '🚨 Comunicados' },
               { id: 'policy', label: '📜 Políticas & Regras' },
               { id: 'faq', label: '❓ Dúvidas / FAQ' }
@@ -420,7 +439,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                     onChange={(e) => setFormCategory(e.target.value as KnowledgeCategory)}
                     className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold outline-none focus:border-sky-500 text-white cursor-pointer"
                   >
-                    <option value="script">💬 Script de Vendas</option>
+                    <option value="script">💬 Script de Negociação</option>
                     <option value="announcement">🚨 Comunicado Urgente</option>
                     <option value="policy">📜 Política / Regra</option>
                     <option value="faq">❓ FAQ / Dúvidas</option>
@@ -441,17 +460,35 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-sky-400 mb-1">
-                  Script Próprio para Copiar (Opcional - Texto para o operador enviar ao cliente)
+              {/* Checkbox para Ativar / Desativar Bloco de Script Próprio para Copiar */}
+              <div className="pt-2 border-t border-white/5 space-y-3">
+                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-sky-400 hover:text-sky-300">
+                  <input
+                    type="checkbox"
+                    checked={enableCopyableScript}
+                    onChange={(e) => {
+                      setEnableCopyableScript(e.target.checked);
+                      if (!e.target.checked) setFormCopyableScript('');
+                    }}
+                    className="w-4 h-4 rounded accent-sky-500"
+                  />
+                  <span>💬 Incluir Bloco de Script de Negociação Próprio para Copiar em 1 Clique</span>
                 </label>
-                <textarea
-                  rows={3}
-                  value={formCopyableScript}
-                  onChange={(e) => setFormCopyableScript(e.target.value)}
-                  placeholder="Mensagem exata pronta para copiar em 1 clique..."
-                  className="w-full p-3 rounded-xl bg-slate-950 border border-sky-500/30 text-xs font-mono text-sky-200 outline-none focus:border-sky-400 custom-scrollbar"
-                />
+
+                {enableCopyableScript && (
+                  <div className="animate-fadeIn space-y-1">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-sky-300">
+                      Texto do Script Próprio (Pronto para o operador copiar)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formCopyableScript}
+                      onChange={(e) => setFormCopyableScript(e.target.value)}
+                      placeholder="Mensagem exata de negociação pronta para o operador copiar em 1 clique..."
+                      className="w-full p-3 rounded-xl bg-slate-950 border border-sky-500/30 text-xs font-mono text-sky-200 outline-none focus:border-sky-400 custom-scrollbar"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">

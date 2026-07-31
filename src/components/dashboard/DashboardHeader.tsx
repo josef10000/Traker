@@ -141,7 +141,6 @@ export const DashboardHeader = ({
   }, [profile.uid, profile.role, profile.organizationId, isTabVisible]);
 
   const handleMarkAsRead = async (notificationId: string) => {
-    const isSandbox = profile.organizationId === 'sandbox-test';
     if (notificationId.startsWith('sandbox-req-') || notificationId.startsWith('sandbox-notification-')) {
       sandboxService.markNotificationAsRead(notificationId);
       return;
@@ -158,7 +157,11 @@ export const DashboardHeader = ({
     await handleMarkAsRead(notif.id);
     setIsNotificationsOpen(false);
     
-    if (notif.type === 'payment_released' && notif.referenceId) {
+    if (notif.type === 'announcement' || notif.type === 'knowledge_base') {
+      if (onNavigateTab) {
+        onNavigateTab('knowledge_base');
+      }
+    } else if (notif.type === 'payment_released' && notif.referenceId) {
       if (onViewPayment) {
         onViewPayment(notif.referenceId);
       }

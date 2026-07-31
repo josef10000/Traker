@@ -2445,6 +2445,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               onViewPayment={(paymentId) => {
                 onSettingsClick();
               }}
+              onNavigateTab={(tab) => setDashboardTab(tab as any)}
               onLogoClick={() => {
                 if (profile.role === 'backoffice') setDashboardTab('backoffice');
                 else if (profile.role === 'monitor') setDashboardTab('qa');
