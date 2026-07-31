@@ -50,6 +50,7 @@ import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calend
 import { sandboxService } from '../../lib/sandboxService';
 import { createNotification } from '../../lib/notifications';
 import { useTheme } from '../../hooks/useTheme';
+import { useTabVisibility } from '../../hooks/useTabVisibility';
 
 import { Avatar } from '../ui/Avatar';
 import { ConfirmModal } from '../modals/ConfirmModal';
@@ -109,6 +110,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   // Tema (dark/light) — reativo, persistido em localStorage
   const { theme, toggleTheme } = useTheme();
+  const isTabVisible = useTabVisibility();
 
 
   // Configurações e Filtros de Data/Status/Busca
@@ -222,7 +224,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Escuta todas as anotações/presenças da organização
   useEffect(() => {
-    if (!profile.organizationId) return;
+    if (!profile.organizationId || !isTabVisible) return;
 
     if (profile.organizationId === 'sandbox-test') {
       const handleSandboxUpdate = () => {
@@ -243,11 +245,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
       return () => unsubscribe();
     }
-  }, [profile.organizationId]);
+  }, [profile.organizationId, isTabVisible]);
 
   // Escuta todos os eventos de calendário da organização
   useEffect(() => {
-    if (!profile.organizationId) return;
+    if (!profile.organizationId || !isTabVisible) return;
 
     if (profile.organizationId === 'sandbox-test') {
       const handleSandboxUpdate = () => {
@@ -268,7 +270,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
       return () => unsubscribe();
     }
-  }, [profile.organizationId]);
+  }, [profile.organizationId, isTabVisible]);
 
   // Seleção reativa de aba padrão para monitores e backoffice
   useEffect(() => {

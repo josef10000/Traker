@@ -29,6 +29,7 @@ import { query, collection, where, getDocs, onSnapshot, writeBatch } from 'fireb
 import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
 import { markNotificationAsRead } from '../../lib/notifications';
+import { useTabVisibility } from '../../hooks/useTabVisibility';
 
 interface DashboardHeaderProps {
   profile: UserProfile;
@@ -92,9 +93,10 @@ export const DashboardHeader = ({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [notificationCount, setNotificationCount] = useState(0);
+  const isTabVisible = useTabVisibility();
 
   useEffect(() => {
-    if (!profile.uid) return;
+    if (!profile.uid || !isTabVisible) return;
 
     if (profile.organizationId === 'sandbox-test') {
       const loadNotifications = () => {
@@ -136,7 +138,7 @@ export const DashboardHeader = ({
 
       return () => unsubscribe();
     }
-  }, [profile.uid, profile.role, profile.organizationId]);
+  }, [profile.uid, profile.role, profile.organizationId, isTabVisible]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     const isSandbox = profile.organizationId === 'sandbox-test';
