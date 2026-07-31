@@ -34,9 +34,16 @@ service cloud.firestore {
     }
 
     // Coleção de usuários (users)
+    // SEGURANÇA: Usuários podem criar/atualizar seu perfil, mas NÃO podem alterar o próprio role.
     match /users/{userId} {
       allow read: if request.auth != null && (isSuperAdmin() || getUserOrganizationId() == resource.data.organizationId);
-      allow write: if request.auth != null && (isSuperAdmin() || request.auth.uid == userId || (isManager() && getUserOrganizationId() == request.resource.data.organizationId));
+      allow create: if request.auth != null && (isSuperAdmin() || request.auth.uid == userId);
+      allow update: if request.auth != null && (
+        isSuperAdmin() 
+        || (isManager() && getUserOrganizationId() == request.resource.data.organizationId)
+        || (request.auth.uid == userId && request.resource.data.role == resource.data.role)
+      );
+      allow delete: if request.auth != null && isSuperAdmin();
     }
     
     // Coleção de times (teams)

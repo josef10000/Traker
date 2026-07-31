@@ -107,9 +107,9 @@ export function AppContent() {
             if (!userProfile) {
               userProfile = {
                 uid: u.uid,
-                email: u.email || 'admin@traker.com.br',
-                displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
-                role: 'super_admin',
+                email: u.email || 'operador@traker.com.br',
+                displayName: u.displayName || u.email?.split('@')[0] || 'Novo Usuário',
+                role: 'member',
                 createdAt: new Date().toISOString()
               };
               setDoc(doc(db, 'users', u.uid), userProfile).catch(() => {});
@@ -142,9 +142,9 @@ export function AppContent() {
           console.error("Erro ao buscar perfil:", error);
           const fallbackProfile: UserProfile = {
             uid: u.uid,
-            email: u.email || 'admin@traker.com.br',
-            displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
-            role: 'super_admin',
+            email: u.email || 'operador@traker.com.br',
+            displayName: u.displayName || u.email?.split('@')[0] || 'Novo Usuário',
+            role: 'member',
             createdAt: new Date().toISOString()
           };
           setProfile(fallbackProfile);
@@ -184,9 +184,9 @@ export function AppContent() {
         if (!userProfile) {
           userProfile = {
             uid: user.uid,
-            email: user.email || 'admin@traker.com.br',
-            displayName: user.displayName || user.email?.split('@')[0] || 'Super Admin Master',
-            role: 'super_admin',
+            email: user.email || 'operador@traker.com.br',
+            displayName: user.displayName || user.email?.split('@')[0] || 'Novo Usuário',
+            role: 'member',
             createdAt: new Date().toISOString()
           };
           try {

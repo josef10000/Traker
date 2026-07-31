@@ -1,8 +1,21 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS Headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS Headers - Restringe origens permitidas
+  const allowedOrigins = [
+    'https://traker-app.firebaseapp.com',
+    'https://traker-app.web.app'
+  ];
+  const origin = req.headers.origin || req.headers.referer || '';
+  const isAllowedOrigin = import.meta?.env?.DEV || process.env.NODE_ENV !== 'production' || allowedOrigins.some(o => origin.startsWith(o));
+
+  if (origin && isAllowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    // Requisição same-origin ou server-to-server legítima
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -15,15 +28,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { recipientEmail, orgName, roleName, inviteUrl, fromName = 'Tracker System', apiKey: bodyApiKey } = req.body || {};
+    const { recipientEmail, orgName, roleName, inviteUrl, fromName = 'Tracker System' } = req.body || {};
 
     if (!recipientEmail || !inviteUrl) {
       return res.status(400).json({ error: 'E-mail de destino e URL do convite são obrigatórios.' });
     }
 
-    // Leitura resiliente da chave de API no servidor Node da Vercel
+    // Leitura estritamente segura da chave de API nas variáveis de ambiente do servidor Node
     const apiKey = (
-      bodyApiKey ||
       process.env.VITE_RESEND_API_KEY || 
       process.env.RESEND_API_KEY || 
       process.env.resend_api_key ||
