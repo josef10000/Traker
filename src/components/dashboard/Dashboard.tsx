@@ -86,6 +86,7 @@ import { QaDashboard } from './QaDashboard';
 import { TeamPerformance } from './TeamPerformance';
 import { FinancialPerformanceInsights } from './FinancialPerformanceInsights';
 import { AttendanceTabulationTab } from './AttendanceTabulationTab';
+import { InternalChatWidget } from '../chat/InternalChatWidget';
 
 // Modais do sistema
 import { DashboardModals } from './DashboardModals';
@@ -4413,6 +4414,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
         onOpenReconciliation={() => setIsReconciliationModalOpen(true)}
         showToast={showToast}
         theme={theme}
+      />
+
+      {/* WIDGET FLUTUANTE DE CHAT & MENSAGENS INTERNAS COM LINKS DE CPFs */}
+      <InternalChatWidget
+        profile={profile}
+        collaborators={currentTeamMembers}
+        onSelectCpf={(cpf) => {
+          setSearchTerm(cpf);
+          setDashboardTab('financial');
+        }}
+        theme={theme}
+        showToast={showToast}
       />
     </div>
   );

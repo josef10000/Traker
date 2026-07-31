@@ -47,6 +47,19 @@ export interface TabulationReasonConfig {
   active: boolean;
 }
 
+export interface InternalMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  receiverId: string;
+  text: string;
+  cpfReference?: string;
+  agreementId?: string;
+  createdAt: string;
+  read: boolean;
+  organizationId: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
