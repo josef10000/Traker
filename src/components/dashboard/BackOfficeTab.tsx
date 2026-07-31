@@ -2197,6 +2197,8 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
             </button>
           </div>
         </div>
+      )}
+
       {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL DA ABA BACKOFFICE */}
       <ExcelExportModal
         isOpen={isExportModalOpen}

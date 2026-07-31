@@ -51,6 +51,17 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
   const [heatmapSelectedReason, setHeatmapSelectedReason] = useState<string>('all');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
+  // Filtragem dos Registros por Equipe
+  const filteredRecords = useMemo(() => {
+    return records.filter(r => {
+      if (selectedTeamFilter !== 'all') {
+        const matchTeam = r.teamId === selectedTeamFilter;
+        if (!matchTeam) return false;
+      }
+      return true;
+    });
+  }, [records, selectedTeamFilter]);
+
   const biExportColumns: ExcelExportColumn[] = [
     { key: 'id', label: 'ID do Atendimento', type: 'text' },
     { key: 'clientCpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
@@ -71,64 +82,6 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
       createdAtFormatted: r.createdAt
     }));
   }, [filteredRecords]);
-
-  // Solicita permissão de notificação nativa ao carregar o BI
-  useEffect(() => {
-    requestNotificationPermission().then((granted) => {
-      if (granted) {
-        sendDesktopNotification('Analytics & BI Conectado', {
-          body: 'Notificações de metas e performance nativas ativas no desktop.'
-        });
-      }
-    });
-  }, []);
-
-  // Carrega registros de tabulação/atendimento conforme o sandbox ou firestore
-  useEffect(() => {
-    if (!profile.organizationId) return;
-
-    if (profile.organizationId === 'sandbox-test') {
-      const stored = localStorage.getItem(`sandbox_attendances_${profile.organizationId}`);
-      if (stored) {
-        setRecords(JSON.parse(stored));
-      }
-      return;
-    }
-
-    try {
-      const q = query(
-        collection(db, 'attendanceRecords'),
-        where('organizationId', '==', profile.organizationId)
-      );
-
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetched: AttendanceRecord[] = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as AttendanceRecord));
-
-        fetched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setRecords(fetched);
-      }, (err) => {
-        console.error('Erro ao ouvir registros de atendimento no BI:', err);
-      });
-
-      return () => unsubscribe();
-    } catch (e) {
-      console.error('Erro no snapshot do BI:', e);
-    }
-  }, [profile.organizationId]);
-
-  // Filtragem dos Registros por Equipe
-  const filteredRecords = useMemo(() => {
-    return records.filter(r => {
-      if (selectedTeamFilter !== 'all') {
-        const matchTeam = r.teamId === selectedTeamFilter;
-        if (!matchTeam) return false;
-      }
-      return true;
-    });
-  }, [records, selectedTeamFilter]);
 
   // 1. Ticket Médio R$ por Motivo
   const reasonTicketStats = useMemo(() => {
@@ -573,6 +526,8 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
           stats={stats}
           formatCurrency={formatCurrency}
         />
+      </div>
+
       {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL */}
       <ExcelExportModal
         isOpen={isExportModalOpen}
