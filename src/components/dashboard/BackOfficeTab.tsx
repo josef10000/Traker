@@ -112,10 +112,10 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
 
   const backofficeExportColumns: ExcelExportColumn[] = [
     { key: 'id', label: 'ID do Registro', type: 'text' },
-    { key: 'cpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
-    { key: 'name', label: 'Nome do Cliente', type: 'text' },
+    { key: 'clientCpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
+    { key: 'clientName', label: 'Nome do Cliente', type: 'text' },
     { key: 'contractNumber', label: 'Nº do Contrato', type: 'text' },
-    { key: 'originalDebt', label: 'Valor da Dívida (R$)', type: 'currency' },
+    { key: 'value', label: 'Valor da Dívida (R$)', type: 'currency' },
     { key: 'proposalValue', label: 'Valor Proposto (R$)', type: 'currency' },
     { key: 'installmentValue', label: 'Valor Parcela (R$)', type: 'currency' },
     { key: 'status', label: 'Status do Atendimento', type: 'text' },

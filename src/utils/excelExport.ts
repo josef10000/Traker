@@ -69,26 +69,151 @@ export async function exportDynamicToExcel({
     };
   });
 
+// Mapa de tradução de Status para Português
+const STATUS_PORTUGUESE_MAP: Record<string, string> = {
+  broken: 'Quebrado',
+  waiting: 'Aguardando',
+  paid: 'Pago',
+  recovered: 'Resgatado',
+  canceled: 'Cancelado',
+  cancelled: 'Cancelado',
+  pending: 'Pendente',
+  in_progress: 'Em Andamento',
+  treated: 'Tratado',
+  ignored: 'Ignorado',
+  has_notes: 'Com Anotações',
+  invalid_cpf: 'CPF Inválido',
+  active: 'Ativo',
+  inactive: 'Inativo',
+  blocked: 'Bloqueado',
+  success: 'Sucesso',
+  error: 'Erro',
+  failed: 'Falha',
+  approved: 'Aprovado',
+  reproved: 'Reprovado',
+  under_review: 'Em Análise',
+  pool: 'Fila Cega Geral',
+  my_batch: 'Carteira Ativa'
+};
+
+export function formatExportStatus(status: any): string {
+  if (status === undefined || status === null || status === '') return '-';
+  const str = String(status).trim();
+  const lower = str.toLowerCase();
+
+  if (STATUS_PORTUGUESE_MAP[lower]) {
+    return STATUS_PORTUGUESE_MAP[lower];
+  }
+
+  if (str.includes('_')) {
+    return str
+      .split('_')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
+  }
+
+  return str;
+}
+
+/**
+ * Formata datas com segurança sem gerar "Invalid Date"
+ */
+export function formatExportDate(val: any): string {
+  if (val === undefined || val === null || val === '' || val === '-' || val === 'null' || val === 'undefined') {
+    return '-';
+  }
+
+  if (typeof val === 'string' && /^\d{2}\/\d{2}\/\d{4}/.test(val.trim())) {
+    return val.trim();
+  }
+
+  let dateObj: Date | null = null;
+
+  try {
+    if (typeof val === 'object' && val !== null && typeof val.toDate === 'function') {
+      dateObj = val.toDate();
+    } else if (typeof val === 'object' && val !== null && typeof val.seconds === 'number') {
+      dateObj = new Date(val.seconds * 1000);
+    } else if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
+      const [year, month, day] = val.trim().split('-').map(Number);
+      dateObj = new Date(year, month - 1, day);
+    } else if (typeof val === 'number') {
+      dateObj = new Date(val);
+    } else {
+      const parsed = new Date(val);
+      if (!isNaN(parsed.getTime())) {
+        dateObj = parsed;
+      }
+    }
+  } catch (e) {
+    return '-';
+  }
+
+  if (!dateObj || isNaN(dateObj.getTime())) {
+    return '-';
+  }
+
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const year = dateObj.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+/**
+ * Formata CPF / CNPJ de forma consistente (com ou sem máscara LGPD)
+ * Formato sem máscara: 123.456.789-00 ou 12.345.678/0001-90
+ * Formato com máscara: ***.456.***-00
+ */
+export function formatExportCpf(val: any, shouldMask: boolean): string {
+  if (val === undefined || val === null || val === '' || val === '-' || val === 'null') {
+    return '-';
+  }
+  const str = String(val).trim();
+
+  if (str.includes('*')) {
+    return str;
+  }
+
+  const digits = str.replace(/\D/g, '');
+
+  if (digits.length === 11) {
+    if (shouldMask) {
+      return `***.${digits.slice(3, 6)}.***-${digits.slice(9, 11)}`;
+    }
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+  }
+
+  if (digits.length === 14) {
+    if (shouldMask) {
+      return `**.${digits.slice(2, 5)}.***/${digits.slice(8, 12)}-**`;
+    }
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
+  }
+
+  return str;
+}
+
   // Linhas de Dados
   data.forEach((item) => {
     const rowValues = columns.map((col) => {
       let rawVal = item[col.key];
 
-      if (rawVal === undefined || rawVal === null) return '-';
-
-      // Tratamento de CPF / CNPJ conforme preferência do usuário (Completo vs Mascarado)
-      if (col.type === 'cpf' || col.key.toLowerCase().includes('cpf')) {
-        const strVal = String(rawVal);
-        return maskCpf ? maskCPF(strVal) : strVal;
+      const isCpfCol = col.type === 'cpf' || col.key.toLowerCase().includes('cpf');
+      if (isCpfCol) {
+        return formatExportCpf(rawVal, maskCpf);
       }
 
-      if (col.type === 'date') {
-        try {
-          return new Date(rawVal).toLocaleDateString('pt-BR');
-        } catch {
-          return String(rawVal);
-        }
+      const isDateCol = col.type === 'date' || col.key.toLowerCase().includes('data') || col.key.toLowerCase().includes('date') || col.key.toLowerCase().includes('createdat') || col.key.toLowerCase().includes('duedate');
+      if (isDateCol) {
+        return formatExportDate(rawVal);
       }
+
+      const isStatusCol = col.key.toLowerCase().includes('status') || col.key.toLowerCase().includes('resultado');
+      if (isStatusCol) {
+        return formatExportStatus(rawVal);
+      }
+
+      if (rawVal === undefined || rawVal === null || rawVal === '') return '-';
 
       return rawVal;
     });
