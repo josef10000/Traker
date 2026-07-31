@@ -260,14 +260,14 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsOpen(!isOpen)}
-          className={`relative p-4 rounded-full shadow-2xl flex items-center justify-center cursor-pointer transition-all ${
+          className={`relative p-3 rounded-full shadow-2xl flex items-center justify-center cursor-pointer transition-all ${
             isOpen 
               ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30'
               : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/30'
           }`}
           title="Chat & Comunicação Interna"
         >
-          {isOpen ? <X size={24} weight="bold" /> : <ChatCircleDots size={26} weight="duotone" />}
+          {isOpen ? <X size={20} weight="bold" /> : <ChatCircleDots size={22} weight="duotone" />}
 
           {/* Badge de Mensagens Não Lidas */}
           {!isOpen && unreadTotal > 0 && (

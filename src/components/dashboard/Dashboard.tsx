@@ -2555,21 +2555,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <SlidersHorizontal size={14} weight="bold" />
                       <span>Personalizar</span>
                     </button>
-
-                    {/* Botão Central de Conhecimento & Scripts (WIKI da Operação) */}
-                    <button
-                      type="button"
-                      onClick={() => setDashboardTab('knowledge_base')}
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all border cursor-pointer border-sky-500/30 shadow-sm active:scale-95 ${
-                        dashboardTab === 'knowledge_base'
-                          ? 'bg-sky-500 text-white shadow-sky-500/20'
-                          : 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-400'
-                      }`}
-                      title="Abrir Central de Conhecimento, Comunicados e Scripts da Operação"
-                    >
-                      <BookOpen size={14} weight="bold" />
-                      <span>Base de Conhecimento</span>
-                    </button>
                   </div>
                 </div>
 
