@@ -10,7 +10,8 @@ import {
   arrayUnion,
   arrayRemove,
   deleteDoc,
-  writeBatch
+  writeBatch,
+  getCountFromServer
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Team, UserProfile, UserRole, Organization, Invite } from '../types';
@@ -77,11 +78,11 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
     throw new Error('Esta empresa está suspensa. Não é possível criar novas equipes.');
   }
 
-  // Contar equipes ativas na organização para validar o limite
+  // Contar equipes ativas na organização para validar o limite (Custo = 1 leitura)
   const teamsRef = collection(db, 'teams');
   const teamsCountQuery = query(teamsRef, where('organizationId', '==', organizationId));
-  const teamsCountSnap = await getDocs(teamsCountQuery);
-  if (teamsCountSnap.size >= orgData.maxTeams) {
+  const teamsCountSnap = await getCountFromServer(teamsCountQuery);
+  if (teamsCountSnap.data().count >= orgData.maxTeams) {
     throw new Error(`O limite de equipes do plano da empresa (${orgData.maxTeams}) foi atingido.`);
   }
 
@@ -182,11 +183,11 @@ export const joinTeam = async (uid: string, userEmail: string, inviteToken: stri
     throw new Error('Esta empresa está suspensa. Novos membros não podem ingressar.');
   }
 
-  // Contar membros ativos na organização para validar o limite do plano
+  // Contar membros ativos na organização para validar o limite do plano (Custo = 1 leitura)
   const usersRef = collection(db, 'users');
   const userCountQuery = query(usersRef, where('organizationId', '==', teamData.organizationId));
-  const userCountSnap = await getDocs(userCountQuery);
-  if (userCountSnap.size >= orgData.maxUsers) {
+  const userCountSnap = await getCountFromServer(userCountQuery);
+  if (userCountSnap.data().count >= orgData.maxUsers) {
     throw new Error(`O limite de usuários do plano da empresa (${orgData.maxUsers}) foi atingido.`);
   }
 
