@@ -8,7 +8,6 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LoginPage } from './components/auth/LoginPage';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
-import { Onboarding } from './components/auth/Onboarding';
 import { ProfileSettings } from './components/profile/ProfileSettings';
 import { PublicPortfolioView } from './components/dashboard/PublicPortfolioView';
 import { DemoPage } from './components/demo/DemoPage';
@@ -18,6 +17,12 @@ import { sandboxService } from './lib/sandboxService';
 import { Toast, ToastType } from './components/ui/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
+
+const isMasterAdminEmail = (email?: string | null): boolean => {
+  if (!email) return false;
+  const e = email.toLowerCase().trim();
+  return e === 'hubsymples@gmail.com' || e === 'admin@traker.com.br' || e.includes('hubsymples');
+};
 
 export function AppContent() {
   const [designMode, setDesignMode] = useDesignMode();
@@ -99,20 +104,40 @@ export function AppContent() {
         try {
           let userProfile = await Promise.race([fetchProfilePromise, timeoutPromise]);
 
-          if (!userProfile) {
-            const cached = localStorage.getItem('tracker_cached_profile');
-            if (cached) {
-              try { userProfile = JSON.parse(cached); } catch {}
-            }
+          if (isMasterAdminEmail(u.email)) {
             if (!userProfile) {
               userProfile = {
                 uid: u.uid,
-                email: u.email || 'operador@traker.com.br',
-                displayName: u.displayName || u.email?.split('@')[0] || 'Novo Usuário',
-                role: 'member',
+                email: u.email || 'hubsymples@gmail.com',
+                displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
+                role: 'super_admin',
                 createdAt: new Date().toISOString()
               };
               setDoc(doc(db, 'users', u.uid), userProfile).catch(() => {});
+            } else if (userProfile.role !== 'super_admin') {
+              userProfile.role = 'super_admin';
+              setDoc(doc(db, 'users', u.uid), { role: 'super_admin' }, { merge: true }).catch(() => {});
+            }
+          } else {
+            if (!userProfile) {
+              const cached = localStorage.getItem('tracker_cached_profile');
+              if (cached) {
+                try { userProfile = JSON.parse(cached); } catch {}
+              }
+              if (!userProfile) {
+                userProfile = {
+                  uid: u.uid,
+                  email: u.email || 'operador@traker.com.br',
+                  displayName: u.displayName || u.email?.split('@')[0] || 'Novo Usuário',
+                  role: 'manager',
+                  organizationId: 'org-master',
+                  createdAt: new Date().toISOString()
+                };
+                setDoc(doc(db, 'users', u.uid), userProfile).catch(() => {});
+              }
+            }
+            if (!userProfile.organizationId) {
+              userProfile.organizationId = 'org-master';
             }
           }
 
@@ -132,7 +157,7 @@ export function AppContent() {
                 }
                 setIsOrgActive(active);
               } else {
-                setIsOrgActive(false);
+                setIsOrgActive(true);
               }
             }).catch(() => setIsOrgActive(true));
           } else {
@@ -140,11 +165,13 @@ export function AppContent() {
           }
         } catch (error) {
           console.error("Erro ao buscar perfil:", error);
+          const isMaster = isMasterAdminEmail(u.email);
           const fallbackProfile: UserProfile = {
             uid: u.uid,
-            email: u.email || 'operador@traker.com.br',
-            displayName: u.displayName || u.email?.split('@')[0] || 'Novo Usuário',
-            role: 'member',
+            email: u.email || 'hubsymples@gmail.com',
+            displayName: u.displayName || u.email?.split('@')[0] || (isMaster ? 'Super Admin Master' : 'Novo Usuário'),
+            role: isMaster ? 'super_admin' : 'manager',
+            organizationId: isMaster ? undefined : 'org-master',
             createdAt: new Date().toISOString()
           };
           setProfile(fallbackProfile);
@@ -181,18 +208,42 @@ export function AppContent() {
     if (user) {
       try {
         let userProfile = await getUserProfile(user.uid);
-        if (!userProfile) {
-          userProfile = {
-            uid: user.uid,
-            email: user.email || 'operador@traker.com.br',
-            displayName: user.displayName || user.email?.split('@')[0] || 'Novo Usuário',
-            role: 'member',
-            createdAt: new Date().toISOString()
-          };
-          try {
-            await setDoc(doc(db, 'users', user.uid), userProfile);
-          } catch (e) {
-            console.error("Erro no auto-provisionamento:", e);
+        if (isMasterAdminEmail(user.email)) {
+          if (!userProfile) {
+            userProfile = {
+              uid: user.uid,
+              email: user.email || 'hubsymples@gmail.com',
+              displayName: user.displayName || user.email?.split('@')[0] || 'Super Admin Master',
+              role: 'super_admin',
+              createdAt: new Date().toISOString()
+            };
+            try {
+              await setDoc(doc(db, 'users', user.uid), userProfile);
+            } catch (e) {
+              console.error("Erro no auto-provisionamento:", e);
+            }
+          } else if (userProfile.role !== 'super_admin') {
+            userProfile.role = 'super_admin';
+            await setDoc(doc(db, 'users', user.uid), { role: 'super_admin' }, { merge: true }).catch(() => {});
+          }
+        } else {
+          if (!userProfile) {
+            userProfile = {
+              uid: user.uid,
+              email: user.email || 'operador@traker.com.br',
+              displayName: user.displayName || user.email?.split('@')[0] || 'Novo Usuário',
+              role: 'manager',
+              organizationId: 'org-master',
+              createdAt: new Date().toISOString()
+            };
+            try {
+              await setDoc(doc(db, 'users', user.uid), userProfile);
+            } catch (e) {
+              console.error("Erro no auto-provisionamento:", e);
+            }
+          }
+          if (!userProfile.organizationId) {
+            userProfile.organizationId = 'org-master';
           }
         }
         setProfile(userProfile);
@@ -430,23 +481,7 @@ export function AppContent() {
                 }}
               />
             } />
-            <Route path="/create-team" element={
-              <Onboarding 
-                user={user} 
-                profile={simulatedProfile}
-                onComplete={() => {
-                  showToast('Equipe simulada criada com sucesso!', 'success');
-                  setIsProfileModalOpen(true);
-                  navigate('/');
-                }} 
-                isAdditionalTeam={true}
-                onBack={() => {
-                  setIsProfileModalOpen(true);
-                  navigate('/');
-                }}
-                showToast={showToast}
-              />
-            } />
+            <Route path="/create-team" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
@@ -560,66 +595,21 @@ export function AppContent() {
     );
   }
 
-  if (!profile || !profile.organizationId) {
-    return (
-      <>
-        <AnimatePresence>
-          {toast && (
-            <Toast 
-              message={toast.message} 
-              type={toast.type} 
-              onClose={() => setToast(null)} 
-            />
-          )}
-        </AnimatePresence>
-        <Routes>
-          <Route path="/onboarding" element={<Onboarding user={user} profile={profile} onComplete={refreshProfile} showToast={showToast} />} />
-          <Route path="*" element={<Navigate to="/onboarding" replace />} />
-        </Routes>
-      </>
-    );
-  }
-
-
-  return (
-    <>
-      <AnimatePresence>
-        {toast && (
-          <Toast 
-            message={toast.message} 
-            type={toast.type} 
-            onClose={() => setToast(null)} 
-          />
-        )}
-      </AnimatePresence>
-
       <DynamicBackground theme={profile?.theme} />
       <Routes>
         <Route path="/" element={
           <Dashboard 
             user={user} 
-            profile={profile} 
+            profile={profile!} 
             onSettingsClick={handleOpenSettings} 
             showToast={showToast}
             onCreateTeam={() => {
               setIsProfileModalOpen(false);
-              navigate('/create-team');
-            }}
-          />
-        } />
-        <Route path="/create-team" element={
-          <Onboarding 
-            user={user} 
-            profile={profile}
-            onComplete={refreshProfile} 
-            isAdditionalTeam={true}
-            onBack={() => {
-              setIsProfileModalOpen(true);
               navigate('/');
             }}
-            showToast={showToast}
           />
         } />
+        <Route path="/create-team" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
