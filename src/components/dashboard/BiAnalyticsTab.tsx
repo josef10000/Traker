@@ -355,20 +355,6 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     }
   }), [reasonBreakdown, filteredRecords.length]);
 
-  // Função para exportar relatório Excel formatado
-  const handleExportExcel = async () => {
-    setIsExporting(true);
-    try {
-      await exportAgreementsToExcel(agreements, `Relatorio_BI_Acordos_${selectedMonth + 1}_${selectedYear}.xlsx`);
-      showToast('Relatório Excel de alta qualidade gerado com sucesso!', 'success');
-    } catch (e) {
-      console.error(e);
-      showToast('Erro ao gerar planilha Excel.', 'error');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* 🚀 CABEÇALHO DO PAINEL BI & CONTROLES */}
