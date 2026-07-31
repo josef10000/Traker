@@ -19,7 +19,8 @@ import {
   CollaborationNote,
   CalendarEvent,
   AppNotification,
-  MonthlyPayment
+  MonthlyPayment,
+  AttendanceRecord
 } from '../types';
 import { AuditLog } from './audit';
 import { generateSandboxSeeds } from './sandboxSeeder';
@@ -35,6 +36,7 @@ class SandboxService {
   private users: Record<string, UserProfile> = {};
   private teams: Record<string, Team> = {};
   private agreements: Record<string, Agreement> = {};
+  private attendanceRecords: Record<string, AttendanceRecord> = {};
   private qaCompetences: Record<string, QaCompetence> = {};
   private qaEvaluations: Record<string, QaEvaluation> = {};
   private pdis: Record<string, Pdi> = {};
@@ -91,6 +93,7 @@ class SandboxService {
     this.users = seeds.users;
     this.teams = seeds.teams;
     this.agreements = seeds.agreements;
+    this.attendanceRecords = seeds.attendanceRecords || {};
     this.qaCompetences = seeds.qaCompetences;
     this.qaEvaluations = seeds.qaEvaluations;
     this.pdis = seeds.pdis;
@@ -224,6 +227,10 @@ class SandboxService {
 
   public getAllAgreements(orgId: string): Agreement[] {
     return Object.values(this.agreements).filter(a => a.organizationId === orgId);
+  }
+
+  public getAttendanceRecords(orgId: string): AttendanceRecord[] {
+    return Object.values(this.attendanceRecords).filter(r => r.organizationId === orgId);
   }
 
   public getQaCompetences(orgId: string): QaCompetence[] {

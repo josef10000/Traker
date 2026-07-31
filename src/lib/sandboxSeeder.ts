@@ -14,7 +14,8 @@ import {
   BackOfficeClient,
   QaSettings,
   Invite,
-  UserRole
+  UserRole,
+  AttendanceRecord
 } from '../types';
 
 import { AuditLog } from './audit';
@@ -24,6 +25,7 @@ export interface SandboxSeeds {
   users: Record<string, UserProfile>;
   teams: Record<string, Team>;
   agreements: Record<string, Agreement>;
+  attendanceRecords: Record<string, AttendanceRecord>;
   qaCompetences: Record<string, QaCompetence>;
   qaEvaluations: Record<string, QaEvaluation>;
   pdis: Record<string, Pdi>;
@@ -535,11 +537,75 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
     invites[inv.id] = inv;
   });
 
+  // 6. Atendimentos Fictícios para BI & Analytics
+  const attendanceRecords: Record<string, AttendanceRecord> = {};
+  const reasonsList = [
+    { title: '💬 Solicitação de Código PIX com Desconto', isNegotiation: true, isSuccess: true },
+    { title: '💸 Falta de Limite / Parcelamento de Saldo', isNegotiation: true, isSuccess: true },
+    { title: '⏳ Aguardando Salário / Adiantamento Quinzena', isNegotiation: true, isSuccess: false },
+    { title: '🔍 Dúvida sobre Compensação Bancária', isNegotiation: false, isSuccess: false },
+    { title: '📱 Problemas no App / Erro de Boleto', isNegotiation: false, isSuccess: false },
+    { title: '🚨 Contestação de Encargos / Solicitação de Isenção', isNegotiation: true, isSuccess: false },
+    { title: '🤝 Solicitação de Segunda Via de Acordo', isNegotiation: false, isSuccess: true }
+  ];
+
+  const opsList = [
+    { uid: 'sandbox-op-1', name: 'Ana Souza', teamId: 'team-fenix' },
+    { uid: 'sandbox-op-2', name: 'Bruno Lima', teamId: 'team-fenix' },
+    { uid: 'sandbox-op-3', name: 'Daniela Silva', teamId: 'team-fenix' },
+    { uid: 'sandbox-op-4', name: 'Eduardo Costa', teamId: 'team-dragao' },
+    { uid: 'sandbox-op-5', name: 'Fernanda Dias', teamId: 'team-dragao' },
+    { uid: 'sandbox-op-6', name: 'Gabriel Alves', teamId: 'team-aguia' },
+    { uid: 'sandbox-op-7', name: 'Helena Ramos', teamId: 'team-aguia' },
+    { uid: 'sandbox-op-8', name: 'Julia Martins', teamId: 'team-falcao' },
+    { uid: 'sandbox-op-9', name: 'Marina Santos', teamId: 'team-lobo' },
+    { uid: 'sandbox-op-10', name: 'Pedro Cardoso', teamId: 'team-tigre' }
+  ];
+
+  let attCounter = 1;
+  const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  for (let d = 1; d <= daysInCurrentMonth; d++) {
+    const dObj = new Date(currentYear, currentMonth, d);
+    if (dObj.getDay() === 0) continue; // Pula domingo
+
+    const dailyCount = 5 + (d % 5);
+    for (let k = 0; k < dailyCount; k++) {
+      const op = opsList[(d + k) % opsList.length];
+      const rObj = reasonsList[(d * 2 + k) % reasonsList.length];
+      const hour = 8 + ((k * 2) % 11);
+      const minute = (k * 13) % 60;
+
+      const recordDate = new Date(currentYear, currentMonth, d, hour, minute, 0);
+      const attId = `sandbox-att-${attCounter}`;
+      const cpf = `399${String(10000 + attCounter).padStart(8, '0')}`;
+
+      attendanceRecords[attId] = {
+        id: attId,
+        organizationId: orgId,
+        clientCpf: cpf,
+        clientName: `Cliente Simulado ${attCounter}`,
+        reasonId: `reason-${(k % 7) + 1}`,
+        reasonTitle: rObj.title,
+        isNegotiation: rObj.isNegotiation,
+        isSuccess: rObj.isSuccess,
+        operatorUid: op.uid,
+        operatorName: op.name,
+        teamId: op.teamId,
+        agreementId: rObj.isSuccess ? `sandbox-agree-${(attCounter % 40) + 1}` : undefined,
+        createdAt: recordDate.toISOString()
+      };
+
+      attCounter++;
+    }
+  }
+
   return {
     organizations,
     users,
     teams,
     agreements,
+    attendanceRecords,
     qaCompetences,
     qaEvaluations,
     pdis,
