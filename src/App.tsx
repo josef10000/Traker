@@ -595,6 +595,8 @@ export function AppContent() {
     );
   }
 
+  return (
+    <>
       <DynamicBackground theme={profile?.theme} />
       <Routes>
         <Route path="/" element={
