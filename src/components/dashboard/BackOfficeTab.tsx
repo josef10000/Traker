@@ -58,6 +58,8 @@ import { sandboxService } from '../../lib/sandboxService';
 import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote, Agreement, AgreementStatus } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { sanitizeFilename } from '../../utils/sanitize';
+import { ExcelExportModal } from '../modals/ExcelExportModal';
+import { ExcelExportColumn } from '../../utils/excelExport';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 import ExcelJS from 'exceljs';
@@ -106,6 +108,20 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   const [clients, setClients] = useState<BackOfficeClient[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const backofficeExportColumns: ExcelExportColumn[] = [
+    { key: 'id', label: 'ID do Registro', type: 'text' },
+    { key: 'cpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
+    { key: 'name', label: 'Nome do Cliente', type: 'text' },
+    { key: 'contractNumber', label: 'Nº do Contrato', type: 'text' },
+    { key: 'originalDebt', label: 'Valor da Dívida (R$)', type: 'currency' },
+    { key: 'proposalValue', label: 'Valor Proposto (R$)', type: 'currency' },
+    { key: 'installmentValue', label: 'Valor Parcela (R$)', type: 'currency' },
+    { key: 'status', label: 'Status do Atendimento', type: 'text' },
+    { key: 'note', label: 'Observação / Nota', type: 'text' },
+    { key: 'createdAt', label: 'Data de Importação', type: 'date' }
+  ];
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'treated' | 'ignored' | 'has_notes' | 'invalid_cpf'>('all');
 
   // Estado para Seleção em Massa de Clientes
@@ -1619,7 +1635,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 Original
               </button>
               <button
-                onClick={handleDownloadUpdated}
+                onClick={() => setIsExportModalOpen(true)}
                 className={`px-4 py-2 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer ${
                   theme === 'dark' 
                     ? 'bg-gradient-to-r from-orange-600 to-amber-500 shadow-md shadow-orange-500/10' 
@@ -1627,7 +1643,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 }`}
               >
                 <FileArrowDown size={14} />
-                Baixar Planilha
+                Baixar Planilha (ExcelJS)
               </button>
             </div>
           </div>
@@ -2181,7 +2197,17 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
             </button>
           </div>
         </div>
-      )}
+      {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL DA ABA BACKOFFICE */}
+      <ExcelExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        title="Relatório BackOffice de Esteira de Clientes"
+        defaultFilename={`Relatorio_BackOffice_${new Date().toISOString().split('T')[0]}.xlsx`}
+        availableColumns={backofficeExportColumns}
+        data={filteredClients}
+        showToast={showToast}
+        theme={theme}
+      />
     </div>
   );
 };

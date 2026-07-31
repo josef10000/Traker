@@ -2,49 +2,56 @@ import ExcelJS from 'exceljs';
 import { Agreement } from '../types';
 import { formatCurrency, maskCPF } from './masks';
 
+export interface ExcelExportColumn {
+  key: string;
+  label: string;
+  type?: 'text' | 'currency' | 'date' | 'cpf' | 'number' | 'percentage';
+}
+
+export interface ExcelDynamicExportOptions {
+  filename: string;
+  title?: string;
+  columns: ExcelExportColumn[];
+  data: Record<string, any>[];
+  maskCpf?: boolean;
+}
+
 /**
- * Exportador de Relatórios para Excel de Alta Qualidade Corporativa usando ExcelJS
- * Aplica estilos, formatação nativa de moeda BRL, larguras automáticas e cabeçalhos destacados.
+ * Exportador Dinâmico em ExcelJS (Respeita exatamente as colunas e dados da aba atual)
  */
-export async function exportAgreementsToExcel(
-  agreements: Agreement[], 
-  filename: string = 'Relatorio_Acordos_Tracker.xlsx'
-) {
+export async function exportDynamicToExcel({
+  filename,
+  title = 'RELATÓRIO DE DADOS CORPORATIVOS - TRACKER',
+  columns,
+  data,
+  maskCpf = false
+}: ExcelDynamicExportOptions) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Tracker SaaS';
   workbook.created = new Date();
 
-  const worksheet = workbook.addWorksheet('Relatório de Acordos', {
+  const worksheet = workbook.addWorksheet('Relatório', {
     views: [{ showGridLines: true }]
   });
 
-  // Estilo do Cabeçalho da Empresa
-  worksheet.mergeCells('A1:H1');
-  const titleCell = worksheet.getCell('A1');
-  titleCell.value = 'RELATÓRIO CORPORATIVO DE ACORDOS - TRACKER';
-  titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+  // Cabeçalho da Empresa
+  const colCount = Math.max(columns.length, 1);
+  worksheet.mergeCells(1, 1, 1, colCount);
+  const titleCell = worksheet.getCell(1, 1);
+  titleCell.value = title.toUpperCase();
+  titleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
   titleCell.fill = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FF0F172A' } // Slate 900
   };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-  worksheet.getRow(1).height = 30;
+  worksheet.getRow(1).height = 32;
 
-  // Cabeçalhos de Coluna
-  const headers = [
-    'ID do Acordo',
-    'Cliente / Devedor',
-    'CPF / CNPJ',
-    'Valor Original',
-    'Valor Negociado',
-    'Desconto (%)',
-    'Status',
-    'Data de Criação'
-  ];
-
-  const headerRow = worksheet.addRow(headers);
-  headerRow.height = 24;
+  // Linha de Cabeçalhos de Coluna
+  const headerLabels = columns.map(c => c.label);
+  const headerRow = worksheet.addRow(headerLabels);
+  headerRow.height = 25;
 
   headerRow.eachCell((cell) => {
     cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -60,58 +67,62 @@ export async function exportAgreementsToExcel(
   });
 
   // Linhas de Dados
-  let totalOriginal = 0;
-  let totalUpdated = 0;
+  data.forEach((item) => {
+    const rowValues = columns.map((col) => {
+      let rawVal = item[col.key];
 
-  agreements.forEach((ag) => {
-    const orig = (ag as any).originalValue || ag.value || 0;
-    const upd = (ag as any).updatedValue || ag.value || 0;
-    const desc = orig > 0 && orig > upd ? ((orig - upd) / orig) * 100 : 0;
+      if (rawVal === undefined || rawVal === null) return '-';
 
-    totalOriginal += orig;
-    totalUpdated += upd;
+      // Tratamento de CPF / CNPJ conforme preferência do usuário (Completo vs Mascarado)
+      if (col.type === 'cpf' || col.key.toLowerCase().includes('cpf')) {
+        const strVal = String(rawVal);
+        return maskCpf ? maskCPF(strVal) : strVal;
+      }
 
-    const row = worksheet.addRow([
-      ag.id || '-',
-      ag.clientName || 'Não Informado',
-      maskCPF(ag.clientCpf || ''),
-      orig,
-      upd,
-      Number(desc.toFixed(1)),
-      ag.status || 'PENDING',
-      ag.createdAt ? new Date(ag.createdAt).toLocaleDateString('pt-BR') : '-'
-    ]);
+      if (col.type === 'date') {
+        try {
+          return new Date(rawVal).toLocaleDateString('pt-BR');
+        } catch {
+          return String(rawVal);
+        }
+      }
 
+      return rawVal;
+    });
+
+    const row = worksheet.addRow(rowValues);
     row.height = 20;
 
-    // Formatação das células numéricas e moedas
-    const cellOrig = row.getCell(4);
-    cellOrig.numFmt = '"R$"#,##0.00';
-    cellOrig.alignment = { horizontal: 'right' };
-
-    const cellUpd = row.getCell(5);
-    cellUpd.numFmt = '"R$"#,##0.00';
-    cellUpd.alignment = { horizontal: 'right' };
-
-    const cellDesc = row.getCell(6);
-    cellDesc.numFmt = '0.0"%"';
-    cellDesc.alignment = { horizontal: 'right' };
+    // Formatação de Células Específicas (Moedas BRL e Porcentagens)
+    columns.forEach((col, idx) => {
+      const cell = row.getCell(idx + 1);
+      if (col.type === 'currency' || typeof cell.value === 'number' && col.key.toLowerCase().includes('valor')) {
+        cell.numFmt = '"R$"#,##0.00';
+        cell.alignment = { horizontal: 'right' };
+      } else if (col.type === 'percentage') {
+        cell.numFmt = '0.0"%"';
+        cell.alignment = { horizontal: 'right' };
+      } else if (col.type === 'number') {
+        cell.alignment = { horizontal: 'right' };
+      }
+    });
   });
 
-  // Linha de Totais
-  const totalRow = worksheet.addRow([
-    'TOTAL GERAL',
-    '',
-    '',
-    totalOriginal,
-    totalUpdated,
-    '',
-    `${agreements.length} registros`,
-    ''
-  ]);
-  totalRow.height = 24;
+  // Linha de Totais para Colunas Numéricas/Moeda
+  const totalsRow: (string | number)[] = columns.map((col, idx) => {
+    if (idx === 0) return 'TOTAL GERAL';
+    if (col.type === 'currency' || col.key.toLowerCase().includes('valor')) {
+      const sum = data.reduce((acc, curr) => acc + (Number(curr[col.key]) || 0), 0);
+      return sum;
+    }
+    if (idx === columns.length - 1) return `${data.length} registros`;
+    return '';
+  });
 
-  totalRow.eachCell((cell) => {
+  const totalRow = worksheet.addRow(totalsRow);
+  totalRow.height = 24;
+  totalRow.eachCell((cell, colIdx) => {
+    const colDef = columns[colIdx - 1];
     cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } };
     cell.fill = {
       type: 'pattern',
@@ -122,10 +133,11 @@ export async function exportAgreementsToExcel(
       top: { style: 'thin', color: { argb: 'FF94A3B8' } },
       bottom: { style: 'double', color: { argb: 'FF0F172A' } }
     };
+    if (colDef && (colDef.type === 'currency' || colDef.key.toLowerCase().includes('valor'))) {
+      cell.numFmt = '"R$"#,##0.00';
+      cell.alignment = { horizontal: 'right' };
+    }
   });
-
-  totalRow.getCell(4).numFmt = '"R$"#,##0.00';
-  totalRow.getCell(5).numFmt = '"R$"#,##0.00';
 
   // Ajuste automático da largura das colunas
   worksheet.columns.forEach((column) => {
@@ -136,7 +148,7 @@ export async function exportAgreementsToExcel(
         maxLength = columnLength;
       }
     });
-    column.width = Math.min(maxLength + 4, 35);
+    column.width = Math.min(maxLength + 4, 40);
   });
 
   // Fazer download do arquivo no navegador
@@ -148,4 +160,29 @@ export async function exportAgreementsToExcel(
   anchor.download = filename;
   anchor.click();
   window.URL.revokeObjectURL(url);
+}
+
+/**
+ * Exportador legado mantido para compatibilidade
+ */
+export async function exportAgreementsToExcel(
+  agreements: Agreement[], 
+  filename: string = 'Relatorio_Acordos_Tracker.xlsx'
+) {
+  const columns: ExcelExportColumn[] = [
+    { key: 'id', label: 'ID do Acordo', type: 'text' },
+    { key: 'clientName', label: 'Cliente / Devedor', type: 'text' },
+    { key: 'clientCpf', label: 'CPF / CNPJ', type: 'cpf' },
+    { key: 'value', label: 'Valor do Acordo (R$)', type: 'currency' },
+    { key: 'status', label: 'Status', type: 'text' },
+    { key: 'createdAt', label: 'Data de Criação', type: 'date' }
+  ];
+
+  return exportDynamicToExcel({
+    filename,
+    title: 'RELATÓRIO CORPORATIVO DE ACORDOS - TRACKER',
+    columns,
+    data: agreements,
+    maskCpf: false
+  });
 }

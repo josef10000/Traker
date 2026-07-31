@@ -9,7 +9,8 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { AdvancedInsights } from './AdvancedInsights';
 import { ApexChartWrapper } from '../ui/ApexChartWrapper';
-import { exportAgreementsToExcel } from '../../utils/excelExport';
+import { exportAgreementsToExcel, ExcelExportColumn } from '../../utils/excelExport';
+import { ExcelExportModal } from '../modals/ExcelExportModal';
 import { requestNotificationPermission, sendDesktopNotification } from '../../lib/desktopNotifications';
 
 interface BiAnalyticsTabProps {
@@ -48,7 +49,28 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>('all');
   const [heatmapMetric, setHeatmapMetric] = useState<'total' | 'success' | 'paid_value' | 'real_conversion' | 'specific_reason'>('total');
   const [heatmapSelectedReason, setHeatmapSelectedReason] = useState<string>('all');
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const biExportColumns: ExcelExportColumn[] = [
+    { key: 'id', label: 'ID do Atendimento', type: 'text' },
+    { key: 'clientCpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
+    { key: 'clientName', label: 'Nome do Cliente', type: 'text' },
+    { key: 'reasonTitle', label: 'Motivo de Atendimento', type: 'text' },
+    { key: 'isNegotiationText', label: 'Teve Negociação', type: 'text' },
+    { key: 'isSuccessText', label: 'Resultado / Sucesso', type: 'text' },
+    { key: 'operatorName', label: 'Operador / Atendente', type: 'text' },
+    { key: 'teamName', label: 'Equipe', type: 'text' },
+    { key: 'createdAtFormatted', label: 'Data do Registro', type: 'date' }
+  ];
+
+  const biExportData = useMemo(() => {
+    return filteredRecords.map(r => ({
+      ...r,
+      isNegotiationText: r.isNegotiation ? 'Sim' : 'Não',
+      isSuccessText: r.isSuccess ? 'Sucesso / Acordo' : 'Sem Acordo',
+      createdAtFormatted: r.createdAt
+    }));
+  }, [filteredRecords]);
 
   // Solicita permissão de notificação nativa ao carregar o BI
   useEffect(() => {
@@ -440,14 +462,13 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
             </div>
           )}
 
-          {/* Botão de Exportação ExcelJS Formata */}
+          {/* Botão de Exportação ExcelJS Configurável */}
           <button
-            onClick={handleExportExcel}
-            disabled={isExporting}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all shadow-lg shadow-emerald-500/5 cursor-pointer disabled:opacity-50"
+            onClick={() => setIsExportModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all shadow-lg shadow-emerald-500/5 cursor-pointer"
           >
             <FileSpreadsheet size={18} />
-            <span>{isExporting ? 'Exportando...' : 'Exportar Excel Formatado'}</span>
+            <span>Exportar Excel Formatado</span>
           </button>
         </div>
       </div>
@@ -552,7 +573,17 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
           stats={stats}
           formatCurrency={formatCurrency}
         />
-      </div>
+      {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL */}
+      <ExcelExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        title="Relatório BI & Analytics de Atendimentos"
+        defaultFilename={`Relatorio_BI_Atendimentos_${selectedMonth + 1}_${selectedYear}.xlsx`}
+        availableColumns={biExportColumns}
+        data={biExportData}
+        showToast={showToast}
+        theme={theme}
+      />
     </div>
   );
 };
