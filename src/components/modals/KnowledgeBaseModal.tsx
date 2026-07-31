@@ -3,7 +3,7 @@ import {
   X, 
   MagnifyingGlass, 
   BookOpen, 
-  Pin, 
+  PushPin, 
   WarningCircle, 
   Copy, 
   Check, 
@@ -425,7 +425,7 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
                       <div className="flex items-center gap-2 flex-wrap">
                         {art.isPinned && (
                           <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-extrabold text-[10px] flex items-center gap-1 border border-sky-500/30">
-                            <Pin size={10} weight="fill" /> Fixado
+                            <PushPin size={10} weight="fill" /> Fixado
                           </span>
                         )}
                         {art.isUrgent && (
