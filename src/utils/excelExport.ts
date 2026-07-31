@@ -14,30 +14,33 @@ export interface ExcelDynamicExportOptions {
   columns: ExcelExportColumn[];
   data: Record<string, any>[];
   maskCpf?: boolean;
+  chartImages?: string[]; // Imagens base64 PNG dos gráficos da tela
 }
 
 /**
- * Exportador Dinâmico em ExcelJS (Respeita exatamente as colunas e dados da aba atual)
+ * Exportador Dinâmico em ExcelJS com suporte a Tabelas de Dados e Gráficos Incorporados
  */
 export async function exportDynamicToExcel({
   filename,
   title = 'RELATÓRIO DE DADOS CORPORATIVOS - TRACKER',
   columns,
   data,
-  maskCpf = false
+  maskCpf = false,
+  chartImages = []
 }: ExcelDynamicExportOptions) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Tracker SaaS';
   workbook.created = new Date();
 
-  const worksheet = workbook.addWorksheet('Relatório', {
+  // Aba 1: Tabela de Dados Principais
+  const dataSheet = workbook.addWorksheet('Dados Detalhados', {
     views: [{ showGridLines: true }]
   });
 
   // Cabeçalho da Empresa
   const colCount = Math.max(columns.length, 1);
-  worksheet.mergeCells(1, 1, 1, colCount);
-  const titleCell = worksheet.getCell(1, 1);
+  dataSheet.mergeCells(1, 1, 1, colCount);
+  const titleCell = dataSheet.getCell(1, 1);
   titleCell.value = title.toUpperCase();
   titleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
   titleCell.fill = {
@@ -46,11 +49,11 @@ export async function exportDynamicToExcel({
     fgColor: { argb: 'FF0F172A' } // Slate 900
   };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-  worksheet.getRow(1).height = 32;
+  dataSheet.getRow(1).height = 32;
 
   // Linha de Cabeçalhos de Coluna
   const headerLabels = columns.map(c => c.label);
-  const headerRow = worksheet.addRow(headerLabels);
+  const headerRow = dataSheet.addRow(headerLabels);
   headerRow.height = 25;
 
   headerRow.eachCell((cell) => {
@@ -90,13 +93,13 @@ export async function exportDynamicToExcel({
       return rawVal;
     });
 
-    const row = worksheet.addRow(rowValues);
+    const row = dataSheet.addRow(rowValues);
     row.height = 20;
 
     // Formatação de Células Específicas (Moedas BRL e Porcentagens)
     columns.forEach((col, idx) => {
       const cell = row.getCell(idx + 1);
-      if (col.type === 'currency' || typeof cell.value === 'number' && col.key.toLowerCase().includes('valor')) {
+      if (col.type === 'currency' || (typeof cell.value === 'number' && col.key.toLowerCase().includes('valor'))) {
         cell.numFmt = '"R$"#,##0.00';
         cell.alignment = { horizontal: 'right' };
       } else if (col.type === 'percentage') {
@@ -119,7 +122,7 @@ export async function exportDynamicToExcel({
     return '';
   });
 
-  const totalRow = worksheet.addRow(totalsRow);
+  const totalRow = dataSheet.addRow(totalsRow);
   totalRow.height = 24;
   totalRow.eachCell((cell, colIdx) => {
     const colDef = columns[colIdx - 1];
@@ -140,7 +143,7 @@ export async function exportDynamicToExcel({
   });
 
   // Ajuste automático da largura das colunas
-  worksheet.columns.forEach((column) => {
+  dataSheet.columns.forEach((column) => {
     let maxLength = 12;
     column.eachCell?.({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 10;
@@ -150,6 +153,45 @@ export async function exportDynamicToExcel({
     });
     column.width = Math.min(maxLength + 4, 40);
   });
+
+  // Se houver imagens de gráficos capturadas da tela, criar a Aba de Gráficos Visual
+  if (chartImages && chartImages.length > 0) {
+    const chartSheet = workbook.addWorksheet('Painel de Gráficos', {
+      views: [{ showGridLines: true }]
+    });
+
+    chartSheet.mergeCells('A1:H1');
+    const chartTitle = chartSheet.getCell('A1');
+    chartTitle.value = 'DASHBOARD VISUAL & ANALYTICS - TRACKER';
+    chartTitle.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+    chartTitle.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0284C7' } // Sky 600
+    };
+    chartTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+    chartSheet.getRow(1).height = 35;
+
+    let startRow = 3;
+    chartImages.forEach((imgDataUri, idx) => {
+      try {
+        const base64Data = imgDataUri.replace(/^data:image\/(png|jpeg);base64,/, '');
+        const imageId = workbook.addImage({
+          base64: base64Data,
+          extension: 'png'
+        });
+
+        chartSheet.addImage(imageId, {
+          tl: { col: 0, row: startRow },
+          ext: { width: 750, height: 360 }
+        });
+
+        startRow += 20; // Espaço de linhas para o próximo gráfico
+      } catch (err) {
+        console.error('Erro ao anexar gráfico no Excel:', err);
+      }
+    });
+  }
 
   // Fazer download do arquivo no navegador
   const buffer = await workbook.xlsx.writeBuffer();

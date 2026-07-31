@@ -209,7 +209,11 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
   // CONFIGURAÇÕES APEXCHARTS DE ALTA PRECISÃO
   // ==========================================
 
-  // ApexChart 1: Heatmap de Horários Nobres
+  // ==========================================
+  // CONFIGURAÇÕES APEXCHARTS NEON ULTRA-STYLIZED
+  // ==========================================
+
+  // ApexChart 1: Heatmap de Horários Nobres com Paleta Neon
   const apexHeatmapSeries = useMemo(() => {
     return DAYS_OF_WEEK.map((dayName, dayIdx) => {
       const data = TIME_SLOTS.map((slot) => {
@@ -239,24 +243,28 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
 
   const apexHeatmapOptions = useMemo(() => ({
     chart: {
+      id: 'bi-heatmap-chart',
       type: 'heatmap',
       toolbar: { show: true, tools: { download: true } },
-      background: 'transparent'
+      background: 'transparent',
+      foreColor: '#94a3b8',
+      dropShadow: { enabled: true, top: 2, left: 2, blur: 4, opacity: 0.15 }
     },
     theme: { mode: 'dark' },
     colors: ['#0284c7'],
-    dataLabels: { enabled: true, style: { fontSize: '10px', colors: ['#ffffff'] } },
-    xaxis: { labels: { style: { colors: '#94a3b8', fontSize: '11px' } } },
-    yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '11px' } } },
+    dataLabels: { enabled: true, style: { fontSize: '10px', colors: ['#ffffff'], fontWeight: '900' } },
+    xaxis: { labels: { style: { colors: '#94a3b8', fontSize: '11px', fontFamily: 'monospace' } } },
+    yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '11px', fontFamily: 'monospace' } } },
     plotOptions: {
       heatmap: {
-        radius: 6,
+        radius: 8,
         enableShades: true,
         colorScale: {
           ranges: [
             { from: 0, to: 0, color: '#0f172a', name: 'Sem movimento' },
-            { from: 1, to: 10, color: '#0284c7', name: 'Baixo' },
-            { from: 11, to: 30, color: '#f59e0b', name: 'Médio' },
+            { from: 1, to: 5, color: '#0284c7', name: 'Movimento Inicial' },
+            { from: 6, to: 15, color: '#06b6d4', name: 'Médio Fluxo' },
+            { from: 16, to: 30, color: '#f59e0b', name: 'Alto Volume ⚡' },
             { from: 31, to: 1000000, color: '#10b981', name: 'Horário Nobre 🔥' }
           ]
         }
@@ -264,13 +272,14 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     },
     tooltip: {
       theme: 'dark',
+      style: { fontSize: '12px', fontFamily: 'monospace' },
       y: {
         formatter: (val: number) => heatmapMetric === 'paid_value' ? formatCurrency(val) : `${val} ocorrências`
       }
     }
   }), [heatmapMetric]);
 
-  // ApexChart 2: Projeção de Recuperação Financeira (Area Chart com Gradiente)
+  // ApexChart 2: Projeção de Recuperação Financeira (Area Chart com Neon Stroke e Gradiente)
   const apexAreaSeries = useMemo(() => {
     const daysMap: Record<number, number> = {};
     for (let i = 1; i <= 31; i++) daysMap[i] = 0;
@@ -284,28 +293,29 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
       }
     });
 
-    const categories = Object.keys(daysMap).map(d => `Dia ${d}`);
     const data = Object.values(daysMap);
-
     return [{ name: 'Volume Acumulado R$', data }];
   }, [agreements, selectedMonth, selectedYear]);
 
   const apexAreaOptions = useMemo(() => ({
     chart: {
+      id: 'bi-area-chart',
       type: 'area',
       height: 300,
-      toolbar: { show: true },
-      background: 'transparent'
+      toolbar: { show: font => true },
+      background: 'transparent',
+      foreColor: '#94a3b8',
+      dropShadow: { enabled: true, top: 4, left: 0, blur: 8, color: '#10b981', opacity: 0.35 }
     },
     theme: { mode: 'dark' },
     colors: ['#10b981'],
-    stroke: { curve: 'smooth', width: 3 },
+    stroke: { curve: 'smooth', width: 4 },
     fill: {
       type: 'gradient',
       gradient: {
         shadeIntensity: 1,
-        opacityFrom: 0.45,
-        opacityTo: 0.05,
+        opacityFrom: 0.55,
+        opacityTo: 0.02,
         stops: [0, 90, 100]
       }
     },
@@ -326,13 +336,19 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     }
   }), []);
 
-  // ApexChart 3: Pareto Donut Chart de Motivos
+  // ApexChart 3: Pareto Donut Chart de Motivos com Neon Glow
   const apexDonutSeries = useMemo(() => {
     return reasonBreakdown.slice(0, 6).map(r => r.count);
   }, [reasonBreakdown]);
 
   const apexDonutOptions = useMemo(() => ({
-    chart: { type: 'donut', background: 'transparent' },
+    chart: { 
+      id: 'bi-donut-chart',
+      type: 'donut', 
+      background: 'transparent',
+      foreColor: '#94a3b8',
+      dropShadow: { enabled: true, blur: 6, opacity: 0.25 }
+    },
     theme: { mode: 'dark' },
     labels: reasonBreakdown.slice(0, 6).map(r => r.title),
     colors: REASON_COLORS,
@@ -340,12 +356,12 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     plotOptions: {
       pie: {
         donut: {
-          size: '70%',
+          size: '72%',
           labels: {
             show: true,
             total: {
               show: true,
-              label: 'Total Motivos',
+              label: 'Total Atendimentos',
               color: '#38bdf8',
               formatter: () => `${filteredRecords.length}`
             }
@@ -354,6 +370,28 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
       }
     }
   }), [reasonBreakdown, filteredRecords.length]);
+
+  // Função para capturar imagens PNG dos gráficos ativos na tela para o Excel
+  const handleGetChartImages = async (): Promise<string[]> => {
+    const images: string[] = [];
+    if (typeof window !== 'undefined' && (window as any).ApexCharts) {
+      try {
+        const areaRes = await (window as any).ApexCharts.exec('bi-area-chart', 'dataURI');
+        if (areaRes && areaRes.imgURI) images.push(areaRes.imgURI);
+      } catch (e) { console.error('Erro ao capturar gráfico de área:', e); }
+
+      try {
+        const donutRes = await (window as any).ApexCharts.exec('bi-donut-chart', 'dataURI');
+        if (donutRes && donutRes.imgURI) images.push(donutRes.imgURI);
+      } catch (e) { console.error('Erro ao capturar gráfico rosca:', e); }
+
+      try {
+        const heatmapRes = await (window as any).ApexCharts.exec('bi-heatmap-chart', 'dataURI');
+        if (heatmapRes && heatmapRes.imgURI) images.push(heatmapRes.imgURI);
+      } catch (e) { console.error('Erro ao capturar gráfico heatmap:', e); }
+    }
+    return images;
+  };
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -514,7 +552,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
         />
       </div>
 
-      {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL */}
+      {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL COM SUPORTE A GRÁFICOS */}
       <ExcelExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
@@ -522,6 +560,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
         defaultFilename={`Relatorio_BI_Atendimentos_${selectedMonth + 1}_${selectedYear}.xlsx`}
         availableColumns={biExportColumns}
         data={biExportData}
+        onGetChartImages={handleGetChartImages}
         showToast={showToast}
         theme={theme}
       />

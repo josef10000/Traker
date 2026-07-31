@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, FileCsv as FileSpreadsheet, Check, SlidersHorizontal, DownloadSimple, ShieldCheck } from '@phosphor-icons/react';
+import { X, FileCsv as FileSpreadsheet, Check, SlidersHorizontal, DownloadSimple, ShieldCheck, ChartPie } from '@phosphor-icons/react';
 import { exportDynamicToExcel, ExcelExportColumn } from '../../utils/excelExport';
 
 interface ExcelExportModalProps {
@@ -9,6 +9,7 @@ interface ExcelExportModalProps {
   defaultFilename: string;
   availableColumns: ExcelExportColumn[];
   data: Record<string, any>[];
+  onGetChartImages?: () => Promise<string[]>; // Função para capturar gráficos da tela
   showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   theme?: 'light' | 'dark';
 }
@@ -20,6 +21,7 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
   defaultFilename,
   availableColumns,
   data,
+  onGetChartImages,
   showToast,
   theme = 'dark'
 }) => {
@@ -27,7 +29,8 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
   const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>(
     availableColumns.map(c => c.key)
   );
-  const [maskCpf, setMaskCpf] = useState(false); // Por padrão, CPF completo visível como pedido pelo usuário
+  const [maskCpf, setMaskCpf] = useState(false); // Por padrão, CPF completo visível
+  const [includeCharts, setIncludeCharts] = useState(!!onGetChartImages);
   const [isExporting, setIsExporting] = useState(false);
 
   const isDark = theme === 'dark';
@@ -56,13 +59,19 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
 
     setIsExporting(true);
     try {
+      let chartImages: string[] = [];
+      if (includeCharts && onGetChartImages) {
+        chartImages = await onGetChartImages();
+      }
+
       const activeColumns = availableColumns.filter(c => selectedColumnKeys.includes(c.key));
       await exportDynamicToExcel({
         filename: filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`,
         title,
         columns: activeColumns,
         data,
-        maskCpf
+        maskCpf,
+        chartImages
       });
       showToast('Planilha Excel de alta precisão gerada com sucesso!', 'success');
       onClose();
@@ -90,7 +99,7 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
                 Configurar Exportação em Excel (ExcelJS)
               </h3>
               <p className="text-xs text-slate-400">
-                Personalize as colunas, máscara de CPF e nome do relatório
+                Personalize as colunas, gráficos visuais, máscara de CPF e nome do relatório
               </p>
             </div>
           </div>
@@ -103,7 +112,7 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
         </div>
 
         {/* Modal Content */}
-        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
           {/* Nome do Arquivo */}
           <div>
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
@@ -118,6 +127,37 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
               }`}
             />
           </div>
+
+          {/* Opção de Incluir Gráficos da Tela (Se houver gráficos) */}
+          {onGetChartImages && (
+            <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
+              isDark ? 'bg-slate-950/60 border-white/5' : 'bg-slate-50 border-slate-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <ChartPie size={20} className={includeCharts ? 'text-sky-400' : 'text-slate-500'} />
+                <div>
+                  <span className="text-xs font-bold block">Incorporar Gráficos Nativos na Planilha</span>
+                  <span className="text-[11px] text-slate-400 block">
+                    {includeCharts 
+                      ? 'Cria uma aba no Excel contendo as imagens dos gráficos do ApexCharts' 
+                      : 'Exporta apenas a tabela de dados brutos'}
+                  </span>
+                </div>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => setIncludeCharts(!includeCharts)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  includeCharts 
+                    ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' 
+                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                }`}
+              >
+                {includeCharts ? 'Com Gráficos' : 'Apenas Tabela'}
+              </button>
+            </div>
+          )}
 
           {/* Opção de Máscara de CPF */}
           <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
