@@ -46,7 +46,7 @@ import { formatCurrency, maskCPF } from '../../utils/masks';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
-import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus, SlidersHorizontal } from '@phosphor-icons/react';
+import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus, SlidersHorizontal, FileCsv as FileSpreadsheet } from '@phosphor-icons/react';
 import { sandboxService } from '../../lib/sandboxService';
 import { createNotification } from '../../lib/notifications';
 import { useTheme } from '../../hooks/useTheme';
@@ -90,6 +90,8 @@ import { DashboardModals } from './DashboardModals';
 import { HelpDrawer } from './HelpDrawer';
 import { LeadNotesModal } from '../modals/LeadNotesModal';
 import { exportToCsv } from '../../utils/csvExporter';
+import { ExcelExportModal } from '../modals/ExcelExportModal';
+import { ExcelExportColumn } from '../../utils/excelExport';
 import { startTour } from '../../utils/tour';
 import { DemoFeatureBanner } from '../demo/DemoFeatureBanner';
 
@@ -1078,6 +1080,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     return filtered;
   }, [memberFilteredAgreements, filterStatus, dateFilter, customStartDate, customEndDate, searchTerm]);
+
+  // Exportação Configurável da Carteira / Lista de Clientes
+  const [isExcelExportModalOpen, setIsExcelExportModalOpen] = useState(false);
+
+  const dashboardExportColumns: ExcelExportColumn[] = [
+    { key: 'id', label: 'ID do Acordo', type: 'text' },
+    { key: 'clientCpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
+    { key: 'clientName', label: 'Nome do Cliente', type: 'text' },
+    { key: 'phone', label: 'Telefone de Contato', type: 'text' },
+    { key: 'value', label: 'Valor do Acordo (R$)', type: 'currency' },
+    { key: 'dueDate', label: 'Vencimento', type: 'date' },
+    { key: 'status', label: 'Status', type: 'text' },
+    { key: 'operatorName', label: 'Operador / Atendente', type: 'text' },
+    { key: 'teamName', label: 'Equipe', type: 'text' },
+    { key: 'origin', label: 'Origem', type: 'text' },
+    { key: 'createdAtFormatted', label: 'Data de Registro', type: 'date' }
+  ];
+
+  const dashboardExportData = useMemo(() => {
+    return filteredAgreements.map(a => ({
+      ...a,
+      phone: a.phone || '-',
+      dueDate: a.dueDate ? a.dueDate.split('-').reverse().join('/') : '-',
+      createdAtFormatted: a.createdAt ? new Date(a.createdAt).toLocaleDateString('pt-BR') : '-'
+    }));
+  }, [filteredAgreements]);
 
   // 4. HANDLERS E FUNÇÕES OPERACIONAIS (CRUD e Regras de Negócio)
   const handleAcceptTerms = async () => {
@@ -2889,6 +2917,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           Quebrados
                         </button>
 
+                        {/* Botão de Exportar Excel Formatado para a Lista de Clientes do Operador/Supervisor */}
+                        <button
+                          type="button"
+                          onClick={() => setIsExcelExportModalOpen(true)}
+                          className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-1.5 border border-emerald-500/30 cursor-pointer transition-all active:scale-95 shadow-sm"
+                          title="Exportar a lista atual de clientes e acordos em formato Excel (.xlsx)"
+                        >
+                          <FileSpreadsheet size={16} />
+                          <span>Exportar Excel Formatado</span>
+                        </button>
                       </div>
                     </div>
 
@@ -4256,6 +4294,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
         title={confirmModalState.title}
         message={confirmModalState.message}
         variant="danger"
+        theme={theme}
+      />
+
+      {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL DA CARTEIRA / LISTA DE CLIENTES */}
+      <ExcelExportModal
+        isOpen={isExcelExportModalOpen}
+        onClose={() => setIsExcelExportModalOpen(false)}
+        title="Relatório de Clientes e Carteiras de Atendimento"
+        defaultFilename={`Relatorio_Carteira_Clientes_${new Date().toISOString().split('T')[0]}.xlsx`}
+        availableColumns={dashboardExportColumns}
+        data={dashboardExportData}
+        showToast={showToast}
         theme={theme}
       />
     </div>
