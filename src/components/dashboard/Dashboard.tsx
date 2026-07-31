@@ -95,7 +95,6 @@ import { exportToCsv } from '../../utils/csvExporter';
 import { ExcelExportModal } from '../modals/ExcelExportModal';
 import { ExcelExportColumn } from '../../utils/excelExport';
 import { EmployeeSurveyModal } from '../modals/EmployeeSurveyModal';
-import { KnowledgeBaseModal } from '../modals/KnowledgeBaseModal';
 import { SettingsModal } from '../modals/SettingsModal';
 import { getActiveSurveyConfig, isUserEligibleForSurvey } from '../../lib/surveyService';
 import { EmployeeSurveyConfig } from '../../types';

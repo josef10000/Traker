@@ -188,6 +188,13 @@ class SandboxService {
     return this.organizations[id] || null;
   }
 
+  public updateOrganization(id: string, updates: Partial<Organization>): void {
+    if (this.organizations[id]) {
+      this.organizations[id] = { ...this.organizations[id], ...updates };
+      this.notify();
+    }
+  }
+
   public getProfile(uid: string): UserProfile | null {
     return this.users[uid] || null;
   }
