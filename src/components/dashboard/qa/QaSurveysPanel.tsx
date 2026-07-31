@@ -26,7 +26,7 @@ import {
   FileCsv as FileSpreadsheet,
   Users,
   Calendar,
-  Sparkles,
+  Sparkle,
   Heart,
   Tag,
   CircleNotch as Spinner
@@ -286,7 +286,7 @@ export const QaSurveysPanel: React.FC<QaSurveysPanelProps> = ({
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Índice eNPS</span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <Sparkles size={18} weight="fill" />
+              <Sparkle size={18} weight="fill" />
             </div>
           </div>
           <p className="text-2xl font-black">
@@ -450,7 +450,7 @@ export const QaSurveysPanel: React.FC<QaSurveysPanelProps> = ({
               disabled={isSaving}
               className="px-6 py-3 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-lg shadow-sky-500/20 transition-all active:scale-95 disabled:opacity-50"
             >
-              {isSaving ? <Spinner size={16} className="animate-spin" /> : <Sparkles size={16} weight="fill" />}
+              {isSaving ? <Spinner size={16} className="animate-spin" /> : <Sparkle size={16} weight="fill" />}
               <span>Salvar Configurações da Pesquisa</span>
             </button>
           </div>

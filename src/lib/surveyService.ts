@@ -25,6 +25,22 @@ export interface SurveyStats {
   detractorsPercentage: number;
 }
 
+function getSandboxItem<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(`sandbox_${key}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setSandboxItem<T>(key: string, val: T): void {
+  try {
+    localStorage.setItem(`sandbox_${key}`, JSON.stringify(val));
+    sandboxService.forceNotify();
+  } catch {}
+}
+
 const DEFAULT_CONFIG_ID = 'active_survey_config';
 
 /**
@@ -32,7 +48,7 @@ const DEFAULT_CONFIG_ID = 'active_survey_config';
  */
 export async function getActiveSurveyConfig(organizationId: string): Promise<EmployeeSurveyConfig | null> {
   if (organizationId === 'sandbox-test') {
-    const sandboxConfig = sandboxService.getItem<EmployeeSurveyConfig>('employee_survey_config');
+    const sandboxConfig = getSandboxItem<EmployeeSurveyConfig>('employee_survey_config');
     if (sandboxConfig) return sandboxConfig;
     
     // Configuração padrão do Sandbox se nenhuma tiver sido criada
@@ -78,7 +94,7 @@ export async function saveSurveyConfig(config: EmployeeSurveyConfig): Promise<vo
   };
 
   if (config.organizationId === 'sandbox-test') {
-    sandboxService.setItem('employee_survey_config', payload);
+    setSandboxItem('employee_survey_config', payload);
     return;
   }
 
@@ -109,12 +125,12 @@ export async function submitAnonymousSurveyResponse(
   };
 
   if (organizationId === 'sandbox-test') {
-    const responses = sandboxService.getItem<EmployeeSurveyResponse[]>('employee_survey_responses') || [];
+    const responses = getSandboxItem<EmployeeSurveyResponse[]>('employee_survey_responses') || [];
     const newResponse: EmployeeSurveyResponse = {
       ...responseData,
       id: `resp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
     };
-    sandboxService.setItem('employee_survey_responses', [newResponse, ...responses]);
+    setSandboxItem('employee_survey_responses', [newResponse, ...responses]);
     return;
   }
 
@@ -131,7 +147,7 @@ export function subscribeSurveyResponses(
   onUpdate: (responses: EmployeeSurveyResponse[]) => void
 ): () => void {
   if (organizationId === 'sandbox-test') {
-    const responses = sandboxService.getItem<EmployeeSurveyResponse[]>('employee_survey_responses') || [
+    const responses = getSandboxItem<EmployeeSurveyResponse[]>('employee_survey_responses') || [
       {
         id: 'resp-1',
         surveyConfigId: DEFAULT_CONFIG_ID,

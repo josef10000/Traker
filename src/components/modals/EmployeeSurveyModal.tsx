@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Star, Heart, Lock, CheckCircle, ChatCircleText, Sparkles, Send } from '@phosphor-icons/react';
+import { X, Star, Heart, Lock, CheckCircle, ChatCircleText, Sparkle, PaperPlaneRight } from '@phosphor-icons/react';
 import { EmployeeSurveyConfig } from '../../types';
 import { submitAnonymousSurveyResponse } from '../../lib/surveyService';
 
@@ -107,7 +107,7 @@ export const EmployeeSurveyModal: React.FC<EmployeeSurveyModalProps> = ({
               {/* Header com Badge */}
               <div className="flex items-center gap-2">
                 <div className="px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 font-bold text-xs flex items-center gap-1.5">
-                  <Sparkles size={14} weight="fill" />
+                  <Sparkle size={14} weight="fill" />
                   <span>Pesquisa de Clima Interno</span>
                 </div>
               </div>
@@ -237,7 +237,7 @@ export const EmployeeSurveyModal: React.FC<EmployeeSurveyModalProps> = ({
                     <span>Enviando Resposta...</span>
                   ) : (
                     <>
-                      <Send size={16} weight="bold" />
+                      <PaperPlaneRight size={16} weight="bold" />
                       <span>Enviar Resposta Anônima</span>
                     </>
                   )}
