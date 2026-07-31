@@ -39,6 +39,7 @@ export const RecoveryPoolTab = ({
   
   // Perfil de Gestão
   const isManager = profile.role !== 'member';
+  const isSupervisorOrAbove = ['supervisor', 'coordinator', 'manager', 'admin'].includes(profile.role);
 
   // Filtros
   const [filterTeam, setFilterTeam] = useState<string>('all');
@@ -180,14 +181,21 @@ export const RecoveryPoolTab = ({
     }
   }, [agreements, allOrgAgreements, profile.organizationId]);
 
-  // Contadores para as sub-abas
+  // Contadores para as sub-abas (Respeitando o filtro de equipe se selecionado)
   const poolCount = useMemo(() => {
-    return agreements.filter(a => (!a.operatorId || a.operatorId !== profile.uid) && a.status === AgreementStatus.BROKEN).length;
-  }, [agreements, profile.uid]);
+    return agreements.filter(a => {
+      const matchTeam = filterTeam === 'all' || a.teamId === filterTeam;
+      const isPool = (!a.operatorId || a.operatorId !== profile.uid) && a.status === AgreementStatus.BROKEN;
+      return isPool && matchTeam;
+    }).length;
+  }, [agreements, profile.uid, filterTeam]);
 
   const myBatchCount = useMemo(() => {
-    return agreements.filter(a => a.operatorId === profile.uid).length;
-  }, [agreements, profile.uid]);
+    return agreements.filter(a => {
+      const matchTeam = filterTeam === 'all' || a.teamId === filterTeam;
+      return a.operatorId === profile.uid && matchTeam;
+    }).length;
+  }, [agreements, profile.uid, filterTeam]);
 
   // Filtragem dos acordos por sub-aba e campos
   const filteredAgreements = useMemo(() => {
@@ -413,12 +421,15 @@ export const RecoveryPoolTab = ({
     }
   };
 
-  // Métricas do Balcão de Recuperação e Valor Recuperado R$
+  // Métricas do Balcão de Recuperação e Valor Recuperado R$ (Reativo ao Filtro de Equipe)
   const recoveryKPIs = useMemo(() => {
     let totalRecoveredValue = 0;
     let recoveredCount = 0;
 
     allOrgAgreements.forEach(ag => {
+      // Se houver uma equipe específica selecionada, filtra o histórico por essa equipe
+      if (filterTeam !== 'all' && ag.teamId !== filterTeam) return;
+
       if (ag.status === AgreementStatus.RECOVERED) {
         recoveredCount++;
         totalRecoveredValue += ag.value || 0;
@@ -440,7 +451,7 @@ export const RecoveryPoolTab = ({
       pendingBrokenCount: filteredAgreements.length,
       pendingBrokenValue
     };
-  }, [allOrgAgreements, filteredAgreements]);
+  }, [allOrgAgreements, filteredAgreements, filterTeam]);
 
   return (
     <div className="space-y-6 animate-fade-in no-print">
@@ -603,19 +614,21 @@ export const RecoveryPoolTab = ({
 
         {/* Direita: Filtros Dropdown + Exportar Excel */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Dropdown Equipe */}
-          <div className="w-36 sm:w-40">
-            <CustomSelect 
-              value={filterTeam}
-              onChange={(val) => setFilterTeam(val)}
-              placeholder="Todas as Equipes"
-              className="!py-1.5 !text-xs font-semibold"
-              options={[
-                { value: "all", label: "🏢 Equipes" },
-                ...managedTeamsData.map(t => ({ value: t.id, label: t.name }))
-              ]}
-            />
-          </div>
+          {/* Dropdown Equipe (Restrito a Supervisão e Perfis Superiores) */}
+          {isSupervisorOrAbove && (
+            <div className="w-36 sm:w-40">
+              <CustomSelect 
+                value={filterTeam}
+                onChange={(val) => setFilterTeam(val)}
+                placeholder="Todas as Equipes"
+                className="!py-1.5 !text-xs font-semibold"
+                options={[
+                  { value: "all", label: "🏢 Equipes" },
+                  ...managedTeamsData.map(t => ({ value: t.id, label: t.name }))
+                ]}
+              />
+            </div>
+          )}
 
           {/* Dropdown Tipo */}
           <div className="w-36 sm:w-40">
