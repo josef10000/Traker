@@ -6,6 +6,7 @@ import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { BiAnalyticsTab } from './BiAnalyticsTab';
 import { DimensionamentoSitesSection } from './DimensionamentoSitesSection';
 import { HourlyActivityTrackerSection } from './HourlyActivityTrackerSection';
+import { KnowledgeBaseSection } from './KnowledgeBaseSection';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -2554,8 +2555,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {/* Botão Central de Conhecimento & Scripts (WIKI da Operação) */}
                     <button
                       type="button"
-                      onClick={() => setIsKnowledgeBaseModalOpen(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all border cursor-pointer bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border-sky-500/30 shadow-sm active:scale-95"
+                      onClick={() => setDashboardTab('knowledge_base')}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all border cursor-pointer border-sky-500/30 shadow-sm active:scale-95 ${
+                        dashboardTab === 'knowledge_base'
+                          ? 'bg-sky-500 text-white shadow-sky-500/20'
+                          : 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-400'
+                      }`}
                       title="Abrir Central de Conhecimento, Comunicados e Scripts da Operação"
                     >
                       <BookOpen size={14} weight="bold" />
@@ -3032,6 +3037,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   showToast={showToast}
                   agreements={monthAgreements}
                   teamsData={managedTeamsData}
+                  theme={theme}
+                />
+              )}
+
+              {/* CONTEÚDO DA ABA DE BASE DE CONHECIMENTO & SCRIPTS */}
+              {dashboardTab === 'knowledge_base' && (
+                <KnowledgeBaseSection
+                  profile={profile}
+                  showToast={showToast}
                   theme={theme}
                 />
               )}

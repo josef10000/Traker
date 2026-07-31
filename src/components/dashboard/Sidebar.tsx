@@ -13,7 +13,8 @@ import {
   Target,
   PhoneCall as TabulationIcon,
   MonitorPlay as ExecutiveIcon,
-  Clock
+  Clock,
+  BookOpen
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
 
@@ -60,6 +61,13 @@ export const Sidebar = ({
           description: 'Fila cega de promessas de pagamento e renegociação.',
           icon: RecoveryIcon,
           show: profile.role !== 'monitor' && profile.role !== 'backoffice'
+        },
+        {
+          id: 'knowledge_base',
+          label: 'Base de Conhecimento',
+          description: 'Scripts de negociação, comunicados da operação e tira-dúvidas.',
+          icon: BookOpen,
+          show: true
         },
         {
           id: 'backoffice',
