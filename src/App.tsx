@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { WarningCircle, IconContext } from '@phosphor-icons/react';
+import { WarningCircle, CircleNotch, IconContext } from '@phosphor-icons/react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { useDesignMode } from './hooks/useDesignMode';
 import { auth, db } from './lib/firebase';
@@ -592,6 +592,15 @@ export function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 text-center">
+        <CircleNotch className="w-10 h-10 text-sky-400 animate-spin mb-4" />
+        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Carregando ambiente...</p>
+      </div>
     );
   }
 

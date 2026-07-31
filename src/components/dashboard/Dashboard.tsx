@@ -127,8 +127,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   // Abas do Dashboard
   const [dashboardTab, setDashboardTab] = useState<'financial' | 'people' | 'recovery' | 'qa' | 'bi' | 'support' | 'backoffice' | 'portfolio' | 'carga_acordos' | 'coordination'>(() => {
-    if (profile.role === 'backoffice') return 'backoffice';
-    if (profile.role === 'monitor') return 'qa';
+    if (profile?.role === 'backoffice') return 'backoffice';
+    if (profile?.role === 'monitor') return 'qa';
     return 'financial';
   });
 
@@ -139,8 +139,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [qaMasterSubTab, setQaMasterSubTab] = useState<'evaluations' | 'audit'>('evaluations');
   
   // Visualização e Seleção de Equipes
-  const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile.teamId || 'all');
-  const [viewMode, setViewMode] = useState<'personal' | 'team'>((profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'monitor') ? 'team' : 'personal');
+  const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>(profile?.teamId || 'all');
+  const [viewMode, setViewMode] = useState<'personal' | 'team'>((profile?.role === 'supervisor' || profile?.role === 'manager' || profile?.role === 'coordinator' || profile?.role === 'monitor') ? 'team' : 'personal');
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState(false);
 
   // Metas Gerais
@@ -148,7 +148,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [effectivenessGoal, setEffectivenessGoal] = useState<number>(85);
 
   // Preferências Visuais
-  const [localHiddenCards, setLocalHiddenCards] = useState<string[]>(profile.dashboardPreferences?.hiddenCards || []);
+  const [localHiddenCards, setLocalHiddenCards] = useState<string[]>(profile?.dashboardPreferences?.hiddenCards || []);
   const [isPresentMode, setIsPresentMode] = useState(false);
   const [isChecklistMode, setIsChecklistMode] = useState(false);
 
