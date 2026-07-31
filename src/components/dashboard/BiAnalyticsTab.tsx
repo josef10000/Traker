@@ -547,9 +547,9 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     }
   }), []);
 
-  // ApexChart 3: Pareto Donut Chart de Motivos com Neon Glow
+  // ApexChart 3: Pareto Donut Chart de Motivos (Design Limpo sem Sobreposição)
   const apexDonutSeries = useMemo(() => {
-    return reasonBreakdown.slice(0, 6).map(r => r.count);
+    return reasonBreakdown.slice(0, 5).map(r => r.count);
   }, [reasonBreakdown]);
 
   const apexDonutOptions = useMemo(() => ({
@@ -558,26 +558,66 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
       type: 'donut', 
       background: 'transparent',
       foreColor: '#94a3b8',
-      dropShadow: { enabled: true, blur: 6, opacity: 0.25 }
+      dropShadow: { enabled: false }
     },
     theme: { mode: 'dark' },
-    labels: reasonBreakdown.slice(0, 6).map(r => r.title),
+    labels: reasonBreakdown.slice(0, 5).map(r => r.title),
     colors: REASON_COLORS,
-    legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+    dataLabels: {
+      enabled: false // Desativa porcentagens flutuantes que sobrepunham o gráfico
+    },
+    legend: {
+      show: true,
+      position: 'bottom',
+      fontSize: '11px',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      labels: { colors: '#94a3b8' },
+      itemMargin: { horizontal: 8, vertical: 4 }
+    },
     plotOptions: {
       pie: {
+        expandOnClick: true,
         donut: {
-          size: '72%',
+          size: '76%',
           labels: {
             show: true,
+            name: {
+              show: true,
+              fontSize: '10px',
+              fontWeight: 700,
+              color: '#38bdf8',
+              offsetY: -6
+            },
+            value: {
+              show: true,
+              fontSize: '22px',
+              fontFamily: 'monospace',
+              fontWeight: 800,
+              color: '#f8fafc',
+              offsetY: 4
+            },
             total: {
               show: true,
-              label: 'Total Atendimentos',
+              label: 'TOTAL ATENDIMENTOS',
               color: '#38bdf8',
+              fontSize: '10px',
+              fontWeight: 700,
               formatter: () => `${filteredRecords.length}`
             }
           }
         }
+      }
+    },
+    stroke: {
+      show: true,
+      colors: ['#0f172a'],
+      width: 2
+    },
+    tooltip: {
+      theme: 'dark',
+      style: { fontSize: '12px' },
+      y: {
+        formatter: (val: number) => `${val} ocorrências`
       }
     }
   }), [reasonBreakdown, filteredRecords.length]);
