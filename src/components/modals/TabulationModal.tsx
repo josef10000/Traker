@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, PhoneCall, Check, User, FileText, Link, Headphones, CheckCircle, Warning, UploadSimple, FileAudio, CircleNotch } from '@phosphor-icons/react';
+import { X, PhoneCall, Check, User, FileText, Link, Headphones, CheckCircle, Warning, UploadSimple, FileAudio, CircleNotch, Microphone } from '@phosphor-icons/react';
 import { Agreement, AttendanceReason, UserProfile } from '../../types';
 import { formatCPF } from '../../utils/masks';
 import { formatAudioStreamUrl } from '../../utils/audio';
 import { r2Service } from '../../lib/r2Service';
+import { useVoiceDictation } from '../../hooks/useVoiceDictation';
 
 interface TabulationModalProps {
   isOpen: boolean;
@@ -52,6 +53,12 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
   const [fileName, setFileName] = useState('');
   const [observation, setObservation] = useState('');
   const [selectedAgreementId, setSelectedAgreementId] = useState('');
+
+  const { isListening, isSupported, toggleListening } = useVoiceDictation({
+    onResult: (text) => {
+      setObservation(text);
+    }
+  });
 
   const isDark = theme === 'dark';
   const reasons = customReasons.length > 0 ? customReasons : DEFAULT_REASONS;
@@ -278,16 +285,33 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
             )}
           </div>
 
-          {/* Observações / Relato livre */}
+          {/* Observações / Relato livre com Ditado por Voz (Web Speech API) */}
           <div>
-            <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1">
-              Observação / Relato do Atendimento
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                Observação / Relato do Atendimento
+              </label>
+              {isSupported && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                    isListening 
+                      ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30' 
+                      : 'bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border border-sky-500/20'
+                  }`}
+                  title={isListening ? 'Clique para parar o ditado' : 'Clique para ditar por voz'}
+                >
+                  <Microphone size={12} className={isListening ? 'animate-bounce' : ''} />
+                  <span>{isListening ? 'Ouvindo...' : 'Ditar por Voz'}</span>
+                </button>
+              )}
+            </div>
             <textarea
               rows={2}
               value={observation}
               onChange={(e) => setObservation(e.target.value)}
-              placeholder="Descreva detalhes importantes da conversa ou observações..."
+              placeholder="Descreva detalhes importantes da conversa ou clique no microfone para ditar..."
               className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                 isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
               }`}

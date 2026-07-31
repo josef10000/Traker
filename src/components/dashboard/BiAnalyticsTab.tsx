@@ -4,10 +4,13 @@ import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
 import { Agreement, AttendanceRecord, UserProfile, Team, DashboardStats } from '../../types';
 import { formatCurrency } from '../../utils/masks';
-import { Fire, CurrencyDollar, Lightning, ShieldWarning, Tag, TrendUp as TrendingUp } from '@phosphor-icons/react';
+import { Fire, CurrencyDollar, Lightning, ShieldWarning, Tag, TrendUp as TrendingUp, FileCsv as FileSpreadsheet, ChartPie, ChartBar } from '@phosphor-icons/react';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { AdvancedInsights } from './AdvancedInsights';
+import { ApexChartWrapper } from '../ui/ApexChartWrapper';
+import { exportAgreementsToExcel } from '../../utils/excelExport';
+import { requestNotificationPermission, sendDesktopNotification } from '../../lib/desktopNotifications';
 
 interface BiAnalyticsTabProps {
   profile: UserProfile;
@@ -21,6 +24,11 @@ interface BiAnalyticsTabProps {
   showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   theme?: 'light' | 'dark';
 }
+
+const REASON_COLORS = [
+  '#38bdf8', '#fbbf24', '#34d399', '#f87171', '#a78bfa',
+  '#f472b6', '#fb923c', '#4ade80', '#818cf8', '#2dd4bf'
+];
 
 export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
   profile,
@@ -40,6 +48,18 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>('all');
   const [heatmapMetric, setHeatmapMetric] = useState<'total' | 'success' | 'paid_value' | 'real_conversion' | 'specific_reason'>('total');
   const [heatmapSelectedReason, setHeatmapSelectedReason] = useState<string>('all');
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Solicita permissão de notificação nativa ao carregar o BI
+  useEffect(() => {
+    requestNotificationPermission().then((granted) => {
+      if (granted) {
+        sendDesktopNotification('Analytics & BI Conectado', {
+          body: 'Notificações de metas e performance nativas ativas no desktop.'
+        });
+      }
+    });
+  }, []);
 
   // Carrega registros de tabulação/atendimento conforme o sandbox ou firestore
   useEffect(() => {
@@ -210,371 +230,319 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     { label: '18h - 20h', startHour: 18, endHour: 20 }
   ];
 
-  const heatmapMatrix = useMemo(() => {
-    const matrix: { day: string; time: string; value: number; count: number; countTotal: number }[][] = 
-      DAYS_OF_WEEK.map(() => TIME_SLOTS.map(() => ({ day: '', time: '', value: 0, count: 0, countTotal: 0 })));
+  // ==========================================
+  // CONFIGURAÇÕES APEXCHARTS DE ALTA PRECISÃO
+  // ==========================================
 
-    let maxValue = 0;
+  // ApexChart 1: Heatmap de Horários Nobres
+  const apexHeatmapSeries = useMemo(() => {
+    return DAYS_OF_WEEK.map((dayName, dayIdx) => {
+      const data = TIME_SLOTS.map((slot) => {
+        let val = 0;
+        filteredRecords.forEach(r => {
+          const date = new Date(r.createdAt);
+          const dayOfWeek = date.getDay();
+          if (dayOfWeek === 0) return;
+          if (dayOfWeek - 1 !== dayIdx) return;
+          const hour = date.getHours();
+          if (hour >= slot.startHour && hour < slot.endHour) {
+            if (heatmapMetric === 'total') val += 1;
+            else if (heatmapMetric === 'success' && r.isSuccess) val += 1;
+            else if (heatmapMetric === 'paid_value' && r.agreementId) {
+              const ag = agreements.find(a => a.id === r.agreementId);
+              if (ag) val += (ag.updatedValue || ag.originalValue || 0);
+            } else if (heatmapMetric === 'real_conversion' && r.isNegotiation && r.isSuccess) {
+              val += 1;
+            }
+          }
+        });
+        return { x: slot.label, y: val };
+      });
+      return { name: dayName, data };
+    });
+  }, [filteredRecords, agreements, heatmapMetric]);
 
-    filteredRecords.forEach(r => {
-      const date = new Date(r.createdAt);
-      const dayOfWeek = date.getDay(); // 0 = Dom, 1 = Seg, ..., 6 = Sáb
-      if (dayOfWeek === 0) return;
-      const dayIdx = dayOfWeek - 1;
-      if (dayIdx < 0 || dayIdx >= 6) return;
-
-      const hour = date.getHours();
-      const timeIdx = TIME_SLOTS.findIndex(slot => hour >= slot.startHour && hour < slot.endHour);
-      if (timeIdx === -1) return;
-
-      const cell = matrix[dayIdx][timeIdx];
-      cell.day = DAYS_OF_WEEK[dayIdx];
-      cell.time = TIME_SLOTS[timeIdx].label;
-      cell.countTotal += 1;
-
-      if (heatmapMetric === 'total') {
-        cell.value += 1;
-        cell.count += 1;
-      } else if (heatmapMetric === 'success' && r.isSuccess) {
-        cell.value += 1;
-        cell.count += 1;
-      } else if (heatmapMetric === 'paid_value' && r.agreementId) {
-        const ag = agreements.find(a => a.id === r.agreementId);
-        if (ag && (ag.status === 'PAID' || ag.status === 'SCHEDULED')) {
-          const val = ag.updatedValue || ag.originalValue || 0;
-          cell.value += val;
-          cell.count += 1;
-        }
-      } else if (heatmapMetric === 'real_conversion' && r.isNegotiation) {
-        if (r.isSuccess) cell.value += 1;
-        cell.count += 1;
-      } else if (heatmapMetric === 'specific_reason') {
-        if (heatmapSelectedReason === 'all' || r.reasonTitle === heatmapSelectedReason) {
-          cell.value += 1;
-          cell.count += 1;
+  const apexHeatmapOptions = useMemo(() => ({
+    chart: {
+      type: 'heatmap',
+      toolbar: { show: true, tools: { download: true } },
+      background: 'transparent'
+    },
+    theme: { mode: 'dark' },
+    colors: ['#0284c7'],
+    dataLabels: { enabled: true, style: { fontSize: '10px', colors: ['#ffffff'] } },
+    xaxis: { labels: { style: { colors: '#94a3b8', fontSize: '11px' } } },
+    yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '11px' } } },
+    plotOptions: {
+      heatmap: {
+        radius: 6,
+        enableShades: true,
+        colorScale: {
+          ranges: [
+            { from: 0, to: 0, color: '#0f172a', name: 'Sem movimento' },
+            { from: 1, to: 10, color: '#0284c7', name: 'Baixo' },
+            { from: 11, to: 30, color: '#f59e0b', name: 'Médio' },
+            { from: 31, to: 1000000, color: '#10b981', name: 'Horário Nobre 🔥' }
+          ]
         }
       }
+    },
+    tooltip: {
+      theme: 'dark',
+      y: {
+        formatter: (val: number) => heatmapMetric === 'paid_value' ? formatCurrency(val) : `${val} ocorrências`
+      }
+    }
+  }), [heatmapMetric]);
 
-      if (cell.value > maxValue) maxValue = cell.value;
+  // ApexChart 2: Projeção de Recuperação Financeira (Area Chart com Gradiente)
+  const apexAreaSeries = useMemo(() => {
+    const daysMap: Record<number, number> = {};
+    for (let i = 1; i <= 31; i++) daysMap[i] = 0;
+
+    agreements.forEach(ag => {
+      if (!ag.createdAt) return;
+      const date = new Date(ag.createdAt);
+      if (date.getMonth() === selectedMonth && date.getFullYear() === selectedYear) {
+        const day = date.getDate();
+        daysMap[day] = (daysMap[day] || 0) + (ag.updatedValue || ag.originalValue || 0);
+      }
     });
 
-    return { matrix, maxValue: maxValue || 1 };
-  }, [filteredRecords, heatmapMetric, heatmapSelectedReason, agreements]);
+    const categories = Object.keys(daysMap).map(d => `Dia ${d}`);
+    const data = Object.values(daysMap);
 
-  const REASON_COLORS = [
-    '#38bdf8', '#34d399', '#f59e0b', '#f43f5e', '#a78bfa', '#ec4899', '#10b981', '#6366f1'
-  ];
+    return [{ name: 'Volume Acumulado R$', data }];
+  }, [agreements, selectedMonth, selectedYear]);
+
+  const apexAreaOptions = useMemo(() => ({
+    chart: {
+      type: 'area',
+      height: 300,
+      toolbar: { show: true },
+      background: 'transparent'
+    },
+    theme: { mode: 'dark' },
+    colors: ['#10b981'],
+    stroke: { curve: 'smooth', width: 3 },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.45,
+        opacityTo: 0.05,
+        stops: [0, 90, 100]
+      }
+    },
+    dataLabels: { enabled: false },
+    xaxis: {
+      categories: Array.from({ length: 31 }, (_, i) => `${i + 1}`),
+      labels: { style: { colors: '#94a3b8', fontSize: '10px' } }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: '#94a3b8', fontSize: '10px' },
+        formatter: (val: number) => `R$ ${(val / 1000).toFixed(0)}k`
+      }
+    },
+    tooltip: {
+      theme: 'dark',
+      y: { formatter: (val: number) => formatCurrency(val) }
+    }
+  }), []);
+
+  // ApexChart 3: Pareto Donut Chart de Motivos
+  const apexDonutSeries = useMemo(() => {
+    return reasonBreakdown.slice(0, 6).map(r => r.count);
+  }, [reasonBreakdown]);
+
+  const apexDonutOptions = useMemo(() => ({
+    chart: { type: 'donut', background: 'transparent' },
+    theme: { mode: 'dark' },
+    labels: reasonBreakdown.slice(0, 6).map(r => r.title),
+    colors: REASON_COLORS,
+    legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '70%',
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Total Motivos',
+              color: '#38bdf8',
+              formatter: () => `${filteredRecords.length}`
+            }
+          }
+        }
+      }
+    }
+  }), [reasonBreakdown, filteredRecords.length]);
+
+  // Função para exportar relatório Excel formatado
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      await exportAgreementsToExcel(agreements, `Relatorio_BI_Acordos_${selectedMonth + 1}_${selectedYear}.xlsx`);
+      showToast('Relatório Excel de alta qualidade gerado com sucesso!', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao gerar planilha Excel.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header Superior com Título & Filtros de Período */}
-      <div className={`p-6 rounded-[2rem] border ${
-        theme === 'dark' ? 'border-white/5 bg-slate-900/40 shadow-2xl' : 'border-slate-200 bg-white shadow-sm'
+    <div className="space-y-8 animate-fadeIn">
+      {/* 🚀 CABEÇALHO DO PAINEL BI & CONTROLES */}
+      <div className={`p-6 rounded-[2rem] border flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
+        theme === 'dark' ? 'bg-slate-900/60 border-white/10 shadow-2xl backdrop-blur-xl' : 'bg-white border-slate-200 shadow-sm'
       }`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-sky-500/10 text-sky-400 rounded-2xl border border-sky-500/20">
+            <div className="p-3 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-lg shadow-sky-500/10">
               <TrendingUp size={24} />
             </div>
             <div>
-              <h2 className={`text-xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                BI & Analytics Estratégico
+              <h2 className="text-xl font-black text-slate-100 uppercase tracking-wide">
+                BI & Analytics Avançado (ApexCharts Integration)
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Métricas Preditivas, Ticket Médio, Resolução em 1º Contato, Risco de Quebra e Mapa de Calor
+              <p className="text-xs text-slate-400">
+                Visualização preditiva, heatmap de horários nobres e inteligência de conversão em tempo real
               </p>
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Seletor de Equipes */}
-            {teamsData.length > 0 && (
-              <div className="w-48">
-                <CustomSelect
-                  value={selectedTeamFilter}
-                  onChange={(val) => setSelectedTeamFilter(val)}
-                  placeholder="Todas as Equipes"
-                  options={[
-                    { value: 'all', label: '🏢 Todas as Equipes' },
-                    ...teamsData.map(t => ({ value: t.id, label: `👥 ${t.name}` }))
-                  ]}
-                />
-              </div>
-            )}
-
-            {/* Filtro Compacto de Mês e Ano */}
-            <CustomMonthYearPicker
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              onSelectMonth={setSelectedMonth}
-              onSelectYear={setSelectedYear}
-              theme={theme}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 📊 PAINEL DAS 3 NOVAS MÉTRICAS AVANÇADAS DE BI (3 COLUNAS) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Card A: Ticket Médio por Motivo (R$) */}
-        <div className={`p-5 rounded-[2rem] border ${
-          theme === 'dark' ? 'bg-slate-900/40 border-white/5 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
-        }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
-                <CurrencyDollar size={18} />
-              </div>
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">Ticket Médio por Motivo</h4>
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">R$ Recuperados</span>
-          </div>
-
-          {reasonTicketStats.length === 0 ? (
-            <p className="text-xs text-slate-500 italic text-center py-6">Nenhum acordo registrado com motivo ainda.</p>
-          ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {reasonTicketStats.slice(0, 4).map(item => (
-                <div key={item.title} className="flex items-center justify-between p-2 rounded-xl bg-slate-950/30 border border-white/5 text-xs">
-                  <span className="text-slate-300 font-medium text-[11px] truncate max-w-[140px]" title={item.title}>
-                    {item.title}
-                  </span>
-                  <span className="font-mono font-bold text-emerald-400 text-[11px]">
-                    {formatCurrency(item.averageValue)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Card B: Resolução no 1º Contato (FCR %) */}
-        <div className={`p-5 rounded-[2rem] border ${
-          theme === 'dark' ? 'bg-slate-900/40 border-white/5 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
-        }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
-                <Lightning size={18} />
-              </div>
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">Resolução 1º Contato (FCR)</h4>
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Velocidade</span>
-          </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Seletor de Mês/Ano */}
+          <CustomMonthYearPicker
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onChangeMonth={setSelectedMonth}
+            onChangeYear={setSelectedYear}
+            theme={theme}
+          />
 
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <span className="text-3xl font-black text-amber-400 tracking-tight">{fcrStats.fcrRate}%</span>
-              <span className="text-[11px] text-slate-400 block mt-1">Taxa de Resolução Imediata</span>
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-bold text-slate-200 block">{fcrStats.resolvedFirstContact} de {fcrStats.totalUniqueClients}</span>
-              <span className="text-[10px] text-slate-400 block">clientes únicos atendidos</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card C: Taxa de Quebra Futura por Motivo (%) */}
-        <div className={`p-5 rounded-[2rem] border ${
-          theme === 'dark' ? 'bg-slate-900/40 border-white/5 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
-        }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-rose-500/10 text-rose-400 rounded-xl border border-rose-500/20">
-                <ShieldWarning size={18} />
-              </div>
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">Taxa de Quebra Futura</h4>
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">Risco</span>
-          </div>
-
-          {quebraStats.length === 0 ? (
-            <p className="text-xs text-slate-500 italic text-center py-6">Sem histórico de acordos quebrados registrado.</p>
-          ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {quebraStats.slice(0, 4).map(item => (
-                <div key={item.title} className="flex items-center justify-between p-2 rounded-xl bg-slate-950/30 border border-white/5 text-xs">
-                  <span className="text-slate-300 font-medium text-[11px] truncate max-w-[140px]" title={item.title}>
-                    {item.title}
-                  </span>
-                  <span className={`font-mono font-bold text-[11px] ${item.quebraRate > 30 ? 'text-rose-400' : 'text-amber-400'}`}>
-                    {item.quebraRate}% quebra ({item.brokenAgreements}/{item.totalAgreements})
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 🗺️ MAPA DE CALOR MULTIDIMENSIONAL REATIVO (BI HEATMAP) */}
-      <div className={`p-6 rounded-[2rem] border ${
-        theme === 'dark' ? 'bg-slate-900/40 border-white/5 shadow-2xl' : 'bg-white border-slate-200 shadow-sm'
-      }`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
-              <Fire size={18} className="text-amber-400" />
-              <span>Mapa de Calor Operacional: Janela de Ouro e Concentração</span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Identifique os dias e horários nobres de maior densidade de resultado</p>
-          </div>
-
-          {/* Seletores de Métrica e Motivo do Heatmap */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="w-56">
+          {/* Seletor de Equipe */}
+          {teamsData.length > 0 && (
+            <div className="w-48">
               <CustomSelect
-                value={heatmapMetric}
-                onChange={(val) => setHeatmapMetric(val as any)}
-                placeholder="Selecione a Métrica..."
+                value={selectedTeamFilter}
+                onChange={setSelectedTeamFilter}
                 options={[
-                  { value: 'total', label: '📞 Volume de Atendimentos' },
-                  { value: 'success', label: '🤝 Acordos Gerados' },
-                  { value: 'paid_value', label: '💳 Valor de Acordos (R$)' },
-                  { value: 'real_conversion', label: '🎯 Conversão Real (%)' },
-                  { value: 'specific_reason', label: '🏷️ Filtrar por Motivo Específico' }
+                  { value: 'all', label: 'Todas as Equipes' },
+                  ...teamsData.map(t => ({ value: t.id, label: t.name }))
                 ]}
               />
             </div>
+          )}
 
-            {/* Sub-seletor de Motivo Específico */}
-            {heatmapMetric === 'specific_reason' && (
-              <div className="w-56">
-                <CustomSelect
-                  value={heatmapSelectedReason}
-                  onChange={(val) => setHeatmapSelectedReason(val)}
-                  placeholder="Selecione o Motivo..."
-                  options={[
-                    { value: 'all', label: '🏷️ Todos os Motivos' },
-                    ...reasonBreakdown.map(r => ({ value: r.title, label: r.title }))
-                  ]}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Grade do Mapa de Calor (Heatmap Matrix Table) */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-center border-collapse">
-            <thead>
-              <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-white/5">
-                <th className="py-3 px-4 text-left">Dia / Horário</th>
-                {TIME_SLOTS.map(slot => (
-                  <th key={slot.label} className="py-3 px-3 min-w-[100px]">{slot.label}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="text-xs font-mono divide-y divide-white/[0.02]">
-              {DAYS_OF_WEEK.map((dayName, dayIdx) => (
-                <tr key={dayName} className="hover:bg-white/5 transition-colors">
-                  <td className="py-3.5 px-4 font-sans font-bold text-slate-300 text-left text-xs">
-                    {dayName}
-                  </td>
-
-                  {TIME_SLOTS.map((slot, timeIdx) => {
-                    const cell = heatmapMatrix.matrix[dayIdx][timeIdx];
-                    const rawVal = cell.value;
-                    const ratio = heatmapMatrix.maxValue > 0 ? rawVal / heatmapMatrix.maxValue : 0;
-
-                    let bgClass = 'bg-slate-950/40 text-slate-500 border border-white/5';
-                    if (ratio > 0.75) {
-                      bgClass = 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20 border border-amber-400';
-                    } else if (ratio > 0.45) {
-                      bgClass = 'bg-amber-500/60 text-amber-100 font-bold border border-amber-500/40';
-                    } else if (ratio > 0.20) {
-                      bgClass = 'bg-amber-500/30 text-amber-300 border border-amber-500/20';
-                    } else if (ratio > 0) {
-                      bgClass = 'bg-amber-500/10 text-amber-400 border border-amber-500/10';
-                    }
-
-                    return (
-                      <td key={slot.label} className="p-1.5">
-                        <div 
-                          className={`h-11 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer hover:scale-105 ${bgClass}`}
-                          title={`${dayName} às ${slot.label}: ${heatmapMetric === 'paid_value' ? formatCurrency(rawVal) : `${rawVal} registros`}`}
-                        >
-                          <span className="text-[11px]">
-                            {heatmapMetric === 'paid_value' 
-                              ? (rawVal > 0 ? formatCurrency(rawVal) : '-') 
-                              : (rawVal > 0 ? rawVal : '-')}
-                          </span>
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {/* Botão de Exportação ExcelJS Formata */}
+          <button
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all shadow-lg shadow-emerald-500/5 cursor-pointer disabled:opacity-50"
+          >
+            <FileSpreadsheet size={18} />
+            <span>{isExporting ? 'Exportando...' : 'Exportar Excel Formatado'}</span>
+          </button>
         </div>
       </div>
 
-      {/* 📊 PARETO ROSCA DOS MOTIVOS TABULADOS */}
-      {reasonBreakdown.length > 0 && (
+      {/* 📊 GRÁFICOS APEXCHARTS PRINCIPAIS (APEXCHARTS INTEGRATION) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Curva de Recuperação Financeira (ApexCharts Area Chart) */}
+        <div className={`lg:col-span-2 p-6 rounded-[2rem] border ${
+          theme === 'dark' ? 'bg-slate-900/40 border-white/5 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <CurrencyDollar size={18} className="text-emerald-400" />
+                <span>Fluxo de Caixa & Curva de Recuperação Diária</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">Evolução diária dos valores em R$ negociados na operação</p>
+            </div>
+          </div>
+          <ApexChartWrapper 
+            type="area" 
+            options={apexAreaOptions} 
+            series={apexAreaSeries} 
+            height={280} 
+          />
+        </div>
+
+        {/* Pareto Rosca Interativo de Motivos (ApexCharts Donut Chart) */}
         <div className={`p-6 rounded-[2rem] border ${
           theme === 'dark' ? 'bg-slate-900/40 border-white/5 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
         }`}>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
-                <Tag size={16} className="text-sky-400" />
-                <span>BI de Motivos: Pareto de Ofensores e Oportunidades</span>
+                <ChartPie size={18} className="text-sky-400" />
+                <span>Pareto de Motivos</span>
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">Distribuição percentual dos motivos tabulados na operação</p>
+              <p className="text-xs text-slate-400 mt-0.5">Principais causas de objeção</p>
             </div>
-            <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 uppercase tracking-widest">
-              {reasonBreakdown.length} motivos registrados
-            </span>
+          </div>
+          {apexDonutSeries.length > 0 ? (
+            <ApexChartWrapper 
+              type="donut" 
+              options={apexDonutOptions} 
+              series={apexDonutSeries} 
+              height={280} 
+            />
+          ) : (
+            <div className="h-64 flex items-center justify-center text-xs text-slate-500 font-mono">
+              Sem dados tabulados para o período
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 🔥 MAPA DE CALOR INTERATIVO (APEXCHARTS HEATMAP) */}
+      <div className={`p-6 rounded-[2rem] border ${
+        theme === 'dark' ? 'bg-slate-900/40 border-white/5 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
+      }`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <Fire size={18} className="text-amber-400" />
+              <span>ApexCharts Heatmap: Horários Nobres da Operação</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Identificação visual dos horários e dias de maior taxa de sucesso e arrecadação
+            </p>
           </div>
 
-          <div className="h-4 w-full rounded-full overflow-hidden flex bg-slate-800 border border-slate-700/50 mb-5 shadow-inner">
-            {reasonBreakdown.map((item, idx) => (
-              <div
-                key={item.title}
-                style={{
-                  width: `${item.percentage}%`,
-                  backgroundColor: REASON_COLORS[idx % REASON_COLORS.length]
-                }}
-                className="h-full transition-all hover:brightness-125 relative group cursor-pointer"
-                title={`${item.title}: ${item.count} (${item.percentage}%)`}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-slate-400">Métrica do Mapa:</span>
+            <div className="w-56">
+              <CustomSelect
+                value={heatmapMetric}
+                onChange={(val) => setHeatmapMetric(val as any)}
+                options={[
+                  { value: 'total', label: 'Volume de Atendimentos' },
+                  { value: 'success', label: 'Acordos Fechados' },
+                  { value: 'paid_value', label: 'Valor Arrecadado (R$)' },
+                  { value: 'real_conversion', label: 'Conversão em Negociações' }
+                ]}
               />
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-            {reasonBreakdown.map((item, idx) => (
-              <div 
-                key={item.title}
-                className={`p-3 rounded-xl border flex items-start gap-2.5 transition-all ${
-                  theme === 'dark' ? 'bg-slate-950/40 border-white/5 hover:border-slate-700' : 'bg-slate-50 border-slate-200'
-                }`}
-              >
-                <span 
-                  className="w-3 h-3 rounded-full shrink-0 mt-0.5 shadow-sm"
-                  style={{ backgroundColor: REASON_COLORS[idx % REASON_COLORS.length] }}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-bold text-slate-200 truncate text-[11px]" title={item.title}>
-                      {item.title}
-                    </span>
-                    <span className="font-mono font-black text-sky-400 text-[11px]">
-                      {item.percentage}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
-                    <span>{item.count} chamadas</span>
-                    <span className={`font-semibold ${item.isSuccess ? 'text-emerald-400' : item.isNegotiation ? 'text-amber-400' : 'text-slate-400'}`}>
-                      {item.isSuccess ? 'Sucesso' : item.isNegotiation ? 'Negociação' : 'Institucional'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Renderização do Heatmap via ApexCharts */}
+        <ApexChartWrapper 
+          type="heatmap" 
+          options={apexHeatmapOptions} 
+          series={apexHeatmapSeries} 
+          height={320} 
+        />
+      </div>
 
       {/* 🔮 ESTATÍSTICAS PREDITIVAS & INSIGHTS (ADVANCED INSIGHTS) */}
       <div className={`glass-card p-6 rounded-[2rem] border ${
