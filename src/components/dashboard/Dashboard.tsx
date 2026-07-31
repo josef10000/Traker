@@ -277,17 +277,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [profile.organizationId, isTabVisible]);
 
-  // Seleção reativa de aba padrão para monitores e backoffice
+  // Seleção reativa de aba e sub-aba para monitores e backoffice
   useEffect(() => {
-    if (profile?.role === 'monitor') {
-      setDashboardTab('qa');
-    } else if (profile?.role === 'backoffice') {
+    if (profile?.role === 'backoffice') {
       setDashboardTab('backoffice');
     } else if (profile?.role) {
-      // Se trocou para um cargo comum e a aba atual é restrita a monitor/backoffice, força a ida para 'financial'
-      setDashboardTab(prev => (prev === 'backoffice' || prev === 'qa' ? 'financial' : prev));
+      setDashboardTab(prev => (prev === 'backoffice' ? 'financial' : prev));
     }
   }, [profile?.role]);
+
+  // Garante que o Monitor/QA acesse apenas sub-abas permitidas dentro de Gestão de Pessoas
+  useEffect(() => {
+    if ((profile?.role === 'monitor' || profile?.role === 'qa') && ['closing_pj', 'teams_mgmt', 'org_tree', 'invites', 'dimensionamento', 'transfers'].includes(coordinationSubTab)) {
+      setCoordinationSubTab('performance');
+    }
+  }, [profile?.role, coordinationSubTab]);
 
   const [supervisors, setSupervisors] = useState<UserProfile[]>([]);
   const [managers, setManagers] = useState<UserProfile[]>([]);
@@ -3317,56 +3321,60 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       >
                         📅 Frequência & Calendário
                       </button>
-                      <button
-                        onClick={() => setCoordinationSubTab('closing_pj')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          coordinationSubTab === 'closing_pj'
-                            ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
-                            : 'text-slate-400 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        💰 Fechamentos PJ
-                      </button>
-                      <button
-                        onClick={() => setCoordinationSubTab('teams_mgmt')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          coordinationSubTab === 'teams_mgmt'
-                            ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
-                            : 'text-slate-400 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        👥 Equipes & Membros
-                      </button>
-                      <button
-                        onClick={() => setCoordinationSubTab('org_tree')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          coordinationSubTab === 'org_tree'
-                            ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
-                            : 'text-slate-400 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        🌳 Organograma
-                      </button>
-                      <button
-                        onClick={() => setCoordinationSubTab('invites')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          coordinationSubTab === 'invites'
-                            ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
-                            : 'text-slate-400 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        ✉️ Convites PJ
-                      </button>
-                      <button
-                        onClick={() => setCoordinationSubTab('dimensionamento')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          coordinationSubTab === 'dimensionamento'
-                            ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-md'
-                            : 'text-slate-400 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        🏢 Dimensionamento & Sites
-                      </button>
+                      {profile.role !== 'monitor' && profile.role !== 'qa' && (
+                        <>
+                          <button
+                            onClick={() => setCoordinationSubTab('closing_pj')}
+                            className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                              coordinationSubTab === 'closing_pj'
+                                ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
+                                : 'text-slate-400 hover:text-white border border-transparent'
+                            }`}
+                          >
+                            💰 Fechamentos PJ
+                          </button>
+                          <button
+                            onClick={() => setCoordinationSubTab('teams_mgmt')}
+                            className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                              coordinationSubTab === 'teams_mgmt'
+                                ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
+                                : 'text-slate-400 hover:text-white border border-transparent'
+                            }`}
+                          >
+                            👥 Equipes & Membros
+                          </button>
+                          <button
+                            onClick={() => setCoordinationSubTab('org_tree')}
+                            className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                              coordinationSubTab === 'org_tree'
+                                ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
+                                : 'text-slate-400 hover:text-white border border-transparent'
+                            }`}
+                          >
+                            🌳 Organograma
+                          </button>
+                          <button
+                            onClick={() => setCoordinationSubTab('invites')}
+                            className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                              coordinationSubTab === 'invites'
+                                ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
+                                : 'text-slate-400 hover:text-white border border-transparent'
+                            }`}
+                          >
+                            ✉️ Convites PJ
+                          </button>
+                          <button
+                            onClick={() => setCoordinationSubTab('dimensionamento')}
+                            className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                              coordinationSubTab === 'dimensionamento'
+                                ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-md'
+                                : 'text-slate-400 hover:text-white border border-transparent'
+                            }`}
+                          >
+                            🏢 Dimensionamento & Sites
+                          </button>
+                        </>
+                      )}
                       {profile.role === 'manager' && (
                         <button
                           onClick={() => setCoordinationSubTab('transfers')}
@@ -3642,7 +3650,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       )}
 
                       {/* SUB-ABA 3: FECHAMENTO PJ */}
-                      {coordinationSubTab === 'closing_pj' && (
+                      {coordinationSubTab === 'closing_pj' && profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <ClosingPjSection
                           profile={profile}
                           theme={theme}
@@ -3651,7 +3659,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       )}
 
                       {/* SUB-ABA 4: EQUIPES & MEMBROS */}
-                      {coordinationSubTab === 'teams_mgmt' && (
+                      {coordinationSubTab === 'teams_mgmt' && profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <div className="space-y-8 animate-fadeIn">
                           <TeamsManagementSection
                             profile={profile}
@@ -3782,7 +3790,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       )}
 
                       {/* SUB-ABA 5: ORGANOGRAMA */}
-                      {coordinationSubTab === 'org_tree' && (
+                      {coordinationSubTab === 'org_tree' && profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <OrgTreeSection
                           profile={profile}
                           theme={theme}
@@ -3793,7 +3801,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       )}
 
                       {/* SUB-ABA 6: CONVITES PJ */}
-                      {coordinationSubTab === 'invites' && (
+                      {coordinationSubTab === 'invites' && profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <InvitesSection
                           profile={profile}
                           theme={theme}
@@ -3812,7 +3820,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       )}
 
                       {/* SUB-ABA 8: DIMENSIONAMENTO & SITES OPERACIONAIS */}
-                      {coordinationSubTab === 'dimensionamento' && (
+                      {coordinationSubTab === 'dimensionamento' && profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <DimensionamentoSitesSection
                           profile={profile}
                           teamsData={managedTeamsData}
