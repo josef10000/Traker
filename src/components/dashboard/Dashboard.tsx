@@ -92,6 +92,9 @@ import { LeadNotesModal } from '../modals/LeadNotesModal';
 import { exportToCsv } from '../../utils/csvExporter';
 import { ExcelExportModal } from '../modals/ExcelExportModal';
 import { ExcelExportColumn } from '../../utils/excelExport';
+import { EmployeeSurveyModal } from '../modals/EmployeeSurveyModal';
+import { getActiveSurveyConfig, isUserEligibleForSurvey } from '../../lib/surveyService';
+import { EmployeeSurveyConfig } from '../../types';
 import { startTour } from '../../utils/tour';
 import { DemoFeatureBanner } from '../demo/DemoFeatureBanner';
 
@@ -1106,6 +1109,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
       createdAtFormatted: a.createdAt ? new Date(a.createdAt).toLocaleDateString('pt-BR') : '-'
     }));
   }, [filteredAgreements]);
+
+  // Pesquisas de Clima & Satisfação Automatizadas (100% Anônimas)
+  const [activeSurveyConfig, setActiveSurveyConfig] = useState<EmployeeSurveyConfig | null>(null);
+  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const [lastRespondedSurveys, setLastRespondedSurveys] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    async function checkSurvey() {
+      if (!profile?.organizationId) return;
+      try {
+        const config = await getActiveSurveyConfig(profile.organizationId);
+        if (config && config.isActive) {
+          setActiveSurveyConfig(config);
+          const lastResponded = lastRespondedSurveys[config.id];
+          const eligible = isUserEligibleForSurvey(profile, config, lastResponded);
+          if (eligible) {
+            setTimeout(() => {
+              setIsSurveyModalOpen(true);
+            }, 1500);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao verificar pesquisa de clima:', err);
+      }
+    }
+    checkSurvey();
+  }, [profile?.organizationId, profile?.uid]);
 
   // 4. HANDLERS E FUNÇÕES OPERACIONAIS (CRUD e Regras de Negócio)
   const handleAcceptTerms = async () => {
@@ -4308,6 +4338,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
         showToast={showToast}
         theme={theme}
       />
+
+      {/* MODAL POPUP DE PESQUISA DE CLIMA E SATISFAÇÃO 100% ANÔNIMO */}
+      {activeSurveyConfig && (
+        <EmployeeSurveyModal
+          isOpen={isSurveyModalOpen}
+          onClose={() => setIsSurveyModalOpen(false)}
+          config={activeSurveyConfig}
+          userTeamId={profile?.teamId}
+          onSubmitted={() => {
+            if (activeSurveyConfig) {
+              setLastRespondedSurveys(prev => ({
+                ...prev,
+                [activeSurveyConfig.id]: new Date().toISOString()
+              }));
+            }
+          }}
+          theme={theme}
+        />
+      )}
     </div>
   );
 };

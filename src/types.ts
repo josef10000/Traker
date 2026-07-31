@@ -265,6 +265,43 @@ export interface Pdi {
   createdAt: string;
 }
 
+export type SurveyFrequency = 
+  | 'daily' 
+  | 'weekly' 
+  | 'biweekly' 
+  | 'monthly' 
+  | 'quarterly' 
+  | 'semiannual' 
+  | 'annual' 
+  | 'once' 
+  | 'disabled';
+
+export interface EmployeeSurveyConfig {
+  id: string;
+  organizationId: string;
+  question: string;
+  scaleType: '0_10' | 'stars' | 'emojis';
+  allowComments: boolean;
+  commentPlaceholder?: string;
+  frequency: SurveyFrequency;
+  targetTeamIds: string[]; // Vazio = Todos os times
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmployeeSurveyResponse {
+  id: string;
+  surveyConfigId: string;
+  organizationId: string;
+  rating: number; // 0-10 ou 1-5
+  scaleType: '0_10' | 'stars' | 'emojis';
+  comment?: string;
+  teamId?: string; // Apenas ID do time para filtro por equipe, SEM ID ou Nome de Usuário (100% Anônimo)
+  createdAt: string;
+}
+
 export interface BackOfficeNote {
   id: string;
   authorId: string;

@@ -8,6 +8,7 @@ import { QaOverview } from './qa/QaOverview';
 import { QaEvaluationsList } from './qa/QaEvaluationsList';
 import { PdiManager } from './qa/PdiManager';
 import { CompetenceManager } from './qa/CompetenceManager';
+import { QaSurveysPanel } from './qa/QaSurveysPanel';
 import { QaModals } from './qa/QaModals';
 import { Plus, CircleNotch as Loader2, Warning as AlertTriangle } from '@phosphor-icons/react';
 import { CustomConfirm } from '../ui/CustomConfirm';
@@ -54,7 +55,7 @@ export const QaDashboard = ({
   const [isUpdatingDates, setIsUpdatingDates] = useState(false);
 
   // Estados de navegação interna
-  const [qaSubTab, setQaSubTab] = useState<'overview' | 'evaluations' | 'pdis' | 'competences'>(
+  const [qaSubTab, setQaSubTab] = useState<'overview' | 'evaluations' | 'pdis' | 'competences' | 'surveys'>(
     isSuperUser ? 'overview' : 'evaluations'
   );
 
@@ -648,6 +649,18 @@ export const QaDashboard = ({
             Competências
           </button>
         )}
+        {isSuperUser && (
+          <button
+            onClick={() => setQaSubTab('surveys')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              qaSubTab === 'surveys' 
+                ? theme === 'dark' ? 'bg-white/5 text-white' : 'bg-white text-sky-500 border border-slate-200/50 shadow-sm'
+                : theme === 'dark' ? 'text-slate-500 hover:text-slate-300' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Pesquisas & Clima
+          </button>
+        )}
       </div>
 
       {/* Conteúdo das SubAbas */}
@@ -713,6 +726,15 @@ export const QaDashboard = ({
                 setEditingCompetence(null);
                 setIsCompModalOpen(true);
               }}
+            />
+          )}
+
+          {qaSubTab === 'surveys' && isSuperUser && (
+            <QaSurveysPanel
+              profile={profile}
+              managedTeamsData={managedTeamsData}
+              showToast={showToast}
+              theme={theme}
             />
           )}
         </>
