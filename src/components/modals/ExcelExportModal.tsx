@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, FileCsv as FileSpreadsheet, Check, SlidersHorizontal, DownloadSimple, ShieldCheck, ChartPie } from '@phosphor-icons/react';
+import { X, FileCsv as FileSpreadsheet, Check, SlidersHorizontal, DownloadSimple, ShieldCheck, ChartPie, LockLaminated } from '@phosphor-icons/react';
 import { exportDynamicToExcel, ExcelExportColumn } from '../../utils/excelExport';
 
 interface ExcelExportModalProps {
@@ -10,6 +10,8 @@ interface ExcelExportModalProps {
   availableColumns: ExcelExportColumn[];
   data: Record<string, any>[];
   onGetChartImages?: () => Promise<string[]>; // Função para capturar gráficos da tela
+  forceCpfMasked?: boolean; // Forçar CPF oculto por regras de segurança/negócio
+  cpfMaskReason?: string; // Motivo da restrição
   showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   theme?: 'light' | 'dark';
 }
@@ -22,6 +24,8 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
   availableColumns,
   data,
   onGetChartImages,
+  forceCpfMasked = false,
+  cpfMaskReason,
   showToast,
   theme = 'dark'
 }) => {
@@ -29,7 +33,7 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
   const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>(
     availableColumns.map(c => c.key)
   );
-  const [maskCpf, setMaskCpf] = useState(false); // Por padrão, CPF completo visível
+  const [maskCpf, setMaskCpf] = useState(forceCpfMasked || false);
   const [includeCharts, setIncludeCharts] = useState(!!onGetChartImages);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -161,30 +165,49 @@ export const ExcelExportModal: React.FC<ExcelExportModalProps> = ({
 
           {/* Opção de Máscara de CPF */}
           <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
-            isDark ? 'bg-slate-950/60 border-white/5' : 'bg-slate-50 border-slate-200'
+            forceCpfMasked
+              ? 'bg-amber-500/10 border-amber-500/30'
+              : isDark ? 'bg-slate-950/60 border-white/5' : 'bg-slate-50 border-slate-200'
           }`}>
             <div className="flex items-center gap-3">
-              <ShieldCheck size={20} className={maskCpf ? 'text-amber-400' : 'text-emerald-400'} />
+              {forceCpfMasked ? (
+                <LockLaminated size={20} className="text-amber-400 shrink-0" />
+              ) : (
+                <ShieldCheck size={20} className={maskCpf ? 'text-amber-400' : 'text-emerald-400'} />
+              )}
               <div>
-                <span className="text-xs font-bold block">Visibilidade do CPF / CNPJ</span>
-                <span className="text-[11px] text-slate-400 block">
-                  {maskCpf 
-                    ? 'CPF Mascarado para conformidade LGPD (Ex: ***.456.***-00)' 
-                    : 'CPF Completo visível no relatório (Ex: 123.456.789-00)'}
+                <span className="text-xs font-bold block flex items-center gap-1.5">
+                  Visibilidade do CPF / CNPJ
+                  {forceCpfMasked && (
+                    <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      Restrito a Operadores
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] text-slate-400 block mt-0.5">
+                  {forceCpfMasked 
+                    ? (cpfMaskReason || 'Operadores só podem exportar o CPF completo após assumir o cliente no balcão de recuperação.')
+                    : maskCpf 
+                      ? 'CPF Mascarado para conformidade LGPD (Ex: ***.456.***-00)' 
+                      : 'CPF Completo visível no relatório (Ex: 123.456.789-00)'}
                 </span>
               </div>
             </div>
             
             <button
               type="button"
-              onClick={() => setMaskCpf(!maskCpf)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                maskCpf 
-                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
-                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              disabled={forceCpfMasked}
+              onClick={() => !forceCpfMasked && setMaskCpf(!maskCpf)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                forceCpfMasked
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 opacity-90 cursor-not-allowed'
+                  : maskCpf 
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 cursor-pointer' 
+                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 cursor-pointer'
               }`}
+              title={forceCpfMasked ? (cpfMaskReason || 'Exportação com CPF restrita para clientes não assumidos') : ''}
             >
-              {maskCpf ? 'Oculto (LGPD)' : 'Completo (Visível)'}
+              {forceCpfMasked ? '🔒 Oculto (Segurança)' : maskCpf ? 'Oculto (LGPD)' : 'Completo (Visível)'}
             </button>
           </div>
 

@@ -206,6 +206,17 @@ export const RecoveryPoolTab = ({
     });
   }, [agreements, subTab, profile.uid, filterTeam, filterType, filterCategory]);
 
+  const isMember = profile.role === 'member';
+
+  // Regra de Segurança RBAC / Fila Cega: Operador só pode exportar CPF completo se já assumiu o cliente
+  const hasUnassumedClients = useMemo(() => {
+    if (!isMember) return false;
+    return filteredAgreements.some(a => a.operatorId !== profile.uid);
+  }, [isMember, filteredAgreements, profile.uid]);
+
+  const forceCpfMasked = isMember && hasUnassumedClients;
+  const cpfMaskReason = "🔒 Como operador, você só tem acesso ao CPF completo de clientes que já assumiu em sua carteira ativa. Os clientes da fila geral são exportados com CPF mascarado por segurança.";
+
   const recoveryExportColumns: ExcelExportColumn[] = [
     { key: 'id', label: 'ID do Acordo', type: 'text' },
     { key: 'clientCpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
@@ -219,12 +230,19 @@ export const RecoveryPoolTab = ({
   ];
 
   const recoveryExportData = useMemo(() => {
-    return filteredAgreements.map(a => ({
-      ...a,
-      phone: a.phone || '-',
-      dueDate: a.dueDate ? a.dueDate.split('-').reverse().join('/') : '-'
-    }));
-  }, [filteredAgreements]);
+    return filteredAgreements.map(a => {
+      // Se for operador comum e o cliente ainda não foi assumido por ele, mascara o CPF na fonte
+      const canSeeFullCpf = !isMember || a.operatorId === profile.uid;
+      const formattedCpf = canSeeFullCpf ? a.clientCpf : blindMaskCPF(a.clientCpf);
+
+      return {
+        ...a,
+        clientCpf: formattedCpf,
+        phone: a.phone || '-',
+        dueDate: a.dueDate ? a.dueDate.split('-').reverse().join('/') : '-'
+      };
+    });
+  }, [filteredAgreements, isMember, profile.uid]);
 
   // Selecionar / Deselecionar todos
   const handleSelectAll = () => {
@@ -850,6 +868,8 @@ export const RecoveryPoolTab = ({
         defaultFilename={`Relatorio_Recuperacao_${new Date().toISOString().split('T')[0]}.xlsx`}
         availableColumns={recoveryExportColumns}
         data={recoveryExportData}
+        forceCpfMasked={forceCpfMasked}
+        cpfMaskReason={cpfMaskReason}
         showToast={showToast}
         theme={theme}
       />
