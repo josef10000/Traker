@@ -29,7 +29,8 @@ import {
   Sparkle,
   Heart,
   Tag,
-  CircleNotch as Spinner
+  CircleNotch as Spinner,
+  Info
 } from '@phosphor-icons/react';
 
 interface QaSurveysPanelProps {
@@ -255,12 +256,19 @@ export const QaSurveysPanel: React.FC<QaSurveysPanelProps> = ({
         </div>
       </div>
 
-      {/* PAINEL DE KPIS & METRICAS DE SATISFAÇÃO */}
+      {/* PAINEL DE KPIS & METRICAS DE SATISFAÇÃO COM TOOLTIPS EXPLICATIVAS (i) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Total Respostas */}
         <div className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total de Respostas</span>
+            <div className="flex items-center gap-1.5 group relative cursor-help">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total de Respostas</span>
+              <Info size={14} className="text-slate-400 group-hover:text-sky-400 transition-colors" />
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2.5 bg-slate-950 text-slate-200 text-[10px] font-semibold rounded-xl border border-white/10 shadow-xl z-30 pointer-events-none">
+                Volume total de participações anônimas registradas nesta pesquisa de satisfação.
+              </div>
+            </div>
             <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
               <Users size={18} />
             </div>
@@ -272,7 +280,14 @@ export const QaSurveysPanel: React.FC<QaSurveysPanelProps> = ({
         {/* KPI 2: Média Geral */}
         <div className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Score Médio</span>
+            <div className="flex items-center gap-1.5 group relative cursor-help">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Score Médio</span>
+              <Info size={14} className="text-slate-400 group-hover:text-amber-400 transition-colors" />
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2.5 bg-slate-950 text-slate-200 text-[10px] font-semibold rounded-xl border border-white/10 shadow-xl z-30 pointer-events-none">
+                Média aritmética simples de todas as notas atribuídas pelos colaboradores.
+              </div>
+            </div>
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Star size={18} weight="fill" />
             </div>
@@ -284,7 +299,14 @@ export const QaSurveysPanel: React.FC<QaSurveysPanelProps> = ({
         {/* KPI 3: eNPS Index */}
         <div className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Índice eNPS</span>
+            <div className="flex items-center gap-1.5 group relative cursor-help">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Índice eNPS</span>
+              <Info size={14} className="text-slate-400 group-hover:text-emerald-400 transition-colors" />
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-56 p-2.5 bg-slate-950 text-slate-200 text-[10px] font-semibold rounded-xl border border-white/10 shadow-xl z-30 pointer-events-none">
+                Métrica global de clima: % Promotores (notas 9-10) menos % Detratores (notas 0-6). Varia de -100 a +100.
+              </div>
+            </div>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Sparkle size={18} weight="fill" />
             </div>
@@ -298,7 +320,14 @@ export const QaSurveysPanel: React.FC<QaSurveysPanelProps> = ({
         {/* KPI 4: Promotores vs Detretores */}
         <div className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Promotores / Detretores</span>
+            <div className="flex items-center gap-1.5 group relative cursor-help">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Promotores / Detratores</span>
+              <Info size={14} className="text-slate-400 group-hover:text-indigo-400 transition-colors" />
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-52 p-2.5 bg-slate-950 text-slate-200 text-[10px] font-semibold rounded-xl border border-white/10 shadow-xl z-30 pointer-events-none">
+                Percentual de colaboradores engajados (Promotores: 9-10) vs insatisfeitos (Detratores: 0-6).
+              </div>
+            </div>
             <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <ChartBar size={18} />
             </div>

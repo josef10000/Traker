@@ -508,3 +508,23 @@ export interface PerformanceProfileConfig {
   icon?: string;
   weights: Record<string, number>; // Map de indicator.id -> peso %
 }
+
+export type KnowledgeCategory = 'script' | 'announcement' | 'policy' | 'faq' | 'general';
+
+export interface KnowledgeArticle {
+  id: string;
+  organizationId: string;
+  title: string;
+  content: string;
+  category: KnowledgeCategory;
+  isPinned: boolean;
+  isUrgent: boolean;
+  copyableScript?: string;
+  tags?: string[];
+  createdByUid: string;
+  createdByName: string;
+  createdByRole: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

@@ -46,7 +46,7 @@ import { formatCurrency, maskCPF } from '../../utils/masks';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
-import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus, SlidersHorizontal, FileCsv as FileSpreadsheet } from '@phosphor-icons/react';
+import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus, SlidersHorizontal, FileCsv as FileSpreadsheet, BookOpen } from '@phosphor-icons/react';
 import { sandboxService } from '../../lib/sandboxService';
 import { createNotification } from '../../lib/notifications';
 import { useTheme } from '../../hooks/useTheme';
@@ -56,6 +56,7 @@ import { Avatar } from '../ui/Avatar';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { AttendanceModal } from '../modals/AttendanceModal';
 import { CalendarEventModal } from '../modals/CalendarEventModal';
+import { KnowledgeBaseModal } from '../modals/KnowledgeBaseModal';
 import { AttendanceCalendarSection } from './AttendanceCalendarSection';
 import { TeamAttendanceComparisonSection } from './TeamAttendanceComparisonSection';
 import { ClosingPjSection } from '../profile/ClosingPjSection';
@@ -179,6 +180,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isImportCsvOpen, setIsImportCsvOpen] = useState(false);
   const [isWebhookSettingsOpen, setIsWebhookSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isKnowledgeBaseModalOpen, setIsKnowledgeBaseModalOpen] = useState(false);
   
   // Dados de Colaboradores e Ocorrências
   const [isPeopleReportOpen, setIsPeopleReportOpen] = useState(false);
@@ -2548,6 +2550,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <SlidersHorizontal size={14} weight="bold" />
                       <span>Personalizar</span>
                     </button>
+
+                    {/* Botão Central de Conhecimento & Scripts (WIKI da Operação) */}
+                    <button
+                      type="button"
+                      onClick={() => setIsKnowledgeBaseModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all border cursor-pointer bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border-sky-500/30 shadow-sm active:scale-95"
+                      title="Abrir Central de Conhecimento, Comunicados e Scripts da Operação"
+                    >
+                      <BookOpen size={14} weight="bold" />
+                      <span>Base de Conhecimento</span>
+                    </button>
                   </div>
                 </div>
 
@@ -4365,6 +4378,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           theme={theme}
         />
       )}
+
+      {/* MODAL DA CENTRAL DE CONHECIMENTO, COMUNICADOS E SCRIPTS DA OPERAÇÃO */}
+      <KnowledgeBaseModal
+        isOpen={isKnowledgeBaseModalOpen}
+        onClose={() => setIsKnowledgeBaseModalOpen(false)}
+        profile={profile}
+        showToast={showToast}
+        theme={theme}
+      />
     </div>
   );
 };
