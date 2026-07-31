@@ -26,7 +26,7 @@ import { ToastType } from '../ui/Toast';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { useDesignMode } from '../../hooks/useDesignMode';
 import { query, collection, where, getDocs, onSnapshot, writeBatch } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
 import { markNotificationAsRead } from '../../lib/notifications';
 import { useTabVisibility } from '../../hooks/useTabVisibility';
@@ -61,6 +61,7 @@ interface DashboardHeaderProps {
   supervisors?: UserProfile[];
   onLogoClick?: () => void;
   onViewPayment?: (paymentId: string) => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const DashboardHeader = ({
@@ -86,8 +87,10 @@ export const DashboardHeader = ({
   onToggleTheme,
   supervisors,
   onLogoClick,
-  onViewPayment
+  onViewPayment,
+  onNavigateTab
 }: DashboardHeaderProps) => {
+  const isSandbox = !auth.currentUser || profile.organizationId === 'sandbox-test';
   const [designMode, setDesignMode] = useDesignMode();
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);

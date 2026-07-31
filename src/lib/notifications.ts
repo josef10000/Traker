@@ -152,7 +152,7 @@ export const notifyAnnouncementPublished = async (
     let targetUserIds: string[] = [];
 
     if (isSandbox || orgId === 'sandbox-test') {
-      const collabs = sandboxService.getCollaborators();
+      const collabs = sandboxService.getUsers(orgId || 'sandbox-test');
       targetUserIds = collabs.map(c => c.uid).filter(uid => uid !== senderUserId);
     } else {
       const q = query(collection(db, 'users'), where('organizationId', '==', orgId));

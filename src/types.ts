@@ -410,7 +410,7 @@ export interface AppNotification {
   senderUserId?: string;          // Quem executou a ação (para filtro de auto-notificação)
   title: string;
   message: string;
-  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled' | 'high_value_break' | 'agenda_reminder' | 'lead_assigned' | 'agreement_note';
+  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled' | 'high_value_break' | 'agenda_reminder' | 'lead_assigned' | 'agreement_note' | 'announcement' | 'knowledge_base';
   referenceId?: string;          // ID do fechamento de pagamento ou transferência associado
   read: boolean;
   createdAt: string;
