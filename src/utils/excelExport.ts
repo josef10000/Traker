@@ -64,9 +64,9 @@ export async function exportAgreementsToExcel(
   let totalUpdated = 0;
 
   agreements.forEach((ag) => {
-    const orig = ag.originalValue || 0;
-    const upd = ag.updatedValue || ag.originalValue || 0;
-    const desc = orig > 0 ? ((orig - upd) / orig) * 100 : 0;
+    const orig = (ag as any).originalValue || ag.value || 0;
+    const upd = (ag as any).updatedValue || ag.value || 0;
+    const desc = orig > 0 && orig > upd ? ((orig - upd) / orig) * 100 : 0;
 
     totalOriginal += orig;
     totalUpdated += upd;
