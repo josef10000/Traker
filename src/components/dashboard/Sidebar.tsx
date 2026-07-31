@@ -94,7 +94,7 @@ export const Sidebar = ({
           label: 'Gestão de Pessoas & Operação',
           description: 'Membros da equipe, convites, presença/assiduidade e fechamento PJ.',
           icon: TeamIcon,
-          show: isSuperUser && profile.role !== 'backoffice'
+          show: isSuperUser && profile.role !== 'backoffice' && profile.role !== 'monitor'
         },
         {
           id: 'qa',

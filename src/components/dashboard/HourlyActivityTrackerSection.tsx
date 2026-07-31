@@ -21,7 +21,9 @@ import {
   Handshake,
   ChartBar,
   Eye,
-  ListNumbers
+  ListNumbers,
+  CaretLeft,
+  CaretRight
 } from '@phosphor-icons/react';
 import { UserProfile, Agreement, Team } from '../../types';
 import { AuditLog } from '../../lib/audit';
@@ -240,6 +242,17 @@ export const HourlyActivityTrackerSection: React.FC<HourlyActivityTrackerSection
       };
     });
   }, [scopedOperators, agreements, attendances, auditLogs, selectedDateStr, actionFilter]);
+
+  // Paginação de Operadores na Matriz Hora a Hora (Máximo 10 por página)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const totalPages = Math.ceil(activityData.length / itemsPerPage) || 1;
+
+  const paginatedActivityData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return activityData.slice(start, start + itemsPerPage);
+  }, [activityData, currentPage]);
 
   // 4. Métricas Globais e Seleção do "Destaque do Dia" (Item 6)
   const globalSummary = useMemo(() => {
@@ -596,7 +609,7 @@ export const HourlyActivityTrackerSection: React.FC<HourlyActivityTrackerSection
                   </td>
                 </tr>
               ) : (
-                activityData.map(d => {
+                paginatedActivityData.map(d => {
                   const team = managedTeamsData.find(t => t.id === d.operator.teamId);
 
                   return (
@@ -745,6 +758,41 @@ export const HourlyActivityTrackerSection: React.FC<HourlyActivityTrackerSection
             </tfoot>
           </table>
         </div>
+
+        {/* Rodapé de Paginação de Operadores (Máximo 10 por página) */}
+        {activityData.length > 0 && (
+          <div className="p-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs bg-slate-950/40">
+            <span className="text-slate-400 font-medium">
+              Exibindo <strong className="text-white">{Math.min((currentPage - 1) * itemsPerPage + 1, activityData.length)}</strong> a <strong className="text-white">{Math.min(currentPage * itemsPerPage, activityData.length)}</strong> de <strong className="text-white">{activityData.length}</strong> operadores (máximo 10 por página)
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1"
+              >
+                <CaretLeft size={14} />
+                <span>Anterior</span>
+              </button>
+
+              <span className="px-3 py-1.5 rounded-xl bg-slate-950 text-sky-400 font-black border border-white/10">
+                {currentPage} / {totalPages}
+              </span>
+
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>Próxima</span>
+                <CaretRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ITEM 1: DRAWER / MODAL DA TIMELINE VISUAL INTERATIVA DO OPERADOR */}
