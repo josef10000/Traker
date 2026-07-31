@@ -2,7 +2,17 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
-import { Agreement, AttendanceRecord, UserProfile, Team, DashboardStats } from '../../types';
+import { 
+  Agreement, 
+  AttendanceRecord, 
+  UserProfile, 
+  Team, 
+  DashboardStats,
+  AgreementStatus,
+  AgreementType,
+  AgreementOrigin,
+  AgreementCategory
+} from '../../types';
 import { formatCurrency } from '../../utils/masks';
 import { Fire, CurrencyDollar, Lightning, ShieldWarning, Tag, TrendUp as TrendingUp, FileCsv as FileSpreadsheet, ChartPie, ChartBar } from '@phosphor-icons/react';
 import { CustomSelect } from '../ui/CustomSelect';
@@ -81,7 +91,7 @@ const generateSimulatedAttendanceRecords = (month: number, year: number): Attend
         reasonTitle: rObj.title,
         isNegotiation: rObj.isNegotiation,
         isSuccess: rObj.isSuccess,
-        operatorUid: op.uid,
+        operatorId: op.uid,
         operatorName: op.name,
         teamId: op.teamId,
         agreementId: rObj.isSuccess ? `sim-agree-${(idCounter % 50) + 1}` : undefined,
@@ -108,7 +118,6 @@ const generateSimulatedAgreements = (month: number, year: number, orgId: string)
 
       const isPaid = (day + k) % 3 === 0;
       const isBroken = !isPaid && (day + k) % 5 === 0;
-      const isLate = !isPaid && !isBroken && day < new Date().getDate();
 
       let status = AgreementStatus.WAITING;
       let paidAt: string | undefined = undefined;
@@ -118,8 +127,6 @@ const generateSimulatedAgreements = (month: number, year: number, orgId: string)
         paidAt = new Date(year, month, day, Math.min(19, hour + 1), 45, 0).toISOString();
       } else if (isBroken) {
         status = AgreementStatus.BROKEN;
-      } else if (isLate) {
-        status = AgreementStatus.LATE;
       }
 
       const val = Math.round(1200 + ((day * 420 + k * 650) % 9500));
@@ -127,20 +134,17 @@ const generateSimulatedAgreements = (month: number, year: number, orgId: string)
       list.push({
         id: `sim-agree-${counter}`,
         organizationId: orgId,
-        cpf: `12345678${String(counter).padStart(3, '0')}`,
+        clientCpf: `12345678${String(counter).padStart(3, '0')}`,
         clientName: `Devedor Simulado ${counter}`,
-        originalValue: val,
-        updatedValue: Math.round(val * 0.9),
-        value: Math.round(val * 0.9),
+        value: val,
         status,
-        type: k % 2 === 0 ? AgreementType.AVISTA : AgreementType.PARCELADO,
-        origin: k % 3 === 0 ? AgreementOrigin.WHATSAPP : AgreementOrigin.VOZ,
+        type: k % 2 === 0 ? AgreementType.QUITACAO : AgreementType.PARCELAMENTO,
+        origin: k % 3 === 0 ? AgreementOrigin.WHATSAPP : AgreementOrigin.WEBPHONE,
         category: k % 2 === 0 ? AgreementCategory.FIXA : AgreementCategory.VARIAVEL,
         createdAt: dateCreated.toISOString(),
         dueDate: new Date(year, month, Math.min(daysInMonth, day + 3)).toISOString().split('T')[0],
         paidAt,
         operatorId: `op-${(counter % 10) + 1}`,
-        operatorName: `Operador Simulado ${(counter % 10) + 1}`,
         teamId: 'team-fenix'
       });
       counter++;

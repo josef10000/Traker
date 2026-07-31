@@ -589,7 +589,7 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
         reasonTitle: rObj.title,
         isNegotiation: rObj.isNegotiation,
         isSuccess: rObj.isSuccess,
-        operatorUid: op.uid,
+        operatorId: op.uid,
         operatorName: op.name,
         teamId: op.teamId,
         agreementId: rObj.isSuccess ? `sandbox-agree-${(attCounter % 40) + 1}` : undefined,
