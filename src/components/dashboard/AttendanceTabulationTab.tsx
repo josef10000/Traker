@@ -5,11 +5,13 @@ import { sandboxService } from '../../lib/sandboxService';
 import { Agreement, AttendanceRecord, AttendanceReason, UserProfile, UserRole, Team } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { formatAudioStreamUrl } from '../../utils/audio';
-import { PhoneCall, Play, Headphones, Tag, CheckCircle, XCircle, Percent, Plus, User, CircleNotch as Loader2, Pencil, X, Check, Link, Trash, Clock, CaretLeft, CaretRight, Buildings, Fire, CurrencyDollar, Lightning, ChartLineUp, ShieldWarning } from '@phosphor-icons/react';
+import { PhoneCall, Play, Headphones, Tag, CheckCircle, XCircle, Percent, Plus, User, CircleNotch as Loader2, Pencil, X, Check, Link, Trash, Clock, CaretLeft, CaretRight, Buildings, Fire, CurrencyDollar, Lightning, ChartLineUp, ShieldWarning, FileCsv as FileSpreadsheet } from '@phosphor-icons/react';
 import { TabulationModal } from '../modals/TabulationModal';
 import { AgreementDetailsModal } from '../modals/AgreementDetailsModal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
+import { ExcelExportModal } from '../modals/ExcelExportModal';
+import { ExcelExportColumn } from '../../utils/excelExport';
 
 interface AttendanceTabulationTabProps {
   profile: UserProfile;
@@ -41,6 +43,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
   const isManagerOrQa = ['supervisor', 'manager', 'admin', 'monitor', 'coordinator'].includes(profile.role);
   const [selectedOperatorFilter, setSelectedOperatorFilter] = useState<string>('all');
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>('all');
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Filtragem dos registros conforme RBAC e Seletores de Equipe/Operador
   const filteredRecords = useMemo(() => {
@@ -65,6 +68,29 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
       return true;
     });
   }, [records, isManagerOrQa, profile.uid, selectedTeamFilter, selectedOperatorFilter, teamOperators]);
+
+  const tabulationExportColumns: ExcelExportColumn[] = [
+    { key: 'id', label: 'ID do Atendimento', type: 'text' },
+    { key: 'clientCpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
+    { key: 'clientName', label: 'Nome do Cliente', type: 'text' },
+    { key: 'reasonTitle', label: 'Motivo da Chamada', type: 'text' },
+    { key: 'isNegotiationText', label: 'Teve Negociação', type: 'text' },
+    { key: 'isSuccessText', label: 'Resultado / Acordo', type: 'text' },
+    { key: 'operatorName', label: 'Operador / Atendente', type: 'text' },
+    { key: 'hasAudio', label: 'Áudio Gravado', type: 'text' },
+    { key: 'observation', label: 'Observação / Relato', type: 'text' },
+    { key: 'createdAt', label: 'Data / Hora do Atendimento', type: 'date' }
+  ];
+
+  const tabulationExportData = useMemo(() => {
+    return filteredRecords.map(r => ({
+      ...r,
+      isNegotiationText: r.isNegotiation ? 'Sim' : 'Não',
+      isSuccessText: r.isSuccess ? 'Acordo Firmado' : 'Sem Acordo',
+      hasAudio: r.audioUrl ? 'Sim (MP3 Gravado)' : 'Não',
+      observation: r.observation || '-'
+    }));
+  }, [filteredRecords]);
 
   const [editingReason, setEditingReason] = useState<AttendanceReason | null>(null);
   const [reasonTitle, setReasonTitle] = useState('');
@@ -470,6 +496,15 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
             </>
           )}
 
+          {/* Botão de Exportação ExcelJS Configurável */}
+          <button
+            onClick={() => setIsExportModalOpen(true)}
+            className="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 border border-emerald-500/30 cursor-pointer transition-all active:scale-95 shadow-sm"
+          >
+            <FileSpreadsheet size={16} />
+            <span>Exportar Excel Formatado</span>
+          </button>
+
           {/* Botão Gerenciar Motivos Oficiais (Restrito a Supervisores / Gestão) */}
           {profile.role !== 'member' && (
             <button
@@ -777,6 +812,18 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
           </div>
         </div>
       )}
+
+      {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL DA ABA ATENDIMENTOS */}
+      <ExcelExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        title="Relatório de Tabulação de Atendimentos"
+        defaultFilename={`Relatorio_Tabulacoes_${new Date().toISOString().split('T')[0]}.xlsx`}
+        availableColumns={tabulationExportColumns}
+        data={tabulationExportData}
+        showToast={showToast}
+        theme={theme}
+      />
     </div>
   );
 };

@@ -10,6 +10,8 @@ import { ShieldWarning as ShieldAlert, Download, CheckSquare, Square, Eye, EyeCl
 import { ExportCpfModal } from '../modals/ExportCpfModal';
 import { logAudit } from '../../lib/audit';
 import { exportToCsv } from '../../utils/csvExporter';
+import { ExcelExportModal } from '../modals/ExcelExportModal';
+import { ExcelExportColumn } from '../../utils/excelExport';
 
 interface RecoveryPoolTabProps {
   profile: UserProfile;
@@ -50,8 +52,9 @@ export const RecoveryPoolTab = ({
     }
   }, [profile.role, subTab]);
 
-  // Modal de Exportação
+  // Modal de Exportação CPF
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isExcelExportModalOpen, setIsExcelExportModalOpen] = useState(false);
 
   // Lista de todos os acordos da organização para identificar resgatados e calcular valor recuperado R$
   const [allOrgAgreements, setAllOrgAgreements] = useState<Agreement[]>([]);
@@ -202,6 +205,26 @@ export const RecoveryPoolTab = ({
       }
     });
   }, [agreements, subTab, profile.uid, filterTeam, filterType, filterCategory]);
+
+  const recoveryExportColumns: ExcelExportColumn[] = [
+    { key: 'id', label: 'ID do Acordo', type: 'text' },
+    { key: 'clientCpf', label: 'CPF / CNPJ do Cliente', type: 'cpf' },
+    { key: 'clientName', label: 'Nome do Cliente', type: 'text' },
+    { key: 'phone', label: 'Telefone de Contato', type: 'text' },
+    { key: 'value', label: 'Valor do Acordo (R$)', type: 'currency' },
+    { key: 'dueDate', label: 'Vencimento', type: 'date' },
+    { key: 'status', label: 'Status do Acordo', type: 'text' },
+    { key: 'origin', label: 'Origem', type: 'text' },
+    { key: 'createdAt', label: 'Data de Criação', type: 'date' }
+  ];
+
+  const recoveryExportData = useMemo(() => {
+    return filteredAgreements.map(a => ({
+      ...a,
+      phone: a.phone || '-',
+      dueDate: a.dueDate ? a.dueDate.split('-').reverse().join('/') : '-'
+    }));
+  }, [filteredAgreements]);
 
   // Selecionar / Deselecionar todos
   const handleSelectAll = () => {
@@ -587,7 +610,7 @@ export const RecoveryPoolTab = ({
             />
           </div>
 
-          {/* Botão Exportar */}
+          {/* Botão Exportar CPF (Original) */}
           <button
             onClick={() => setIsExportModalOpen(true)}
             className={`px-3 py-1.5 font-bold rounded-xl text-xs uppercase tracking-wider border flex items-center justify-center gap-1.5 cursor-pointer ${
@@ -597,7 +620,16 @@ export const RecoveryPoolTab = ({
             }`}
           >
             <Download size={14} />
-            <span>Exportar</span>
+            <span>CSV</span>
+          </button>
+
+          {/* Botão Exportar Excel Formatado (ExcelJS) */}
+          <button
+            onClick={() => setIsExcelExportModalOpen(true)}
+            className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 border border-emerald-500/30 cursor-pointer transition-all active:scale-95 shadow-sm"
+          >
+            <Download size={14} />
+            <span>Exportar Excel Formatado</span>
           </button>
 
           {/* Botão Assumir Lote (Apenas Operador) */}
@@ -808,6 +840,18 @@ export const RecoveryPoolTab = ({
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         onExport={handleExport}
+      />
+
+      {/* MODAL DE EXPORTAÇÃO EXCEL CONFIGURÁVEL DA ABA BALCÃO DE RECUPERAÇÃO */}
+      <ExcelExportModal
+        isOpen={isExcelExportModalOpen}
+        onClose={() => setIsExcelExportModalOpen(false)}
+        title="Relatório do Balcão de Recuperação de Acordos"
+        defaultFilename={`Relatorio_Recuperacao_${new Date().toISOString().split('T')[0]}.xlsx`}
+        availableColumns={recoveryExportColumns}
+        data={recoveryExportData}
+        showToast={showToast}
+        theme={theme}
       />
     </div>
   );
