@@ -6,7 +6,7 @@ import { Agreement, AgreementStatus, Team, UserProfile } from '../../types';
 import { formatCurrency, maskCPF, blindMaskCPF } from '../../utils/masks';
 import { OriginBadge } from './OriginBadge';
 import { CustomSelect } from '../ui/CustomSelect';
-import { ShieldWarning as ShieldAlert, Download, CheckSquare, Square, Eye, EyeClosed as EyeOff, Play, Users, Calendar, Question as HelpCircle, CircleNotch as Loader2, UserPlus, LockLaminated as Lock, Clock } from '@phosphor-icons/react';
+import { ShieldWarning as ShieldAlert, Download, CheckSquare, Square, Eye, EyeClosed as EyeOff, Play, Users, Calendar, Question as HelpCircle, CircleNotch as Loader2, UserPlus, LockLaminated as Lock, Clock, Briefcase, FileCsv as FileSpreadsheet } from '@phosphor-icons/react';
 import { ExportCpfModal } from '../modals/ExportCpfModal';
 import { logAudit } from '../../lib/audit';
 import { exportToCsv } from '../../utils/csvExporter';
@@ -539,73 +539,93 @@ export const RecoveryPoolTab = ({
         </div>
       </div>
 
-      {/* Barra Integrada Unificada de 1 Linha (Sub-abas, Filtros e Ações) */}
-      <div className={`p-3.5 rounded-2xl border flex flex-col xl:flex-row xl:items-center justify-between gap-3 ${
-        theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+      {/* Barra Integrada Unificada Organizada (Sub-abas, Ação Assumir, Filtros e Exportação) */}
+      <div className={`p-4 rounded-2xl border flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition-all ${
+        theme === 'dark' ? 'bg-slate-900/60 border-white/10 shadow-xl' : 'bg-white border-slate-200 shadow-sm'
       }`}>
-        {/* Esquerda: Sub-abas Fila Cega vs Meu Lote */}
-        <div className={`flex items-center p-1 rounded-xl border ${
-          theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
-        }`}>
-          <button
-            onClick={() => { setSubTab('pool'); setSelectedIds([]); }}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              subTab === 'pool'
-                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Lock size={14} />
-            <span>🔒 Fila Cega Geral</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-              subTab === 'pool' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-            }`}>
-              {poolCount}
-            </span>
-          </button>
-
-          {profile.role === 'member' && (
+        {/* Esquerda: Sub-abas + Botão Ação Assumir Lote */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className={`flex items-center p-1 rounded-xl border ${
+            theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
+          }`}>
             <button
-              onClick={() => { setSubTab('my_batch'); setSelectedIds([]); }}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                subTab === 'my_batch'
-                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+              type="button"
+              onClick={() => { setSubTab('pool'); setSelectedIds([]); }}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                subTab === 'pool'
+                  ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <span>🎒 Carteira Ativa</span>
+              <Lock size={15} className={subTab === 'pool' ? 'text-white' : 'text-amber-400'} />
+              <span>Fila Cega Geral</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                subTab === 'my_batch' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                subTab === 'pool' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
               }`}>
-                {myBatchCount}
+                {poolCount}
               </span>
+            </button>
+
+            {profile.role === 'member' && (
+              <button
+                type="button"
+                onClick={() => { setSubTab('my_batch'); setSelectedIds([]); }}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                  subTab === 'my_batch'
+                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Briefcase size={15} className={subTab === 'my_batch' ? 'text-white' : 'text-emerald-400'} />
+                <span>Carteira Ativa</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                  subTab === 'my_batch' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                }`}>
+                  {myBatchCount}
+                </span>
+              </button>
+            )}
+          </div>
+
+          {/* Botão Assumir Lote (Alinhado diretamente ao lado das sub-abas) */}
+          {subTab === 'pool' && profile.role === 'member' && (
+            <button
+              type="button"
+              onClick={handleTakeOver}
+              disabled={selectedIds.length === 0}
+              className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white font-black rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-sky-500/20 active:scale-95 cursor-pointer transition-all border border-sky-400/30"
+            >
+              <Users size={16} />
+              <span>Assumir Lote{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}</span>
             </button>
           )}
         </div>
 
-        {/* Centro & Direita: Filtros Dropdown + Ações */}
+        {/* Direita: Filtros Dropdown + Exportar Excel */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Dropdown Equipe */}
-          <div className="w-40">
+          <div className="w-36 sm:w-40">
             <CustomSelect 
               value={filterTeam}
               onChange={(val) => setFilterTeam(val)}
               placeholder="Todas as Equipes"
+              className="!py-1.5 !text-xs font-semibold"
               options={[
-                { value: "all", label: "Todas as Equipes" },
+                { value: "all", label: "🏢 Equipes" },
                 ...managedTeamsData.map(t => ({ value: t.id, label: t.name }))
               ]}
             />
           </div>
 
           {/* Dropdown Tipo */}
-          <div className="w-40">
+          <div className="w-36 sm:w-40">
             <CustomSelect 
               value={filterType}
               onChange={(val) => setFilterType(val)}
               placeholder="Todos os Tipos"
+              className="!py-1.5 !text-xs font-semibold"
               options={[
-                { value: "all", label: "Todos os Tipos" },
+                { value: "all", label: "📋 Tipos" },
                 { value: "quitacao", label: "Quitação" },
                 { value: "parcelamento", label: "Parcelamento" },
                 { value: "parcela_atrasada", label: "Parcela Atrasada" },
@@ -615,52 +635,30 @@ export const RecoveryPoolTab = ({
           </div>
 
           {/* Dropdown Categoria */}
-          <div className="w-40">
+          <div className="w-36 sm:w-40">
             <CustomSelect 
               value={filterCategory}
               onChange={(val) => setFilterCategory(val)}
               placeholder="Todas as Categorias"
+              className="!py-1.5 !text-xs font-semibold"
               options={[
-                { value: "all", label: "Todas as Categorias" },
+                { value: "all", label: "🏷️ Categorias" },
                 { value: "fixa", label: "Fixa" },
                 { value: "variavel", label: "Variável" }
               ]}
             />
           </div>
 
-          {/* Botão Exportar CPF (Original) */}
+          {/* Botão de Exportação em Excel Formatado */}
           <button
-            onClick={() => setIsExportModalOpen(true)}
-            className={`px-3 py-1.5 font-bold rounded-xl text-xs uppercase tracking-wider border flex items-center justify-center gap-1.5 cursor-pointer ${
-              theme === 'dark' 
-                ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700/50' 
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-250 shadow-sm'
-            }`}
-          >
-            <Download size={14} />
-            <span>CSV</span>
-          </button>
-
-          {/* Botão Exportar Excel Formatado (ExcelJS) */}
-          <button
+            type="button"
             onClick={() => setIsExcelExportModalOpen(true)}
-            className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 border border-emerald-500/30 cursor-pointer transition-all active:scale-95 shadow-sm"
+            className="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 border border-emerald-500/30 cursor-pointer transition-all active:scale-95 shadow-sm shrink-0"
+            title="Exportar dados formatados em Excel (.xlsx)"
           >
-            <Download size={14} />
-            <span>Exportar Excel Formatado</span>
+            <FileSpreadsheet size={16} />
+            <span>Exportar Excel</span>
           </button>
-
-          {/* Botão Assumir Lote (Apenas Operador) */}
-          {subTab === 'pool' && profile.role === 'member' && (
-            <button
-              onClick={handleTakeOver}
-              disabled={selectedIds.length === 0}
-              className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-sky-500/20 active:scale-95 cursor-pointer transition-all"
-            >
-              <Users size={14} />
-              <span>Assumir Lote{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}</span>
-            </button>
-          )}
         </div>
       </div>
 
