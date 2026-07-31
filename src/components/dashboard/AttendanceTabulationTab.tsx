@@ -12,6 +12,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 import { ExcelExportModal } from '../modals/ExcelExportModal';
 import { ExcelExportColumn } from '../../utils/excelExport';
+import { CustomConfirmModal } from '../modals/CustomConfirmModal';
 
 interface AttendanceTabulationTabProps {
   profile: UserProfile;
@@ -286,10 +287,10 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
     }
   };
 
-  // Exclusão de registro de tabulação
-  const handleDeleteTabulation = async (recordId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta tabulação de atendimento?')) return;
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
 
+  // Exclusão de registro de tabulação
+  const confirmDeleteTabulation = async (recordId: string) => {
     try {
       if (profile.organizationId === 'sandbox-test') {
         const updated = records.filter(r => r.id !== recordId);
@@ -632,7 +633,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
                       {/* Botão de Ações (Excluir) */}
                       <td className="px-6 py-4 text-right">
                         <button
-                          onClick={() => handleDeleteTabulation(rec.id)}
+                          onClick={() => setDeletingRecordId(rec.id)}
                           className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
                           title="Excluir Tabulação"
                         >
@@ -822,6 +823,21 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
         availableColumns={tabulationExportColumns}
         data={tabulationExportData}
         showToast={showToast}
+        theme={theme}
+      />
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE TABULAÇÃO CUSTOMIZADO */}
+      <CustomConfirmModal
+        isOpen={!!deletingRecordId}
+        onClose={() => setDeletingRecordId(null)}
+        onConfirm={() => {
+          if (deletingRecordId) confirmDeleteTabulation(deletingRecordId);
+        }}
+        title="Excluir Tabulação de Atendimento"
+        message="Tem certeza que deseja excluir esta tabulação de atendimento? Esta ação não poderá ser desfeita."
+        confirmText="Excluir Registro"
+        cancelText="Manter Registro"
+        variant="danger"
         theme={theme}
       />
     </div>

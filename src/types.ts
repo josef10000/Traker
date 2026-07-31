@@ -30,6 +30,23 @@ export enum AgreementCategory {
 
 export type UserRole = 'super_admin' | 'manager' | 'coordinator' | 'supervisor' | 'member' | 'monitor' | 'backoffice';
 
+export interface ContactChannelConfig {
+  id: string;
+  name: string;
+  code: string;
+  active: boolean;
+  color?: string;
+  iconName?: string;
+}
+
+export interface TabulationReasonConfig {
+  id: string;
+  title: string;
+  isNegotiation: boolean;
+  isSuccess: boolean;
+  active: boolean;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -47,6 +64,8 @@ export interface Organization {
   supervisorInviteToken?: string | null;
   coordinatorInviteToken?: string | null;
   monitorInviteToken?: string | null;
+  contactChannels?: ContactChannelConfig[];
+  tabulationReasons?: TabulationReasonConfig[];
   createdAt: string;
   closingConfig?: {
     enabled: boolean;

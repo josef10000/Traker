@@ -95,6 +95,8 @@ import { exportToCsv } from '../../utils/csvExporter';
 import { ExcelExportModal } from '../modals/ExcelExportModal';
 import { ExcelExportColumn } from '../../utils/excelExport';
 import { EmployeeSurveyModal } from '../modals/EmployeeSurveyModal';
+import { KnowledgeBaseModal } from '../modals/KnowledgeBaseModal';
+import { SettingsModal } from '../modals/SettingsModal';
 import { getActiveSurveyConfig, isUserEligibleForSurvey } from '../../lib/surveyService';
 import { EmployeeSurveyConfig } from '../../types';
 import { startTour } from '../../utils/tour';
@@ -182,6 +184,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isWebhookSettingsOpen, setIsWebhookSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isKnowledgeBaseModalOpen, setIsKnowledgeBaseModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   
   // Dados de Colaboradores e Ocorrências
   const [isPeopleReportOpen, setIsPeopleReportOpen] = useState(false);
@@ -2425,7 +2428,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               selectedTeamId={selectedTeamId}
               managedTeamsData={managedTeamsData}
               isPresentMode={isPresentMode}
-              onSettingsClick={onSettingsClick}
+              onSettingsClick={() => setIsSettingsModalOpen(true)}
               setIsTeamSelectorOpen={setIsTeamSelectorOpen}
               setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
               setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
@@ -4399,6 +4402,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         isOpen={isKnowledgeBaseModalOpen}
         onClose={() => setIsKnowledgeBaseModalOpen(false)}
         profile={profile}
+        showToast={showToast}
+        theme={theme}
+      />
+
+      {/* CENTRAL DE CONFIGURAÇÕES UNIVERSAL DA OPERAÇÃO */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        profile={profile}
+        onOpenReconciliation={() => setIsReconciliationModalOpen(true)}
         showToast={showToast}
         theme={theme}
       />
