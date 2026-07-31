@@ -17,58 +17,6 @@ export interface ExcelDynamicExportOptions {
   chartImages?: string[]; // Imagens base64 PNG dos gráficos da tela
 }
 
-/**
- * Exportador Dinâmico em ExcelJS com suporte a Tabelas de Dados e Gráficos Incorporados
- */
-export async function exportDynamicToExcel({
-  filename,
-  title = 'RELATÓRIO DE DADOS CORPORATIVOS - TRACKER',
-  columns,
-  data,
-  maskCpf = false,
-  chartImages = []
-}: ExcelDynamicExportOptions) {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Tracker SaaS';
-  workbook.created = new Date();
-
-  // Aba 1: Tabela de Dados Principais
-  const dataSheet = workbook.addWorksheet('Dados Detalhados', {
-    views: [{ showGridLines: true }]
-  });
-
-  // Cabeçalho da Empresa
-  const colCount = Math.max(columns.length, 1);
-  dataSheet.mergeCells(1, 1, 1, colCount);
-  const titleCell = dataSheet.getCell(1, 1);
-  titleCell.value = title.toUpperCase();
-  titleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
-  titleCell.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF0F172A' } // Slate 900
-  };
-  titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-  dataSheet.getRow(1).height = 32;
-
-  // Linha de Cabeçalhos de Coluna
-  const headerLabels = columns.map(c => c.label);
-  const headerRow = dataSheet.addRow(headerLabels);
-  headerRow.height = 25;
-
-  headerRow.eachCell((cell) => {
-    cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF0284C7' } // Sky 600
-    };
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell.border = {
-      bottom: { style: 'medium', color: { argb: 'FF0369A1' } }
-    };
-  });
-
 // Mapa de tradução de Status para Português
 const STATUS_PORTUGUESE_MAP: Record<string, string> = {
   broken: 'Quebrado',
@@ -192,6 +140,58 @@ export function formatExportCpf(val: any, shouldMask: boolean): string {
 
   return str;
 }
+
+/**
+ * Exportador Dinâmico em ExcelJS com suporte a Tabelas de Dados e Gráficos Incorporados
+ */
+export async function exportDynamicToExcel({
+  filename,
+  title = 'RELATÓRIO DE DADOS CORPORATIVOS - TRACKER',
+  columns,
+  data,
+  maskCpf = false,
+  chartImages = []
+}: ExcelDynamicExportOptions) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Tracker SaaS';
+  workbook.created = new Date();
+
+  // Aba 1: Tabela de Dados Principais
+  const dataSheet = workbook.addWorksheet('Dados Detalhados', {
+    views: [{ showGridLines: true }]
+  });
+
+  // Cabeçalho da Empresa
+  const colCount = Math.max(columns.length, 1);
+  dataSheet.mergeCells(1, 1, 1, colCount);
+  const titleCell = dataSheet.getCell(1, 1);
+  titleCell.value = title.toUpperCase();
+  titleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
+  titleCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF0F172A' } // Slate 900
+  };
+  titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  dataSheet.getRow(1).height = 32;
+
+  // Linha de Cabeçalhos de Coluna
+  const headerLabels = columns.map(c => c.label);
+  const headerRow = dataSheet.addRow(headerLabels);
+  headerRow.height = 25;
+
+  headerRow.eachCell((cell) => {
+    cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0284C7' } // Sky 600
+    };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      bottom: { style: 'medium', color: { argb: 'FF0369A1' } }
+    };
+  });
 
   // Linhas de Dados
   data.forEach((item) => {
