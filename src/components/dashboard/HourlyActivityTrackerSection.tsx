@@ -698,12 +698,12 @@ export const HourlyActivityTrackerSection: React.FC<HourlyActivityTrackerSection
                         let dotNode = <span className="w-2.5 h-2.5 rounded-full bg-slate-800" title="Fora do Expediente" />;
 
                         if (actions > 0) {
-                          dotNode = <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50 border border-emerald-300 animate-pulse" title={`${actions} Ações ativas`} />;
+                          dotNode = <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-sm border border-emerald-300" title={`${actions} Ações ativas`} />;
                         } else if (inShift) {
                           if (d.isPauseExceeded) {
-                            dotNode = <span className="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-lg shadow-rose-500/50 border border-rose-400 animate-ping" title="Pausa Excedente" />;
+                            dotNode = <span className="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-sm border border-rose-400" title="Pausa Excedente" />;
                           } else {
-                            dotNode = <span className="w-3 h-3 rounded-full bg-amber-400 shadow-md shadow-amber-500/30" title="Pausa Regular no Banco (72m)" />;
+                            dotNode = <span className="w-3 h-3 rounded-full bg-amber-400 shadow-sm" title="Pausa Regular no Banco (72m)" />;
                           }
                         }
 
