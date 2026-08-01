@@ -209,6 +209,21 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
 
 ---
 
+## 🔐 Segurança do Chat Interno (Firestore Rules)
+
+O chat interno (`internal_messages`) conta com **regras de segurança Firestore em 4 camadas**:
+
+1. **Isolamento por Organização**: Mensagens são isoladas por `organizationId` — nenhuma organização acessa dados de outra.
+2. **Restrição a Participantes**: Apenas o remetente (`senderId`) ou o destinatário (`receiverId`) pode ler cada mensagem individual.
+3. **Validação de Criação**: O campo `senderId` é obrigatoriamente `request.auth.uid` (impede falsificação de identidade), com validação de campos obrigatórios e limite de 4.000 caracteres.
+4. **Controle de Atualização**: O remetente pode editar o texto; o destinatário pode **apenas** marcar como lido (`read: true`) sem alterar nenhum outro campo. Exclusão física restrita a Super Admins.
+
+Coleções preparatórias com segurança pré-configurada:
+- `chat_channels`: Canais de equipe com leitura restrita a membros e criação por supervisores+.
+- `chat_typing`: Documentos efêmeros para indicadores de digitação.
+
+---
+
 ## 🛡️ Pipelines & CI/CD
 
 O projeto conta com automação via GitHub Actions para assegurar a saúde do produto antes de cada deploy:
