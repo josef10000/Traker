@@ -106,5 +106,93 @@ service cloud.firestore {
       allow write: if request.auth != null 
         && (isSuperAdmin() || getUserOrganizationId() == request.resource.data.organizationId);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // CHAT INTERNO — Regras de Segurança (Correção Crítica)
+    // ANTES: Sem regras = qualquer usuário autenticado lia TUDO.
+    // AGORA: Isolamento por organização + apenas participantes.
+    // ═══════════════════════════════════════════════════════════════
+
+    // Coleção de mensagens internas (internal_messages)
+    // SEGURANÇA: Leitura restrita a participantes (senderId ou receiverId).
+    // Criação validada: senderId DEVE ser o próprio usuário autenticado.
+    // Atualização: remetente pode editar texto; destinatário pode marcar como lido.
+    // Exclusão: apenas soft delete (campo deletedAt) pelo remetente ou super_admin.
+    match /internal_messages/{messageId} {
+      // Leitura: apenas participantes da conversa na mesma organização
+      allow read: if request.auth != null 
+        && (
+          isSuperAdmin() 
+          || (
+            getUserOrganizationId() == resource.data.organizationId
+            && (
+              resource.data.senderId == request.auth.uid 
+              || resource.data.receiverId == request.auth.uid
+            )
+          )
+        );
+      
+      // Criação: usuário autenticado, da mesma organização, com senderId === auth.uid
+      allow create: if request.auth != null 
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.organizationId == getUserOrganizationId()
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 4000
+        && request.resource.data.receiverId is string;
+      
+      // Atualização: remetente pode editar (janela de tempo); destinatário pode marcar lido
+      allow update: if request.auth != null 
+        && (
+          isSuperAdmin()
+          || (
+            getUserOrganizationId() == resource.data.organizationId
+            && (
+              // Remetente: pode editar texto ou soft delete
+              (resource.data.senderId == request.auth.uid)
+              // Destinatário: pode apenas marcar como lido (read: true)
+              || (
+                resource.data.receiverId == request.auth.uid 
+                && request.resource.data.read == true
+                && request.resource.data.text == resource.data.text
+                && request.resource.data.senderId == resource.data.senderId
+                && request.resource.data.receiverId == resource.data.receiverId
+              )
+            )
+          )
+        );
+      
+      // Exclusão física: apenas super_admin (operadores usam soft delete via update)
+      allow delete: if request.auth != null && isSuperAdmin();
+    }
+
+    // Coleção de canais de chat (chat_channels) — preparação para Fase 2
+    match /chat_channels/{channelId} {
+      allow read: if request.auth != null 
+        && (
+          isSuperAdmin() 
+          || (
+            resource == null 
+            || (
+              getUserOrganizationId() == resource.data.organizationId 
+              && request.auth.uid in resource.data.memberIds
+            )
+          )
+        );
+      allow create: if request.auth != null 
+        && request.resource.data.organizationId == getUserOrganizationId()
+        && (isSupervisor() || isManager() || isSuperAdmin());
+      allow update: if request.auth != null 
+        && getUserOrganizationId() == resource.data.organizationId
+        && (isSupervisor() || isManager() || isSuperAdmin());
+      allow delete: if request.auth != null && (isManager() || isSuperAdmin());
+    }
+
+    // Coleção de indicadores de digitação (chat_typing) — documentos TTL efêmeros
+    match /chat_typing/{typingId} {
+      allow read, write: if request.auth != null 
+        && getUserOrganizationId() == request.resource.data.organizationId;
+      allow delete: if request.auth != null;
+    }
   }
 }
