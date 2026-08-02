@@ -109,6 +109,7 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
 
 5. **📈 Inteligência Financeira & BI Avançado**:
    - **Escopo Contextual por Papel & Filtros Dinâmicos**: Transparência total no painel de BI. Operadores visualizam exclusivamente o escopo de seus resultados individuais, Supervisores acompanham a performance das suas equipes (com filtro por time e operador específico), e Coordenadores/Gerentes/Super Admins possuem visão global executiva. O painel inclui um banner explicativo em destaque (`📍 Escopo de Análise`) indicando o papel e filtro ativo.
+   - **🔮 Forecast & Tendências Preditivas Estatísticas (Sub-aba 6)**: Módulo de projeções para o mês N+1 baseado em Run Rate ponderado e curva de sazonalidade de pagamentos. Inclui desmembramento por modalidade de acordo (Quitação, Parcelamento, Parcela Atrasada), taxa de efetividade de atendimentos por operador na visão, colchão agendado em camada secundária, curva de liquidez dos 31 dias e janelas nobres de horário (0h-23h).
    - **Análise de Políticas de Desconto (Sub-aba 5)**: Rastreamento automático e inferência de motivo de descontos concedidos em acordos (Parcelamento, Parcelas Atrasadas, Desconto na Parcela, Quitação), comparando a taxa de efetividade e quebra com vs sem desconto.
    - **Colchão MRR (Receita Recorrente Mensal)**: Projeção de recebíveis parcelados futuros e previsibilidade de caixa.
    - **Curva de Dilação vs Quebra**: Gráfico de dispersão indicando o percentual de atraso nas promessas e taxa de inadimplência.

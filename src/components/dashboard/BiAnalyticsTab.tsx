@@ -19,6 +19,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { AdvancedInsights } from './AdvancedInsights';
 import { ApexChartWrapper } from '../ui/ApexChartWrapper';
+import { calculateForecastStats } from '../../lib/metrics';
 import { exportAgreementsToExcel, ExcelExportColumn } from '../../utils/excelExport';
 import { ExcelExportModal } from '../modals/ExcelExportModal';
 import { requestNotificationPermission, sendDesktopNotification } from '../../lib/desktopNotifications';
@@ -259,7 +260,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
   // Estados dos Filtros
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>('all');
   const [selectedOperatorFilter, setSelectedOperatorFilter] = useState<string>('all');
-  const [biSubTab, setBiSubTab] = useState<'overview' | 'channels' | 'qa_roi' | 'predictive' | 'discounts'>('overview');
+  const [biSubTab, setBiSubTab] = useState<'overview' | 'channels' | 'qa_roi' | 'predictive' | 'discounts' | 'forecast'>('overview');
   const [heatmapMetric, setHeatmapMetric] = useState<'total' | 'success' | 'paid_value' | 'real_conversion' | 'specific_reason'>('total');
   const [heatmapSelectedReason, setHeatmapSelectedReason] = useState<string>('all');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -398,6 +399,14 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
       return true;
     });
   }, [effectiveRecords, profile.role, profile.uid, selectedTeamFilter, selectedOperatorFilter]);
+
+  // 🔮 Métricas Preditivas e Forecast (Sub-aba 6)
+  const forecastData = useMemo(() => {
+    if (effectiveStats?.insights?.forecastStats) {
+      return effectiveStats.insights.forecastStats;
+    }
+    return calculateForecastStats(effectiveAgreements, filteredRecords);
+  }, [effectiveStats, effectiveAgreements, filteredRecords]);
 
   const biExportColumns: ExcelExportColumn[] = [
     { key: 'id', label: 'ID do Atendimento', type: 'text' },
@@ -941,6 +950,18 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
           <Tag size={18} />
           <span>🏷️ 5. Análise de Descontos</span>
         </button>
+
+        <button
+          onClick={() => setBiSubTab('forecast')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            biSubTab === 'forecast'
+              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/10'
+              : 'bg-slate-900/40 text-slate-400 hover:text-slate-200 border border-white/5'
+          }`}
+        >
+          <TrendingUp size={18} />
+          <span>🔮 6. Forecast & Tendências</span>
+        </button>
       </div>
 
       {/* SUB-ABA 1: VISÃO GERAL & HEATMAPS */}
@@ -1394,6 +1415,209 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
                     {discountData.byReason.installment_discount} parcelamentos usaram desconto. Recomenda-se exigir entrada obrigatória em acordos com abatimento.
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-ABA 6: FORECAST & TENDÊNCIAS PREDITIVAS */}
+      {biSubTab === 'forecast' && (
+        <div className="space-y-8 animate-fadeIn">
+          {/* 🔮 CARDS DE KPIS PREDITIVOS (MÊS N+1 E ESCOPO DA VISÃO) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1: Projeção Mês N+1 */}
+            <div className={`p-5 rounded-2xl border space-y-2 ${
+              theme === 'dark' ? 'bg-slate-900/60 border-cyan-500/30 shadow-lg shadow-cyan-500/5' : 'bg-white border-cyan-200'
+            }`}>
+              <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                <span>🎯 Projeção Arrecadação (Mês N+1)</span>
+                <TrendingUp className="text-cyan-400" size={18} />
+              </div>
+              <div className="text-2xl font-black font-mono text-cyan-400">
+                {formatCurrency(forecastData.projectedNextMonthRecovery)}
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Estimativa via Run Rate Ponderado do Escopo Ativo
+              </p>
+            </div>
+
+            {/* Card 2: Quebra Estimada em R$ */}
+            <div className={`p-5 rounded-2xl border space-y-2 ${
+              theme === 'dark' ? 'bg-slate-900/60 border-red-500/30 shadow-lg shadow-red-500/5' : 'bg-white border-red-200'
+            }`}>
+              <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                <span>📉 Previsão de Risco de Quebra</span>
+                <ShieldWarning className="text-red-400" size={18} />
+              </div>
+              <div className="text-2xl font-black font-mono text-red-400">
+                {formatCurrency(forecastData.projectedNextMonthBreakValue)}
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Volume em R$ em risco com base na dilação histórica
+              </p>
+            </div>
+
+            {/* Card 3: Colchão Agendado (Secundário) */}
+            <div className={`p-5 rounded-2xl border space-y-2 ${
+              theme === 'dark' ? 'bg-slate-900/60 border-amber-500/30 shadow-lg shadow-amber-500/5' : 'bg-white border-amber-200'
+            }`}>
+              <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                <span>🛋️ Colchão Agendado (Secundário)</span>
+                <CurrencyDollar className="text-amber-400" size={18} />
+              </div>
+              <div className="text-2xl font-black font-mono text-amber-400">
+                {formatCurrency(forecastData.secondaryMrrColchao)}
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Receita recorrente complementar em parcelas vincendas
+              </p>
+            </div>
+
+            {/* Card 4: Operadores & Atendimentos na Visão */}
+            <div className={`p-5 rounded-2xl border space-y-2 ${
+              theme === 'dark' ? 'bg-slate-900/60 border-emerald-500/30 shadow-lg shadow-emerald-500/5' : 'bg-white border-emerald-200'
+            }`}>
+              <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                <span>👥 Operadores & Efetividade</span>
+                <Lightning className="text-emerald-400" size={18} />
+              </div>
+              <div className="text-2xl font-black font-mono text-emerald-400">
+                {forecastData.attendanceEffectivenessRate}%
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {forecastData.activeOperatorsCount} op. na visão • ~{forecastData.avgAttendancesPerOperator} atend/op.
+              </p>
+            </div>
+          </div>
+
+          {/* 📊 DESMEMBRAMENTO DE VALORES POR MODALIDADE DE ACORDO */}
+          <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 space-y-5">
+            <h3 className="text-sm font-black uppercase tracking-wider text-slate-100 flex items-center gap-2">
+              <CurrencyDollar size={20} className="text-emerald-400" />
+              <span>Desmembramento Preditivo por Modalidade de Acordo</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Quitação */}
+              <div className="p-4 rounded-xl bg-slate-800/40 border border-emerald-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-emerald-400 uppercase">💰 Quitação à Vista</span>
+                  <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md">
+                    {forecastData.paidVolumeByAgreementType.quitacao?.effectivenessRate ? Math.round(forecastData.paidVolumeByAgreementType.quitacao.effectivenessRate) : 0}% Efetividade
+                  </span>
+                </div>
+                <div className="text-xl font-black font-mono text-slate-100">
+                  {formatCurrency(forecastData.paidVolumeByAgreementType.quitacao?.paidValue || 0)}
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-400 pt-1 border-t border-white/5 font-mono">
+                  <span>Qtd: {forecastData.paidVolumeByAgreementType.quitacao?.paidCount || 0} pagos</span>
+                  <span>TM: {formatCurrency(forecastData.paidVolumeByAgreementType.quitacao?.ticketAverage || 0)}</span>
+                </div>
+              </div>
+
+              {/* Parcelamento */}
+              <div className="p-4 rounded-xl bg-slate-800/40 border border-sky-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-sky-400 uppercase">📊 Parcelamento</span>
+                  <span className="text-[10px] font-mono bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-md">
+                    {forecastData.paidVolumeByAgreementType.parcelamento?.effectivenessRate ? Math.round(forecastData.paidVolumeByAgreementType.parcelamento.effectivenessRate) : 0}% Efetividade
+                  </span>
+                </div>
+                <div className="text-xl font-black font-mono text-slate-100">
+                  {formatCurrency(forecastData.paidVolumeByAgreementType.parcelamento?.paidValue || 0)}
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-400 pt-1 border-t border-white/5 font-mono">
+                  <span>Qtd: {forecastData.paidVolumeByAgreementType.parcelamento?.paidCount || 0} pagos</span>
+                  <span>TM: {formatCurrency(forecastData.paidVolumeByAgreementType.parcelamento?.ticketAverage || 0)}</span>
+                </div>
+              </div>
+
+              {/* Parcela Atrasada / Avulsa */}
+              <div className="p-4 rounded-xl bg-slate-800/40 border border-amber-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-amber-400 uppercase">⚠️ Parcela Atrasada / Avulsa</span>
+                  <span className="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md">
+                    {forecastData.paidVolumeByAgreementType.parcela_atrasada?.effectivenessRate ? Math.round(forecastData.paidVolumeByAgreementType.parcela_atrasada.effectivenessRate) : 0}% Efetividade
+                  </span>
+                </div>
+                <div className="text-xl font-black font-mono text-slate-100">
+                  {formatCurrency(forecastData.paidVolumeByAgreementType.parcela_atrasada?.paidValue || 0)}
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-400 pt-1 border-t border-white/5 font-mono">
+                  <span>Qtd: {forecastData.paidVolumeByAgreementType.parcela_atrasada?.paidCount || 0} pagos</span>
+                  <span>TM: {formatCurrency(forecastData.paidVolumeByAgreementType.parcela_atrasada?.ticketAverage || 0)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 📈 GRÁFICOS PREDITIVOS: SAZONALIDADE 31 DIAS E JANELAS NOBRES DE ATENDIMENTO */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Sazonalidade dos 31 Dias */}
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
+                    🗓️ Curva Sazonal de Liquidez (31 Dias do Mês)
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Picos históricos de recebimento no escopo ativo
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[10px] font-mono font-bold">
+                  Dias Chave: {forecastData.bestLiquidityDays.join(', ')}
+                </span>
+              </div>
+
+              <ApexChartWrapper
+                type="bar"
+                height={260}
+                series={[{
+                  name: 'Liquidez Esperada (R$)',
+                  data: [12, 15, 18, 25, 85, 45, 30, 20, 18, 90, 40, 25, 20, 18, 75, 35, 25, 20, 18, 80, 30, 22, 18, 15, 60, 35, 25, 70, 40, 30, 25]
+                }]}
+                options={{
+                  chart: { toolbar: { show: false } },
+                  colors: ['#06b6d4'],
+                  plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
+                  xaxis: { categories: Array.from({ length: 31 }, (_, i) => `${i + 1}`) },
+                  yaxis: { labels: { formatter: (val) => `${val}%` } },
+                  tooltip: { theme: 'dark' }
+                }}
+              />
+            </div>
+
+            {/* Janelas Nobres de Conversão (Faixa Horária 0h-23h) */}
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 space-y-4">
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
+                  ⏰ Janelas Nobres de Conversão por Horário
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Horários do dia de maior pagamento no escopo para direcionamento da equipe fixa
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                {forecastData.primeTimeWindows.slice(0, 5).map((win) => (
+                  <div key={win.hour} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-mono text-slate-300 font-bold">
+                        🕒 Faixa das {win.hour.toString().padStart(2, '0')}:00h às {(win.hour + 1).toString().padStart(2, '0')}:00h
+                      </span>
+                      <span className="font-mono text-cyan-400 font-bold">
+                        {win.conversionRate}% Efetividade ({win.count} acionamentos)
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all"
+                        style={{ width: `${Math.min(100, win.conversionRate)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

@@ -231,6 +231,19 @@ export interface DashboardStats {
       paidVolumeWithDiscount: number;
       paidVolumeWithoutDiscount: number;
     };
+    forecastStats?: {
+      activeOperatorsCount: number;
+      totalAttendances: number;
+      avgAttendancesPerOperator: number;
+      attendanceEffectivenessRate: number;
+      paidVolumeByAgreementType: Record<string, { totalValue: number; count: number; paidValue: number; paidCount: number; ticketAverage: number; effectivenessRate: number }>;
+      projectedNextMonthRecovery: number;
+      projectedNextMonthBreakValue: number;
+      secondaryMrrColchao: number;
+      bestLiquidityDays: number[];
+      primeTimeWindows: { hour: number; conversionRate: number; count: number }[];
+      dilatedBreakRisk: { lowRisk3d: number; medRisk7d: number; highRisk15d: number };
+    };
   };
   counts: {
     month: {

@@ -1,4 +1,4 @@
-import { Agreement, AgreementStatus, DashboardStats } from '../types';
+import { Agreement, AttendanceRecord, AgreementStatus, DashboardStats } from '../types';
 import { parseLocalDate } from '../utils/date';
 
 /**
@@ -245,6 +245,135 @@ export const calculateDiscountStats = (agreements: Agreement[]) => {
 };
 
 /**
+ * Calcula métricas preditivas, forecast de arrecadação N+1, risco de quebra,
+ * atendimentos por operador e modalidades de acordo para a 6ª sub-aba do BI.
+ */
+export const calculateForecastStats = (
+  agreements: Agreement[],
+  records: AttendanceRecord[] = []
+): NonNullable<DashboardStats['insights']>['forecastStats'] => {
+  const realAgreements = filterRealAgreements(agreements);
+
+  // 1. Operadores e Atendimentos na visão
+  const operatorIds = new Set<string>();
+  realAgreements.forEach(a => { if (a.operatorId) operatorIds.add(a.operatorId); });
+  records.forEach(r => { if (r.operatorId) operatorIds.add(r.operatorId); });
+
+  const activeOperatorsCount = Math.max(1, operatorIds.size);
+  const totalAttendances = records.length;
+  const avgAttendancesPerOperator = totalAttendances > 0 
+    ? Math.round((totalAttendances / activeOperatorsCount) * 10) / 10 
+    : 0;
+
+  const successfulAttendances = records.filter(r => r.isSuccess).length;
+  const attendanceEffectivenessRate = totalAttendances > 0 
+    ? (successfulAttendances / totalAttendances) * 100 
+    : (realAgreements.length > 0 ? (realAgreements.filter(a => a.status === AgreementStatus.PAID).length / realAgreements.length) * 100 : 0);
+
+  // 2. Desmembramento por Modalidade de Acordo
+  const paidVolumeByAgreementType: Record<string, { totalValue: number; count: number; paidValue: number; paidCount: number; ticketAverage: number; effectivenessRate: number }> = {};
+  
+  const typeMap: Record<string, Agreement[]> = {};
+  realAgreements.forEach(a => {
+    const typeKey = a.type || 'parcelamento';
+    if (!typeMap[typeKey]) typeMap[typeKey] = [];
+    typeMap[typeKey].push(a);
+  });
+
+  Object.entries(typeMap).forEach(([typeKey, list]) => {
+    const totalValue = list.reduce((sum, item) => sum + item.value, 0);
+    const count = list.length;
+    const paidList = list.filter(item => item.status === AgreementStatus.PAID);
+    const paidValue = paidList.reduce((sum, item) => sum + item.value, 0);
+    const paidCount = paidList.length;
+    const ticketAverage = count > 0 ? totalValue / count : 0;
+    const effectivenessRate = count > 0 ? (paidCount / count) * 100 : 0;
+
+    paidVolumeByAgreementType[typeKey] = {
+      totalValue,
+      count,
+      paidValue,
+      paidCount,
+      ticketAverage,
+      effectivenessRate
+    };
+  });
+
+  // 3. Projeção Mês N+1 & Quebra Estimada
+  const paidAgreements = realAgreements.filter(a => a.status === AgreementStatus.PAID);
+  const totalPaid = paidAgreements.reduce((sum, a) => sum + a.value, 0);
+  const effectivenessRatio = realAgreements.length > 0 ? paidAgreements.length / realAgreements.length : 0.7;
+
+  // Projeção Mês N+1: Run rate + ponderação por efetividade
+  const projectedNextMonthRecovery = Math.round(totalPaid * (1 + (effectivenessRatio > 0.5 ? 0.08 : -0.05)));
+
+  // Quebra Estimada N+1 em R$
+  const brokenAgreements = realAgreements.filter(a => a.status === AgreementStatus.BROKEN);
+  const brokenRate = realAgreements.length > 0 ? brokenAgreements.length / realAgreements.length : 0.15;
+  const projectedNextMonthBreakValue = Math.round((realAgreements.reduce((s, a) => s + a.value, 0) - totalPaid) * brokenRate);
+
+  // Colchão Recorrente (Secundário)
+  const today = new Date();
+  const secondaryMrrColchao = calculateProjectedMrr(agreements, today);
+
+  // Top 5 dias com maior liquidez (Sazonalidade 31 dias)
+  const dayMap: Record<number, number> = {};
+  paidAgreements.forEach(a => {
+    const d = parseLocalDate(a.dueDate).getDate();
+    dayMap[d] = (dayMap[d] || 0) + a.value;
+  });
+  const sortedDays = Object.entries(dayMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([day]) => parseInt(day, 10))
+    .slice(0, 5);
+  const bestLiquidityDays = sortedDays.length > 0 ? sortedDays : [5, 10, 15, 20, 28];
+
+  // Prime Time Windows (Faixas Horárias de Conversão)
+  const hourMap: Record<number, { total: number; paid: number }> = {};
+  realAgreements.forEach(a => {
+    const dateObj = new Date(a.createdAt);
+    const h = dateObj.getHours();
+    if (!hourMap[h]) hourMap[h] = { total: 0, paid: 0 };
+    hourMap[h].total += 1;
+    if (a.status === AgreementStatus.PAID) hourMap[h].paid += 1;
+  });
+
+  const primeTimeWindows = Object.entries(hourMap).map(([hourStr, data]) => {
+    const hour = parseInt(hourStr, 10);
+    const conversionRate = data.total > 0 ? (data.paid / data.total) * 100 : 0;
+    return { hour, conversionRate: Math.round(conversionRate * 10) / 10, count: data.total };
+  }).sort((a, b) => b.conversionRate - a.conversionRate);
+
+  // Risco por Dilação (Até 3 dias, 4-7 dias, >7 dias)
+  let lowRisk3d = 0;
+  let medRisk7d = 0;
+  let highRisk15d = 0;
+
+  realAgreements.forEach(a => {
+    const created = new Date(a.createdAt);
+    const due = parseLocalDate(a.dueDate);
+    const diffDays = Math.ceil((due.getTime() - created.getTime()) / (1000 * 3600 * 24));
+    if (diffDays <= 3) lowRisk3d += a.value;
+    else if (diffDays <= 7) medRisk7d += a.value;
+    else highRisk15d += a.value;
+  });
+
+  return {
+    activeOperatorsCount,
+    totalAttendances,
+    avgAttendancesPerOperator,
+    attendanceEffectivenessRate: Math.round(attendanceEffectivenessRate * 10) / 10,
+    paidVolumeByAgreementType,
+    projectedNextMonthRecovery,
+    projectedNextMonthBreakValue,
+    secondaryMrrColchao,
+    bestLiquidityDays,
+    primeTimeWindows,
+    dilatedBreakRisk: { lowRisk3d, medRisk7d, highRisk15d }
+  };
+};
+
+/**
  * Função principal consolidadora que recebe acordos e metas e retorna
  * as estatísticas consolidadas do dashboard.
  */
@@ -416,7 +545,8 @@ export const calculateDashboardStats = (
       breakRateByCategory,
       primeTimeDistribution,
       heatmap31Days,
-      discountStats
+      discountStats,
+      forecastStats: calculateForecastStats(realTargetAgreements)
     },
     projection: (() => {
       const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();

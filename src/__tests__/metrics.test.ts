@@ -184,4 +184,23 @@ describe('Métricas & BI (lib/metrics)', () => {
     expect(disc.breakRateWithDiscount).toBe(33); // 1 quebrado de 3 com desconto = 33%
     expect(disc.breakRateWithoutDiscount).toBe(50); // 1 quebrado de 2 sem desconto = 50%
   });
+
+  it('deve calcular corretamente as métricas de forecast e tendências preditivas', () => {
+    const list = [
+      createMockAgreement({ id: '1', value: 1000, status: AgreementStatus.PAID, type: AgreementType.QUITACAO, operatorId: 'op-1' }),
+      createMockAgreement({ id: '2', value: 2000, status: AgreementStatus.PAID, type: AgreementType.PARCELAMENTO, operatorId: 'op-1' }),
+      createMockAgreement({ id: '3', value: 1500, status: AgreementStatus.BROKEN, type: AgreementType.PARCELA_ATRASADA, operatorId: 'op-2' }),
+    ];
+
+    const stats = calculateDashboardStats(list, list, 10000, 6, 2026, mockToday);
+    expect(stats.insights?.forecastStats).toBeDefined();
+
+    const forecast = stats.insights!.forecastStats!;
+    expect(forecast.activeOperatorsCount).toBe(2); // op-1 e op-2
+    expect(forecast.projectedNextMonthRecovery).toBeGreaterThan(0);
+    expect(forecast.paidVolumeByAgreementType.quitacao).toBeDefined();
+    expect(forecast.paidVolumeByAgreementType.quitacao.paidValue).toBe(1000);
+    expect(forecast.paidVolumeByAgreementType.parcelamento.paidValue).toBe(2000);
+    expect(forecast.bestLiquidityDays.length).toBeGreaterThan(0);
+  });
 });
