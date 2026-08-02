@@ -357,6 +357,16 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             Parcela: {agreement.currentInstallment}
                           </span>
                         )}
+                        {agreement.discountApplied === true && (
+                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 w-fit mt-1 flex items-center gap-1" title={`Motivo: ${agreement.discountReason || 'Concedido'}`}>
+                            🏷️ Com Desconto
+                          </span>
+                        )}
+                        {agreement.discountApplied === false && (
+                          <span className="text-[9px] font-medium text-slate-500 bg-slate-800/40 px-1.5 py-0.5 rounded border border-white/5 w-fit mt-1">
+                            Sem Desconto
+                          </span>
+                        )}
                       </div>
                     </td>
 

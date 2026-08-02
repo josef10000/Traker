@@ -101,6 +101,29 @@ export const AgreementDetailsModal: React.FC<AgreementDetailsModalProps> = ({
           </span>
         </div>
 
+        {/* Informação de Desconto */}
+        <div className={`p-3.5 rounded-2xl border mb-5 flex items-center justify-between ${
+          isDark ? 'bg-slate-950/50 border-white/5' : 'bg-slate-50 border-slate-200'
+        }`}>
+          <div className="flex items-center gap-2 text-xs font-bold">
+            <Tag size={16} className="text-pink-400" />
+            <span>Política de Desconto:</span>
+          </div>
+          {agreement.discountApplied === true ? (
+            <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1.5 font-mono">
+              🏷️ Com Desconto ({agreement.discountReason === 'installment_discount' ? 'Parcelamento' : agreement.discountReason === 'overdue_discount' ? 'Atrasadas' : agreement.discountReason === 'payoff_discount' ? 'Quitação' : 'Parcela'})
+            </span>
+          ) : agreement.discountApplied === false ? (
+            <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 inline-flex items-center gap-1.5 font-mono">
+              Sem Desconto (Integral)
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 rounded-xl text-xs font-medium bg-slate-900/60 text-slate-500 border border-white/5 font-mono">
+              Não Informado (Legado)
+            </span>
+          )}
+        </div>
+
         {/* Tabela de Parcelas */}
         <div className="space-y-2">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">

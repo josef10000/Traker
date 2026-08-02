@@ -136,6 +136,115 @@ export const calculateHeatmap31Days = (
 };
 
 /**
+ * Computa estatísticas avançadas de desconto (Níveis 1, 2, 4, 5).
+ */
+export const calculateDiscountStats = (agreements: Agreement[]) => {
+  const real = filterRealAgreements(agreements);
+
+  let totalWithDiscount = 0;
+  let totalWithoutDiscount = 0;
+  let totalNotSpecified = 0;
+
+  const byReason = {
+    installment_discount: 0,
+    overdue_discount: 0,
+    payment_discount: 0,
+    payoff_discount: 0,
+  };
+
+  let paidWithDiscount = 0;
+  let brokenWithDiscount = 0;
+
+  let paidWithoutDiscount = 0;
+  let brokenWithoutDiscount = 0;
+
+  let volumeWithDiscount = 0;
+  let volumeWithoutDiscount = 0;
+
+  let paidVolumeWithDiscount = 0;
+  let paidVolumeWithoutDiscount = 0;
+
+  const byAgreementType: Record<string, { total: number; withDiscount: number; discountRate: number }> = {};
+
+  real.forEach(a => {
+    const typeKey = a.type || 'outros';
+    if (!byAgreementType[typeKey]) {
+      byAgreementType[typeKey] = { total: 0, withDiscount: 0, discountRate: 0 };
+    }
+    byAgreementType[typeKey].total++;
+
+    if (a.discountApplied === true) {
+      totalWithDiscount++;
+      volumeWithDiscount += a.value || 0;
+      byAgreementType[typeKey].withDiscount++;
+
+      if (a.discountReason && byReason[a.discountReason] !== undefined) {
+        byReason[a.discountReason]++;
+      }
+
+      if (a.status === AgreementStatus.PAID) {
+        paidWithDiscount++;
+        paidVolumeWithDiscount += a.value || 0;
+      } else if (a.status === AgreementStatus.BROKEN) {
+        brokenWithDiscount++;
+      }
+    } else if (a.discountApplied === false) {
+      totalWithoutDiscount++;
+      volumeWithoutDiscount += a.value || 0;
+
+      if (a.status === AgreementStatus.PAID) {
+        paidWithoutDiscount++;
+        paidVolumeWithoutDiscount += a.value || 0;
+      } else if (a.status === AgreementStatus.BROKEN) {
+        brokenWithoutDiscount++;
+      }
+    } else {
+      totalNotSpecified++;
+    }
+  });
+
+  Object.values(byAgreementType).forEach(item => {
+    item.discountRate = item.total > 0 ? Math.round((item.withDiscount / item.total) * 100) : 0;
+  });
+
+  const validSpecified = totalWithDiscount + totalWithoutDiscount;
+  const discountRate = validSpecified > 0 ? Math.round((totalWithDiscount / validSpecified) * 100) : 0;
+
+  const effectivenessWithDiscount = totalWithDiscount > 0
+    ? Math.round((paidWithDiscount / totalWithDiscount) * 100)
+    : 0;
+
+  const effectivenessWithoutDiscount = totalWithoutDiscount > 0
+    ? Math.round((paidWithoutDiscount / totalWithoutDiscount) * 100)
+    : 0;
+
+  const breakRateWithDiscount = totalWithDiscount > 0
+    ? Math.round((brokenWithDiscount / totalWithDiscount) * 100)
+    : 0;
+
+  const breakRateWithoutDiscount = totalWithoutDiscount > 0
+    ? Math.round((brokenWithoutDiscount / totalWithoutDiscount) * 100)
+    : 0;
+
+  return {
+    totalWithDiscount,
+    totalWithoutDiscount,
+    totalNotSpecified,
+    discountRate,
+    byReason,
+    effectivenessWithDiscount,
+    effectivenessWithoutDiscount,
+    breakRateWithDiscount,
+    breakRateWithoutDiscount,
+    byAgreementType,
+    volumeWithDiscount,
+    volumeWithoutDiscount,
+    paidVolumeWithDiscount,
+    paidVolumeWithoutDiscount,
+  };
+};
+
+/**
  * Função principal consolidadora que recebe acordos e metas e retorna
  * as estatísticas consolidadas do dashboard.
  */
@@ -186,6 +295,7 @@ export const calculateDashboardStats = (
   const breakRateByCategory = calculateBreakRateByCategory(realTargetAgreements);
   const primeTimeDistribution = calculatePrimeTimeDistribution(realTargetAgreements);
   const heatmap31Days = calculateHeatmap31Days(monthAgreements, selectedMonth, selectedYear);
+  const discountStats = calculateDiscountStats(realTargetAgreements);
 
   const dueTodayAgreements = realMonthAgreements.filter(a => 
     parseLocalDate(a.dueDate).getTime() === todayZero.getTime()
@@ -305,7 +415,8 @@ export const calculateDashboardStats = (
       breakRatesByDilatedDays,
       breakRateByCategory,
       primeTimeDistribution,
-      heatmap31Days
+      heatmap31Days,
+      discountStats
     },
     projection: (() => {
       const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();

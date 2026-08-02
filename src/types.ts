@@ -151,6 +151,8 @@ export interface AgreementNote {
   createdAt: string;
 }
 
+export type DiscountReason = 'installment_discount' | 'overdue_discount' | 'payment_discount' | 'payoff_discount';
+
 export interface Agreement {
   id: string;
   clientName: string;
@@ -167,6 +169,10 @@ export interface Agreement {
   installmentCount?: number;   // Quantidade de parcelas (informativo)
   hasEntry?: boolean;           // Se o parcelamento tem entrada
   installmentValue?: number;   // Valor de each parcela (informativo — não conta nas métricas)
+
+  // Campos de Desconto
+  discountApplied?: boolean;
+  discountReason?: DiscountReason;
 
   operatorId: string; // Quem registrou
   teamId: string;     // A qual equipe pertence
@@ -204,6 +210,27 @@ export interface DashboardStats {
     breakRateByCategory: { fixa: number; variavel: number }; // Categoria vs Quebra
     primeTimeDistribution: Record<number, number>; // Liquidez por hora
     heatmap31Days: { day: number; generation: number; liquidity: number }[]; // 31 dias calor
+    discountStats?: {
+      totalWithDiscount: number;
+      totalWithoutDiscount: number;
+      totalNotSpecified: number;
+      discountRate: number;
+      byReason: {
+        installment_discount: number;
+        overdue_discount: number;
+        payment_discount: number;
+        payoff_discount: number;
+      };
+      effectivenessWithDiscount: number;
+      effectivenessWithoutDiscount: number;
+      breakRateWithDiscount: number;
+      breakRateWithoutDiscount: number;
+      byAgreementType: Record<string, { total: number; withDiscount: number; discountRate: number }>;
+      volumeWithDiscount: number;
+      volumeWithoutDiscount: number;
+      paidVolumeWithDiscount: number;
+      paidVolumeWithoutDiscount: number;
+    };
   };
   counts: {
     month: {

@@ -157,4 +157,31 @@ describe('Métricas & BI (lib/metrics)', () => {
     expect(stats.totalPaid).toBe(1000);
     expect(stats.remainingToGoal).toBe(4000);
   });
+
+  it('deve calcular corretamente as métricas de desconto', () => {
+    const list = [
+      createMockAgreement({ id: '1', value: 1000, status: AgreementStatus.PAID, discountApplied: true, discountReason: 'payoff_discount', type: AgreementType.QUITACAO }),
+      createMockAgreement({ id: '2', value: 2000, status: AgreementStatus.PAID, discountApplied: true, discountReason: 'installment_discount', type: AgreementType.PARCELAMENTO }),
+      createMockAgreement({ id: '3', value: 1500, status: AgreementStatus.BROKEN, discountApplied: true, discountReason: 'overdue_discount', type: AgreementType.PARCELA_ATRASADA }),
+      createMockAgreement({ id: '4', value: 3000, status: AgreementStatus.PAID, discountApplied: false, type: AgreementType.QUITACAO }),
+      createMockAgreement({ id: '5', value: 4000, status: AgreementStatus.BROKEN, discountApplied: false, type: AgreementType.PARCELAMENTO }),
+      createMockAgreement({ id: '6', value: 500, status: AgreementStatus.WAITING }), // discountApplied undefined (legado)
+    ];
+
+    const stats = calculateDashboardStats(list, list, 10000, 6, 2026, mockToday);
+    expect(stats.insights?.discountStats).toBeDefined();
+
+    const disc = stats.insights!.discountStats!;
+    expect(disc.totalWithDiscount).toBe(3);
+    expect(disc.totalWithoutDiscount).toBe(2);
+    expect(disc.totalNotSpecified).toBe(1);
+    expect(disc.discountRate).toBe(60); // 3 de 5 especificados = 60%
+    expect(disc.byReason.payoff_discount).toBe(1);
+    expect(disc.byReason.installment_discount).toBe(1);
+    expect(disc.byReason.overdue_discount).toBe(1);
+    expect(disc.effectivenessWithDiscount).toBe(67); // 2 pagos de 3 com desconto = 67%
+    expect(disc.effectivenessWithoutDiscount).toBe(50); // 1 pago de 2 sem desconto = 50%
+    expect(disc.breakRateWithDiscount).toBe(33); // 1 quebrado de 3 com desconto = 33%
+    expect(disc.breakRateWithoutDiscount).toBe(50); // 1 quebrado de 2 sem desconto = 50%
+  });
 });

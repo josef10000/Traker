@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X } from '@phosphor-icons/react';
-import { Agreement, AgreementOrigin, AgreementStatus, AgreementType, AgreementCategory, UserProfile } from '../../types';
+import { Agreement, AgreementOrigin, AgreementStatus, AgreementType, AgreementCategory, UserProfile, DiscountReason } from '../../types';
 import { formatCPF, maskCPF } from '../../utils/masks';
 import { CustomSelect } from '../ui/CustomSelect';
 
@@ -30,6 +30,7 @@ export const AgreementModal = ({
   const [agreementType, setAgreementType] = useState<string>(editingAgreement?.type || '');
   const [agreementOrigin, setAgreementOrigin] = useState<string>(editingAgreement?.origin || '');
   const [hasEntry, setHasEntry] = useState<boolean>(editingAgreement?.hasEntry ?? false);
+  const [discountApplied, setDiscountApplied] = useState<boolean>(editingAgreement?.discountApplied ?? false);
   const [category, setCategory] = useState<AgreementCategory>(editingAgreement?.category || AgreementCategory.FIXA);
   const [initialStatus, setInitialStatus] = useState<AgreementStatus>(
     editingAgreement?.status && editingAgreement.status !== AgreementStatus.SCHEDULED 
@@ -100,6 +101,12 @@ export const AgreementModal = ({
       const rawInstallmentValue = formData.get('installmentValue') as string;
       const installmentValue = rawInstallmentValue ? normalizeValue(rawInstallmentValue) : undefined;
 
+      const selectedType = formData.get('type') as AgreementType;
+      const inferredDiscountReason: DiscountReason = 
+        selectedType === 'parcelamento' ? 'installment_discount' :
+        selectedType === 'parcela_atrasada' ? 'overdue_discount' :
+        selectedType === 'quitacao' ? 'payoff_discount' : 'payment_discount';
+
       const agreementData = {
         clientName: formData.get('name') as string,
         clientCpf: finalCpf,
@@ -107,7 +114,7 @@ export const AgreementModal = ({
         dueDate: formData.get('dueDate') as string,
         value: normalizedValue,          // Sempre o valor que conta nas métricas
         phone: formData.get('phone') as string,
-        type: formData.get('type') as AgreementType,
+        type: selectedType,
         category: formData.get('category') as AgreementCategory,
         status: formData.get('initialStatus') as AgreementStatus,
         notes: notes,
@@ -115,6 +122,9 @@ export const AgreementModal = ({
         installmentCount: isParcelamento ? installmentCount : undefined,
         hasEntry: isParcelamento ? hasEntry : undefined,
         installmentValue: isParcelamento && hasEntry ? installmentValue : undefined,
+        // Campos de desconto
+        discountApplied: discountApplied,
+        discountReason: discountApplied ? inferredDiscountReason : undefined,
         backOfficeClientIdRef: (editingAgreement as any)?.backOfficeClientIdRef || undefined
       };
       setFormError(null);
@@ -289,6 +299,73 @@ export const AgreementModal = ({
                       defaultValue={editingAgreement?.dueDate || new Date().toISOString().split('T')[0]}
                       className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-white color-scheme-dark backdrop-blur-sm"
                     />
+                  </div>
+
+                  {/* ===== SINALIZAÇÃO DE DESCONTO ===== */}
+                  <div className="space-y-3 md:col-span-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Desconto Concedido / Aplicado?</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <label className="relative flex flex-col cursor-pointer group">
+                        <input 
+                          type="radio" 
+                          name="discountRadio" 
+                          checked={!discountApplied} 
+                          onChange={() => setDiscountApplied(false)}
+                          className="peer hidden" 
+                        />
+                        <div className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all backdrop-blur-sm ${
+                          !discountApplied ? 'border-sky-500/50 bg-sky-500/5' : 'border-white/10 bg-white/5'
+                        }`}>
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                            !discountApplied ? 'border-sky-500 bg-sky-500/10' : 'border-slate-700 bg-transparent'
+                          }`}>
+                            {!discountApplied && <div className="w-2 h-2 rounded-full bg-sky-500" />}
+                          </div>
+                          <div>
+                            <span className={`text-xs font-bold uppercase tracking-wider ${!discountApplied ? 'text-white' : 'text-slate-400'}`}>Sem Desconto</span>
+                            <p className="text-[9px] text-slate-500 mt-0.5">Valor integral sem abatimentos</p>
+                          </div>
+                        </div>
+                      </label>
+
+                      <label className="relative flex flex-col cursor-pointer group">
+                        <input 
+                          type="radio" 
+                          name="discountRadio" 
+                          checked={discountApplied} 
+                          onChange={() => setDiscountApplied(true)}
+                          className="peer hidden" 
+                        />
+                        <div className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all backdrop-blur-sm ${
+                          discountApplied ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/10 bg-white/5'
+                        }`}>
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                            discountApplied ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-700 bg-transparent'
+                          }`}>
+                            {discountApplied && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                          </div>
+                          <div>
+                            <span className={`text-xs font-bold uppercase tracking-wider ${discountApplied ? 'text-emerald-400' : 'text-slate-400'}`}>Com Desconto</span>
+                            <p className="text-[9px] text-slate-500 mt-0.5">Sinalizar concessão no acordo</p>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {discountApplied && (
+                      <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs text-emerald-300 font-semibold">
+                          <span>🏷️ Motivo vinculado:</span>
+                          <span className="font-mono text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                            {agreementType === 'parcelamento' && 'Desconto no Parcelamento'}
+                            {agreementType === 'parcela_atrasada' && 'Desconto em Parcelas Atrasadas'}
+                            {agreementType === 'quitacao' && 'Desconto na Quitação'}
+                            {agreementType !== 'parcelamento' && agreementType !== 'parcela_atrasada' && agreementType !== 'quitacao' && 'Desconto na Parcela'}
+                          </span>
+                        </div>
+                        <span className="text-[9px] text-emerald-400/70 font-mono">Inferido automaticamente</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* ===== CAMPOS EXTRAS DE PARCELAMENTO ===== */}

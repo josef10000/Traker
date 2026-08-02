@@ -341,15 +341,37 @@ export async function exportAgreementsToExcel(
     { key: 'clientName', label: 'Cliente / Devedor', type: 'text' },
     { key: 'clientCpf', label: 'CPF / CNPJ', type: 'cpf' },
     { key: 'value', label: 'Valor do Acordo (R$)', type: 'currency' },
+    { key: 'type', label: 'Tipo de Acordo', type: 'text' },
+    { key: 'discountAppliedText', label: 'Desconto Aplicado', type: 'text' },
+    { key: 'discountReasonText', label: 'Motivo do Desconto', type: 'text' },
     { key: 'status', label: 'Status', type: 'text' },
     { key: 'createdAt', label: 'Data de Criação', type: 'date' }
   ];
+
+  const formattedData = agreements.map(a => {
+    let reasonText = '-';
+    if (a.discountApplied) {
+      const reasonMap: Record<string, string> = {
+        installment_discount: 'Desconto no Parcelamento',
+        overdue_discount: 'Desconto em Parcelas Atrasadas',
+        payment_discount: 'Desconto na Parcela',
+        payoff_discount: 'Desconto na Quitação'
+      };
+      reasonText = a.discountReason ? (reasonMap[a.discountReason] || a.discountReason) : 'Concedido';
+    }
+
+    return {
+      ...a,
+      discountAppliedText: a.discountApplied === true ? 'Sim' : a.discountApplied === false ? 'Não' : 'Não Informado',
+      discountReasonText: reasonText
+    };
+  });
 
   return exportDynamicToExcel({
     filename,
     title: 'RELATÓRIO CORPORATIVO DE ACORDOS - TRACKER',
     columns,
-    data: agreements,
+    data: formattedData,
     maskCpf: false
   });
 }
