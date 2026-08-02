@@ -258,10 +258,29 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
 
   // Estados dos Filtros
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>('all');
+  const [selectedOperatorFilter, setSelectedOperatorFilter] = useState<string>('all');
   const [biSubTab, setBiSubTab] = useState<'overview' | 'channels' | 'qa_roi' | 'predictive' | 'discounts'>('overview');
   const [heatmapMetric, setHeatmapMetric] = useState<'total' | 'success' | 'paid_value' | 'real_conversion' | 'specific_reason'>('total');
   const [heatmapSelectedReason, setHeatmapSelectedReason] = useState<string>('all');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  // Lista de Operadores disponíveis para filtro
+  const availableOperators = useMemo(() => {
+    const map = new Map<string, string>();
+    effectiveRecords.forEach(r => {
+      if (r.operatorId && r.operatorName) {
+        map.set(r.operatorId, r.operatorName);
+      }
+    });
+    effectiveAgreements.forEach(a => {
+      if (a.operatorId) {
+        if (!map.has(a.operatorId)) {
+          map.set(a.operatorId, `Operador (${a.operatorId.slice(-4)})`);
+        }
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ value: id, label: name }));
+  }, [effectiveRecords, effectiveAgreements]);
 
   // 🏷️ Métricas de Desconto (Níveis 1, 2, 4 e 5)
   const discountData = useMemo(() => {
@@ -363,16 +382,22 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     });
   }, [availableChannels, effectiveAgreements]);
 
-  // Filtragem dos Registros por Equipe
+  // Filtragem dos Registros por Perfil, Equipe e Operador
   const filteredRecords = useMemo(() => {
     return effectiveRecords.filter(r => {
-      if (selectedTeamFilter !== 'all') {
-        const matchTeam = r.teamId === selectedTeamFilter;
-        if (!matchTeam) return false;
+      // Operador vê apenas seus resultados
+      if (profile.role === 'member' && r.operatorId && r.operatorId !== profile.uid) {
+        return false;
+      }
+      if (selectedTeamFilter !== 'all' && r.teamId !== selectedTeamFilter) {
+        return false;
+      }
+      if (selectedOperatorFilter !== 'all' && r.operatorId !== selectedOperatorFilter) {
+        return false;
       }
       return true;
     });
-  }, [effectiveRecords, selectedTeamFilter]);
+  }, [effectiveRecords, profile.role, profile.uid, selectedTeamFilter, selectedOperatorFilter]);
 
   const biExportColumns: ExcelExportColumn[] = [
     { key: 'id', label: 'ID do Atendimento', type: 'text' },
@@ -777,8 +802,8 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
             theme={theme}
           />
 
-          {/* Seletor de Equipe */}
-          {teamsData.length > 0 && (
+          {/* Seletor de Equipe (Visão Supervisor / Gestor) */}
+          {teamsData.length > 0 && profile.role !== 'member' && (
             <div className="w-48">
               <CustomSelect
                 value={selectedTeamFilter}
@@ -786,6 +811,20 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
                 options={[
                   { value: 'all', label: 'Todas as Equipes' },
                   ...teamsData.map(t => ({ value: t.id, label: t.name }))
+                ]}
+              />
+            </div>
+          )}
+
+          {/* Seletor de Operador (Visão Supervisor / Gestor) */}
+          {availableOperators.length > 0 && profile.role !== 'member' && (
+            <div className="w-48">
+              <CustomSelect
+                value={selectedOperatorFilter}
+                onChange={setSelectedOperatorFilter}
+                options={[
+                  { value: 'all', label: 'Todos os Operadores' },
+                  ...availableOperators
                 ]}
               />
             </div>
@@ -799,6 +838,45 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
             <FileSpreadsheet size={18} />
             <span>Exportar Excel Formatado</span>
           </button>
+        </div>
+      </div>
+
+      {/* 📍 BANNER DE ESCLARECIMENTO DE ESCOPO E NÍVEL DE ACESSO */}
+      <div className={`p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs ${
+        theme === 'dark' ? 'bg-sky-500/10 border-sky-500/20 text-sky-200 shadow-lg' : 'bg-sky-50 border-sky-200 text-sky-900 shadow-sm'
+      }`}>
+        <div className="flex items-start md:items-center gap-3">
+          <div className="p-2 rounded-xl bg-sky-500/20 text-sky-400 font-black text-sm shrink-0">
+            📍
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-black uppercase tracking-wider text-xs">
+                {profile.role === 'member' && 'Escopo: Minha Produção Individual'}
+                {profile.role === 'supervisor' && `Escopo: Supervisão de Equipe — ${profile.displayName}`}
+                {(profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin') && 'Escopo: Operação Geral / Visão Executiva'}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-semibold text-[10px] border border-sky-500/30">
+                {profile.role === 'member' && 'Visão Operador'}
+                {profile.role === 'supervisor' && 'Visão Supervisor'}
+                {(profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin') && 'Visão Gestor'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              {profile.role === 'member' && 'Você está visualizando os indicadores e gráficos calculados com base exclusiva nos seus acordos e atendimentos realizados.'}
+              {profile.role === 'supervisor' && 'Você está visualizando os resultados consolidados das equipes sob sua supervisão. Escolha uma equipe ou operador específico nos seletores para filtrar.'}
+              {(profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin') && 'Você possui visão global da operação. Alterne entre equipes, gerentes ou operadores individuais através dos seletores.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 font-mono text-[11px] bg-slate-900/80 px-3 py-1.5 rounded-xl border border-white/10 text-slate-300">
+          <span className="text-slate-400">Filtrando:</span>
+          <span className="font-bold text-sky-400">
+            {profile.role === 'member' ? (profile.displayName || 'Meus Resultados') : (
+              `${selectedTeamFilter === 'all' ? 'Todas as Equipes' : (teamsData.find(t => t.id === selectedTeamFilter)?.name || selectedTeamFilter)}${selectedOperatorFilter !== 'all' ? ` • Operador: ${availableOperators.find(o => o.value === selectedOperatorFilter)?.label || selectedOperatorFilter}` : ''}`
+            )}
+          </span>
         </div>
       </div>
 
