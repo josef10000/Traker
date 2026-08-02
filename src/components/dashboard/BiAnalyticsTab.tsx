@@ -1268,7 +1268,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
                   <span>Penetração do Desconto por Tipo de Acordo</span>
                 </h4>
                 <div className="space-y-3">
-                  {Object.entries(discountData.byAgreementType).map(([typeKey, data]) => {
+                  {Object.entries(discountData.byAgreementType).map(([typeKey, data]: [string, any]) => {
                     const labelMap: Record<string, string> = {
                       quitacao: '💰 Quitação',
                       parcelamento: '📊 Parcelamento',
