@@ -9,12 +9,14 @@ import {
   ArrowLeft,
   Checks,
   Building,
-  Sparkle
+  Sparkle,
+  Trash,
+  WarningCircle
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile, InternalMessage } from '../../types';
 import { Avatar } from '../ui/Avatar';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { formatCPF } from '../../utils/masks';
 
@@ -38,6 +40,8 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
   const [messages, setMessages] = useState<InternalMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [searchUserQuery, setSearchUserQuery] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Filtrar outros colaboradores da mesma empresa (excluindo a si próprio)
@@ -214,6 +218,43 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
     }
   };
 
+  // Apagar toda a conversa com o destinatário ativo
+  const handleDeleteConversation = async () => {
+    if (!activeRecipient) return;
+    setIsDeletingConversation(true);
+
+    const conversationMsgs = messages.filter(m =>
+      (m.senderId === profile.uid && m.receiverId === activeRecipient.uid) ||
+      (m.senderId === activeRecipient.uid && m.receiverId === profile.uid)
+    );
+
+    try {
+      if (profile.organizationId === 'sandbox-test' || !db) {
+        // Modo Sandbox: remove do localStorage
+        const remaining = messages.filter(m =>
+          !((m.senderId === profile.uid && m.receiverId === activeRecipient.uid) ||
+            (m.senderId === activeRecipient.uid && m.receiverId === profile.uid))
+        );
+        setMessages(remaining);
+        localStorage.setItem(`sandbox_messages_${profile.organizationId}`, JSON.stringify(remaining));
+      } else {
+        // Modo Produção: remove do Firestore
+        const deletions = conversationMsgs.map(msg =>
+          deleteDoc(doc(db, 'internal_messages', msg.id))
+        );
+        await Promise.all(deletions);
+      }
+      if (showToast) showToast('Conversa apagada com sucesso', 'success');
+      setShowDeleteModal(false);
+      setActiveRecipient(null);
+    } catch (err) {
+      console.error('Erro ao apagar conversa:', err);
+      if (showToast) showToast('Erro ao apagar a conversa.', 'error');
+    } finally {
+      setIsDeletingConversation(false);
+    }
+  };
+
   // Renderizador de Texto da Mensagem com Reconhecimento Dinâmico de CPFs
   const renderMessageContent = (text: string) => {
     const cpfRegex = /(\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b)/g;
@@ -295,10 +336,10 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
             {/* Cabeçalho do Chat */}
             <div className="p-4 border-b border-white/10 bg-slate-900/60 flex items-center justify-between shrink-0">
               {activeRecipient ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <button 
                     onClick={() => setActiveRecipient(null)}
-                    className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+                    className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
                     title="Voltar para lista de contatos"
                   >
                     <ArrowLeft size={18} weight="bold" />
@@ -307,14 +348,22 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                     displayName={activeRecipient.displayName || 'Usuário'}
                     email={activeRecipient.email}
                     size="sm"
-                    className="w-8 h-8"
+                    className="w-8 h-8 shrink-0"
                   />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-black truncate">{activeRecipient.displayName}</h4>
                     <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
                       {activeRecipient.jobTitle || activeRecipient.role}
                     </span>
                   </div>
+                  {/* Botão Excluir Conversa */}
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="p-1.5 rounded-xl hover:bg-rose-500/15 text-slate-500 hover:text-rose-400 transition-all cursor-pointer shrink-0"
+                    title="Apagar conversa"
+                  >
+                    <Trash size={17} weight="duotone" />
+                  </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -467,6 +516,79 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                 </button>
               </form>
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Confirmação de Exclusão de Conversa */}
+      <AnimatePresence>
+        {showDeleteModal && activeRecipient && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          >
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => !isDeletingConversation && setShowDeleteModal(false)}
+            />
+
+            {/* Painel do Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 w-full max-w-sm bg-slate-950 border border-white/10 rounded-3xl p-6 shadow-2xl shadow-black/60 flex flex-col gap-5"
+            >
+              {/* Ícone de Aviso */}
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                  <WarningCircle size={32} weight="duotone" className="text-rose-400" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-black text-white">Apagar Conversa</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Você tem certeza que deseja apagar <strong className="text-white">todas as mensagens</strong> com
+                  </p>
+                  <p className="text-sm font-bold text-sky-400">{activeRecipient.displayName}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Esta ação não pode ser desfeita.</p>
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleDeleteConversation}
+                  disabled={isDeletingConversation}
+                  className="w-full py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white text-sm font-black transition-all active:scale-[0.97] cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20"
+                >
+                  {isDeletingConversation ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      <span>Apagando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash size={16} weight="bold" />
+                      <span>Apagar Conversa</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeletingConversation}
+                  className="w-full py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
