@@ -196,7 +196,7 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
    ```bash
    npm install
    ```
-3. Crie um arquivo `.env.local` na raiz e adicione suas credenciais do Firebase:
+3. Crie um arquivo `.env.local` na raiz e adicione suas credenciais:
    ```env
    VITE_FIREBASE_API_KEY=sua_api_key
    VITE_FIREBASE_AUTH_DOMAIN=seu_auth_domain
@@ -204,6 +204,10 @@ Adicionamos recursos poderosos voltados para aumentar o índice de recuperação
    VITE_FIREBASE_STORAGE_BUCKET=seu_storage_bucket
    VITE_FIREBASE_MESSAGING_SENDER_ID=seu_sender_id
    VITE_FIREBASE_APP_ID=seu_app_id
+   
+   # Monitoramento Grafana API
+   GRAFANA_URL=https://lankyquokka3421.grafana.net
+   GRAFANA_API_TOKEN=seu_token_glsa
    ```
 4. Execute o servidor local de desenvolvimento:
    ```bash
