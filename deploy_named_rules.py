@@ -7,11 +7,11 @@ def deploy_rules_to_named_db():
     print("Iniciando deploy de regras para o banco nomeado...")
     
     # 1. Carrega as credenciais
-    with open('service-account.json', 'r') as f:
+    with open('service-account.json', 'r', encoding='utf-8') as f:
         sa_info = json.load(f)
     
     # 2. Carrega o ID do banco nomeado
-    with open('firebase-applet-config.json', 'r') as f:
+    with open('firebase-applet-config.json', 'r', encoding='utf-8') as f:
         config = json.load(f)
     database_id = config.get('firestoreDatabaseId')
     project_id = sa_info['project_id']
@@ -50,7 +50,8 @@ service cloud.firestore {
     ruleset_res = requests.post(
         f"https://firebaserules.googleapis.com/v1/projects/{project_id}/rulesets",
         json=ruleset_payload,
-        headers=headers
+        headers=headers,
+        timeout=30
     )
     
     if ruleset_res.status_code != 200:
@@ -61,7 +62,6 @@ service cloud.firestore {
     print(f"Ruleset criado: {ruleset_name}")
 
     # 6. Atualizar Release do banco específico
-    # Para o Firebase, o release de um banco nomeado segue o padrão: cloud.firestore/ID_DO_BANCO
     release_name = f"cloud.firestore/{database_id}"
     release_url = f"https://firebaserules.googleapis.com/v1/projects/{project_id}/releases/{release_name}"
     
@@ -73,11 +73,11 @@ service cloud.firestore {
         }
     }
     
-    # O método PATCH exige que o campo seja especificado no corpo e na URL
     res = requests.patch(
         f"{release_url}?updateMask=rulesetName",
         json=release_payload["release"],
-        headers=headers
+        headers=headers,
+        timeout=30
     )
 
     if res.status_code == 200:

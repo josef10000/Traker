@@ -4,7 +4,7 @@ from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 
 def get_auth_headers():
-    with open('service-account.json', 'r') as f:
+    with open('service-account.json', 'r', encoding='utf-8') as f:
         sa_info = json.load(f)
     scopes = ['https://www.googleapis.com/auth/cloud-platform']
     creds = service_account.Credentials.from_service_account_info(sa_info, scopes=scopes)
@@ -16,7 +16,7 @@ def get_auth_headers():
 
 def delete_document(doc_name, headers):
     url = f"https://firestore.googleapis.com/v1/{doc_name}"
-    res = requests.delete(url, headers=headers)
+    res = requests.delete(url, headers=headers, timeout=30)
     if res.status_code == 200:
         print(f"Deletado: {doc_name}")
     else:
@@ -30,7 +30,7 @@ def clear_collection(project_id, database_id, collection_id, headers):
         if page_token:
             params['pageToken'] = page_token
             
-        res = requests.get(url, headers=headers, params=params)
+        res = requests.get(url, headers=headers, params=params, timeout=30)
         if res.status_code == 404:
             break
         if res.status_code != 200:
@@ -50,9 +50,9 @@ def clear_collection(project_id, database_id, collection_id, headers):
 def clear_all():
     print("Iniciando reset do banco de dados via API REST do Firestore...")
     try:
-        with open('service-account.json', 'r') as f:
+        with open('service-account.json', 'r', encoding='utf-8') as f:
             sa_info = json.load(f)
-        with open('firebase-applet-config.json', 'r') as f:
+        with open('firebase-applet-config.json', 'r', encoding='utf-8') as f:
             config = json.load(f)
             
         database_id = config.get('firestoreDatabaseId')

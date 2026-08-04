@@ -6,9 +6,9 @@ from google.auth.transport.requests import Request
 def final_attempt_deploy():
     print("Iniciando tentativa final de deploy de regras...")
     
-    with open('service-account.json', 'r') as f:
+    with open('service-account.json', 'r', encoding='utf-8') as f:
         sa_info = json.load(f)
-    with open('firebase-applet-config.json', 'r') as f:
+    with open('firebase-applet-config.json', 'r', encoding='utf-8') as f:
         config = json.load(f)
         
     database_id = config.get('firestoreDatabaseId')
@@ -43,7 +43,8 @@ service cloud.firestore {
     ruleset_res = requests.post(
         f"https://firebaserules.googleapis.com/v1/projects/{project_id}/rulesets",
         json=ruleset_payload,
-        headers=headers
+        headers=headers,
+        timeout=30
     )
     
     if ruleset_res.status_code != 200:
@@ -54,7 +55,6 @@ service cloud.firestore {
     
     # 3. Atualizar Release (Tentativa com estrutura simplificada)
     release_name = f"cloud.firestore/{database_id}"
-    # O Google às vezes espera o payload sem o 'release' no topo
     payload = {
         "rulesetName": ruleset_name
     }
@@ -62,10 +62,10 @@ service cloud.firestore {
     url = f"https://firebaserules.googleapis.com/v1/projects/{project_id}/releases/{release_name}?updateMask=rulesetName"
     
     print(f"Enviando PATCH para {url}...")
-    res = requests.patch(url, json=payload, headers=headers)
+    res = requests.patch(url, json=payload, headers=headers, timeout=30)
 
     if res.status_code == 200:
-        print("--- CONSEGUI! REGRAS APLICADAS PELO PYTHON! ---")
+        print("--- REGRAS APLICADAS PELO PYTHON COM SUCESSO! ---")
     else:
         print(f"O Google ainda está recusando: {res.status_code}")
         print(res.text)
