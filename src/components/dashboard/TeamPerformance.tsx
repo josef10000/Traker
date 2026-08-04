@@ -87,7 +87,7 @@ export const TeamPerformance = ({
     const parts = dateStr.split('-');
     if (parts.length < 3) return dateStr;
     const [year, month, day] = parts;
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
   };
 

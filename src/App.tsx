@@ -530,6 +530,7 @@ export function AppContent() {
         <Routes>
           <Route path="/login" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
           <Route path="/register" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
+          <Route path="/status" element={<StatusPage />} />
           <Route path="/demo" element={
             <DemoPage 
               onStartDemo={handleStartDemo} 
@@ -588,6 +589,7 @@ export function AppContent() {
               onStartSimulation={(role) => setSimulation({ active: true, role })}
             />
           } />
+          <Route path="/status" element={<StatusPage />} />
           <Route path="/demo" element={
             <DemoPage 
               onStartDemo={handleStartDemo} 

@@ -98,7 +98,7 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
     syncSandboxTeams();
     const unsubscribe = sandboxService.subscribe(syncSandboxTeams);
     return () => unsubscribe();
-  }, [isSandbox, selectedTeamId, profile.role, profile.organizationId, profile.managedTeams, profile.teamId]);
+  }, [isSandbox, selectedTeamId, profile.role, profile.organizationId, profile.managedTeams, profile.teamId, profile.uid]);
 
   // 1. Carregar membros quando o time selecionado muda
   useEffect(() => {
@@ -181,7 +181,7 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
       active = false;
     };
   // managedTeamsKey garante estabilidade de referência: só re-executa se o conteúdo do array mudar
-  }, [selectedTeamId, profile.role, profile.organizationId, managedTeamsKey]);
+  }, [selectedTeamId, profile.role, profile.organizationId, managedTeamsKey, profile.uid]);
 
   // 2. Carregar informações das equipes gerenciadas
   useEffect(() => {
@@ -233,7 +233,7 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
       active = false;
     };
   // managedTeamsKey garante estabilidade de referência: só re-executa se o conteúdo do array mudar
-  }, [profile.role, profile.organizationId, managedTeamsKey, profile.teamId]);
+  }, [profile.role, profile.organizationId, managedTeamsKey, profile.teamId, profile.uid]);
 
   return {
     currentTeamMembers,
