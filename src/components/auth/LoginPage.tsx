@@ -10,6 +10,7 @@ import { auth } from '../../lib/firebase';
 import { validateInvite, acceptInvite } from '../../lib/teams';
 import { sandboxService } from '../../lib/sandboxService';
 import { ToastType } from '../ui/Toast';
+import { GrafanaStatusWidget } from '../GrafanaStatusWidget';
 
 interface LoginPageProps {
   onAuthSuccess: () => void;
@@ -19,6 +20,7 @@ interface LoginPageProps {
 export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -269,16 +271,68 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
         )}
 
         {!isForgotPassword && (
-          <div className="pt-2 text-center">
+          <div className="pt-2 text-center space-y-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
               {isLogin ? 'Não possui acesso?' : 'Já tem uma conta?'}
               <button onClick={() => setIsLogin(!isLogin)} className="ml-2 text-sky-500 hover:text-sky-400 transition-colors cursor-pointer">
                 {isLogin ? 'Cadastrar-se' : 'Fazer Login'}
               </button>
             </p>
+
+            <div className="pt-4 border-t border-white/5 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setShowStatusModal(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold hover:bg-slate-900 transition-all hover:border-emerald-500/50 cursor-pointer shadow-inner"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Status do Sistema</span>
+              </button>
+            </div>
           </div>
         )}
       </motion.div>
+
+      {/* Modal de Status do Sistema Grafana */}
+      {showStatusModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl p-6 relative shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                🟢 Monitoramento de Serviços (Grafana API)
+              </h3>
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <GrafanaStatusWidget />
+
+            <div className="flex items-center justify-between pt-2">
+              <a
+                href="/api/grafana-status"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-sky-400 hover:underline font-semibold"
+              >
+                Ver resposta JSON oficial ↗
+              </a>
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
