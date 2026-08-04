@@ -4398,6 +4398,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         onClose={() => setIsSettingsModalOpen(false)}
         profile={profile}
         onOpenReconciliation={() => setIsReconciliationModalOpen(true)}
+        onOpenProfile={() => {
+          setIsSettingsModalOpen(false);
+          onSettingsClick();
+        }}
         showToast={showToast}
         theme={theme}
       />

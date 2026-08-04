@@ -26,6 +26,7 @@ interface SettingsModalProps {
   onClose: () => void;
   profile: UserProfile;
   onOpenReconciliation?: () => void;
+  onOpenProfile?: () => void;
   showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   theme?: 'light' | 'dark';
 }
@@ -55,6 +56,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   profile,
   onOpenReconciliation,
+  onOpenProfile,
   showToast,
   theme = 'dark'
 }) => {
@@ -174,7 +176,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 15 }}
           transition={{ duration: 0.2 }}
-          className={`w-full max-w-3xl p-6 rounded-3xl border shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh] ${
+          className={`w-full max-w-xl p-5 rounded-2xl border shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh] ${
             theme === 'dark' ? 'bg-slate-900 border-white/10 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
           }`}
         >
@@ -447,15 +449,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
                     )}
 
-                    {/* Resumo do Perfil */}
-                    <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5">
-                      <div className="flex items-center justify-between mb-2">
-                        <ShieldCheck size={22} className="text-emerald-400" />
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Perfil</span>
+                    {/* Resumo do Perfil Clicável */}
+                    <div 
+                      onClick={() => {
+                        onClose();
+                        if (onOpenProfile) onOpenProfile();
+                      }}
+                      className="p-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-white/5 hover:border-emerald-500/40 transition-all cursor-pointer group flex flex-col justify-between"
+                      title="Clique para abrir e editar seu perfil"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <ShieldCheck size={22} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+                          <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                            Perfil ➔
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-slate-200 block group-hover:text-emerald-400 transition-colors">
+                          {profile.displayName}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block font-mono">
+                          {profile.email}
+                        </span>
                       </div>
-                      <span className="text-xs font-bold text-slate-200 block">{profile.displayName}</span>
-                      <span className="text-[10px] text-slate-400 block font-mono">{profile.email}</span>
-                      <span className="text-[10px] font-bold text-sky-400 uppercase mt-1 block">Cargo: {profile.role}</span>
+                      <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-sky-400 uppercase">
+                          Cargo: {profile.role}
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-bold group-hover:underline">
+                          Abrir Perfil ➔
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
