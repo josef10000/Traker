@@ -537,6 +537,20 @@ export const DashboardHeader = ({
                       <span>Gerar Relatório PDF</span>
                     </button>
                   )}
+
+                  {/* Status do Sistema */}
+                  <a
+                    href="/status"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsToolsOpen(false)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
+                      theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                    }`}
+                  >
+                    <Globe size={16} className="text-emerald-500" />
+                    <span>Status do Sistema ↗</span>
+                  </a>
                 </motion.div>
               )}
             </AnimatePresence>

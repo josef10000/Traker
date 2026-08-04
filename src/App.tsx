@@ -17,6 +17,7 @@ import { sandboxService } from './lib/sandboxService';
 import { Toast, ToastType } from './components/ui/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
+import { StatusPage } from './components/StatusPage';
 
 const isMasterAdminEmail = (email?: string | null): boolean => {
   if (!email) return false;
@@ -25,6 +26,9 @@ const isMasterAdminEmail = (email?: string | null): boolean => {
 };
 
 export function AppContent() {
+  if (typeof window !== 'undefined' && window.location.pathname === '/status') {
+    return <StatusPage />;
+  }
   const [designMode, setDesignMode] = useDesignMode();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(() => {
