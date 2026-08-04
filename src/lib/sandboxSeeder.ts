@@ -19,6 +19,7 @@ import {
 } from '../types';
 
 import { AuditLog } from './audit';
+import { secureRandom } from '../utils/crypto';
 
 export interface SandboxSeeds {
   organizations: Record<string, Organization>;
@@ -257,8 +258,6 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
   const origins = Object.values(AgreementOrigin);
   const types = Object.values(AgreementType);
   const categories = Object.values(AgreementCategory);
-
-import { secureRandom } from '../utils/crypto';
 
   usersList.filter(u => u.role === 'member').forEach((op, opIdx) => {
     const numAgreements = 5 + (opIdx % 2);
