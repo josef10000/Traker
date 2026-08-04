@@ -54,6 +54,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useTabVisibility } from '../../hooks/useTabVisibility';
 
 import { Avatar } from '../ui/Avatar';
+import { secureRandomId } from '../../utils/crypto';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { AttendanceModal } from '../modals/AttendanceModal';
 import { CalendarEventModal } from '../modals/CalendarEventModal';
@@ -613,7 +614,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const handleSaveLeadNote = async (agreementId: string, noteData: Omit<AgreementNote, 'id' | 'createdAt'>) => {
     const newNote: AgreementNote = {
-      id: `note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: secureRandomId('note'),
       ...noteData,
       createdAt: new Date().toISOString()
     };
@@ -1394,7 +1395,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const now = new Date().toISOString();
 
       if (targetType === 'team') {
-        const eventId = `event-${Math.random().toString(36).substring(2, 11)}`;
+        const eventId = secureRandomId('event');
         const event: CalendarEvent = {
           id: eventId,
           organizationId: profile.organizationId,
@@ -1414,7 +1415,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       } else {
         if (profile.organizationId === 'sandbox-test') {
           selectedCollaboratorIds.forEach(collabId => {
-            const eventId = `event-${Math.random().toString(36).substring(2, 11)}`;
+            const eventId = secureRandomId('event');
             const event: CalendarEvent = {
               id: eventId,
               organizationId: profile.organizationId,
@@ -1430,7 +1431,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         } else {
           const batch = writeBatch(db);
           selectedCollaboratorIds.forEach(collabId => {
-            const eventId = `event-${Math.random().toString(36).substring(2, 11)}`;
+            const eventId = secureRandomId('event');
             const event: CalendarEvent = {
               id: eventId,
               organizationId: profile.organizationId,
@@ -2201,7 +2202,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!targetTeamId) return;
 
     if (profile.organizationId === 'sandbox-test') {
-      const id = 'sandbox-adj-' + Math.random().toString(36).substr(2, 9);
+      const id = secureRandomId('sandbox-adj');
       const now = new Date().toISOString();
       const payload: Agreement = {
         id,

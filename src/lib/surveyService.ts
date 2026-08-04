@@ -124,11 +124,13 @@ export async function submitAnonymousSurveyResponse(
     createdAt: new Date().toISOString()
   };
 
+import { secureRandomId } from '../utils/crypto';
+
   if (organizationId === 'sandbox-test') {
     const responses = getSandboxItem<EmployeeSurveyResponse[]>('employee_survey_responses') || [];
     const newResponse: EmployeeSurveyResponse = {
       ...responseData,
-      id: `resp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+      id: secureRandomId('resp')
     };
     setSandboxItem('employee_survey_responses', [newResponse, ...responses]);
     return;

@@ -354,6 +354,8 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     ];
   }, [profile.organizationId]);
 
+import { secureRandom } from '../../utils/crypto';
+
   // ⚡ Matriz de Eficiência por Canal de Contato
   const channelMatrixData = useMemo(() => {
     return availableChannels.map(chan => {
@@ -363,8 +365,8 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
       });
 
       const totalVal = matchingAgreements.reduce((sum, a) => sum + (a.value || 0), 0);
-      const count = matchingAgreements.length || Math.floor(Math.random() * 15 + 8);
-      const val = totalVal || Math.floor(Math.random() * 45000 + 15000);
+      const count = matchingAgreements.length || Math.floor(secureRandom() * 15 + 8);
+      const val = totalVal || Math.floor(secureRandom() * 45000 + 15000);
       const paidAgreements = matchingAgreements.filter(a => a.status === 'PAID').length || Math.floor(count * 0.72);
       const brokenAgreements = matchingAgreements.filter(a => a.status === 'BROKEN').length || Math.floor(count * 0.12);
 

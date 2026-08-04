@@ -1,12 +1,23 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile } from '../../types';
+import { secureRandom } from '../../utils/crypto';
 
 interface DynamicBackgroundProps {
   theme: UserProfile['theme'];
 }
 
 export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) => {
+  const purpleParticles = useMemo(() => {
+    return Array.from({ length: 30 }).map((_, i) => ({
+      id: i,
+      initialOpacity: secureRandom() * 0.5,
+      duration: 3 + secureRandom() * 4,
+      delay: secureRandom() * 5,
+      top: `${secureRandom() * 100}%`,
+      left: `${secureRandom() * 100}%`
+    }));
+  }, []);
   return (
     <div className="fixed inset-0 -z-50 overflow-hidden pointer-events-none">
       <AnimatePresence mode="wait">
@@ -52,23 +63,23 @@ export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) =>
             
             {/* Floating Stars/Particles */}
             <div className="absolute inset-0">
-              {Array.from({ length: 30 }).map((_, i) => (
+              {purpleParticles.map((p) => (
                 <motion.div
-                  key={i}
-                  initial={{ opacity: Math.random() * 0.5 }}
+                  key={p.id}
+                  initial={{ opacity: p.initialOpacity }}
                   animate={{ 
                     opacity: [0.1, 0.5, 0.1],
                     scale: [1, 1.5, 1],
                   }}
                   transition={{ 
-                    duration: 3 + Math.random() * 4, 
+                    duration: p.duration, 
                     repeat: Infinity,
-                    delay: Math.random() * 5
+                    delay: p.delay
                   }}
                   className="absolute w-0.5 h-0.5 bg-white rounded-full"
                   style={{ 
-                    top: `${Math.random() * 100}%`, 
-                    left: `${Math.random() * 100}%`,
+                    top: p.top, 
+                    left: p.left,
                   }}
                 />
               ))}

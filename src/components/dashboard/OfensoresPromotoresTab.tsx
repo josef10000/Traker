@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
+import { secureRandomId } from '../../utils/crypto';
 import { 
   Trophy, 
   Warning, 
@@ -351,7 +352,7 @@ export const OfensoresPromotoresTab: React.FC<OfensoresPromotoresTabProps> = ({
       else if (conversionRate >= 100) mainPromoterReason = 'Superou a Meta de Faturamento';
 
       return {
-        id: op?.uid || op?.id || Math.random().toString(),
+        id: op?.uid || op?.id || secureRandomId('op'),
         name: op?.name || op?.displayName || op?.email || 'Operador',
         role: op?.jobTitle || 'Operador de Cobrança',
         teamName: safeTeamsData.find(t => t.id === op?.teamId)?.name || 'Equipe Geral',

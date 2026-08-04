@@ -7,6 +7,8 @@ import { sandboxService } from './sandboxService';
  * Cria uma notificação no Firestore ou no Sandbox local
  * REGRA DE ZERO AUTO-NOTIFICAÇÃO: Se senderUserId for fornecido e igual ao userId (destinatário), a notificação é ignorada.
  */
+import { secureRandomId } from '../utils/crypto';
+
 export const createNotification = async (
   notificationData: Omit<AppNotification, 'id' | 'read' | 'createdAt'>,
   isSandbox: boolean = false
@@ -20,7 +22,7 @@ export const createNotification = async (
     return sandboxService.createNotification(notificationData);
   }
 
-  const notificationId = `notification-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  const notificationId = secureRandomId('notification');
   const notification: AppNotification = {
     ...notificationData,
     id: notificationId,

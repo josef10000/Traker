@@ -17,6 +17,8 @@ import { db } from './firebase';
 import { Team, UserProfile, UserRole, Organization, Invite } from '../types';
 import { sendInviteEmail } from '../services/emailService';
 
+import { secureRandom } from '../utils/crypto';
+
 export const generateSecureToken = (length: number): string => {
   const array = new Uint8Array(length);
   if (typeof window !== 'undefined' && window.crypto) {
@@ -26,7 +28,7 @@ export const generateSecureToken = (length: number): string => {
   } else {
     // Fallback pseudo-aleatório seguro se crypto não estiver disponível
     for (let i = 0; i < length; i++) {
-      array[i] = Math.floor(Math.random() * 256);
+      array[i] = Math.floor(secureRandom() * 256);
     }
   }
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';

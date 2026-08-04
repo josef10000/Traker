@@ -91,12 +91,14 @@ const saveLocalArticles = (orgId: string, articles: KnowledgeArticle[]) => {
   }
 };
 
+import { secureRandomId } from '../utils/crypto';
+
 /**
  * Insere ou atualiza um artigo de conhecimento / script da operação
  */
 export const saveKnowledgeArticle = async (article: Omit<KnowledgeArticle, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<string> => {
   const now = new Date().toISOString();
-  const articleId = article.id || `kb_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  const articleId = article.id || secureRandomId('kb');
   
   const fullArticle: KnowledgeArticle = {
     ...article,

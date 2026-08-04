@@ -94,6 +94,8 @@ function dataUrlToBlob(dataUrl: string): Blob {
  * Tenta fazer o upload para o Cloudflare R2 caso as variáveis VITE_R2_* estejam configuradas.
  * Se não estiverem ou em ambiente Sandbox, retorna a string compactada com sucesso.
  */
+import { secureRandomId } from '../utils/crypto';
+
 export async function uploadImage(
   input: File | Blob | string,
   options: UploadOptions = {}
@@ -114,7 +116,7 @@ export async function uploadImage(
   // Se houver um endpoint de upload/Worker configurado ou credenciais completas
   if (uploadEndpoint || (accountId && bucketName && accessKeyId && secretAccessKey && publicUrl)) {
     try {
-      const filename = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.webp`;
+      const filename = `${folder}/${secureRandomId('file')}.webp`;
       const cleanPublicBaseUrl = publicUrl?.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
       const targetEndpoint = uploadEndpoint || (cleanPublicBaseUrl && !cleanPublicBaseUrl.includes('.r2.dev') ? `${cleanPublicBaseUrl}/${filename}` : null);
 

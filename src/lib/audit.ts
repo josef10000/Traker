@@ -42,6 +42,8 @@ async function generateSHA256(message: string): Promise<string> {
   return hashHex;
 }
 
+import { secureRandomId } from '../utils/crypto';
+
 export const logAudit = async (
   action: AuditLog['action'],
   details: Record<string, any>,
@@ -54,7 +56,7 @@ export const logAudit = async (
 
     if (organizationId === 'sandbox-test') {
       sandboxService.addAuditLog({
-        id: `sandbox-audit-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        id: secureRandomId('sandbox-audit'),
         userId: user?.uid || 'sandbox-user-1',
         userEmail: user?.email || 'operador.teste@traker.com.br',
         userName: userName || 'Carlos Silva',

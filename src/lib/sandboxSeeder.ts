@@ -258,12 +258,14 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
   const types = Object.values(AgreementType);
   const categories = Object.values(AgreementCategory);
 
+import { secureRandom } from '../utils/crypto';
+
   usersList.filter(u => u.role === 'member').forEach((op, opIdx) => {
     const numAgreements = 5 + (opIdx % 2);
     
     for (let j = 0; j < numAgreements; j++) {
       const id = `sandbox-agree-${agreementIdCounter++}`;
-      const val = Math.round(800 + (Math.random() * 8000));
+      const val = Math.round(800 + (secureRandom() * 8000));
       
       let customCpf: string | undefined = undefined;
       let status: AgreementStatus = AgreementStatus.WAITING;

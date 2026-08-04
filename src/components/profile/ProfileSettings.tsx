@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { uploadImage } from '../../lib/imageUpload';
+import { secureRandomId } from '../../utils/crypto';
 import { 
   User as UserIcon, 
   Briefcase, 
@@ -1360,7 +1361,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     {avatarType === 'api' ? (
                       <button
                         type="button"
-                        onClick={() => setAvatarSeed(Math.random().toString(36).substring(7))}
+                        onClick={() => setAvatarSeed(secureRandomId('avatar'))}
                         className="absolute -bottom-1 -right-1 p-1.5 bg-primary hover:bg-primary/80 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
                         title="Gerar Novo Avatar Aleatório"
                       >

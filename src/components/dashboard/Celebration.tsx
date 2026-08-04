@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { secureRandom } from '../../utils/crypto';
 
 interface Particle {
   id: number;
@@ -9,6 +10,8 @@ interface Particle {
   size: number;
   rotation: number;
   delay: number;
+  drift: number;
+  duration: number;
 }
 
 export const Celebration = () => {
@@ -18,12 +21,14 @@ export const Celebration = () => {
   useEffect(() => {
     const newParticles = Array.from({ length: 50 }).map((_, i) => ({
       id: i,
-      x: Math.random() * 100,
+      x: secureRandom() * 100,
       y: -20,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      size: Math.random() * 10 + 5,
-      rotation: Math.random() * 360,
-      delay: Math.random() * 2,
+      color: colors[Math.floor(secureRandom() * colors.length)],
+      size: secureRandom() * 10 + 5,
+      rotation: secureRandom() * 360,
+      delay: secureRandom() * 2,
+      drift: secureRandom() * 20 - 10,
+      duration: 4 + secureRandom() * 2
     }));
     setParticles(newParticles);
     
@@ -47,11 +52,11 @@ export const Celebration = () => {
             animate={{ 
               opacity: [0, 1, 1, 0],
               y: '-20vh',
-              x: `${p.x + (Math.random() * 20 - 10)}vw`,
+              x: `${p.x + p.drift}vw`,
               rotate: p.rotation + 720
             }}
             transition={{ 
-              duration: 4 + Math.random() * 2,
+              duration: p.duration,
               delay: p.delay,
               ease: "easeOut"
             }}
