@@ -13,6 +13,7 @@ import {
 import { db } from './firebase';
 import { sandboxService } from './sandboxService';
 import { EmployeeSurveyConfig, EmployeeSurveyResponse, SurveyFrequency, UserProfile } from '../types';
+import { secureRandomId } from '../utils/crypto';
 
 export interface SurveyStats {
   totalResponses: number;
@@ -123,8 +124,6 @@ export async function submitAnonymousSurveyResponse(
     teamId: teamId || 'default',
     createdAt: new Date().toISOString()
   };
-
-import { secureRandomId } from '../utils/crypto';
 
   if (organizationId === 'sandbox-test') {
     const responses = getSandboxItem<EmployeeSurveyResponse[]>('employee_survey_responses') || [];
