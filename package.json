@@ -11,7 +11,8 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "sonar": "sonarqube-scanner"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -46,6 +47,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.0",
+    "sonarqube-scanner": "^4.0.1"
   }
 }

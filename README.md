@@ -232,6 +232,7 @@ Coleções preparatórias com segurança pré-configurada:
 O projeto conta com automação via GitHub Actions para assegurar a saúde do produto antes de cada deploy:
 - **TypeScript Checking**: Validação estática de tipos (`tsc --noEmit`).
 - **Production Build Testing**: Garante que o bundler do Vite compile o código para produção com 100% de sucesso.
+- **SonarCloud Scan**: Análise estática contínua de segurança, bugs, code smells e duplicações (Organização `josef10000`, Projeto `traker`).
 - **Auditoria LGPD**: Validação estática de chaves e vazamentos de chaves privadas.
 
 ---
