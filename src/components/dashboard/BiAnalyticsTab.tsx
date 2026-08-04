@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
+import { secureRandom } from '../../utils/crypto';
 import { 
   Agreement, 
   AttendanceRecord, 
@@ -353,8 +354,6 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
       { id: 'ch-quite', name: 'Quite Digital', code: 'quite_digital', active: true, color: '#fb923c' }
     ];
   }, [profile.organizationId]);
-
-import { secureRandom } from '../../utils/crypto';
 
   // ⚡ Matriz de Eficiência por Canal de Contato
   const channelMatrixData = useMemo(() => {
