@@ -1,37 +1,42 @@
 import json
+import logging
 import requests
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+RULES_BASE_URL = "https://firebaserules.googleapis.com/v1"
+SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+TIMEOUT_SECONDS = 30
+
 def deploy_rules_to_named_db():
-    print("Iniciando deploy de regras para o banco nomeado...")
+    logger.info("Iniciando deploy de regras para o banco nomeado...")
     
-    # 1. Carrega as credenciais
-    with open('service-account.json', 'r', encoding='utf-8') as f:
-        sa_info = json.load(f)
-    
-    # 2. Carrega o ID do banco nomeado
-    with open('firebase-applet-config.json', 'r', encoding='utf-8') as f:
-        config = json.load(f)
-    database_id = config.get('firestoreDatabaseId')
-    project_id = sa_info['project_id']
-    
-    print(f"Projeto: {project_id}")
-    print(f"Banco de Dados: {database_id}")
+    try:
+        with open('service-account.json', 'r', encoding='utf-8') as f:
+            sa_info = json.load(f)
+        
+        with open('firebase-applet-config.json', 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            
+        database_id = config.get('firestoreDatabaseId')
+        project_id = sa_info.get('project_id')
+        
+        logger.info("Projeto: %s", project_id)
+        logger.info("Banco de Dados: %s", database_id)
 
-    # 3. Obtém Token
-    scopes = ['https://www.googleapis.com/auth/cloud-platform']
-    creds = service_account.Credentials.from_service_account_info(sa_info, scopes=scopes)
-    creds.refresh(Request())
-    token = creds.token
-    
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
+        creds = service_account.Credentials.from_service_account_info(sa_info, scopes=SCOPES)
+        creds.refresh(Request())
+        token = creds.token
+        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
 
-    # 4. Conteúdo das regras
-    rules_content = """rules_version = '2';
+        rules_content = """rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
@@ -40,51 +45,52 @@ service cloud.firestore {
   }
 }"""
 
-    # 5. Criar Ruleset
-    print("Criando novo ruleset...")
-    ruleset_payload = {
-        "source": {
-            "files": [{"name": "firestore.rules", "content": rules_content}]
+        logger.info("Criando novo ruleset...")
+        ruleset_payload = {
+            "source": {
+                "files": [{"name": "firestore.rules", "content": rules_content}]
+            }
         }
-    }
-    ruleset_res = requests.post(
-        f"https://firebaserules.googleapis.com/v1/projects/{project_id}/rulesets",
-        json=ruleset_payload,
-        headers=headers,
-        timeout=30
-    )
-    
-    if ruleset_res.status_code != 200:
-        print(f"Erro ao criar ruleset: {ruleset_res.text}")
-        return
+        
+        ruleset_res = requests.post(
+            f"{RULES_BASE_URL}/projects/{project_id}/rulesets",
+            json=ruleset_payload,
+            headers=headers,
+            timeout=TIMEOUT_SECONDS
+        )
+        
+        if ruleset_res.status_code != 200:
+            logger.error("Erro ao criar ruleset: %s", ruleset_res.text)
+            return
 
-    ruleset_name = ruleset_res.json()['name']
-    print(f"Ruleset criado: {ruleset_name}")
+        ruleset_name = ruleset_res.json().get('name')
+        logger.info("Ruleset criado: %s", ruleset_name)
 
-    # 6. Atualizar Release do banco específico
-    release_name = f"cloud.firestore/{database_id}"
-    release_url = f"https://firebaserules.googleapis.com/v1/projects/{project_id}/releases/{release_name}"
-    
-    print(f"Atualizando release {release_name}...")
-    release_payload = {
-        "release": {
-            "name": f"projects/{project_id}/releases/{release_name}",
-            "rulesetName": ruleset_name
+        release_name = f"cloud.firestore/{database_id}"
+        release_url = f"{RULES_BASE_URL}/projects/{project_id}/releases/{release_name}"
+        
+        logger.info("Atualizando release %s...", release_name)
+        release_payload = {
+            "release": {
+                "name": f"projects/{project_id}/releases/{release_name}",
+                "rulesetName": ruleset_name
+            }
         }
-    }
-    
-    res = requests.patch(
-        f"{release_url}?updateMask=rulesetName",
-        json=release_payload["release"],
-        headers=headers,
-        timeout=30
-    )
+        
+        res = requests.patch(
+            f"{release_url}?updateMask=rulesetName",
+            json=release_payload["release"],
+            headers=headers,
+            timeout=TIMEOUT_SECONDS
+        )
 
-    if res.status_code == 200:
-        print("--- REGRAS APLICADAS COM SUCESSO NO BANCO NOMEADO! ---")
-        print("Aguarde 30 segundos para a propagação do Google e tente novamente no site.")
-    else:
-        print(f"Erro ao atualizar release: {res.text}")
+        if res.status_code == 200:
+            logger.info("--- REGRAS APLICADAS COM SUCESSO NO BANCO NOMEADO! ---")
+        else:
+            logger.error("Erro ao atualizar release: %s", res.text)
+            
+    except (OSError, json.JSONDecodeError, requests.RequestException) as err:
+        logger.error("Erro no deploy de regras: %s", err)
 
 if __name__ == "__main__":
     deploy_rules_to_named_db()

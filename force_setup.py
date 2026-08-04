@@ -1,27 +1,30 @@
-import firebase_admin
-from firebase_admin import credentials, firestore, auth
 import json
+import logging
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def force_setup():
     try:
         cred = credentials.Certificate('service-account.json')
-        with open('firebase-applet-config.json', 'r') as f:
+        with open('firebase-applet-config.json', 'r', encoding='utf-8') as f:
             client_config = json.load(f)
         database_id = client_config.get('firestoreDatabaseId')
         
         firebase_admin.initialize_app(cred)
         try:
             db = firestore.client(database=database_id)
-        except:
+        except Exception:
             db = firestore.client()
 
         uid = "yan4TWHRHwNW68WInKwDhkUajSz2"
         email = "jfs102019@hotmail.com"
         team_id = "equipe_oficial"
 
-        print(f"Forçando acesso para {email}...")
+        logger.info("Forcando acesso para %s...", email)
 
-        # Grava Equipe
         db.collection('teams').document(team_id).set({
             "id": team_id,
             "name": "Equipe Oficial",
@@ -30,7 +33,6 @@ def force_setup():
             "createdAt": firestore.SERVER_TIMESTAMP
         })
 
-        # Grava Perfil
         db.collection('users').document(uid).set({
             "uid": uid,
             "email": email,
@@ -41,10 +43,10 @@ def force_setup():
             "createdAt": firestore.SERVER_TIMESTAMP
         })
 
-        print("SUCESSO! Dados gravados no banco nomeado.")
+        logger.info("SUCESSO! Dados gravados no banco nomeado.")
 
-    except Exception as e:
-        print(f"Erro: {e}")
+    except (OSError, json.JSONDecodeError, ValueError) as err:
+        logger.error("Erro no force_setup: %s", err)
 
 if __name__ == "__main__":
     force_setup()
