@@ -600,6 +600,7 @@ export interface KnowledgeArticle {
   isPinned: boolean;
   isUrgent: boolean;
   copyableScript?: string;
+  imageUrl?: string;
   tags?: string[];
   createdByUid: string;
   createdByName: string;

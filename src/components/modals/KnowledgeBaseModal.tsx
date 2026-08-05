@@ -15,7 +15,12 @@ import {
   FileText, 
   Question, 
   ChatTeardropText,
-  Sparkle
+  Sparkle,
+  CaretLeft,
+  CaretRight,
+  Image as ImageIcon,
+  UploadSimple,
+  Eye
 } from '@phosphor-icons/react';
 import { KnowledgeArticle, KnowledgeCategory, UserProfile } from '../../types';
 import { 
@@ -23,6 +28,7 @@ import {
   saveKnowledgeArticle, 
   deleteKnowledgeArticle 
 } from '../../lib/knowledgeBaseService';
+import { compressImage } from '../../lib/imageUpload';
 import { notifyAnnouncementPublished } from '../../lib/notifications';
 import { auth } from '../../lib/firebase';
 
@@ -49,6 +55,11 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Paginação: 6 itens por página
+  const ITEMS_PER_PAGE = 6;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [previewModalImage, setPreviewModalImage] = useState<string | null>(null);
+
   // Estados do Formulário de Criação/Edição (Para supervisores/gestores/monitores)
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
@@ -57,6 +68,7 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
   const [formContent, setFormContent] = useState('');
   const [enableCopyableScript, setEnableCopyableScript] = useState(false);
   const [formCopyableScript, setFormCopyableScript] = useState('');
+  const [formImageUrl, setFormImageUrl] = useState<string | undefined>(undefined);
   const [formTagsStr, setFormTagsStr] = useState('');
   const [formIsPinned, setFormIsPinned] = useState(false);
   const [formIsUrgent, setFormIsUrgent] = useState(false);
@@ -70,6 +82,11 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
     });
     return () => unsub();
   }, [isOpen, profile.organizationId]);
+
+  // Reset da página se filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchQuery]);
 
   // Filtragem inteligente por Categoria e Busca por Texto
   const filteredArticles = useMemo(() => {
@@ -88,6 +105,14 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
     });
   }, [articles, selectedCategory, searchQuery]);
 
+  // Cálculo da Paginação (6 por página)
+  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE) || 1;
+
+  const paginatedArticles = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredArticles.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredArticles, currentPage]);
+
   if (!isOpen) return null;
 
   const handleCopyScript = (art: KnowledgeArticle) => {
@@ -98,6 +123,19 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
     setTimeout(() => setCopiedId(null), 2500);
   };
 
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file, 1400, 0.85);
+      setFormImageUrl(compressed);
+      if (showToast) showToast('Imagem anexada com sucesso!', 'success');
+    } catch (err) {
+      console.error('Erro ao processar imagem:', err);
+      if (showToast) showToast('Erro ao carregar imagem.', 'error');
+    }
+  };
+
   const handleOpenNewForm = () => {
     setEditingArticleId(null);
     setFormTitle('');
@@ -105,6 +143,7 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
     setFormContent('');
     setEnableCopyableScript(false);
     setFormCopyableScript('');
+    setFormImageUrl(undefined);
     setFormTagsStr('');
     setFormIsPinned(false);
     setFormIsUrgent(false);
@@ -119,6 +158,7 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
     const hasScript = Boolean(art.copyableScript && art.copyableScript.trim().length > 0);
     setEnableCopyableScript(hasScript);
     setFormCopyableScript(art.copyableScript || '');
+    setFormImageUrl(art.imageUrl || undefined);
     setFormTagsStr(art.tags ? art.tags.join(', ') : '');
     setFormIsPinned(art.isPinned);
     setFormIsUrgent(art.isUrgent);
@@ -145,6 +185,7 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
         category: formCategory,
         content: formContent.trim(),
         copyableScript: finalScript,
+        imageUrl: formImageUrl,
         tags: tags.length > 0 ? tags : undefined,
         isPinned: formIsPinned,
         isUrgent: formIsUrgent,
@@ -177,51 +218,50 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
   };
 
   const handleDeleteArticle = async (artId: string) => {
-    if (!confirm('Deseja realmente remover este artigo da Base de Conhecimento?')) return;
+    if (!confirm('Deseja realmente excluir este artigo da Base de Conhecimento?')) return;
     try {
       await deleteKnowledgeArticle(profile.organizationId || 'sandbox-test', artId);
-      if (showToast) showToast('Artigo removido com sucesso.', 'info');
+      if (showToast) showToast('Artigo excluído.', 'info');
     } catch (err) {
       console.error(err);
-      if (showToast) showToast('Erro ao remover artigo.', 'error');
+      if (showToast) showToast('Erro ao excluir artigo.', 'error');
     }
   };
 
   const getCategoryBadge = (cat: KnowledgeCategory) => {
     switch (cat) {
       case 'script':
-        return <span className="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><ChatTeardropText size={12} /> Script de Negociação</span>;
+        return <span className="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-bold">💬 Script</span>;
       case 'announcement':
-        return <span className="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><Megaphone size={12} /> Comunicado</span>;
+        return <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold">🚨 Comunicado</span>;
       case 'policy':
-        return <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><FileText size={12} /> Política / Regra</span>;
+        return <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">📜 Política</span>;
       case 'faq':
-        return <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><Question size={12} /> FAQ / Dúvida</span>;
+        return <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold">❓ FAQ</span>;
       default:
-        return <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] font-black uppercase tracking-wider">Geral</span>;
+        return <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[10px] font-bold">📋 Geral</span>;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-      <div className={`w-full max-w-4xl max-h-[90vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden animate-scale-up ${
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in">
+      <div className={`w-full max-w-4xl max-h-[90vh] rounded-3xl border shadow-2xl overflow-hidden flex flex-col ${
         isDark ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
-        
         {/* Cabeçalho do Modal */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-slate-950/40 shrink-0">
+        <div className="p-5 border-b border-white/10 flex items-center justify-between bg-slate-950/30 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-inner">
-              <BookOpen size={24} weight="duotone" />
+            <div className="p-2.5 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              <BookOpen size={22} weight="duotone" />
             </div>
             <div>
-              <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
-                <span>Central de Conhecimento & Scripts da Operação</span>
-                <span className="text-xs text-sky-400 px-2 py-0.5 bg-sky-500/10 rounded-full font-bold">WIKI</span>
+              <h2 className="text-base font-black tracking-tight flex items-center gap-2">
+                <span>Base de Conhecimento & Roteiros</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-sky-500/20 text-sky-400 font-extrabold border border-sky-500/30">
+                  {filteredArticles.length} {filteredArticles.length === 1 ? 'item' : 'itens'}
+                </span>
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Consulte orientações técnicas, comunicados oficiais e scripts prontos a qualquer momento.
-              </p>
+              <p className="text-[11px] text-slate-400 font-medium">Consulte guias operacionais, scripts e orientações da equipe.</p>
             </div>
           </div>
 
@@ -230,48 +270,47 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
               <button
                 type="button"
                 onClick={handleOpenNewForm}
-                className="px-3.5 py-2 bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-black rounded-xl text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-md shadow-sky-500/20 transition-all cursor-pointer"
               >
-                <Plus size={16} weight="bold" />
-                <span>Novo Artigo / Script</span>
+                <Plus size={15} weight="bold" />
+                <span className="hidden sm:inline">Novo Conteúdo</span>
               </button>
             )}
 
             <button
-              type="button"
               onClick={onClose}
-              className="p-2.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* Formulário de Criação/Edição (Para Supervisores/Gestores/Monitores) */}
+        {/* Formulário de Criação/Edição */}
         {isFormOpen ? (
           <form onSubmit={handleSaveArticle} className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-sm font-black flex items-center gap-2">
                 <Sparkle size={18} className="text-sky-400" />
-                <span>{editingArticleId ? 'Editar Artigo da Base' : 'Publicar Novo Conteúdo na Base'}</span>
+                <span>{editingArticleId ? 'Editar Artigo / Script' : 'Novo Artigo / Script'}</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="text-xs text-slate-400 hover:text-white underline font-medium cursor-pointer"
+                className="text-xs text-slate-400 hover:text-white font-bold"
               >
-                Cancelar
+                Voltar à lista
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Título do Artigo / Comunicado</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Título</label>
                 <input
                   type="text"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="Ex: Script de negociação para clientes em atraso via PIX"
+                  placeholder="Ex: Script de negociação PIX com Isenção de Juros"
                   className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold outline-none focus:border-sky-500 text-white"
                   required
                 />
@@ -303,6 +342,39 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
                 className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-medium outline-none focus:border-sky-500 text-white custom-scrollbar"
                 required
               />
+            </div>
+
+            {/* Upload Local de Imagem Ilustrativa (Mesmo mecanismo de foto de perfil) */}
+            <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/10 space-y-3">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-sky-400">
+                📷 Imagem Ilustrativa do Artigo (Upload de Arquivo)
+              </label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-bold cursor-pointer transition-all">
+                  <UploadSimple size={15} />
+                  <span>Selecionar Imagem...</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleImageFileChange} 
+                    className="hidden" 
+                  />
+                </label>
+                {formImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setFormImageUrl(undefined)}
+                    className="text-xs text-rose-400 hover:underline font-bold"
+                  >
+                    Remover Imagem
+                  </button>
+                )}
+              </div>
+              {formImageUrl && (
+                <div className="relative rounded-xl overflow-hidden border border-white/10 max-h-40 w-full bg-slate-900 flex items-center justify-center">
+                  <img src={formImageUrl} alt="Pré-visualização" className="max-h-40 object-contain rounded-xl" />
+                </div>
+              )}
             </div>
 
             {/* Checkbox para Ativar / Desativar Bloco de Script Próprio para Copiar */}
@@ -439,7 +511,7 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
               </div>
             </div>
 
-            {/* Lista de Artigos e Scripts */}
+            {/* Lista de Artigos e Scripts (Paginação: 6 por página) */}
             <div className="p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar">
               {filteredArticles.length === 0 ? (
                 <div className="py-16 text-center text-slate-500 space-y-3">
@@ -447,7 +519,7 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
                   <p className="text-sm font-semibold">Nenhum script ou artigo encontrado para os filtros selecionados.</p>
                 </div>
               ) : (
-                filteredArticles.map(art => (
+                paginatedArticles.map(art => (
                   <div 
                     key={art.id}
                     className={`p-5 rounded-2xl border transition-all relative group ${
@@ -501,6 +573,24 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
 
                     <h3 className="text-sm font-black tracking-tight text-white mb-2">{art.title}</h3>
                     <p className="text-xs text-slate-300 leading-relaxed font-medium mb-3 whitespace-pre-wrap">{art.content}</p>
+
+                    {/* Exibição de Imagem Anexada (se houver) */}
+                    {art.imageUrl && (
+                      <div 
+                        onClick={() => setPreviewModalImage(art.imageUrl || null)}
+                        className="mb-3 relative rounded-xl overflow-hidden border border-white/10 group/img cursor-pointer bg-slate-950/50"
+                      >
+                        <img 
+                          src={art.imageUrl} 
+                          alt={art.title} 
+                          className="w-full max-h-56 object-cover group-hover/img:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-bold text-xs">
+                          <Eye size={16} />
+                          <span>Ampliar Imagem</span>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Bloco de Script Prontinho para Copiar em 1 Clique */}
                     {art.copyableScript && (
@@ -564,18 +654,63 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
           </>
         )}
 
-        {/* Rodapé do Modal */}
-        <div className="p-4 border-t border-white/10 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400 shrink-0">
-          <span>Total na base: <strong className="text-white">{articles.length}</strong> artigos/scripts</span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs cursor-pointer transition-colors"
-          >
-            Fechar
-          </button>
+        {/* Rodapé do Modal com Paginação */}
+        <div className="p-4 border-t border-white/10 bg-slate-950/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 shrink-0">
+          <span>
+            Exibindo <strong className="text-white">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> a <strong className="text-white">{Math.min(currentPage * ITEMS_PER_PAGE, filteredArticles.length)}</strong> de <strong className="text-white">{filteredArticles.length}</strong> itens
+          </span>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              >
+                <CaretLeft size={15} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    currentPage === page
+                      ? 'bg-sky-500 text-white shadow-sm'
+                      : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              >
+                <CaretRight size={15} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Modal Lightbox para Ampliar Imagem */}
+      {previewModalImage && (
+        <div className="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setPreviewModalImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <img src={previewModalImage} alt="Visualização expandida" className="max-w-full max-h-[85vh] object-contain rounded-2xl" />
+            <button
+              onClick={() => setPreviewModalImage(null)}
+              className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/80 text-white hover:bg-rose-500 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
