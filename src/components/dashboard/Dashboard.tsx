@@ -28,6 +28,7 @@ import { auth, db } from '../../lib/firebase';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { markStatsStale } from '../../lib/statsCache';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { 
   Agreement, 
   AgreementNote,
@@ -368,6 +369,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     loadManagers();
   }, [profile.role, profile.organizationId]);
+
+  // Monitoramento de Rede e Modo Offline
+  const { isOnline } = useNetworkStatus({
+    onReconnect: () => {
+      showToast('⚡ Conexão restabelecida! Sincronizando dados gravados localmente com a nuvem...', 'success');
+    },
+    onDisconnect: () => {
+      showToast('📡 Sem conexão com a internet. O sistema continuará salvando seus acordos localmente.', 'info');
+    }
+  });
 
   // 1. CARREGAMENTO DOS DADOS DE EQUIPES E MEMBROS VIA CUSTOM HOOK
   const {
@@ -1844,10 +1855,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
         await updateDoc(agreementRef, updatedFields);
         showToast('Acordo atualizado com sucesso!', 'success');
 
-        if (webhookUrl) {
-          const fullAgreement = { ...editingAgreement, ...updatedFields };
-          const eventType = updatedFields.status === AgreementStatus.PAID ? 'agreement.paid' : 'agreement.updated';
-          triggerWebhook(webhookUrl, eventType, fullAgreement, profile.organizationId);
+        if (webhookUrl && isOnline) {
+          try {
+            const fullAgreement = { ...editingAgreement, ...updatedFields };
+            const eventType = updatedFields.status === AgreementStatus.PAID ? 'agreement.paid' : 'agreement.updated';
+            triggerWebhook(webhookUrl, eventType, fullAgreement, profile.organizationId);
+          } catch (err) {
+            console.warn('[Offline Mode] Webhook não disparado por falta de rede:', err);
+          }
         }
       } else {
         const id = doc(collection(db, 'agreements')).id;
@@ -1874,10 +1889,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           });
         }
 
-        if (webhookUrl) {
-          triggerWebhook(webhookUrl, 'agreement.created', agreementData, profile.organizationId);
-          if (agreementData.status === AgreementStatus.PAID) {
-            triggerWebhook(webhookUrl, 'agreement.paid', agreementData, profile.organizationId);
+        if (webhookUrl && isOnline) {
+          try {
+            triggerWebhook(webhookUrl, 'agreement.created', agreementData, profile.organizationId);
+            if (agreementData.status === AgreementStatus.PAID) {
+              triggerWebhook(webhookUrl, 'agreement.paid', agreementData, profile.organizationId);
+            }
+          } catch (err) {
+            console.warn('[Offline Mode] Webhook não disparado por falta de rede:', err);
           }
         }
 
@@ -2451,6 +2470,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onSettingsClick();
               }}
               onNavigateTab={(tab) => setDashboardTab(tab as any)}
+              isOnline={isOnline}
               onLogoClick={() => {
                 if (profile.role === 'backoffice') setDashboardTab('backoffice');
                 else if (profile.role === 'monitor') setDashboardTab('qa');

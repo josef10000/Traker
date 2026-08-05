@@ -18,7 +18,8 @@ import {
   Gear,
   Moon,
   Sun,
-  Bell
+  Bell,
+  WifiSlash
 } from '@phosphor-icons/react';
 import { UserProfile, Team, AppNotification } from '../../types';
 import { Avatar } from '../ui/Avatar';
@@ -62,6 +63,8 @@ interface DashboardHeaderProps {
   onLogoClick?: () => void;
   onViewPayment?: (paymentId: string) => void;
   onNavigateTab?: (tab: string) => void;
+  /** Status da conexão com a internet */
+  isOnline?: boolean;
 }
 
 export const DashboardHeader = ({
@@ -88,7 +91,8 @@ export const DashboardHeader = ({
   supervisors,
   onLogoClick,
   onViewPayment,
-  onNavigateTab
+  onNavigateTab,
+  isOnline = true
 }: DashboardHeaderProps) => {
   const isSandbox = !auth.currentUser || profile.organizationId === 'sandbox-test';
   const [designMode, setDesignMode] = useDesignMode();
@@ -258,6 +262,18 @@ export const DashboardHeader = ({
           </div>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+          {/* Badge de Conexão Offline */}
+          {isOnline === false && (
+            <div 
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-xl text-xs font-bold animate-pulse shrink-0"
+              title="Você está desconectado da internet. Suas ações (acordos, edições, tabulações) estão sendo salvas localmente e serão sincronizadas automaticamente ao reconectar."
+            >
+              <WifiSlash size={16} className="text-amber-400 shrink-0" />
+              <span className="hidden sm:inline">Modo Offline (Gravando Localmente)</span>
+              <span className="sm:hidden">Offline</span>
+            </div>
+          )}
+
           {/* Busca Global de CPF (LGPD) */}
           <form 
             onSubmit={(e) => {
