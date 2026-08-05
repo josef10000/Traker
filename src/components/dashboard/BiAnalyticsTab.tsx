@@ -15,7 +15,7 @@ import {
   AgreementCategory
 } from '../../types';
 import { formatCurrency } from '../../utils/masks';
-import { Fire, CurrencyDollar, Lightning, ShieldWarning, Tag, TrendUp as TrendingUp, FileCsv as FileSpreadsheet, ChartPie, ChartBar } from '@phosphor-icons/react';
+import { Fire, CurrencyDollar, Lightning, ShieldWarning, Tag, TrendUp as TrendingUp, FileCsv as FileSpreadsheet, ChartPie, ChartBar, MagnifyingGlass, X, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { AdvancedInsights } from './AdvancedInsights';
@@ -266,6 +266,12 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
   const [heatmapSelectedReason, setHeatmapSelectedReason] = useState<string>('all');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
+  // Estados para Paginação, Busca e Ordenação da Tabela Preditiva por Operador (15 por pág)
+  const OPERATOR_FORECAST_PER_PAGE = 15;
+  const [operatorForecastPage, setOperatorForecastPage] = useState(1);
+  const [operatorForecastSearch, setOperatorForecastSearch] = useState('');
+  const [operatorForecastSort, setOperatorForecastSort] = useState<'projected_desc' | 'projected_asc' | 'name_asc' | 'effectiveness_desc' | 'current_desc'>('projected_desc');
+
   // Lista de Operadores disponíveis para filtro
   const availableOperators = useMemo(() => {
     const map = new Map<string, string>();
@@ -408,6 +414,40 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     }
     return calculateForecastStats(effectiveAgreements, filteredRecords);
   }, [effectiveStats, effectiveAgreements, filteredRecords]);
+
+  // Reset da página da tabela de operadores se busca ou ordenação alterarem
+  useEffect(() => {
+    setOperatorForecastPage(1);
+  }, [operatorForecastSearch, operatorForecastSort]);
+
+  // Lista filtrada e ordenada da tabela de operadores
+  const processedOperatorForecasts = useMemo(() => {
+    const raw = forecastData.operatorForecasts || [];
+    let list = [...raw];
+
+    if (operatorForecastSearch.trim()) {
+      const q = operatorForecastSearch.toLowerCase().trim();
+      list = list.filter(op => op.operatorName.toLowerCase().includes(q) || op.operatorId.toLowerCase().includes(q));
+    }
+
+    list.sort((a, b) => {
+      if (operatorForecastSort === 'projected_desc') return b.projectedNextMonth - a.projectedNextMonth;
+      if (operatorForecastSort === 'projected_asc') return a.projectedNextMonth - b.projectedNextMonth;
+      if (operatorForecastSort === 'name_asc') return a.operatorName.localeCompare(b.operatorName);
+      if (operatorForecastSort === 'effectiveness_desc') return b.effectivenessRate - a.effectivenessRate;
+      if (operatorForecastSort === 'current_desc') return b.currentMonthPaid - a.currentMonthPaid;
+      return 0;
+    });
+
+    return list;
+  }, [forecastData.operatorForecasts, operatorForecastSearch, operatorForecastSort]);
+
+  const totalOperatorPages = Math.ceil(processedOperatorForecasts.length / OPERATOR_FORECAST_PER_PAGE) || 1;
+
+  const paginatedOperatorForecasts = useMemo(() => {
+    const start = (operatorForecastPage - 1) * OPERATOR_FORECAST_PER_PAGE;
+    return processedOperatorForecasts.slice(start, start + OPERATOR_FORECAST_PER_PAGE);
+  }, [processedOperatorForecasts, operatorForecastPage]);
 
   const biExportColumns: ExcelExportColumn[] = [
     { key: 'id', label: 'ID do Atendimento', type: 'text' },
@@ -1590,18 +1630,52 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
             </div>
           </div>
 
-          {/* 👥 TABELA DE PROJEÇÃO INDIVIDUAL POR MEMBRO DA EQUIPE */}
+          {/* 👥 TABELA DE PROJEÇÃO INDIVIDUAL POR MEMBRO DA EQUIPE (Com Busca, Ordenação e Paginação 15/pág) */}
           {forecastData.operatorForecasts && forecastData.operatorForecasts.length > 0 && (
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h4 className="text-sm font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
                     <span>👥 Projeção Preditiva Individual por Membro da Equipe</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-400 font-bold border border-purple-500/30">
-                      {forecastData.operatorForecasts.length} {forecastData.operatorForecasts.length === 1 ? 'operador' : 'operadores'}
+                      {processedOperatorForecasts.length} {processedOperatorForecasts.length === 1 ? 'operador' : 'operadores'}
                     </span>
                   </h4>
                   <p className="text-xs text-slate-400 mt-0.5">Estimativa mensal e semana a semana calculada pelo run-rate, ticket médio e efetividade individual.</p>
+                </div>
+
+                {/* Barra de Filtros: Busca por nome + Ordenação */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative w-full sm:w-60">
+                    <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={operatorForecastSearch}
+                      onChange={(e) => setOperatorForecastSearch(e.target.value)}
+                      placeholder="Buscar membro da equipe..."
+                      className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-semibold text-white outline-none focus:border-cyan-500"
+                    />
+                    {operatorForecastSearch && (
+                      <button
+                        onClick={() => setOperatorForecastSearch('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+
+                  <select
+                    value={operatorForecastSort}
+                    onChange={(e) => setOperatorForecastSort(e.target.value as any)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold text-slate-200 outline-none focus:border-cyan-500 cursor-pointer"
+                  >
+                    <option value="projected_desc">📈 Maior Projeção (N+1)</option>
+                    <option value="projected_asc">📉 Menor Projeção</option>
+                    <option value="name_asc">🔤 Nome (A-Z)</option>
+                    <option value="effectiveness_desc">🎯 Maior Efetividade (%)</option>
+                    <option value="current_desc">💰 Maior Realizado Atual</option>
+                  </select>
                 </div>
               </div>
 
@@ -1621,48 +1695,98 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {forecastData.operatorForecasts.map((op) => (
-                      <tr key={op.operatorId} className="hover:bg-white/5 transition-colors font-medium">
-                        <td className="p-3">
-                          <div className="font-bold text-white text-xs">{op.operatorName}</div>
-                          <div className="text-[10px] text-slate-400">TM: {formatCurrency(op.ticketAverage)}</div>
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
-                            op.effectivenessRate >= 75 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                            op.effectivenessRate >= 50 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                            'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                          }`}>
-                            {op.effectivenessRate}%
-                          </span>
-                        </td>
-                        <td className="p-3 text-right font-bold text-slate-300">
-                          {formatCurrency(op.currentMonthPaid)}
-                        </td>
-                        <td className="p-3 text-right font-black text-cyan-400">
-                          {formatCurrency(op.projectedNextMonth)}
-                        </td>
-                        <td className="p-3 text-right font-mono text-slate-300">
-                          {formatCurrency(op.weeklyBreakdown[0]?.projectedValue || 0)}
-                        </td>
-                        <td className="p-3 text-right font-mono text-slate-300">
-                          {formatCurrency(op.weeklyBreakdown[1]?.projectedValue || 0)}
-                        </td>
-                        <td className="p-3 text-right font-mono text-slate-300">
-                          {formatCurrency(op.weeklyBreakdown[2]?.projectedValue || 0)}
-                        </td>
-                        <td className="p-3 text-right font-mono text-slate-300">
-                          {formatCurrency(op.weeklyBreakdown[3]?.projectedValue || 0)}
-                        </td>
-                        <td className="p-3 text-center">
-                          {op.trend === 'up' && <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px]">🟢 Subindo</span>}
-                          {op.trend === 'stable' && <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-400 font-extrabold text-[10px]">🔵 Estável</span>}
-                          {op.trend === 'down' && <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 font-extrabold text-[10px]">🔴 Atenção</span>}
+                    {paginatedOperatorForecasts.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="p-8 text-center text-slate-500 font-semibold">
+                          Nenhum membro da equipe encontrado para o filtro "{operatorForecastSearch}".
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      paginatedOperatorForecasts.map((op) => (
+                        <tr key={op.operatorId} className="hover:bg-white/5 transition-colors font-medium">
+                          <td className="p-3">
+                            <div className="font-bold text-white text-xs">{op.operatorName}</div>
+                            <div className="text-[10px] text-slate-400">TM: {formatCurrency(op.ticketAverage)}</div>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                              op.effectivenessRate >= 75 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                              op.effectivenessRate >= 50 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                              'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            }`}>
+                              {op.effectivenessRate}%
+                            </span>
+                          </td>
+                          <td className="p-3 text-right font-bold text-slate-300">
+                            {formatCurrency(op.currentMonthPaid)}
+                          </td>
+                          <td className="p-3 text-right font-black text-cyan-400">
+                            {formatCurrency(op.projectedNextMonth)}
+                          </td>
+                          <td className="p-3 text-right font-mono text-slate-300">
+                            {formatCurrency(op.weeklyBreakdown[0]?.projectedValue || 0)}
+                          </td>
+                          <td className="p-3 text-right font-mono text-slate-300">
+                            {formatCurrency(op.weeklyBreakdown[1]?.projectedValue || 0)}
+                          </td>
+                          <td className="p-3 text-right font-mono text-slate-300">
+                            {formatCurrency(op.weeklyBreakdown[2]?.projectedValue || 0)}
+                          </td>
+                          <td className="p-3 text-right font-mono text-slate-300">
+                            {formatCurrency(op.weeklyBreakdown[3]?.projectedValue || 0)}
+                          </td>
+                          <td className="p-3 text-center">
+                            {op.trend === 'up' && <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px]">🟢 Subindo</span>}
+                            {op.trend === 'stable' && <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-400 font-extrabold text-[10px]">🔵 Estável</span>}
+                            {op.trend === 'down' && <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 font-extrabold text-[10px]">🔴 Atenção</span>}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Rodapé da Tabela com Paginação (15 itens por página) */}
+              <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+                <span>
+                  Exibindo <strong className="text-white">{(operatorForecastPage - 1) * OPERATOR_FORECAST_PER_PAGE + 1}</strong> a <strong className="text-white">{Math.min(operatorForecastPage * OPERATOR_FORECAST_PER_PAGE, processedOperatorForecasts.length)}</strong> de <strong className="text-white">{processedOperatorForecasts.length}</strong> membros da equipe
+                </span>
+
+                {totalOperatorPages > 1 && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={operatorForecastPage === 1}
+                      onClick={() => setOperatorForecastPage(prev => Math.max(prev - 1, 1))}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    >
+                      <CaretLeft size={15} />
+                    </button>
+                    {Array.from({ length: totalOperatorPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setOperatorForecastPage(page)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          operatorForecastPage === page
+                            ? 'bg-cyan-500 text-white shadow-sm'
+                            : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={operatorForecastPage === totalOperatorPages}
+                      onClick={() => setOperatorForecastPage(prev => Math.min(prev + 1, totalOperatorPages))}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    >
+                      <CaretRight size={15} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
