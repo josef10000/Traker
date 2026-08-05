@@ -317,20 +317,20 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
                   }}
                   className="w-4 h-4 rounded accent-sky-500"
                 />
-                <span>💬 Incluir Bloco de Script de Negociação Próprio para Copiar em 1 Clique</span>
+                <span>💬 Incluir Bloco de Roteiro Sugerido de Atendimento</span>
               </label>
 
               {enableCopyableScript && (
                 <div className="animate-fadeIn space-y-1">
                   <label className="block text-[10px] font-black uppercase tracking-wider text-sky-300">
-                    Texto do Script Próprio (Pronto para o operador copiar)
+                    Texto do Roteiro Sugerido (Fácil leitura e cópia para o operador)
                   </label>
                   <textarea
                     rows={3}
                     value={formCopyableScript}
                     onChange={(e) => setFormCopyableScript(e.target.value)}
-                    placeholder="Mensagem exata de negociação pronta para o operador copiar em 1 clique..."
-                    className="w-full p-3 rounded-xl bg-slate-950 border border-sky-500/30 text-xs font-mono text-sky-200 outline-none focus:border-sky-400 custom-scrollbar"
+                    placeholder="Mensagem exata de negociação em formato de roteiro limpo..."
+                    className="w-full p-3.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-sans text-slate-200 outline-none focus:border-sky-500 leading-relaxed custom-scrollbar"
                   />
                 </div>
               )}
@@ -504,32 +504,45 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
 
                     {/* Bloco de Script Prontinho para Copiar em 1 Clique */}
                     {art.copyableScript && (
-                      <div className="p-3.5 rounded-xl bg-slate-900 border border-sky-500/20 font-mono text-xs text-sky-200 relative group/script">
-                        <div className="flex items-center justify-between mb-1.5 text-[10px] text-slate-400 font-sans font-bold uppercase tracking-wider border-b border-white/5 pb-1">
-                          <span>📋 Script Próprio para Envio / Leitura:</span>
+                      <div className={`p-4 rounded-xl border space-y-2.5 transition-colors ${
+                        isDark 
+                          ? 'bg-slate-950/70 border-white/10 text-slate-200 shadow-sm' 
+                          : 'bg-slate-50 border-slate-200 text-slate-800 shadow-sm'
+                      }`}>
+                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="p-1 rounded-md bg-sky-500/10 text-sky-400">
+                              <ChatTeardropText size={15} weight="duotone" />
+                            </span>
+                            <span className="text-xs font-bold tracking-tight text-sky-400">
+                              Roteiro Sugerido de Atendimento
+                            </span>
+                          </div>
                           <button
                             type="button"
                             onClick={() => handleCopyScript(art)}
-                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-black transition-all cursor-pointer ${
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                               copiedId === art.id
                                 ? 'bg-emerald-500 text-white shadow-md'
-                                : 'bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-white border border-sky-500/30'
+                                : 'bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white border border-sky-500/20'
                             }`}
                           >
                             {copiedId === art.id ? (
                               <>
-                                <Check size={12} weight="bold" />
+                                <Check size={13} weight="bold" />
                                 <span>Copiado! ✓</span>
                               </>
                             ) : (
                               <>
-                                <Copy size={12} />
-                                <span>Copiar Script</span>
+                                <Copy size={13} />
+                                <span>Copiar Roteiro</span>
                               </>
                             )}
                           </button>
                         </div>
-                        <p className="whitespace-pre-wrap leading-relaxed select-all">{art.copyableScript}</p>
+                        <div className="font-sans text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap select-all font-medium opacity-95">
+                          {art.copyableScript}
+                        </div>
                       </div>
                     )}
 
