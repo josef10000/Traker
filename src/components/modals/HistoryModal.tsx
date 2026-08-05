@@ -134,84 +134,87 @@ export const HistoryModal = ({
             </div>
           ) : (
             <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
-              {history.map((item) => (
-                <div key={item.id} className="relative group">
-                  <div className={`absolute -left-[29px] top-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
-                    theme === 'dark' ? 'bg-slate-900 border-slate-700 group-hover:border-sky-400' : 'bg-white border-slate-300 group-hover:border-primary'
-                  }`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${
-                      item.status === AgreementStatus.PAID ? 'bg-emerald-400' : 'bg-amber-400'
-                    }`} />
-                  </div>
+              {history.map((item) => {
+                const itemAny = item as any;
+                return (
+                  <div key={item.id} className="relative group">
+                    <div className={`absolute -left-[29px] top-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      theme === 'dark' ? 'bg-slate-900 border-slate-700 group-hover:border-sky-400' : 'bg-white border-slate-300 group-hover:border-primary'
+                    }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        item.status === AgreementStatus.PAID ? 'bg-emerald-400' : 'bg-amber-400'
+                      }`} />
+                    </div>
 
-                  <div className={`p-5 rounded-2xl border transition-all ${
-                    theme === 'dark' 
-                      ? 'bg-slate-900/60 border-white/5 hover:border-white/10' 
-                      : 'bg-slate-50/80 border-slate-200/60 hover:border-slate-300'
-                  }`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                            {item.type === AgreementType.COMMERCIAL ? 'Comercial' : 'Recuperação'}
+                    <div className={`p-5 rounded-2xl border transition-all ${
+                      theme === 'dark' 
+                        ? 'bg-slate-900/60 border-white/5 hover:border-white/10' 
+                        : 'bg-slate-50/80 border-slate-200/60 hover:border-slate-300'
+                    }`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                              {item.type === AgreementType.QUITACAO ? 'Quitação' : 'Acordo'}
+                            </span>
+                            {item.origin && <OriginBadge origin={item.origin} />}
+                          </div>
+                          <span className={`text-[10px] font-mono block mt-0.5 ${
+                            theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                          }`}>
+                            {item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data n/a'}
                           </span>
-                          {item.origin && <OriginBadge origin={item.origin} />}
                         </div>
-                        <span className={`text-[10px] font-mono block mt-0.5 ${
-                          theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          item.status === AgreementStatus.PAID 
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}>
-                          {item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data n/a'}
+                          {item.status === AgreementStatus.PAID ? 'Pago' : 'Pendente'}
                         </span>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                        item.status === AgreementStatus.PAID 
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                      }`}>
-                        {item.status === AgreementStatus.PAID ? 'Pago' : 'Pendente'}
-                      </span>
-                    </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/5 text-xs">
-                      <div>
-                        <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Valor Negociado</span>
-                        <span className={`font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-                          {formatCurrency(item.value || 0)}
-                        </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/5 text-xs">
+                        <div>
+                          <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Valor Negociado</span>
+                          <span className={`font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                            {formatCurrency(item.value || 0)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Operador</span>
+                          <span className={`font-medium truncate block ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                            {itemAny.operatorName || 'Desconhecido'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Canal</span>
+                          <span className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                            {itemAny.channel || 'N/A'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Parcelas</span>
+                          <span className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                            {itemAny.installments ? `${itemAny.installments}x` : 'À vista'}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Operador</span>
-                        <span className={`font-medium truncate block ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                          {item.operatorName || 'Desconhecido'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Canal</span>
-                        <span className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                          {item.channel || 'N/A'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Parcelas</span>
-                        <span className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                          {item.installments ? `${item.installments}x` : 'À vista'}
-                        </span>
-                      </div>
-                    </div>
 
-                    {item.notes && (
-                      <div className={`mt-3 p-3 rounded-xl text-xs border ${
-                        theme === 'dark' 
-                          ? 'bg-slate-950/40 border-white/5 text-slate-400' 
-                          : 'bg-white border-slate-200/60 text-slate-600'
-                      }`}>
-                        <span className="font-bold block text-[10px] uppercase text-slate-500 mb-0.5">Observações:</span>
-                        {item.notes}
-                      </div>
-                    )}
+                      {item.notes && (
+                        <div className={`mt-3 p-3 rounded-xl text-xs border ${
+                          theme === 'dark' 
+                            ? 'bg-slate-950/40 border-white/5 text-slate-400' 
+                            : 'bg-white border-slate-200/60 text-slate-600'
+                        }`}>
+                          <span className="font-bold block text-[10px] uppercase text-slate-500 mb-0.5">Observações:</span>
+                          {item.notes}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -246,8 +249,7 @@ export const HistoryModal = ({
         title="Anonimizar Dados do Cliente?"
         message={`Esta ação irá rasurar permanentemente o CPF (${clientCpf ? maskCPF(clientCpf) : ''}) e dados pessoais vinculados a este histórico em conformidade com a LGPD. Esta ação não poderá ser desfeita.`}
         confirmText="Sim, Anonimizar"
-        confirmVariant="danger"
-        theme={theme as any}
+        type="danger"
       />
     </div>
   );
