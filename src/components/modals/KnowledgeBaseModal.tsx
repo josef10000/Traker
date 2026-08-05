@@ -28,7 +28,7 @@ import {
   saveKnowledgeArticle, 
   deleteKnowledgeArticle 
 } from '../../lib/knowledgeBaseService';
-import { compressImage } from '../../lib/imageUpload';
+import { uploadImage } from '../../lib/imageUpload';
 import { notifyAnnouncementPublished } from '../../lib/notifications';
 import { auth } from '../../lib/firebase';
 
@@ -127,8 +127,8 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const compressed = await compressImage(file, 1400, 0.85);
-      setFormImageUrl(compressed);
+      const uploadedUrl = await uploadImage(file, { folder: 'kb-articles' });
+      setFormImageUrl(uploadedUrl);
       if (showToast) showToast('Imagem anexada com sucesso!', 'success');
     } catch (err) {
       console.error('Erro ao processar imagem:', err);
