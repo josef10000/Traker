@@ -125,7 +125,7 @@ export const StatusPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
-                Tracker SaaS Status
+                Tracker Status
               </h1>
               <p className="text-xs text-slate-400">
                 Monitoramento de Infraestrutura & Governança SonarCloud
@@ -354,7 +354,7 @@ export const StatusPage: React.FC = () => {
 
       {/* Footer Corporativo */}
       <footer className="border-t border-white/10 bg-slate-950 py-6 text-center text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} Tracker SaaS. Todos os direitos reservados. Telemetria contínua por Vercel Edge, Firestore & SonarCloud API.</p>
+        <p>© {new Date().getFullYear()} Tracker. Todos os direitos reservados. Telemetria contínua por Vercel Edge, Firestore, Grafana Cloud & SonarCloud API.</p>
       </footer>
     </div>
   );
