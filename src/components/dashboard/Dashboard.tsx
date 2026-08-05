@@ -4390,7 +4390,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         profile={profile}
-        onOpenReconciliation={() => setIsReconciliationModalOpen(true)}
+        onOpenReconciliation={(profile.role === 'supervisor' || profile.role === 'member') ? () => setIsReconciliationModalOpen(true) : undefined}
         onOpenProfile={() => {
           setIsSettingsModalOpen(false);
           onSettingsClick();
