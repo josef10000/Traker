@@ -65,8 +65,8 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
         'comp-4': 80
       },
       feedback: 'Cliente relatou problemas de saúde e buscava uma renegociação antecipada. Ótima postura empática do operador.',
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      recoveredAmount: 101286.00,
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString      recoveredAmount: 101286.00,
+      delayProfileLabel: 'Perfil de atraso',
       delayProfile: '2 a 30 dias',
       clientReason: 'Cliente relatou problemas de saúde e buscava uma renegociação antecipada.',
       objections: 'Dificuldade financeira associada ao quadro de saúde informado.',
@@ -95,7 +95,8 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
       feedback: 'Atendimento exemplar com abordagem consultiva e respeito estrito às regras da régua de cobrança.',
       createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       recoveredAmount: 48500.00,
-      delayProfile: '31 a 60 dias',
+      delayProfileLabel: 'Fase da Carteira',
+      delayProfile: '31 a 60 dias (Preventivo)',le: '31 a 60 dias',
       clientReason: 'Atraso decorrente de desorganização financeira temporária na empresa do devedor.',
       objections: 'Solicitava desconto expressivo de juros sem pagamento imediato de entrada.',
       improvementOpportunities: [

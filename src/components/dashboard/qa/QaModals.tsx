@@ -32,6 +32,7 @@ interface QaModalsProps {
     pdiActionPlan?: string;
     pdiDueDate?: string;
     recoveredAmount?: number;
+    delayProfileLabel?: string;
     delayProfile?: string;
     clientReason?: string;
     objections?: string;
@@ -96,8 +97,9 @@ export const QaModals: React.FC<QaModalsProps> = ({
   const [pdiActionPlan, setPdiActionPlan] = useState('');
   const [pdiDueDate, setPdiDueDate] = useState('');
 
-  // Campos Estruturados da Ficha QA
+  // Campos Estruturados da Ficha QA (Totalmente Editáveis)
   const [evalRecoveredAmount, setEvalRecoveredAmount] = useState<string>('');
+  const [evalDelayProfileLabel, setEvalDelayProfileLabel] = useState<string>('Perfil de atraso');
   const [evalDelayProfile, setEvalDelayProfile] = useState<string>('2 a 30 dias');
   const [evalClientReason, setEvalClientReason] = useState<string>('');
   const [evalObjections, setEvalObjections] = useState<string>('');
@@ -152,6 +154,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
       setPdiActionPlan('');
       setPdiDueDate('');
       setEvalRecoveredAmount('');
+      setEvalDelayProfileLabel('Perfil de atraso');
       setEvalDelayProfile('2 a 30 dias');
       setEvalClientReason('');
       setEvalObjections('');
@@ -286,6 +289,7 @@ export const QaModals: React.FC<QaModalsProps> = ({
                 pdiActionPlan: suggestPdi ? pdiActionPlan : undefined,
                 pdiDueDate: suggestPdi ? pdiDueDate : undefined,
                 recoveredAmount: evalRecoveredAmount ? parseFloat(evalRecoveredAmount) : undefined,
+                delayProfileLabel: evalDelayProfileLabel || undefined,
                 delayProfile: evalDelayProfile || undefined,
                 clientReason: evalClientReason || undefined,
                 objections: evalObjections || undefined,
@@ -435,7 +439,8 @@ export const QaModals: React.FC<QaModalsProps> = ({
                   <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Diagnóstico da Ficha de Monitoria (Campos Estruturados)</h4>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Valor Recuperado & Categoria Customizável */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Valor Recuperado */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase">Valor Recuperado R$ (Opcional)</label>
@@ -451,20 +456,31 @@ export const QaModals: React.FC<QaModalsProps> = ({
                     />
                   </div>
 
-                  {/* Perfil de Atraso */}
+                  {/* Rótulo da Categoria (Ex: Perfil de atraso) */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Perfil de Atraso do Devedor</label>
-                    <CustomSelect
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Título da Categoria (Editável)</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Perfil de atraso"
+                      value={evalDelayProfileLabel}
+                      onChange={(e) => setEvalDelayProfileLabel(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl border outline-none text-xs transition-all ${
+                        theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-900'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Conteúdo / Valor (Ex: 2 a 30 dias) */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Conteúdo / Descrição (Editável)</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: 2 a 30 dias ou Cartão Consignado"
                       value={evalDelayProfile}
-                      onChange={(val) => setEvalDelayProfile(val)}
-                      placeholder="Selecione o perfil..."
-                      options={[
-                        { value: '0 a 1 dia', label: '0 a 1 dia (Preventivo)' },
-                        { value: '2 a 30 dias', label: '2 a 30 dias (Fase Inicial)' },
-                        { value: '31 a 60 dias', label: '31 a 60 dias (Fase Intermediária)' },
-                        { value: '61 a 90 dias', label: '61 a 90 dias (Fase Crítica)' },
-                        { value: '+90 dias', label: '+90 dias (Cobrança Ajuizada/WO)' }
-                      ]}
+                      onChange={(e) => setEvalDelayProfile(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl border outline-none text-xs transition-all ${
+                        theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-900'
+                      }`}
                     />
                   </div>
                 </div>

@@ -129,11 +129,11 @@ export const QaEvaluationCardModal: React.FC<QaEvaluationCardModalProps> = ({
               {/* Seções da Ficha de Diagnóstico */}
               <div className="space-y-4 text-sm text-slate-300 leading-relaxed">
                 
-                {/* Perfil de atraso */}
+                {/* Perfil de atraso / Categoria Editável */}
                 {evaluation.delayProfile && (
                   <div className="space-y-1">
                     <p className="font-bold text-slate-100">
-                      Perfil de atraso: <span className="font-normal text-slate-300">{evaluation.delayProfile}</span>
+                      {evaluation.delayProfileLabel || 'Perfil de atraso'}: <span className="font-normal text-slate-300">{evaluation.delayProfile}</span>
                     </p>
                   </div>
                 )}

@@ -325,7 +325,8 @@ export interface QaEvaluation {
 
   // Ficha de Diagnóstico da Monitoria de Qualidade
   recoveredAmount?: number;            // Valor Recuperado em R$
-  delayProfile?: string;               // Perfil de Atraso (ex: "2 a 30 dias")
+  delayProfileLabel?: string;          // Rótulo customizado do campo (padrão: "Perfil de atraso")
+  delayProfile?: string;               // Conteúdo customizado do campo (ex: "2 a 30 dias", "Preventivo", etc.)
   clientReason?: string;               // Motivo apresentado pelo cliente
   objections?: string;                 // Objeções para não negociar
   improvementOpportunities?: string[]; // Oportunidades de melhoria (tópicos)
