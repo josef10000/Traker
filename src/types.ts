@@ -175,6 +175,7 @@ export interface Agreement {
   discountReason?: DiscountReason;
 
   operatorId: string; // Quem registrou
+  operatorName?: string; // Nome do operador
   teamId: string;     // A qual equipe pertence
   organizationId: string; // Vínculo com a empresa
   createdAt: string;
