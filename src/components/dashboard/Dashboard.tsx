@@ -2380,6 +2380,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         displayName: m?.displayName || 'Sem nome',
         email: m?.email || '',
         role: m?.role || 'member',
+        jobTitle: m?.jobTitle || '',
         totalProjected,
         totalPaid,
         countTotal,
@@ -3741,45 +3742,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 </div>
 
                                 <div className="max-h-[220px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                                  {supervisors.map(sup => (
-                                    <div key={sup.uid} className="flex items-center justify-between p-2.5 bg-slate-900/40 border border-white/5 rounded-xl text-xs">
-                                      <div>
-                                        <span className="font-bold text-white block">{sup.displayName || sup.email.split('@')[0]}</span>
-                                        <span className="text-[9px] text-purple-400 uppercase tracking-wider font-extrabold">Supervisor</span>
-                                      </div>
-                                      <button
-                                        onClick={() => {
-                                          const name = sup.displayName || sup.email.split('@')[0];
-                                          setConfirmModalState({
-                                            isOpen: true,
-                                            title: 'Desligar Colaborador',
-                                            message: `Tem certeza que deseja desligar o Supervisor ${sup.displayName || sup.email}?`,
-                                            onConfirm: () => handleDismissUser(sup.uid, name, 'supervisor')
-                                          });
-                                        }}
-                                        className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg text-[9px] uppercase tracking-wider font-extrabold border border-rose-500/20 transition-all cursor-pointer"
-                                      >
-                                        Desligar
-                                      </button>
-                                    </div>
-                                  ))}
-
-                                  {filteredTeamMembers.filter(m => m.role === 'member').map(op => {
-                                    const team = managedTeamsData.find(t => t.id === op.teamId);
+                                  {supervisors.filter(Boolean).map((sup, sIdx) => {
+                                    const supName = sup.displayName || (sup.email ? sup.email.split('@')[0] : 'Supervisor');
                                     return (
-                                      <div key={op.uid} className="flex items-center justify-between p-2.5 bg-slate-900/40 border border-white/5 rounded-xl text-xs">
+                                      <div key={sup.uid || `sup-${sIdx}`} className="flex items-center justify-between p-2.5 bg-slate-900/40 border border-white/5 rounded-xl text-xs">
                                         <div>
-                                          <span className="font-bold text-white block">{op.displayName || op.email.split('@')[0]}</span>
+                                          <span className="font-bold text-white block">{supName}</span>
+                                          <span className="text-[9px] text-purple-400 uppercase tracking-wider font-extrabold">Supervisor</span>
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            setConfirmModalState({
+                                              isOpen: true,
+                                              title: 'Desligar Colaborador',
+                                              message: `Tem certeza que deseja desligar o Supervisor ${supName}?`,
+                                              onConfirm: () => handleDismissUser(sup.uid, supName, 'supervisor')
+                                            });
+                                          }}
+                                          className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg text-[9px] uppercase tracking-wider font-extrabold border border-rose-500/20 transition-all cursor-pointer"
+                                        >
+                                          Desligar
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+
+                                  {filteredTeamMembers.filter(m => m && m.role === 'member').map((op, oIdx) => {
+                                    const team = managedTeamsData.find(t => t.id === op.teamId);
+                                    const opName = op.displayName || (op.email ? op.email.split('@')[0] : 'Operador');
+                                    return (
+                                      <div key={op.uid || `op-${oIdx}`} className="flex items-center justify-between p-2.5 bg-slate-900/40 border border-white/5 rounded-xl text-xs">
+                                        <div>
+                                          <span className="font-bold text-white block">{opName}</span>
                                           <span className="text-[9px] text-slate-500">Operador • Equipe: {team?.name || 'Nenhuma'}</span>
                                         </div>
                                         <button
                                           onClick={() => {
-                                            const name = op.displayName || op.email.split('@')[0];
                                             setConfirmModalState({
                                               isOpen: true,
                                               title: 'Desligar Colaborador',
-                                              message: `Tem certeza que deseja desligar o Operador ${op.displayName || op.email}?`,
-                                              onConfirm: () => handleDismissUser(op.uid, name, 'member')
+                                              message: `Tem certeza que deseja desligar o Operador ${opName}?`,
+                                              onConfirm: () => handleDismissUser(op.uid, opName, 'member')
                                             });
                                           }}
                                           className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg text-[9px] uppercase tracking-wider font-extrabold border border-rose-500/20 transition-all cursor-pointer"
@@ -3957,7 +3960,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </thead>
               <tbody>
                 {printTeamPerformance.map((item, index) => (
-                  <tr key={item.id} className="border-b border-slate-200">
+                  <tr key={item.id || `team-perf-${index}`} className="border-b border-slate-200">
                     <td className="px-4 py-2 font-bold">#{index + 1}</td>
                     <td className="px-4 py-2 font-semibold">{item.name}</td>
                     <td className="px-4 py-2 text-right">{formatCurrency(item.monthlyGoal)}</td>
@@ -3991,7 +3994,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </thead>
               <tbody>
                 {printOperatorRanking.map((item, index) => (
-                  <tr key={item.uid} className="border-b border-slate-200">
+                  <tr key={item.uid || `op-rank-${index}`} className="border-b border-slate-200">
                     <td className="px-4 py-2 font-bold">#{index + 1}</td>
                     <td className="px-4 py-2 font-semibold">
                       {item.displayName} {item.jobTitle && <span className="text-[10px] text-slate-500 font-normal">({item.jobTitle})</span>}

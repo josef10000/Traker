@@ -52,9 +52,10 @@ export const TeamSelectorModal = ({
         exit={{ opacity: 0 }}
         role="button"
         tabIndex={0}
+        aria-label="Fechar modal de seleção de equipe"
         onClick={onClose}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === 'Escape') {
+          if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
             onClose();
           }
         }}
@@ -75,6 +76,7 @@ export const TeamSelectorModal = ({
           <button 
             type="button"
             onClick={onClose}
+            aria-label="Fechar modal"
             className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
           >
             <X size={20} />
@@ -117,25 +119,26 @@ export const TeamSelectorModal = ({
           {profileRole === 'coordinator' ? (
             <div className="space-y-4 pt-2">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Estrutura de Gerentes</h3>
-              {managers.map(manager => {
-                const isManagerActive = selectedTeamId === `manager-${manager.uid}`;
-                const isExpanded = !!expandedManagers[manager.uid];
-                const managerSupervisors = supervisors.filter(s => s && s.managerId === manager.uid);
+              {managers.filter(Boolean).map((manager, idx) => {
+                const managerUid = manager?.uid || `manager-idx-${idx}`;
+                const isManagerActive = selectedTeamId === `manager-${managerUid}`;
+                const isExpanded = !!expandedManagers[managerUid];
+                const managerSupervisors = supervisors.filter(s => s && s.managerId === managerUid);
 
                 return (
-                  <div key={manager.uid} className="space-y-2 p-3 bg-white/5 border border-white/5 rounded-3xl">
+                  <div key={managerUid} className="space-y-2 p-3 bg-white/5 border border-white/5 rounded-3xl">
                     <div className="flex items-center justify-between gap-2">
                       <button
                         type="button"
-                        onClick={() => toggleManager(manager.uid)}
+                        onClick={() => toggleManager(managerUid)}
                         className="flex items-center gap-2 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-1 text-left"
                       >
                         {isExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
                         <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-purple-400 font-bold text-xs">
-                          {getInitial(manager.displayName, 'G')}
+                          {getInitial(manager?.displayName, 'G')}
                         </div>
                         <div>
-                          <span className="font-bold text-sm block leading-tight text-white">{manager.displayName || (manager.email ? manager.email.split('@')[0] : 'Gerente')}</span>
+                          <span className="font-bold text-sm block leading-tight text-white">{manager?.displayName || (manager?.email ? manager.email.split('@')[0] : 'Gerente')}</span>
                           <span className="text-[9px] text-slate-500">Gerente</span>
                         </div>
                       </button>
@@ -143,7 +146,7 @@ export const TeamSelectorModal = ({
                       <button
                         type="button"
                         onClick={() => {
-                          onSelectTeam(`manager-${manager.uid}`);
+                          onSelectTeam(`manager-${managerUid}`);
                           onClose();
                         }}
                         className={`px-3 py-1.5 rounded-xl border text-[9px] uppercase tracking-wider font-extrabold transition-all cursor-pointer ${
@@ -158,25 +161,26 @@ export const TeamSelectorModal = ({
 
                     {isExpanded && (
                       <div className="pl-4 border-l border-white/5 space-y-3 pt-2">
-                        {managerSupervisors.map(sup => {
-                          const isSupActive = selectedTeamId === `supervisor-${sup.uid}`;
-                          const isSupExpanded = !!expandedSupervisors[sup.uid];
-                          const supervisorTeams = teams.filter(t => t && t.supervisorId === sup.uid);
+                        {managerSupervisors.filter(Boolean).map((sup, sIdx) => {
+                          const supUid = sup?.uid || `sup-idx-${sIdx}`;
+                          const isSupActive = selectedTeamId === `supervisor-${supUid}`;
+                          const isSupExpanded = !!expandedSupervisors[supUid];
+                          const supervisorTeams = teams.filter(t => t && t.supervisorId === supUid);
 
                           return (
-                            <div key={sup.uid} className="space-y-2 p-2 bg-slate-950/40 rounded-2xl">
+                            <div key={supUid} className="space-y-2 p-2 bg-slate-950/40 rounded-2xl">
                               <div className="flex items-center justify-between gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => toggleSupervisor(sup.uid)}
+                                  onClick={() => toggleSupervisor(supUid)}
                                   className="flex items-center gap-2 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-1 text-left"
                                 >
                                   {isSupExpanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
                                   <div className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center text-sky-400 font-bold text-xs">
-                                    {getInitial(sup.displayName, 'S')}
+                                    {getInitial(sup?.displayName, 'S')}
                                   </div>
                                   <div>
-                                    <span className="font-bold text-xs block leading-tight text-slate-200">{sup.displayName || (sup.email ? sup.email.split('@')[0] : 'Supervisor')}</span>
+                                    <span className="font-bold text-xs block leading-tight text-slate-200">{sup?.displayName || (sup?.email ? sup.email.split('@')[0] : 'Supervisor')}</span>
                                     <span className="text-[8px] text-slate-500">Supervisor</span>
                                   </div>
                                 </button>
@@ -184,13 +188,13 @@ export const TeamSelectorModal = ({
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    onSelectTeam(`supervisor-${sup.uid}`);
+                                    onSelectTeam(`supervisor-${supUid}`);
                                     onClose();
                                   }}
                                   className={`px-2 py-1 rounded-lg border text-[8px] uppercase tracking-wider font-extrabold transition-all cursor-pointer ${
                                     isSupActive
                                       ? 'bg-sky-500 text-white border-sky-500 shadow-md shadow-sky-500/20'
-                                      : 'bg-slate-955/60 border-transparent text-slate-500 hover:bg-slate-950 hover:text-slate-300'
+                                      : 'bg-slate-950/60 border-transparent text-slate-500 hover:bg-slate-950 hover:text-slate-300'
                                   }`}
                                 >
                                   Filtrar
@@ -241,16 +245,17 @@ export const TeamSelectorModal = ({
             /* Listagem de Equipes por Supervisor (se for Gerente) */
             <div className="space-y-4 pt-2">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Filtrar por Supervisor</h3>
-              {supervisors.map(sup => {
-                const isSupActive = selectedTeamId === `supervisor-${sup.uid}`;
-                const supervisorTeams = teams.filter(t => t && t.supervisorId === sup.uid);
+              {supervisors.filter(Boolean).map((sup, supIdx) => {
+                const supUid = sup?.uid || `sup-mgr-idx-${supIdx}`;
+                const isSupActive = selectedTeamId === `supervisor-${supUid}`;
+                const supervisorTeams = teams.filter(t => t && t.supervisorId === supUid);
                 
                 return (
-                  <div key={sup.uid} className="space-y-2 p-3 bg-white/5 border border-white/5 rounded-3xl">
+                  <div key={supUid} className="space-y-2 p-3 bg-white/5 border border-white/5 rounded-3xl">
                     <button
                       type="button"
                       onClick={() => {
-                        onSelectTeam(`supervisor-${sup.uid}`);
+                        onSelectTeam(`supervisor-${supUid}`);
                         onClose();
                       }}
                       className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left group cursor-pointer ${
@@ -261,10 +266,10 @@ export const TeamSelectorModal = ({
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sky-400 font-bold text-xs">
-                          {getInitial(sup.displayName, 'S')}
+                          {getInitial(sup?.displayName, 'S')}
                         </div>
                         <div>
-                          <span className="font-bold text-sm block leading-tight text-white">{sup.displayName || (sup.email ? sup.email.split('@')[0] : 'Supervisor')}</span>
+                          <span className="font-bold text-sm block leading-tight text-white">{sup?.displayName || (sup?.email ? sup.email.split('@')[0] : 'Supervisor')}</span>
                           <span className="text-[9px] text-slate-500">Ver todas as equipes sob sua supervisão</span>
                         </div>
                       </div>
@@ -277,14 +282,15 @@ export const TeamSelectorModal = ({
 
                     {/* Equipes individuais deste supervisor */}
                     <div className="grid grid-cols-1 gap-1.5 pl-2 pr-1">
-                      {supervisorTeams.map(team => {
-                        const isTeamActive = selectedTeamId === team.id;
+                      {supervisorTeams.filter(Boolean).map((team, tIdx) => {
+                        const teamId = team?.id || `team-idx-${tIdx}`;
+                        const isTeamActive = selectedTeamId === teamId;
                         return (
                           <button
                             type="button"
-                            key={team.id}
+                            key={teamId}
                             onClick={() => {
-                              onSelectTeam(team.id);
+                              onSelectTeam(teamId);
                               onClose();
                             }}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left cursor-pointer ${
@@ -293,7 +299,7 @@ export const TeamSelectorModal = ({
                                 : 'bg-transparent border-transparent text-slate-400 hover:bg-white/5 hover:text-white'
                             }`}
                           >
-                            <span className="text-xs font-bold">{team.name}</span>
+                            <span className="text-xs font-bold">{team?.name || 'Equipe'}</span>
                             {isTeamActive && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
                           </button>
                         );
@@ -310,14 +316,15 @@ export const TeamSelectorModal = ({
             /* Listagem Simples (Supervisor ou Operador) */
             <div className="space-y-2.5">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Minhas Equipes</h3>
-              {teams.map((team) => {
-                const isActive = selectedTeamId === team.id;
+              {teams.filter(Boolean).map((team, tIdx) => {
+                const teamId = team?.id || `my-team-${tIdx}`;
+                const isActive = selectedTeamId === teamId;
                 return (
                   <button
                     type="button"
-                    key={team.id}
+                    key={teamId}
                     onClick={() => {
-                      onSelectTeam(team.id);
+                      onSelectTeam(teamId);
                       onClose();
                     }}
                     className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left group cursor-pointer ${
@@ -333,8 +340,8 @@ export const TeamSelectorModal = ({
                         <Users size={20} weight="duotone" />
                       </div>
                       <div>
-                        <span className="font-bold text-sm block">{team.name}</span>
-                        {team.monthlyGoal && (
+                        <span className="font-bold text-sm block">{team?.name || 'Equipe'}</span>
+                        {team?.monthlyGoal && (
                           <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors">
                             Meta: R$ {team.monthlyGoal.toLocaleString('pt-BR')}
                           </span>
