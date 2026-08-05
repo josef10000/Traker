@@ -5,9 +5,10 @@
 [![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Firebase](https://img.shields.io/badge/Firebase-10.12-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![Grafana](https://img.shields.io/badge/Grafana-Cloud-F46800?style=for-the-badge&logo=grafana&logoColor=white)](https://grafana.com/)
 [![SonarCloud](https://img.shields.io/badge/SonarCloud-Security_A-4E9BCD?style=for-the-badge&logo=sonarcloud&logoColor=white)](https://sonarcloud.io/)
 
-Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a gestão de cobrança, conciliação financeira, BI analítico preditivo e monitoramento em tempo real de equipes operacionais. Unindo **Compliance LGPD rigoroso**, **Resiliência Offline-First** e **arquitetura de baixo custo de nuvem**.
+Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a gestão de cobrança, conciliação financeira, BI analítico preditivo e monitoramento em tempo real de equipes operacionais. Unindo **Compliance LGPD rigoroso**, **Observabilidade com Grafana**, **Resiliência Offline-First** e **arquitetura de baixo custo de nuvem**.
 
 ---
 
@@ -18,6 +19,8 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **🏢 Multi-Tenant Isolado** | Isolamento físico e lógico absoluto de dados por organização no Firebase Firestore. |
 | **🔒 Compliance LGPD Nativo** | Mascaramento dinâmico de CPF/valores e **Cadeia de Auditoria Criptográfica (SHA-256)** encadeada em blockchain local. |
 | **📡 Resiliência Offline-First** | Operação ininterrupta sem internet via **IndexedDB Cache Gate**, com sincronização automática na reconexão. |
+| **📈 Grafana & Observabilidade** | Telemetria contínua com Grafana Cloud para monitoramento de métricas, throughput de rede e saúde do SaaS. |
+| **🛡️ SonarCloud Security A** | Análise estática contínua de segurança, prevenção de bugs e 0 vulnerabilidades em pipeline CI/CD. |
 | **📊 BI & Forecast Preditivo** | Analytics em 5 visões com projeções N+1, análise de sazonalidade, curva de liquidez e rastreamento de descontos. |
 | **⏱️ Jornada Hora a Hora** | Cockpit de acompanhamento de produção em tempo real com **Banco de Pausas Flexível de 72 min/dia**. |
 | **🎨 Design Enterprise Pastel** | Interface minimalista em Dark Mode com **Glassmorphism**, reduzindo o cansaço visual e otimizando o espaço vertical. |
@@ -66,6 +69,22 @@ graph TD
 
 ---
 
+## 📈 Observabilidade com Grafana & Qualidade SonarCloud
+
+### 📊 Telemetria & Monitoramento com Grafana Cloud
+O sistema conta com exportação de métricas e integração via **Grafana Cloud** (`GRAFANA_URL` e `GRAFANA_API_TOKEN`):
+- **Painéis de Produção**: Monitoramento de acordos criados por minuto, volume R$ recuperado e taxa de conversão da operação.
+- **Saúde do Sistema**: Rastreamento de latência em chamadas de API, utilização do cache local (IndexedDB) e erros runtime.
+- **Alertas Automatizados**: Notificação em tempo real caso haja oscilações bruscas na taxa de efetividade de pagamentos.
+
+### 🛡️ Qualidade de Código & Segurança SonarCloud
+O repositório mantém integração nativa com o **SonarCloud** (Projeto `josef10000_Traker`):
+- **Security Rating A**: Varredura contínua contra vulnerabilidades de código, injeção de dados e exposição de dados sensíveis.
+- **Zero Bugs & Code Smells**: Rigorosa validação de tipagem TypeScript e prevenção de chamadas assíncronas não aguardadas (*un-awaited promises*).
+- **Security Rules Firestore em 4 Camadas**: Regras granulares por organização (`organizationId`), remetente/destinatário e validações em lote.
+
+---
+
 ## 🚀 Arquitetura & Otimização de Engenharia
 
 - **Cache Gate (Economia de ~95% no Firestore)**: A leitura de estatísticas e KPIs é validada por um "portão de frescor" no Firestore. Se não houver novas mutações, o sistema lê os dados diretamente do IndexedDB local com **custo 0 de leitura na nuvem**.
@@ -107,15 +126,20 @@ npm install
 ```
 
 ### 2. Configurar Variáveis de Ambiente (`.env.local`)
-Crie o arquivo `.env.local` na raiz do projeto com suas chaves do Firebase:
+Crie o arquivo `.env.local` na raiz do projeto com suas credenciais:
 
 ```env
+# Firebase
 VITE_FIREBASE_API_KEY=sua_api_key
 VITE_FIREBASE_AUTH_DOMAIN=seu_auth_domain
 VITE_FIREBASE_PROJECT_ID=seu_project_id
 VITE_FIREBASE_STORAGE_BUCKET=seu_storage_bucket
 VITE_FIREBASE_MESSAGING_SENDER_ID=seu_messaging_sender_id
 VITE_FIREBASE_APP_ID=seu_app_id
+
+# Observabilidade & Grafana Cloud
+GRAFANA_URL=https://lankyquokka3421.grafana.net
+GRAFANA_API_TOKEN=seu_token_grafana_cloud
 ```
 
 ### 3. Rodar em Desenvolvimento
@@ -125,8 +149,9 @@ npm run dev
 
 ---
 
-## 🛡️ CI/CD & Qualidade de Código
+## 🛡️ CI/CD & Automação GitHub Actions
 
-O repositório está integrado a pipelines automatizados do **GitHub Actions**:
-- **TypeScript Typecheck**: `npm run build` / `tsc --noEmit`
-- **Análise Estática SonarCloud**: Cobertura de segurança (Rating A), prevenção de bugs e boas práticas.
+O repositório utiliza **GitHub Actions** para executar verificações automatizadas a cada push/pull request:
+- **TypeScript Typecheck**: Compilação e checagem estática de tipos (`tsc --noEmit`).
+- **Production Build Check**: Garante que o bundler Vite gere o pacote de produção sem falhas.
+- **SonarCloud Analysis**: Análise automática de segurança, confiabilidade e métricas de manutenibilidade.
