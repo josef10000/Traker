@@ -258,10 +258,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {channels.map((chan) => (
-                      <div
+                      <button
+                        type="button"
                         key={chan.id}
                         onClick={() => handleToggleChannel(chan.id)}
-                        className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${
+                        className={`w-full p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all text-left ${
                           chan.active
                             ? 'bg-slate-800/60 border-white/10 hover:border-sky-500/40'
                             : 'bg-slate-900/30 border-white/5 opacity-50 hover:opacity-75'
@@ -283,7 +284,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         ) : (
                           <Circle size={20} className="text-slate-600 shrink-0" />
                         )}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -335,10 +336,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                   <div className="space-y-2">
                     {reasons.map((reas) => (
-                      <div
+                      <button
+                        type="button"
                         key={reas.id}
                         onClick={() => handleToggleReason(reas.id)}
-                        className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${
+                        className={`w-full p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all text-left ${
                           reas.active
                             ? 'bg-slate-800/60 border-white/10 hover:border-amber-500/40'
                             : 'bg-slate-900/30 border-white/5 opacity-50 hover:opacity-75'
@@ -366,7 +368,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <Circle size={18} className="text-slate-600" />
                           )}
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -450,12 +452,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     )}
 
                     {/* Resumo do Perfil Clicável */}
-                    <div 
+                    <button 
+                      type="button"
                       onClick={() => {
                         onClose();
                         if (onOpenProfile) onOpenProfile();
                       }}
-                      className="p-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-white/5 hover:border-emerald-500/40 transition-all cursor-pointer group flex flex-col justify-between"
+                      className="w-full p-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-white/5 hover:border-emerald-500/40 transition-all cursor-pointer group flex flex-col justify-between text-left"
                       title="Clique para abrir e editar seu perfil"
                     >
                       <div>
@@ -480,7 +483,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           Abrir Perfil ➔
                         </span>
                       </div>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
