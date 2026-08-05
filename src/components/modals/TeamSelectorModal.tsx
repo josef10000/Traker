@@ -17,7 +17,7 @@ interface TeamSelectorModalProps {
 export const TeamSelectorModal = ({
   isOpen,
   onClose,
-  teams,
+  teams = [],
   selectedTeamId,
   onSelectTeam,
   supervisors = [],
@@ -37,14 +37,28 @@ export const TeamSelectorModal = ({
     setExpandedSupervisors(prev => ({ ...prev, [uid]: !prev[uid] }));
   };
 
+  const getInitial = (name?: string, fallback: string = 'U') => {
+    if (typeof name === 'string' && name.trim().length > 0) {
+      return name.trim()[0].toUpperCase();
+    }
+    return fallback;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        role="button"
+        tabIndex={0}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === 'Escape') {
+            onClose();
+          }
+        }}
+        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md cursor-pointer"
       />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0 }}
@@ -59,6 +73,7 @@ export const TeamSelectorModal = ({
             <p className="text-[10px] text-slate-400">Escolha a equipe operacional ou a visão consolidada</p>
           </div>
           <button 
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
           >
@@ -69,6 +84,7 @@ export const TeamSelectorModal = ({
         <div className="p-6 max-h-[60vh] overflow-y-auto space-y-4 custom-scrollbar">
           {/* Opção Visão Macro */}
           <button
+            type="button"
             onClick={() => {
               onSelectTeam('all');
               onClose();
@@ -104,26 +120,28 @@ export const TeamSelectorModal = ({
               {managers.map(manager => {
                 const isManagerActive = selectedTeamId === `manager-${manager.uid}`;
                 const isExpanded = !!expandedManagers[manager.uid];
-                const managerSupervisors = supervisors.filter(s => s.managerId === manager.uid);
+                const managerSupervisors = supervisors.filter(s => s && s.managerId === manager.uid);
 
                 return (
                   <div key={manager.uid} className="space-y-2 p-3 bg-white/5 border border-white/5 rounded-3xl">
                     <div className="flex items-center justify-between gap-2">
                       <button
+                        type="button"
                         onClick={() => toggleManager(manager.uid)}
                         className="flex items-center gap-2 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-1 text-left"
                       >
                         {isExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
                         <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-purple-400 font-bold text-xs">
-                          {manager.displayName ? manager.displayName[0].toUpperCase() : 'G'}
+                          {getInitial(manager.displayName, 'G')}
                         </div>
                         <div>
-                          <span className="font-bold text-sm block leading-tight text-white">{manager.displayName || manager.email.split('@')[0]}</span>
+                          <span className="font-bold text-sm block leading-tight text-white">{manager.displayName || (manager.email ? manager.email.split('@')[0] : 'Gerente')}</span>
                           <span className="text-[9px] text-slate-500">Gerente</span>
                         </div>
                       </button>
 
                       <button
+                        type="button"
                         onClick={() => {
                           onSelectTeam(`manager-${manager.uid}`);
                           onClose();
@@ -143,26 +161,28 @@ export const TeamSelectorModal = ({
                         {managerSupervisors.map(sup => {
                           const isSupActive = selectedTeamId === `supervisor-${sup.uid}`;
                           const isSupExpanded = !!expandedSupervisors[sup.uid];
-                          const supervisorTeams = teams.filter(t => t.supervisorId === sup.uid);
+                          const supervisorTeams = teams.filter(t => t && t.supervisorId === sup.uid);
 
                           return (
                             <div key={sup.uid} className="space-y-2 p-2 bg-slate-950/40 rounded-2xl">
                               <div className="flex items-center justify-between gap-2">
                                 <button
+                                  type="button"
                                   onClick={() => toggleSupervisor(sup.uid)}
                                   className="flex items-center gap-2 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-1 text-left"
                                 >
                                   {isSupExpanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
                                   <div className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center text-sky-400 font-bold text-xs">
-                                    {sup.displayName ? sup.displayName[0].toUpperCase() : 'S'}
+                                    {getInitial(sup.displayName, 'S')}
                                   </div>
                                   <div>
-                                    <span className="font-bold text-xs block leading-tight text-slate-200">{sup.displayName || sup.email.split('@')[0]}</span>
+                                    <span className="font-bold text-xs block leading-tight text-slate-200">{sup.displayName || (sup.email ? sup.email.split('@')[0] : 'Supervisor')}</span>
                                     <span className="text-[8px] text-slate-500">Supervisor</span>
                                   </div>
                                 </button>
 
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     onSelectTeam(`supervisor-${sup.uid}`);
                                     onClose();
@@ -183,6 +203,7 @@ export const TeamSelectorModal = ({
                                     const isTeamActive = selectedTeamId === team.id;
                                     return (
                                       <button
+                                        type="button"
                                         key={team.id}
                                         onClick={() => {
                                           onSelectTeam(team.id);
@@ -222,11 +243,12 @@ export const TeamSelectorModal = ({
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Filtrar por Supervisor</h3>
               {supervisors.map(sup => {
                 const isSupActive = selectedTeamId === `supervisor-${sup.uid}`;
-                const supervisorTeams = teams.filter(t => t.supervisorId === sup.uid);
+                const supervisorTeams = teams.filter(t => t && t.supervisorId === sup.uid);
                 
                 return (
                   <div key={sup.uid} className="space-y-2 p-3 bg-white/5 border border-white/5 rounded-3xl">
                     <button
+                      type="button"
                       onClick={() => {
                         onSelectTeam(`supervisor-${sup.uid}`);
                         onClose();
@@ -239,10 +261,10 @@ export const TeamSelectorModal = ({
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sky-400 font-bold text-xs">
-                          {sup.displayName ? sup.displayName[0].toUpperCase() : 'S'}
+                          {getInitial(sup.displayName, 'S')}
                         </div>
                         <div>
-                          <span className="font-bold text-sm block leading-tight text-white">{sup.displayName || sup.email.split('@')[0]}</span>
+                          <span className="font-bold text-sm block leading-tight text-white">{sup.displayName || (sup.email ? sup.email.split('@')[0] : 'Supervisor')}</span>
                           <span className="text-[9px] text-slate-500">Ver todas as equipes sob sua supervisão</span>
                         </div>
                       </div>
@@ -259,6 +281,7 @@ export const TeamSelectorModal = ({
                         const isTeamActive = selectedTeamId === team.id;
                         return (
                           <button
+                            type="button"
                             key={team.id}
                             onClick={() => {
                               onSelectTeam(team.id);
@@ -291,6 +314,7 @@ export const TeamSelectorModal = ({
                 const isActive = selectedTeamId === team.id;
                 return (
                   <button
+                    type="button"
                     key={team.id}
                     onClick={() => {
                       onSelectTeam(team.id);

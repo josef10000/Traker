@@ -24,7 +24,7 @@ export const TeamPerformance = ({
 }: TeamPerformanceProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  if (members.length === 0) {
+  if (!members || members.length === 0) {
     return (
       <div className="p-8 border-2 border-dashed border-white/10 rounded-3xl text-center text-slate-500">
         Nenhum membro encontrado nesta equipe para gerar o ranking.
@@ -43,22 +43,32 @@ export const TeamPerformance = ({
 
     // Initialize with members
     members.forEach(m => {
-      data[m.uid] = { name: m.displayName, paid: 0, projected: 0, daily: {} };
+      if (m && m.uid) {
+        data[m.uid] = { name: m.displayName || 'Usuário', paid: 0, projected: 0, daily: {} };
+      }
     });
 
     // Get all unique dates from agreements (sorted)
-    const uniqueDates = Array.from(new Set(agreements.map(a => (a.createdAt || '').split('T')[0]))).filter(Boolean).sort();
+    const uniqueDates = Array.from(
+      new Set(
+        (agreements || [])
+          .map(a => (a?.createdAt || '').split('T')[0])
+          .filter(Boolean)
+      )
+    ).sort();
 
-    agreements.forEach(a => {
-      if (!data[a.operatorId]) return;
+    (agreements || []).forEach(a => {
+      if (!a || !a.operatorId || !data[a.operatorId]) return;
       
       const date = (a.createdAt || '').split('T')[0];
-      const val = a.value;
+      const val = Number(a.value) || 0;
       
       data[a.operatorId].projected += val;
       if (a.status === AgreementStatus.PAID) {
         data[a.operatorId].paid += val;
-        data[a.operatorId].daily[date] = (data[a.operatorId].daily[date] || 0) + val;
+        if (date) {
+          data[a.operatorId].daily[date] = (data[a.operatorId].daily[date] || 0) + val;
+        }
       }
     });
 
@@ -74,8 +84,9 @@ export const TeamPerformance = ({
   // Filter ranking based on search query
   const filteredRanking = useMemo(() => {
     if (!searchQuery.trim()) return ranking;
+    const q = searchQuery.toLowerCase().trim();
     return ranking.filter(row => 
-      (row.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      (row.name || '').toLowerCase().includes(q)
     );
   }, [ranking, searchQuery]);
 
@@ -87,9 +98,15 @@ export const TeamPerformance = ({
     const parts = dateStr.split('-');
     if (parts.length < 3) return dateStr;
     const [year, month, day] = parts;
-    const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+    const y = parseInt(year, 10);
+    const m = parseInt(month, 10);
+    const d = parseInt(day, 10);
+    if (isNaN(y) || isNaN(m) || isNaN(d)) return dateStr;
+    const date = new Date(y, m - 1, d);
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
   };
+
+  const maxPaidValue = Math.max(ranking[0]?.paid || 1, 1);
 
   return (
     <div className="space-y-8">
@@ -109,11 +126,18 @@ export const TeamPerformance = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {ranking.slice(0, 4).map((item, index) => {
               const isSelected = selectedMemberId === item.id;
+              const initialLetter = typeof item.name === 'string' && item.name.trim().length > 0 
+                ? item.name.trim()[0].toUpperCase() 
+                : 'U';
+
+              const progressPercent = Math.min(Math.max((item.paid / maxPaidValue) * 100, 0), 100);
+
               return (
-                <div 
+                <button
+                  type="button"
                   key={item.id}
                   onClick={() => onSelectMember?.(isSelected ? 'all' : item.id)}
-                  className={`relative p-6 rounded-3xl border transition-all cursor-pointer select-none ${
+                  className={`relative p-6 rounded-3xl border transition-all cursor-pointer select-none text-left w-full ${
                     isSelected
                       ? 'bg-sky-500/20 border-sky-500 ring-2 ring-sky-500/20 shadow-lg shadow-sky-500/5'
                       : index === 0 
@@ -134,7 +158,7 @@ export const TeamPerformance = ({
                       <div className={`w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold border transition-colors ${
                         isSelected ? 'border-sky-400 text-sky-400 bg-sky-950/40' : 'border-slate-700 text-slate-300'
                       }`}>
-                        {item.name ? item.name[0].toUpperCase() : 'U'}
+                        {initialLetter}
                       </div>
                       <div>
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">#{index + 1} Lugar</p>
@@ -150,25 +174,25 @@ export const TeamPerformance = ({
                       <div className="flex justify-between items-center text-[10px]">
                         <span className="font-bold text-slate-500 uppercase">Qualidade QA</span>
                         <span className="font-bold text-sky-400">
-                          {qaScores[item.id] !== undefined ? `${qaScores[item.id].toFixed(1)}%` : 'N/A'}
+                          {qaScores[item.id] !== undefined && qaScores[item.id] !== null ? `${qaScores[item.id].toFixed(1)}%` : 'N/A'}
                         </span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                         <div 
                           className={`h-full rounded-full ${isSelected ? 'bg-sky-500' : index === 0 ? 'bg-amber-500' : 'bg-primary'}`}
-                          style={{ width: `${(item.paid / (ranking[0]?.paid || 1)) * 100}%` }}
+                          style={{ width: `${progressPercent}%` }}
                         />
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         </section>
       )}
 
-      {/* Daily Productivity Table - Request Format */}
+      {/* Daily Productivity Table */}
       <section>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -226,7 +250,14 @@ export const TeamPerformance = ({
                     return (
                       <tr 
                         key={row.id} 
+                        tabIndex={0}
                         onClick={() => onSelectMember?.(isSelected ? 'all' : row.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onSelectMember?.(isSelected ? 'all' : row.id);
+                          }
+                        }}
                         className={`border-b border-white/5 cursor-pointer transition-all select-none ${
                           isSelected 
                             ? 'bg-sky-500/10 hover:bg-sky-500/15' 
@@ -271,7 +302,7 @@ export const TeamPerformance = ({
                       );
                     })}
                     <td className="px-4 py-3 text-right font-black text-[12px] text-sky-400 bg-slate-900 sticky right-0 z-30 border-l border-white/10">
-                      {formatCurrency(filteredRanking.reduce((acc, curr) => acc + curr.paid, 0))}
+                      {formatCurrency(filteredRanking.reduce((acc, curr) => acc + (curr.paid || 0), 0))}
                     </td>
                   </tr>
                 )}

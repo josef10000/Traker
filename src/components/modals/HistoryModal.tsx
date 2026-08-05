@@ -62,7 +62,14 @@ export const HistoryModal = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        role="button"
+        tabIndex={0}
         onClick={handleClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === 'Escape') {
+            handleClose();
+          }
+        }}
         className="absolute inset-0 bg-slate-950/75 backdrop-blur-md cursor-pointer"
       />
       <motion.div 
@@ -98,160 +105,150 @@ export const HistoryModal = ({
                   }`}
                   title={isRevealed ? "Ocultar CPF" : "Revelar CPF"}
                 >
-                  {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
+                  {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               )}
             </div>
           </div>
           <button 
+            type="button"
             onClick={handleClose}
             className={`p-2 rounded-full transition-colors ${
-              theme === 'dark' 
-                ? 'hover:bg-white/10 text-slate-500 hover:text-white' 
-                : 'hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+              theme === 'dark' ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800'
             }`}
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto custom-scrollbar">
+        <div className="p-8 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
           {isLoading ? (
-            <div className="flex flex-col items-center py-12 gap-3">
-              <Loader2 className="animate-spin text-primary" size={24} />
-              <span className="text-xs font-medium text-slate-500">Buscando histórico...</span>
+            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+              <Loader2 size={32} className="animate-spin text-sky-400 mb-3" />
+              <p className="text-xs font-semibold">Buscando histórico completo...</p>
             </div>
-          ) : history.length > 0 ? (
-            <div className="space-y-4">
+          ) : history.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              <Clock size={40} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-semibold">Nenhum registro encontrado para este CPF.</p>
+            </div>
+          ) : (
+            <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
               {history.map((item) => (
-                <div 
-                  key={item.id}
-                  className={`p-5 rounded-2xl border ${
-                    theme === 'dark'
-                      ? item.status === AgreementStatus.PAID 
-                        ? 'bg-emerald-500/5 border-emerald-500/10' 
-                        : item.status === AgreementStatus.BROKEN 
-                          ? 'bg-rose-500/5 border-rose-500/10' 
-                          : item.status === AgreementStatus.RECOVERED
-                            ? 'bg-teal-500/5 border-teal-500/10'
-                            : 'bg-slate-800/20 border-slate-800'
-                      : item.status === AgreementStatus.PAID 
-                        ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950 shadow-sm' 
-                        : item.status === AgreementStatus.BROKEN 
-                          ? 'bg-rose-50/50 border-rose-200 text-rose-950 shadow-sm' 
-                          : item.status === AgreementStatus.RECOVERED
-                            ? 'bg-teal-50/50 border-teal-200 text-teal-950 shadow-sm'
-                            : 'bg-slate-100 border-slate-200 text-slate-900 shadow-sm'
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        {new Date(item.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                      </span>
-                      <span className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(item.value)}</span>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1">
-                      {item.status === AgreementStatus.PAID ? (
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-500 text-white px-2 py-0.5 rounded">PAGO</span>
-                      ) : item.status === AgreementStatus.BROKEN ? (
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-rose-500 text-white px-2 py-0.5 rounded">QUEBRADO</span>
-                      ) : item.status === AgreementStatus.RECOVERED ? (
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-teal-500 text-white px-2 py-0.5 rounded">RECUPERADO</span>
-                      ) : (
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500 text-white px-2 py-0.5 rounded">AGUARDANDO</span>
-                      )}
-                      <OriginBadge origin={item.origin} />
-                      <div className="flex flex-col items-end gap-1 mt-1">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                          {item.type === 'quitacao' ? 'Quitação' : 
-                           item.type === 'parcelamento' ? 'Parcelamento' :
-                           item.type === 'parcela_atrasada' ? 'Parc. Atrasada' :
-                           item.type === 'antecipacao' ? 'Antecipação' : item.type}
-                        </span>
-                        {/* Badge de parcelamento com detalhes */}
-                        {item.type === 'parcelamento' && item.installmentCount && (
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                            theme === 'dark'
-                              ? 'bg-primary/10 border border-primary/20 text-primary'
-                              : 'bg-primary/10 border border-primary/20 text-primary'
-                          }`}>
-                            {item.hasEntry && item.installmentValue
-                              ? `entrada + ${item.installmentCount}x ${formatCurrency(item.installmentValue)}`
-                              : `${item.installmentCount}x`}
-                          </span>
-                        )}
-                      </div>
-
-                    </div>
+                <div key={item.id} className="relative group">
+                  <div className={`absolute -left-[29px] top-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    theme === 'dark' ? 'bg-slate-900 border-slate-700 group-hover:border-sky-400' : 'bg-white border-slate-300 group-hover:border-primary'
+                  }`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${
+                      item.status === AgreementStatus.PAID ? 'bg-emerald-400' : 'bg-amber-400'
+                    }`} />
                   </div>
-                  <div className={`flex items-center gap-4 text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                    <div className="flex items-center gap-1">
-                      <Clock size={12} />
-                      Vencimento: {(item.dueDate || '').split('-').reverse().join('/')}
+
+                  <div className={`p-5 rounded-2xl border transition-all ${
+                    theme === 'dark' 
+                      ? 'bg-slate-900/60 border-white/5 hover:border-white/10' 
+                      : 'bg-slate-50/80 border-slate-200/60 hover:border-slate-300'
+                  }`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                            {item.type === AgreementType.COMMERCIAL ? 'Comercial' : 'Recuperação'}
+                          </span>
+                          {item.origin && <OriginBadge origin={item.origin} />}
+                        </div>
+                        <span className={`text-[10px] font-mono block mt-0.5 ${
+                          theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
+                        }`}>
+                          {item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data n/a'}
+                        </span>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        item.status === AgreementStatus.PAID 
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {item.status === AgreementStatus.PAID ? 'Pago' : 'Pendente'}
+                      </span>
                     </div>
-                    {item.paidAt && (
-                      <div className="flex items-center gap-1 text-emerald-500 font-bold">
-                        <CheckCircle2 size={12} />
-                        Pago em: {new Date(item.paidAt).toLocaleDateString('pt-BR')}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/5 text-xs">
+                      <div>
+                        <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Valor Negociado</span>
+                        <span className={`font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                          {formatCurrency(item.value || 0)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Operador</span>
+                        <span className={`font-medium truncate block ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          {item.operatorName || 'Desconhecido'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Canal</span>
+                        <span className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          {item.channel || 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className={`text-[10px] block ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Parcelas</span>
+                        <span className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                          {item.installments ? `${item.installments}x` : 'À vista'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {item.notes && (
+                      <div className={`mt-3 p-3 rounded-xl text-xs border ${
+                        theme === 'dark' 
+                          ? 'bg-slate-950/40 border-white/5 text-slate-400' 
+                          : 'bg-white border-slate-200/60 text-slate-600'
+                      }`}>
+                        <span className="font-bold block text-[10px] uppercase text-slate-500 mb-0.5">Observações:</span>
+                        {item.notes}
                       </div>
                     )}
                   </div>
-                  {item.notes && (
-                    <div className={`mt-3 p-3 rounded-xl border text-xs ${
-                      theme === 'dark' 
-                        ? 'bg-white/5 border-white/5 text-slate-300' 
-                        : 'bg-slate-50 border-slate-200 text-slate-700'
-                    }`}>
-                      <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider mb-1">Observação do Atendimento:</p>
-                      <p className="italic font-medium">"{item.notes}"</p>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-12 text-slate-500 italic">
-              Nenhum registro encontrado para este CPF.
-            </div>
           )}
         </div>
-        <div className={`px-8 py-4 border-t flex justify-between items-center shrink-0 ${
-          theme === 'dark' 
-            ? 'border-white/5 bg-white/5 backdrop-blur-xl' 
-            : 'border-slate-100 bg-slate-50'
-        }`}>
-           <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Total de negociações: {history.length}</p>
-           {onAnonimize && isSupervisor && clientCpf && (
-             <button
-               type="button"
-               onClick={() => setIsConfirmOpen(true)}
-               className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors px-2 py-1 rounded border ${
-                 theme === 'dark'
-                   ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 border-rose-500/20'
-                   : 'text-rose-600 hover:text-rose-500 hover:bg-rose-50 border-rose-200'
-               }`}
-               title="Anonimizar dados do cliente (Direito ao Esquecimento — LGPD)"
-             >
-               Anonimizar Cliente
-             </button>
-           )}
-        </div>
+
+        {/* Rodapé com botão de anonimização (LGPD) */}
+        {isSupervisor && onAnonimize && clientCpf && (
+          <div className={`px-8 py-4 border-t flex justify-between items-center ${
+            theme === 'dark' ? 'border-white/5 bg-slate-950/40' : 'border-slate-100 bg-slate-50'
+          }`}>
+            <span className="text-[10px] text-slate-500">Conformidade LGPD: Anonimização de dados do titular.</span>
+            <button
+              type="button"
+              onClick={() => setIsConfirmOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-all"
+            >
+              Anonimizar Cliente
+            </button>
+          </div>
+        )}
       </motion.div>
 
-      <CustomConfirm 
-         isOpen={isConfirmOpen}
-         title="Direito ao Esquecimento (LGPD)"
-         message="Atenção: Ao anonimizar este cliente, o CPF, Nome e Telefone dele serão permanentemente removidos/alterados para dados genéricos em todos os acordos associados no sistema. Esta ação cumpre o Direito ao Esquecimento da LGPD e NÃO pode ser desfeita. Deseja continuar?"
-         type="danger"
-         onConfirm={() => {
-           if (clientCpf && onAnonimize) {
-             onAnonimize(clientCpf);
-             handleClose();
-           }
-         }}
-         onClose={() => setIsConfirmOpen(false)}
-       />
+      <CustomConfirm
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={() => {
+          setIsConfirmOpen(false);
+          if (clientCpf && onAnonimize) {
+            onAnonimize(clientCpf);
+            handleClose();
+          }
+        }}
+        title="Anonimizar Dados do Cliente?"
+        message={`Esta ação irá rasurar permanentemente o CPF (${clientCpf ? maskCPF(clientCpf) : ''}) e dados pessoais vinculados a este histórico em conformidade com a LGPD. Esta ação não poderá ser desfeita.`}
+        confirmText="Sim, Anonimizar"
+        confirmVariant="danger"
+        theme={theme as any}
+      />
     </div>
   );
 };
