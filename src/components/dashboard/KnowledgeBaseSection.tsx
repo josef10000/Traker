@@ -21,29 +21,6 @@ import {
   Image as ImageIcon,
   UploadSimple,
   Eye
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  BookOpen, 
-  MagnifyingGlass, 
-  Plus, 
-  PushPin, 
-  WarningCircle, 
-  Copy, 
-  Check, 
-  PencilSimple, 
-  Trash, 
-  Tag, 
-  Megaphone, 
-  FileText, 
-  Question, 
-  ChatTeardropText, 
-  Sparkle, 
-  X,
-  CaretLeft,
-  CaretRight,
-  Image as ImageIcon,
-  UploadSimple,
-  Eye
 } from '@phosphor-icons/react';
 import { KnowledgeArticle, KnowledgeCategory, UserProfile } from '../../types';
 import { 
@@ -151,6 +128,8 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
       console.error('Erro ao processar imagem:', err);
       if (showToast) showToast('Erro ao carregar a imagem selecionada.', 'error');
     }
+  };
+
   const handleOpenNewForm = () => {
     setEditingArticleId(null);
     setFormTitle('');
