@@ -2682,11 +2682,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       showToast={showToast}
                       theme={theme}
                       selectedTeamId={selectedTeamId}
-                      agreements={monthAgreements}
-                      onAttend={(agreement) => {
-                        setEditingAgreement(agreement);
-                        setIsModalOpen(true);
-                      }}
                     />
                   ) : (
                     <>
@@ -3245,11 +3240,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     showToast={showToast}
                     theme={theme}
                     selectedTeamId={selectedTeamId}
-                    agreements={monthAgreements}
-                    onAttend={(agreement) => {
-                      setEditingAgreement(agreement);
-                      setIsModalOpen(true);
-                    }}
                   />
                 </div>
               )}

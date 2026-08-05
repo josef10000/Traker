@@ -55,7 +55,7 @@ import {
 } from '@tanstack/react-table';
 import { db } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
-import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote, Agreement, AgreementStatus } from '../../types';
+import { UserProfile, BackOfficeImport, BackOfficeClient, BackOfficeNote } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { sanitizeFilename } from '../../utils/sanitize';
 import { ExcelExportModal } from '../modals/ExcelExportModal';
@@ -69,17 +69,13 @@ interface BackOfficeTabProps {
   showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   theme?: 'light' | 'dark';
   selectedTeamId?: string;
-  onAttend?: (agreement: any) => void;
-  agreements?: Agreement[];
 }
 
 export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   profile,
   showToast,
   theme = 'dark',
-  selectedTeamId = 'all',
-  onAttend,
-  agreements = []
+  selectedTeamId = 'all'
 }) => {
   // Estados para Importações
   const [imports, setImports] = useState<BackOfficeImport[]>([]);
@@ -1224,7 +1220,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     };
 
     return [selectColumn, ...dynColumns, statusColumn, actionsColumn];
-  }, [activeImport, theme, onAttend, profile, selectedClientIds]);
+  }, [activeImport, theme, profile, selectedClientIds]);
 
   // Inst instanciação do Hook useReactTable
   const table = useReactTable({
