@@ -342,8 +342,11 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
 
                 {art.imageUrl && (
                   <div 
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setPreviewModalImage(art.imageUrl || null)}
-                    className="mb-4 relative rounded-2xl overflow-hidden border border-white/10 group/img cursor-pointer bg-slate-950/50"
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPreviewModalImage(art.imageUrl || null); } }}
+                    className="mb-4 relative rounded-2xl overflow-hidden border border-white/10 group/img cursor-pointer bg-slate-950/50 outline-none focus:ring-2 focus:ring-sky-500"
                   >
                     <img 
                       src={art.imageUrl} 
@@ -413,10 +416,27 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
       )}
 
       {previewModalImage && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setPreviewModalImage(null)}>
-          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div 
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualização expandida de imagem"
+          tabIndex={0}
+          className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 outline-none" 
+          onClick={() => setPreviewModalImage(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setPreviewModalImage(null); }}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 shadow-2xl" 
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => e.stopPropagation()}
+          >
             <img src={previewModalImage} alt="Visualização expandida" className="max-w-full max-h-[85vh] object-contain rounded-2xl" />
-            <button onClick={() => setPreviewModalImage(null)} className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/80 text-white hover:bg-rose-500 transition-colors">
+            <button 
+              type="button"
+              aria-label="Fechar imagem"
+              onClick={() => setPreviewModalImage(null)} 
+              className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/80 text-white hover:bg-rose-500 transition-colors cursor-pointer"
+            >
               <X size={18} />
             </button>
           </div>

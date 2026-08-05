@@ -714,6 +714,7 @@ export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({
           <div 
             className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 shadow-2xl" 
             onClick={e => e.stopPropagation()}
+            onKeyDown={e => e.stopPropagation()}
           >
             <img src={previewModalImage} alt="Visualização expandida" className="max-w-full max-h-[85vh] object-contain rounded-2xl" />
             <button
