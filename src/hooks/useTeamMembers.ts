@@ -20,7 +20,7 @@ export const useTeamMembers = ({ profile, selectedTeamId }: UseTeamMembersProps)
    * Estabiliza a referência do array managedTeams comparando por valor (JSON).
    */
   const managedTeamsKey = useMemo(
-    () => JSON.stringify([...(profile.managedTeams || [])].sort()),
+    () => JSON.stringify([...(profile.managedTeams || [])].sort((a, b) => a.localeCompare(b))),
     [profile.managedTeams]
   );
   const stableManagedTeams = useRef<string[]>(profile.managedTeams || []);

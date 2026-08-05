@@ -55,7 +55,7 @@ export const TeamPerformance = ({
           .map(a => (a?.createdAt || '').split('T')[0])
           .filter(Boolean)
       )
-    ).sort();
+    ).sort((a, b) => a.localeCompare(b));
 
     (agreements || []).forEach(a => {
       if (!a || !a.operatorId || !data[a.operatorId]) return;
