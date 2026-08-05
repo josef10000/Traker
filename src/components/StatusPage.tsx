@@ -10,7 +10,6 @@ import {
   Server, 
   Code2, 
   Award, 
-  ArrowLeft,
   Globe,
   Database,
   KeyRound,
@@ -137,18 +136,12 @@ export const StatusPage: React.FC = () => {
             <button
               onClick={fetchStatus}
               disabled={loading}
-              className="p-2.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-white/10 hover:bg-slate-800 transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+              className="p-2.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-white/10 hover:bg-slate-800 transition-all disabled:opacity-50 cursor-pointer shadow-sm flex items-center gap-2 text-xs font-semibold"
               title="Atualizar Métricas"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sky-400' : ''}`} />
+              <span>Atualizar</span>
             </button>
-            <a
-              href="/"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all shadow-lg shadow-sky-500/20 active:scale-95 cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Voltar ao Sistema</span>
-            </a>
           </div>
         </div>
       </header>
