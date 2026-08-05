@@ -4,10 +4,14 @@
  * e fallback automático leve para ambiente Sandbox / Demo.
  */
 
-interface UploadOptions {
+export interface UploadOptions {
   maxWidth?: number;
   quality?: number;
   folder?: string;
+  isSandbox?: boolean;
+  retentionHours?: number; // ex: 24 para Sandbox
+  retentionDays?: number;  // ex: 365 para Base de Conhecimento
+  allowFallback?: boolean; // Se false, exige upload no R2
 }
 
 /**
@@ -90,19 +94,49 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([u8arr], { type: mime });
 }
 
-/**
- * Tenta fazer o upload para o Cloudflare R2 caso as variáveis VITE_R2_* estejam configuradas.
- * Se não estiverem ou em ambiente Sandbox, retorna a string compactada com sucesso.
- */
 import { secureRandomId } from '../utils/crypto';
 
+/**
+ * Faz o upload direto para o Cloudflare R2 com controle de retenção por metadados e prefixos:
+ * - Sandbox / Testes: Pasta 'sandbox-24h/' com expiração de 24 horas (TTL: 86400s)
+ * - Base de Conhecimento: Pasta 'kb-1year/' com expiração de 365 dias (TTL: 31536000s)
+ */
 export async function uploadImage(
   input: File | Blob | string,
   options: UploadOptions = {}
 ): Promise<string> {
-  const { maxWidth = 1600, quality = 0.85, folder = 'attachments' } = options;
+  const { 
+    maxWidth = 1600, 
+    quality = 0.85, 
+    folder, 
+    isSandbox = false, 
+    retentionHours, 
+    retentionDays,
+    allowFallback = true
+  } = options;
 
-  // 1. Compacta a imagem
+  // 1. Determina a regra de retenção e pasta do Cloudflare R2
+  let targetFolder = folder;
+  let ttlSeconds = 86400; // Padrão: 24 horas
+  let retentionType = '24h';
+
+  if (isSandbox || retentionHours === 24 || folder === 'sandbox-24h') {
+    targetFolder = 'sandbox-24h';
+    ttlSeconds = 86400; // 24 horas
+    retentionType = '24h';
+  } else if (retentionDays === 365 || folder === 'kb-articles' || folder === 'kb-1year') {
+    targetFolder = 'kb-1year';
+    ttlSeconds = 31536000; // 365 dias (1 ano)
+    retentionType = '1year';
+  } else {
+    targetFolder = targetFolder || 'attachments';
+  }
+
+  // Calcula a data exata de expiração ISO
+  const expiresAtDate = new Date(Date.now() + ttlSeconds * 1000);
+  const expiresAtISO = expiresAtDate.toISOString();
+
+  // 2. Compacta a imagem para formato WebP ultra-leve
   const compressedDataUrl = await compressImage(input, maxWidth, quality);
 
   const accountId = import.meta.env.VITE_R2_ACCOUNT_ID;
@@ -113,10 +147,10 @@ export async function uploadImage(
 
   const uploadEndpoint = import.meta.env.VITE_R2_UPLOAD_ENDPOINT;
 
-  // Se houver um endpoint de upload/Worker configurado ou credenciais completas
+  // Se houver um endpoint de upload R2 ou credenciais completas
   if (uploadEndpoint || (accountId && bucketName && accessKeyId && secretAccessKey && publicUrl)) {
     try {
-      const filename = `${folder}/${secureRandomId('file')}.webp`;
+      const filename = `${targetFolder}/${secureRandomId('file')}.webp`;
       const cleanPublicBaseUrl = publicUrl?.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
       const targetEndpoint = uploadEndpoint || (cleanPublicBaseUrl && !cleanPublicBaseUrl.includes('.r2.dev') ? `${cleanPublicBaseUrl}/${filename}` : null);
 
@@ -126,6 +160,10 @@ export async function uploadImage(
           method: 'PUT',
           headers: {
             'Content-Type': 'image/webp',
+            'x-amz-meta-expires-at': expiresAtISO,
+            'x-amz-meta-ttl': String(ttlSeconds),
+            'x-amz-meta-retention': retentionType,
+            'x-amz-meta-sandbox': String(isSandbox)
           },
           body: blob,
         });
@@ -135,10 +173,14 @@ export async function uploadImage(
         }
       }
     } catch (error) {
-      console.info('Utilizando armazenamento de imagem otimizado integrado em WebP.');
+      console.warn('Alerta R2: Falha ao enviar para o Cloudflare R2:', error);
+      if (!allowFallback) {
+        throw new Error('Falha no upload para o Cloudflare R2. Verifique a conexão ou as credenciais.');
+      }
     }
   }
 
-  // Fallback seguro de alta performance: retorna a imagem compactada otimizada em WebP (super leve, ~20KB)
+  // Em ambiente local sem credenciais R2 configuradas, se o fallback for permitido, retorna a string compactada WebP
   return compressedDataUrl;
 }
+

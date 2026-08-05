@@ -144,7 +144,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const uploadedUrl = await uploadImage(file, { folder: 'kb-articles' });
+      const uploadedUrl = await uploadImage(file, { folder: 'kb-1year', retentionDays: 365 });
       setFormImageUrl(uploadedUrl);
       if (showToast) showToast('Imagem anexada com sucesso!', 'success');
     } catch (err) {

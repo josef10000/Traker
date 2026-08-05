@@ -104,7 +104,7 @@ export const SupportTab = ({
   const handleImageFile = async (file: File | Blob) => {
     setIsUploadingImage(true);
     try {
-      const url = await uploadImage(file, { folder: 'support_prints' });
+      const url = await uploadImage(file, { folder: 'sandbox-24h', isSandbox: true, retentionHours: 24 });
       setAttachmentUrl(url);
       showToast('Print anexado com sucesso!', 'success');
     } catch (err) {

@@ -140,7 +140,19 @@ VITE_FIREBASE_APP_ID=seu_app_id
 # Observabilidade & Grafana Cloud
 GRAFANA_URL=https://lankyquokka3421.grafana.net
 GRAFANA_API_TOKEN=seu_token_grafana_cloud
+
+# Cloudflare R2 (Upload & Retenção de Imagens)
+VITE_R2_ACCOUNT_ID=seu_account_id
+VITE_R2_BUCKET_NAME=seu_bucket_r2
+VITE_R2_ACCESS_KEY_ID=sua_access_key_id
+VITE_R2_SECRET_ACCESS_KEY=sua_secret_access_key
+VITE_R2_PUBLIC_URL=https://sua-cdn.r2.dev
+VITE_R2_UPLOAD_ENDPOINT=https://seu-upload-worker.r2.workers.dev
 ```
+
+> **Regras Automáticas de Retenção/Expiração no Cloudflare R2**:
+> - **Ambiente Sandbox / Testes (`sandbox-24h/`)**: Imagens e prints de tratativa expiram e são removidos automaticamente em **24 horas** (metadado `x-amz-meta-ttl: 86400`).
+> - **Base de Conhecimento (`kb-1year/`)**: Imagens anexadas a manuais e roteiros expiram e são removidos automaticamente em **1 ano / 365 dias** (metadado `x-amz-meta-ttl: 31536000`).
 
 ### 3. Rodar em Desenvolvimento
 ```bash

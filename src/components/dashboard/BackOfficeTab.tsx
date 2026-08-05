@@ -235,7 +235,7 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
   const handleNoteImageFile = async (file: File | Blob) => {
     setIsUploadingNoteImage(true);
     try {
-      const url = await uploadImage(file, { folder: 'backoffice_prints' });
+      const url = await uploadImage(file, { folder: 'sandbox-24h', isSandbox: true, retentionHours: 24 });
       setNoteAttachmentUrl(url);
       showToast('Print da tratativa anexado com sucesso!', 'success');
     } catch (err) {
