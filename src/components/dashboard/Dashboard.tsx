@@ -1245,7 +1245,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           organizationId: profile.organizationId,
           collaboratorId,
           creatorId: profile.uid,
-          creatorName: profile.displayName || profile.email.split('@')[0],
+          creatorName: profile.displayName || (profile.email ? profile.email.split('@')[0] : 'Usuário'),
           type: 'attendance',
           content: `Registro de presença do dia ${dateFormatted}: ${statusLabels[status]}`,
           attendanceStatus: status
@@ -1343,7 +1343,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             organizationId: profile.organizationId,
             collaboratorId: collab.uid,
             creatorId: profile.uid,
-            creatorName: profile.displayName || profile.email.split('@')[0],
+            creatorName: profile.displayName || (profile.email ? profile.email.split('@')[0] : 'Usuário'),
             type: 'attendance',
             content: `Escala de Trabalho Presencial agendada para o dia ${dateFormatted}`,
             attendanceStatus: 'present',
@@ -1374,7 +1374,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             organizationId: profile.organizationId,
             collaboratorId: collab.uid,
             creatorId: profile.uid,
-            creatorName: profile.displayName || profile.email.split('@')[0],
+            creatorName: profile.displayName || (profile.email ? profile.email.split('@')[0] : 'Usuário'),
             type: 'attendance',
             content,
             attendanceStatus: status,
@@ -1385,7 +1385,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
       }
 
-      showToast(`Escala de presença de ${collab.displayName || collab.email.split('@')[0]} salva com sucesso para ${datesToApply.length} dia(s)!`, 'success');
+      showToast(`Escala de presença de ${collab.displayName || (collab.email ? collab.email.split('@')[0] : 'Colaborador')} salva com sucesso para ${datesToApply.length} dia(s)!`, 'success');
       doMarkStale();
     } catch (error) {
       console.error(error);
@@ -1476,7 +1476,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         organizationId: profile.organizationId,
         collaboratorId,
         creatorId: profile.uid,
-        creatorName: profile.displayName || profile.email.split('@')[0],
+        creatorName: profile.displayName || (profile.email ? profile.email.split('@')[0] : 'Usuário'),
         type: 'note',
         content: text
       });
@@ -3485,7 +3485,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                           size="sm"
                                         />
                                         <div>
-                                          <h4 className="text-sm font-bold text-white group-hover:text-sky-400 transition-colors">{op.displayName || op.email.split('@')[0]}</h4>
+                                          <h4 className="text-sm font-bold text-white group-hover:text-sky-400 transition-colors">{op.displayName || (op.email ? op.email.split('@')[0] : 'Operador')}</h4>
                                           <p className="text-[10px] text-slate-500 mt-0.5">{roleLabel}</p>
                                         </div>
                                       </div>
@@ -3613,7 +3613,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                       <div>
                                         <h4 className="text-base font-bold text-white group-hover:text-sky-400 transition-colors">{team.name}</h4>
                                         <p className="text-[10px] text-slate-500 mt-0.5">
-                                          Supervisor: <span className="text-slate-300 font-medium">{supervisor?.displayName || supervisor?.email.split('@')[0] || 'Não atribuído'}</span>
+                                          Supervisor: <span className="text-slate-300 font-medium">{supervisor?.displayName || (supervisor?.email ? supervisor.email.split('@')[0] : 'Não atribuído')}</span>
                                         </p>
                                       </div>
                                       <div className="flex items-center gap-1.5">
@@ -3719,7 +3719,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                       const team = managedTeamsData.find(t => t.id === op.teamId);
                                       return {
                                         value: op.uid,
-                                        label: `${op.displayName || op.email.split('@')[0]} (Equipe atual: ${team?.name || 'Nenhuma'})`
+                                        label: `${op.displayName || (op.email ? op.email.split('@')[0] : 'Operador')} (Equipe atual: ${team?.name || 'Nenhuma'})`
                                       };
                                     })}
                                   />
@@ -4263,7 +4263,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             setIsAttendanceModalOpen(false);
             setAttendanceModalData(null);
           }}
-          collaboratorName={attendanceModalData.collab.displayName || attendanceModalData.collab.email.split('@')[0]}
+          collaboratorName={attendanceModalData.collab.displayName || (attendanceModalData.collab.email ? attendanceModalData.collab.email.split('@')[0] : 'Colaborador')}
           dateStr={attendanceModalData.dateStr}
           currentStatus={attendanceModalData.note?.attendanceStatus || ''}
           currentLateDuration={attendanceModalData.note?.lateDuration || ''}

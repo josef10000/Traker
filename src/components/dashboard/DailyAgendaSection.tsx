@@ -114,7 +114,7 @@ export const DailyAgendaSection = ({
                     { value: "all", label: "Todos os Operadores" },
                     ...currentTeamMembers.map(member => ({
                       value: member.uid,
-                      label: member.displayName || member.email.split('@')[0]
+                      label: member.displayName || (member.email ? member.email.split('@')[0] : 'Operador')
                     }))
                   ]}
                 />

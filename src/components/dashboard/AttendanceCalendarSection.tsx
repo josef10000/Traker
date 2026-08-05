@@ -158,7 +158,7 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
                       size="xs"
                     />
                     <div className="truncate max-w-[150px]">
-                      <span className={`font-bold text-xs block leading-tight truncate ${theme === 'dark' ? 'text-white' : 'text-slate-850'}`}>{collab.displayName || collab.email.split('@')[0]}</span>
+                      <span className={`font-bold text-xs block leading-tight truncate ${theme === 'dark' ? 'text-white' : 'text-slate-850'}`}>{collab.displayName || (collab.email ? collab.email.split('@')[0] : 'Colaborador')}</span>
                       <span className="text-[9px] text-slate-500">{roleLabel}</span>
                     </div>
                   </td>
