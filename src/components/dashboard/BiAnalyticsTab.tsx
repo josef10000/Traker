@@ -1553,6 +1553,120 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
             </div>
           </div>
 
+          {/* 📅 PROJEÇÃO SEMANA A SEMANA (SEMANAS 1, 2, 3 E 4) */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                  <span>📅 Projeção de Arrecadação Semana a Semana (Mês N+1)</span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">PREDITIVO</span>
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">Distribuição estimada com base na liquidez histórica dos pagamentos por período do mês.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {(forecastData.weeklyForecast || []).map((wf) => (
+                <div key={wf.weekNumber} className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 space-y-2 hover:border-cyan-500/30 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 font-extrabold text-[10px] border border-cyan-500/20">
+                      {wf.weekLabel}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-400">
+                      {wf.historicalPercentage}% do total
+                    </span>
+                  </div>
+                  <div className="text-lg font-black tracking-tight text-white">
+                    {formatCurrency(wf.projectedValue)}
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-medium">
+                    {wf.dateRangeLabel}
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${Math.min(100, wf.historicalPercentage)}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 👥 TABELA DE PROJEÇÃO INDIVIDUAL POR MEMBRO DA EQUIPE */}
+          {forecastData.operatorForecasts && forecastData.operatorForecasts.length > 0 && (
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                    <span>👥 Projeção Preditiva Individual por Membro da Equipe</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-400 font-bold border border-purple-500/30">
+                      {forecastData.operatorForecasts.length} {forecastData.operatorForecasts.length === 1 ? 'operador' : 'operadores'}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">Estimativa mensal e semana a semana calculada pelo run-rate, ticket médio e efetividade individual.</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-950/40">
+                      <th className="p-3">Membro da Equipe</th>
+                      <th className="p-3 text-center">Efetividade</th>
+                      <th className="p-3 text-right">Realizado Mês Atual</th>
+                      <th className="p-3 text-right text-cyan-400">Projeção Mês N+1</th>
+                      <th className="p-3 text-right text-slate-300">Semana 1</th>
+                      <th className="p-3 text-right text-slate-300">Semana 2</th>
+                      <th className="p-3 text-right text-slate-300">Semana 3</th>
+                      <th className="p-3 text-right text-slate-300">Semana 4</th>
+                      <th className="p-3 text-center">Tendência</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {forecastData.operatorForecasts.map((op) => (
+                      <tr key={op.operatorId} className="hover:bg-white/5 transition-colors font-medium">
+                        <td className="p-3">
+                          <div className="font-bold text-white text-xs">{op.operatorName}</div>
+                          <div className="text-[10px] text-slate-400">TM: {formatCurrency(op.ticketAverage)}</div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                            op.effectivenessRate >= 75 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                            op.effectivenessRate >= 50 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                            'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          }`}>
+                            {op.effectivenessRate}%
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-bold text-slate-300">
+                          {formatCurrency(op.currentMonthPaid)}
+                        </td>
+                        <td className="p-3 text-right font-black text-cyan-400">
+                          {formatCurrency(op.projectedNextMonth)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-slate-300">
+                          {formatCurrency(op.weeklyBreakdown[0]?.projectedValue || 0)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-slate-300">
+                          {formatCurrency(op.weeklyBreakdown[1]?.projectedValue || 0)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-slate-300">
+                          {formatCurrency(op.weeklyBreakdown[2]?.projectedValue || 0)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-slate-300">
+                          {formatCurrency(op.weeklyBreakdown[3]?.projectedValue || 0)}
+                        </td>
+                        <td className="p-3 text-center">
+                          {op.trend === 'up' && <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px]">🟢 Subindo</span>}
+                          {op.trend === 'stable' && <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-400 font-extrabold text-[10px]">🔵 Estável</span>}
+                          {op.trend === 'down' && <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 font-extrabold text-[10px]">🔴 Atenção</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* 📈 GRÁFICOS PREDITIVOS: SAZONALIDADE 31 DIAS E JANELAS NOBRES DE ATENDIMENTO */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sazonalidade dos 31 Dias */}

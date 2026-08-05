@@ -202,5 +202,9 @@ describe('Métricas & BI (lib/metrics)', () => {
     expect(forecast.paidVolumeByAgreementType.quitacao.paidValue).toBe(1000);
     expect(forecast.paidVolumeByAgreementType.parcelamento.paidValue).toBe(2000);
     expect(forecast.bestLiquidityDays.length).toBeGreaterThan(0);
+    expect(forecast.weeklyForecast).toBeDefined();
+    expect(forecast.weeklyForecast?.length).toBe(4);
+    expect(forecast.operatorForecasts).toBeDefined();
+    expect(forecast.operatorForecasts?.length).toBeGreaterThan(0);
   });
 });

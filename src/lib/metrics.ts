@@ -358,6 +358,95 @@ export const calculateForecastStats = (
     else highRisk15d += a.value;
   });
 
+  // 4. Projeção Semana a Semana (W1: 1-7, W2: 8-14, W3: 15-21, W4: 22-31)
+  const weekVolumeMap: Record<number, { paidValue: number; count: number }> = {
+    1: { paidValue: 0, count: 0 },
+    2: { paidValue: 0, count: 0 },
+    3: { paidValue: 0, count: 0 },
+    4: { paidValue: 0, count: 0 }
+  };
+
+  paidAgreements.forEach(a => {
+    const day = parseLocalDate(a.dueDate).getDate();
+    let weekNum = 1;
+    if (day <= 7) weekNum = 1;
+    else if (day <= 14) weekNum = 2;
+    else if (day <= 21) weekNum = 3;
+    else weekNum = 4;
+
+    weekVolumeMap[weekNum].paidValue += a.value;
+    weekVolumeMap[weekNum].count += 1;
+  });
+
+  const totalPaidHistorical = Object.values(weekVolumeMap).reduce((s, w) => s + w.paidValue, 0) || 1;
+
+  const weeklyForecast = [
+    { weekNumber: 1, weekLabel: 'Semana 1', dateRangeLabel: 'Dias 01 a 07 (Início de Mês / Salários)' },
+    { weekNumber: 2, weekLabel: 'Semana 2', dateRangeLabel: 'Dias 08 a 14 (Meio da 1ª Quinzena)' },
+    { weekNumber: 3, weekLabel: 'Semana 3', dateRangeLabel: 'Dias 15 a 21 (2ª Quinzena / Adiantamentos)' },
+    { weekNumber: 4, weekLabel: 'Semana 4', dateRangeLabel: 'Dias 22 a 31 (Fechamento do Mês)' }
+  ].map(w => {
+    const weekData = weekVolumeMap[w.weekNumber];
+    const pct = totalPaidHistorical > 0 && weekData.paidValue > 0 ? (weekData.paidValue / totalPaidHistorical) : 0.25;
+    const historicalPercentage = Math.round(pct * 100);
+    const projectedValue = Math.round(projectedNextMonthRecovery * (pct || 0.25));
+    const projectedCount = Math.round((paidAgreements.length || 10) * (pct || 0.25));
+    return {
+      ...w,
+      projectedValue,
+      historicalPercentage,
+      projectedCount
+    };
+  });
+
+  // 5. Projeção Individual por Membro da Equipe / Operador
+  const operatorMap: Record<string, { name: string; agreements: Agreement[]; attendancesCount: number }> = {};
+
+  realAgreements.forEach(a => {
+    const opId = a.operatorId || 'op-desconhecido';
+    const opName = a.operatorName || opId;
+    if (!operatorMap[opId]) operatorMap[opId] = { name: opName, agreements: [], attendancesCount: 0 };
+    operatorMap[opId].agreements.push(a);
+  });
+
+  records.forEach(r => {
+    const opId = r.operatorId || 'op-desconhecido';
+    const opName = r.operatorName || opId;
+    if (!operatorMap[opId]) operatorMap[opId] = { name: opName, agreements: [], attendancesCount: 0 };
+    operatorMap[opId].attendancesCount += 1;
+  });
+
+  const opKeys = Object.keys(operatorMap);
+  const operatorForecasts = opKeys.map(opId => {
+    const opData = operatorMap[opId];
+    const opPaidList = opData.agreements.filter(a => a.status === AgreementStatus.PAID);
+    const currentMonthPaid = opPaidList.reduce((sum, a) => sum + a.value, 0);
+    const opTotalCount = opData.agreements.length;
+    const ticketAverage = opPaidList.length > 0 ? currentMonthPaid / opPaidList.length : 0;
+    const effectivenessRate = opTotalCount > 0 ? Math.round((opPaidList.length / opTotalCount) * 100) : 70;
+
+    const factor = effectivenessRate >= 80 ? 1.10 : (effectivenessRate >= 50 ? 1.02 : 0.90);
+    const projectedNextMonth = Math.round(currentMonthPaid > 0 ? currentMonthPaid * factor : (projectedNextMonthRecovery / Math.max(1, opKeys.length)));
+
+    const weeklyBreakdown = weeklyForecast.map(wf => ({
+      weekNumber: wf.weekNumber,
+      projectedValue: Math.round(projectedNextMonth * ((wf.historicalPercentage || 25) / 100))
+    }));
+
+    const trend: 'up' | 'stable' | 'down' = factor > 1.05 ? 'up' : (factor >= 0.98 ? 'stable' : 'down');
+
+    return {
+      operatorId: opId,
+      operatorName: opData.name,
+      currentMonthPaid,
+      ticketAverage: Math.round(ticketAverage),
+      effectivenessRate,
+      projectedNextMonth,
+      weeklyBreakdown,
+      trend
+    };
+  }).sort((a, b) => b.projectedNextMonth - a.projectedNextMonth);
+
   return {
     activeOperatorsCount,
     totalAttendances,
@@ -369,7 +458,9 @@ export const calculateForecastStats = (
     secondaryMrrColchao,
     bestLiquidityDays,
     primeTimeWindows,
-    dilatedBreakRisk: { lowRisk3d, medRisk7d, highRisk15d }
+    dilatedBreakRisk: { lowRisk3d, medRisk7d, highRisk15d },
+    weeklyForecast,
+    operatorForecasts
   };
 };
 

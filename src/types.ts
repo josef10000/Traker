@@ -243,6 +243,24 @@ export interface DashboardStats {
       bestLiquidityDays: number[];
       primeTimeWindows: { hour: number; conversionRate: number; count: number }[];
       dilatedBreakRisk: { lowRisk3d: number; medRisk7d: number; highRisk15d: number };
+      weeklyForecast?: {
+        weekNumber: number;
+        weekLabel: string;
+        dateRangeLabel: string;
+        projectedValue: number;
+        historicalPercentage: number;
+        projectedCount: number;
+      }[];
+      operatorForecasts?: {
+        operatorId: string;
+        operatorName: string;
+        currentMonthPaid: number;
+        ticketAverage: number;
+        effectivenessRate: number;
+        projectedNextMonth: number;
+        weeklyBreakdown: { weekNumber: number; projectedValue: number }[];
+        trend: 'up' | 'stable' | 'down';
+      }[];
     };
   };
   counts: {
