@@ -211,7 +211,8 @@ export const QaEvaluationCardModal: React.FC<QaEvaluationCardModalProps> = ({
             }`}>
               <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">Notas por Competência Auditada</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {Object.entries(evaluation.grades).map(([compId, grade]) => {
+                {Object.entries(evaluation.grades).map(([compId, gradeVal]) => {
+                  const grade = Number(gradeVal) || 0;
                   const comp = competences.find(c => c.id === compId);
                   const name = comp?.name || 'Competência';
                   return (

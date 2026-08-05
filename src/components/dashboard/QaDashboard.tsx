@@ -318,6 +318,12 @@ export const QaDashboard = ({
     pdiCompetenceId?: string;
     pdiActionPlan?: string;
     pdiDueDate?: string;
+    recoveredAmount?: number;
+    delayProfileLabel?: string;
+    delayProfile?: string;
+    clientReason?: string;
+    objections?: string;
+    improvementOpportunities?: string[];
   }) => {
     if (profile.role !== 'monitor') {
       showToast('Apenas o Monitor de Qualidade pode registrar avaliações.', 'error');
