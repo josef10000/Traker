@@ -203,14 +203,15 @@ export const TeamSelectorModal = ({
 
                               {isSupExpanded && (
                                 <div className="pl-3 border-l border-white/5 space-y-1 pt-1">
-                                  {supervisorTeams.map(team => {
-                                    const isTeamActive = selectedTeamId === team.id;
+                                  {supervisorTeams.filter(Boolean).map((team, tIdx) => {
+                                    const teamId = team?.id || `sup-team-${tIdx}`;
+                                    const isTeamActive = selectedTeamId === teamId;
                                     return (
                                       <button
                                         type="button"
-                                        key={team.id}
+                                        key={teamId}
                                         onClick={() => {
-                                          onSelectTeam(team.id);
+                                          onSelectTeam(teamId);
                                           onClose();
                                         }}
                                         className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all text-left cursor-pointer ${
@@ -219,7 +220,7 @@ export const TeamSelectorModal = ({
                                             : 'bg-transparent border-transparent text-slate-400 hover:bg-white/5 hover:text-white'
                                         }`}
                                       >
-                                        <span className="text-xs font-medium">{team.name}</span>
+                                        <span className="text-xs font-medium">{team?.name || 'Equipe'}</span>
                                         {isTeamActive && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
                                       </button>
                                     );
@@ -341,9 +342,9 @@ export const TeamSelectorModal = ({
                       </div>
                       <div>
                         <span className="font-bold text-sm block">{team?.name || 'Equipe'}</span>
-                        {team?.monthlyGoal && (
+                        {Boolean(team?.monthlyGoal) && (
                           <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors">
-                            Meta: R$ {team.monthlyGoal.toLocaleString('pt-BR')}
+                            Meta: R$ {team.monthlyGoal?.toLocaleString('pt-BR')}
                           </span>
                         )}
                       </div>

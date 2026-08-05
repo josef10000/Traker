@@ -1578,14 +1578,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
       doMarkStale();
       showToast('Acordo efetivado com sucesso!', 'success');
 
-      if (webhookUrl) {
-        const found = monthAgreements.find(a => a.id === id);
-        if (found) {
-          triggerWebhook(webhookUrl, 'agreement.paid', {
-            ...found,
-            status: AgreementStatus.PAID,
-            paidAt: now
-          }, profile.organizationId);
+      if (webhookUrl && isOnline) {
+        try {
+          const found = monthAgreements.find(a => a.id === id);
+          if (found) {
+            await triggerWebhook(webhookUrl, 'agreement.paid', {
+              ...found,
+              status: AgreementStatus.PAID,
+              paidAt: now
+            }, profile.organizationId);
+          }
+        } catch (err) {
+          console.warn('[Offline Mode] Webhook não disparado por falta de rede:', err);
         }
       }
     } catch (error) {
@@ -1859,7 +1863,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           try {
             const fullAgreement = { ...editingAgreement, ...updatedFields };
             const eventType = updatedFields.status === AgreementStatus.PAID ? 'agreement.paid' : 'agreement.updated';
-            triggerWebhook(webhookUrl, eventType, fullAgreement, profile.organizationId);
+            await triggerWebhook(webhookUrl, eventType, fullAgreement, profile.organizationId);
           } catch (err) {
             console.warn('[Offline Mode] Webhook não disparado por falta de rede:', err);
           }
@@ -1891,9 +1895,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         if (webhookUrl && isOnline) {
           try {
-            triggerWebhook(webhookUrl, 'agreement.created', agreementData, profile.organizationId);
+            await triggerWebhook(webhookUrl, 'agreement.created', agreementData, profile.organizationId);
             if (agreementData.status === AgreementStatus.PAID) {
-              triggerWebhook(webhookUrl, 'agreement.paid', agreementData, profile.organizationId);
+              await triggerWebhook(webhookUrl, 'agreement.paid', agreementData, profile.organizationId);
             }
           } catch (err) {
             console.warn('[Offline Mode] Webhook não disparado por falta de rede:', err);
