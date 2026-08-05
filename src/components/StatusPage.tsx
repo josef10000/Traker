@@ -182,15 +182,15 @@ export const StatusPage: React.FC = () => {
 
         {/* Seção 1: Governança de Código & Qualidade SonarCloud */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Award className="w-5 h-5 text-sky-400" />
               <h3 className="text-base font-bold text-white">
-                Qualidade de Código & Audit SonarCloud
+                Governança & Qualidade de Código (Audit SonarCloud)
               </h3>
             </div>
-            <span className="text-xs text-slate-400 font-mono">
-              SonarCloud Key: josef10000_Traker
+            <span className="px-3 py-1 rounded-full bg-slate-900/90 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 shadow-sm w-fit">
+              <ShieldCheck className="w-3.5 h-3.5" /> Verificado & Auditado
             </span>
           </div>
 
@@ -270,7 +270,7 @@ export const StatusPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <Server className="w-5 h-5 text-sky-400" />
             <h3 className="text-base font-bold text-white">
-              Status da Infraestrutura & APIs (Grafana Cloud + Vercel + Firestore)
+              Status da Infraestrutura & Serviços em Tempo Real
             </h3>
           </div>
 
