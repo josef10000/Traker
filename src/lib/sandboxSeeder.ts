@@ -47,7 +47,63 @@ export const generateSandboxSeeds = (): SandboxSeeds => {
   const teams: Record<string, Team> = {};
   const agreements: Record<string, Agreement> = {};
   const qaCompetences: Record<string, QaCompetence> = {};
-  const qaEvaluations: Record<string, QaEvaluation> = {};
+  const qaEvaluations: Record<string, QaEvaluation> = {
+    'sandbox-eval-1': {
+      id: 'sandbox-eval-1',
+      organizationId: orgId,
+      operatorId: 'sandbox-op-1',
+      evaluatorId: 'sandbox-monitor-a',
+      score: 80,
+      callId: 'CALL-89472',
+      protocol: 'PROT-99238',
+      callLink: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
+      isBestPractice: true,
+      grades: {
+        'comp-1': 80,
+        'comp-2': 85,
+        'comp-3': 75,
+        'comp-4': 80
+      },
+      feedback: 'Cliente relatou problemas de saúde e buscava uma renegociação antecipada. Ótima postura empática do operador.',
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      recoveredAmount: 101286.00,
+      delayProfile: '2 a 30 dias',
+      clientReason: 'Cliente relatou problemas de saúde e buscava uma renegociação antecipada.',
+      objections: 'Dificuldade financeira associada ao quadro de saúde informado.',
+      improvementOpportunities: [
+        'Confirmar o CPF da cliente durante a validação cadastral.',
+        'Seguir a régua de cobrança antes de partir para contrapropostas.',
+        'Ofertar inicialmente o pagamento da parcela em atraso e verificar possibilidade de remoção de juros antes de renegociar.',
+        'Explorar melhor alternativas aderentes à necessidade apresentada pela cliente.'
+      ]
+    },
+    'sandbox-eval-2': {
+      id: 'sandbox-eval-2',
+      organizationId: orgId,
+      operatorId: 'sandbox-op-2',
+      evaluatorId: 'sandbox-monitor-a',
+      score: 95,
+      callId: 'CALL-90112',
+      protocol: 'PROT-10045',
+      isBestPractice: true,
+      grades: {
+        'comp-1': 100,
+        'comp-2': 95,
+        'comp-3': 90,
+        'comp-4': 95
+      },
+      feedback: 'Atendimento exemplar com abordagem consultiva e respeito estrito às regras da régua de cobrança.',
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      recoveredAmount: 48500.00,
+      delayProfile: '31 a 60 dias',
+      clientReason: 'Atraso decorrente de desorganização financeira temporária na empresa do devedor.',
+      objections: 'Solicitava desconto expressivo de juros sem pagamento imediato de entrada.',
+      improvementOpportunities: [
+        'Manter a escuta ativa e firmeza demonstradas no atendimento.',
+        'Reforçar o prazo limite de validade da chave PIX no encerramento da ligação.'
+      ]
+    }
+  };
   const pdis: Record<string, Pdi> = {};
   const backofficeImports: Record<string, BackOfficeImport> = {};
   const backofficeClients: Record<string, BackOfficeClient> = {};

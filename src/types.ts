@@ -322,6 +322,13 @@ export interface QaEvaluation {
   grades: Record<string, number>; // ID Competência -> Nota (0 a 100)
   feedback: string;
   createdAt: string;
+
+  // Ficha de Diagnóstico da Monitoria de Qualidade
+  recoveredAmount?: number;            // Valor Recuperado em R$
+  delayProfile?: string;               // Perfil de Atraso (ex: "2 a 30 dias")
+  clientReason?: string;               // Motivo apresentado pelo cliente
+  objections?: string;                 // Objeções para não negociar
+  improvementOpportunities?: string[]; // Oportunidades de melhoria (tópicos)
 }
 
 export interface Pdi {

@@ -31,6 +31,11 @@ interface QaModalsProps {
     pdiCompetenceId?: string;
     pdiActionPlan?: string;
     pdiDueDate?: string;
+    recoveredAmount?: number;
+    delayProfile?: string;
+    clientReason?: string;
+    objections?: string;
+    improvementOpportunities?: string[];
   }) => Promise<void>;
 
   isSettingsOpen: boolean;
@@ -91,6 +96,13 @@ export const QaModals: React.FC<QaModalsProps> = ({
   const [pdiActionPlan, setPdiActionPlan] = useState('');
   const [pdiDueDate, setPdiDueDate] = useState('');
 
+  // Campos Estruturados da Ficha QA
+  const [evalRecoveredAmount, setEvalRecoveredAmount] = useState<string>('');
+  const [evalDelayProfile, setEvalDelayProfile] = useState<string>('2 a 30 dias');
+  const [evalClientReason, setEvalClientReason] = useState<string>('');
+  const [evalObjections, setEvalObjections] = useState<string>('');
+  const [evalImprovementOpportunitiesText, setEvalImprovementOpportunitiesText] = useState<string>('');
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -139,6 +151,11 @@ export const QaModals: React.FC<QaModalsProps> = ({
       setPdiCompetenceId('');
       setPdiActionPlan('');
       setPdiDueDate('');
+      setEvalRecoveredAmount('');
+      setEvalDelayProfile('2 a 30 dias');
+      setEvalClientReason('');
+      setEvalObjections('');
+      setEvalImprovementOpportunitiesText('');
     }
   }, [isEvalModalOpen]);
 
@@ -267,7 +284,12 @@ export const QaModals: React.FC<QaModalsProps> = ({
                 suggestPdi,
                 pdiCompetenceId: suggestPdi ? pdiCompetenceId : undefined,
                 pdiActionPlan: suggestPdi ? pdiActionPlan : undefined,
-                pdiDueDate: suggestPdi ? pdiDueDate : undefined
+                pdiDueDate: suggestPdi ? pdiDueDate : undefined,
+                recoveredAmount: evalRecoveredAmount ? parseFloat(evalRecoveredAmount) : undefined,
+                delayProfile: evalDelayProfile || undefined,
+                clientReason: evalClientReason || undefined,
+                objections: evalObjections || undefined,
+                improvementOpportunities: evalImprovementOpportunitiesText ? evalImprovementOpportunitiesText.split('\n').map(s => s.trim()).filter(Boolean) : undefined
               });
             }} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -390,11 +412,10 @@ export const QaModals: React.FC<QaModalsProps> = ({
                 </div>
               </div>
 
-              {/* Feedback Textual */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Feedback Detalhado / Observações do Monitor *</label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   required
                   placeholder="Escreva pontos de melhoria observados e elogios técnicos..."
                   value={evalFeedback}
@@ -403,6 +424,92 @@ export const QaModals: React.FC<QaModalsProps> = ({
                     theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 />
+              </div>
+
+              {/* FICHA ESTRUTURADA DE DIAGNÓSTICO DO ATENDIMENTO (OPCIONAL) */}
+              <div className={`p-4 rounded-2xl border space-y-4 ${
+                theme === 'dark' ? 'bg-slate-950/60 border-amber-500/20' : 'bg-amber-50/50 border-amber-200'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📋</span>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Diagnóstico da Ficha de Monitoria (Campos Estruturados)</h4>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Valor Recuperado */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Valor Recuperado R$ (Opcional)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="Ex: 101286.00"
+                      value={evalRecoveredAmount}
+                      onChange={(e) => setEvalRecoveredAmount(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl border outline-none text-xs transition-all ${
+                        theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-900'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Perfil de Atraso */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Perfil de Atraso do Devedor</label>
+                    <CustomSelect
+                      value={evalDelayProfile}
+                      onChange={(val) => setEvalDelayProfile(val)}
+                      placeholder="Selecione o perfil..."
+                      options={[
+                        { value: '0 a 1 dia', label: '0 a 1 dia (Preventivo)' },
+                        { value: '2 a 30 dias', label: '2 a 30 dias (Fase Inicial)' },
+                        { value: '31 a 60 dias', label: '31 a 60 dias (Fase Intermediária)' },
+                        { value: '61 a 90 dias', label: '61 a 90 dias (Fase Crítica)' },
+                        { value: '+90 dias', label: '+90 dias (Cobrança Ajuizada/WO)' }
+                      ]}
+                    />
+                  </div>
+                </div>
+
+                {/* Motivo Apresentado pelo Cliente */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Motivo Apresentado pelo Cliente</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Cliente relatou problemas de saúde e buscava uma renegociação antecipada."
+                    value={evalClientReason}
+                    onChange={(e) => setEvalClientReason(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border outline-none text-xs transition-all ${
+                      theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+
+                {/* Objeções para não negociar */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Objeções para Não Negociar</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Dificuldade financeira associada ao quadro de saúde informado."
+                    value={evalObjections}
+                    onChange={(e) => setEvalObjections(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border outline-none text-xs transition-all ${
+                      theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+
+                {/* Oportunidades de Melhoria (Tópicos) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Oportunidades de Melhoria (1 item por linha)</label>
+                  <textarea
+                    rows={3}
+                    placeholder={`Ex:\nConfirmar o CPF da cliente durante a validação cadastral.\nSeguir a régua de cobrança antes de partir para contrapropostas.\nOfertar inicialmente o pagamento da parcela em atraso.`}
+                    value={evalImprovementOpportunitiesText}
+                    onChange={(e) => setEvalImprovementOpportunitiesText(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border outline-none text-xs resize-none transition-all placeholder:text-slate-500/60 ${
+                      theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
               </div>
 
               {/* Injeção de PDI */}

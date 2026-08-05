@@ -368,7 +368,12 @@ export const QaDashboard = ({
         callExpiresAt: data.callExpiresAt || undefined,
         grades: data.grades,
         feedback: data.feedback,
-        createdAt: now
+        createdAt: now,
+        recoveredAmount: data.recoveredAmount,
+        delayProfile: data.delayProfile || undefined,
+        clientReason: data.clientReason || undefined,
+        objections: data.objections || undefined,
+        improvementOpportunities: data.improvementOpportunities
       });
 
       if (data.suggestPdi && data.pdiCompetenceId && data.pdiActionPlan && data.pdiDueDate) {
@@ -409,7 +414,12 @@ export const QaDashboard = ({
         callExpiresAt: data.callExpiresAt || null,
         grades: data.grades,
         feedback: data.feedback,
-        createdAt: now
+        createdAt: now,
+        recoveredAmount: data.recoveredAmount || null,
+        delayProfile: data.delayProfile || null,
+        clientReason: data.clientReason || null,
+        objections: data.objections || null,
+        improvementOpportunities: data.improvementOpportunities || []
       });
 
       if (data.suggestPdi && data.pdiCompetenceId && data.pdiActionPlan && data.pdiDueDate) {

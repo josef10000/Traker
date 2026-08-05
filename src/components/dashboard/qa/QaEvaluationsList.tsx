@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { UserProfile, QaCompetence, QaEvaluation } from '../../../types';
-import { ArrowUpRight, Star } from '@phosphor-icons/react';
+import { ArrowUpRight, Star, FileText } from '@phosphor-icons/react';
 import { CustomAudioPlayer } from '../../ui/CustomAudioPlayer';
+import { QaEvaluationCardModal } from './QaEvaluationCardModal';
 
 interface QaEvaluationsListProps {
   evaluations: QaEvaluation[];
@@ -21,13 +22,33 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
   onToggleBestPractice
 }) => {
   const [filterBestPracticeOnly, setFilterBestPracticeOnly] = useState(false);
+  const [selectedEvalForCard, setSelectedEvalForCard] = useState<QaEvaluation | null>(null);
 
   const displayedEvaluations = filterBestPracticeOnly 
     ? evaluations.filter(e => e.isBestPractice)
     : evaluations;
 
+  const activeOperator = selectedEvalForCard 
+    ? currentTeamMembers.find(m => m.uid === selectedEvalForCard.operatorId) 
+    : null;
+
+  const activeEvaluatorName = selectedEvalForCard
+    ? (currentTeamMembers.find(m => m.uid === selectedEvalForCard.evaluatorId)?.displayName || 'Monitor de Qualidade')
+    : 'Monitor de Qualidade';
+
   return (
     <div className="space-y-4">
+      {/* Modal Ficha Completa */}
+      <QaEvaluationCardModal
+        isOpen={Boolean(selectedEvalForCard)}
+        onClose={() => setSelectedEvalForCard(null)}
+        evaluation={selectedEvalForCard}
+        operator={activeOperator}
+        evaluatorName={activeEvaluatorName}
+        competences={competences}
+        theme={theme}
+      />
+
       {/* Filtro Rápido de Best Practices / Gravações Modelo */}
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-2">
@@ -79,8 +100,8 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
                   <th className="px-6 py-4">Mídia / Protocolo</th>
                   <th className="px-6 py-4">Nota</th>
                   <th className="px-6 py-4">Competências Chave</th>
-                  <th className="px-6 py-4">Feedback do Monitor</th>
-                  <th className="px-6 py-4 text-center">Modelo ⭐</th>
+                  <th className="px-6 py-4">Feedback / Ficha</th>
+                  <th className="px-6 py-4 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className={`text-xs divide-y ${
@@ -138,8 +159,20 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
                           })}
                         </div>
                       </td>
-                      <td className="px-6 py-4 italic text-slate-500 dark:text-slate-400 max-w-[250px] truncate" title={e.feedback}>
-                        "{e.feedback}"
+                      <td className="px-6 py-4 max-w-[250px]">
+                        <div className="space-y-1.5">
+                          <p className="italic text-slate-500 dark:text-slate-400 truncate" title={e.feedback}>
+                            "{e.feedback}"
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEvalForCard(e)}
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <FileText size={12} weight="bold" />
+                            <span>📋 Ver Ficha Completa</span>
+                          </button>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button
