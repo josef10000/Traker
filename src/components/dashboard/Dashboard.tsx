@@ -2432,7 +2432,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="flex min-h-screen font-sans bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen font-sans bg-slate-950 text-slate-100 no-print">
       {/* Sidebar de Navegação */}
       {!isPresentMode && (
         <Sidebar

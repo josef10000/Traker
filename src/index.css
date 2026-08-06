@@ -243,7 +243,10 @@ option {
     line-height: 1.4 !important;
   }
   
-  .no-print {
+  .no-print,
+  aside,
+  nav,
+  .sidebar-glass {
     display: none !important;
   }
   

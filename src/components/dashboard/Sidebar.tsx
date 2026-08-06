@@ -131,7 +131,7 @@ export const Sidebar = ({
 
   return (
     <aside 
-      className="relative flex flex-col h-screen w-20 shrink-0 select-none z-45 sidebar-glass border-r text-slate-300"
+      className="no-print relative flex flex-col h-screen w-20 shrink-0 select-none z-45 sidebar-glass border-r text-slate-300"
       style={{ overflow: 'visible' }}
     >
       {/* Topo / Logo Centralizada com Efeito de Vidro */}
