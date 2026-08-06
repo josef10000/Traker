@@ -486,15 +486,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return sandboxService.subscribe(syncSandboxScheduled);
     }
 
+    const safeTeams = teamsToWatch.slice(0, 30);
     const qScheduled = query(
       collection(db, 'agreements'),
       where('organizationId', '==', profile.organizationId),
-      where('teamId', 'in', teamsToWatch),
-      where('status', 'in', [AgreementStatus.SCHEDULED, AgreementStatus.WAITING])
+      where('teamId', 'in', safeTeams)
     );
 
     const unsubscribe = onSnapshot(qScheduled, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agreement));
+      const data = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Agreement))
+        .filter(a => a.status === AgreementStatus.SCHEDULED || a.status === AgreementStatus.WAITING);
       
       // Ordenação por data do retorno
       data.sort((a, b) => {
