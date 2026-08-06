@@ -11,7 +11,7 @@ import {
   Clock, 
   CurrencyDollar, 
   FileText, 
-  ShieldAlert, 
+  ShieldWarning, 
   Paperclip,
   CheckCircle,
   Funnel
@@ -135,7 +135,7 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-lg shrink-0">
-              <ShieldAlert size={26} weight="duotone" />
+              <ShieldWarning size={26} weight="duotone" />
             </div>
             <div>
               <div className="flex items-center gap-2">

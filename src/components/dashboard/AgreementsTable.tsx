@@ -313,6 +313,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 </span>
                               )}
                             </button>
+                          )}
+
                           {/* Anexo de Comprovante R2 */}
                           {onOpenReceiptModal && (
                             <button

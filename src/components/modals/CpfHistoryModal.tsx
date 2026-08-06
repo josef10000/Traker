@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
   UserCheck, 
-  ClockHistory, 
+  ClockCounterClockwise, 
   FileText, 
   ChatTeardropText, 
   Plus, 
@@ -110,7 +110,7 @@ export const CpfHistoryModal: React.FC<CpfHistoryModalProps> = ({
           <div className="p-6 bg-slate-950 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
-                <ClockHistory size={26} weight="duotone" />
+                <ClockCounterClockwise size={26} weight="duotone" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
