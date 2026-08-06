@@ -36,12 +36,14 @@ interface KnowledgeBaseSectionProps {
   profile: UserProfile;
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
   theme?: 'light' | 'dark';
+  onClose?: () => void;
 }
 
 export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   profile,
   showToast,
-  theme = 'dark'
+  theme = 'dark',
+  onClose
 }) => {
   const isDark = theme === 'dark';
   const canManage = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin' || profile.role === 'monitor';
@@ -254,16 +256,29 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
             </div>
           </div>
 
-          {canManage && (
-            <button
-              type="button"
-              onClick={handleOpenNewForm}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-lg shadow-sky-500/20 transition-all cursor-pointer self-start sm:self-auto"
-            >
-              <Plus size={16} weight="bold" />
-              <span>Novo Artigo / Script</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {canManage && (
+              <button
+                type="button"
+                onClick={handleOpenNewForm}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+              >
+                <Plus size={16} weight="bold" />
+                <span>Novo Artigo / Script</span>
+              </button>
+            )}
+
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Fechar Base de Conhecimento"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/5">
