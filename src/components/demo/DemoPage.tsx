@@ -9,7 +9,7 @@ import {
   Briefcase,
   FileCsv as FileSpreadsheet,
   CheckCircle,
-  LockKeyhole
+  LockKey
 } from '@phosphor-icons/react';
 import { UserRole } from '../../types';
 import { SpotlightCard } from '../ui/SpotlightCard';
@@ -89,7 +89,7 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onStartDemo }) => {
         {/* CABEÇALHO SÓBRIO */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 border border-white/10 text-sky-400 text-xs font-bold uppercase tracking-widest shadow-inner">
-            <LockKeyhole size={14} className="text-sky-400" />
+            <LockKey size={14} className="text-sky-400" />
             <span>Simulador de Experiência Traker</span>
           </div>
 
