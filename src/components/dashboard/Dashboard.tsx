@@ -103,6 +103,9 @@ import { getActiveSurveyConfig, isUserEligibleForSurvey } from '../../lib/survey
 import { EmployeeSurveyConfig } from '../../types';
 import { startTour } from '../../utils/tour';
 import { DemoFeatureBanner } from '../demo/DemoFeatureBanner';
+import { SupervisorDueDateRiskPanel } from './SupervisorDueDateRiskPanel';
+import { CpfHistoryModal } from '../modals/CpfHistoryModal';
+import { ReceiptAttachmentModal } from '../modals/ReceiptAttachmentModal';
 
 interface DashboardProps {
   user: User;
@@ -234,6 +237,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [attendanceModalData, setAttendanceModalData] = useState<{ collab: UserProfile; dateStr: string; note?: CollaborationNote } | null>(null);
   const [isCalendarEventModalOpen, setIsCalendarEventModalOpen] = useState(false);
   const [notesModalAgreement, setNotesModalAgreement] = useState<Agreement | null>(null);
+  const [selectedCpfForHistory, setSelectedCpfForHistory] = useState<string | null>(null);
+  const [selectedAgreementForReceipt, setSelectedAgreementForReceipt] = useState<Agreement | null>(null);
 
   // Escuta todas as anotações/presenças da organização
   useEffect(() => {
@@ -1724,6 +1729,78 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const handleClientClick = (cpf: string) => {
     setSelectedClientCpf(cpf);
+    setSelectedCpfForHistory(cpf);
+  };
+
+  const handleSaveReceipt = async (agreementId: string, receiptData: { receiptUrl: string; receiptFileName: string }) => {
+    const isDemo = profile.organizationId === 'sandbox-test';
+    const updatedFields = {
+      ...receiptData,
+      receiptUploadedAt: new Date().toISOString()
+    };
+
+    if (isDemo) {
+      setAgreements(prev => prev.map(a => a.id === agreementId ? { ...a, ...updatedFields } : a));
+      showToast('Comprovante salvo na Sandbox R2 (retenção de 24h)!', 'success');
+      return;
+    }
+
+    try {
+      const agreementRef = doc(db, 'agreements', agreementId);
+      await updateDoc(agreementRef, updatedFields);
+      setAgreements(prev => prev.map(a => a.id === agreementId ? { ...a, ...updatedFields } : a));
+      showToast('Comprovante salvo no Cloudflare R2 (retenção de 1 ano)!', 'success');
+      logAudit('ATTACH_RECEIPT', { agreementId, ...receiptData }, profile.name, profile.organizationId);
+    } catch (err) {
+      console.error('Erro ao salvar comprovante:', err);
+      showToast('Erro ao salvar comprovante.', 'error');
+    }
+  };
+
+  const handleAddCpfNote = async (cpf: string, noteData: Omit<AgreementNote, 'id' | 'createdAt'>) => {
+    const cleanCpf = cpf.replace(/\D/g, '');
+    const newNote: AgreementNote = {
+      id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      ...noteData,
+      createdAt: new Date().toISOString()
+    };
+
+    const matchingAgreements = agreements.filter(a => (a.clientCpf || '').replace(/\D/g, '') === cleanCpf);
+
+    if (profile.organizationId === 'sandbox-test') {
+      setAgreements(prev => prev.map(a => {
+        if ((a.clientCpf || '').replace(/\D/g, '') === cleanCpf) {
+          const history = a.notesHistory || [];
+          return { ...a, notesHistory: [newNote, ...history] };
+        }
+        return a;
+      }));
+      showToast('Anotação adicionada ao histórico do CPF!', 'success');
+      return;
+    }
+
+    try {
+      const batch = writeBatch(db);
+      matchingAgreements.forEach(a => {
+        const ref = doc(db, 'agreements', a.id);
+        const history = a.notesHistory || [];
+        batch.update(ref, { notesHistory: [newNote, ...history] });
+      });
+      await batch.commit();
+
+      setAgreements(prev => prev.map(a => {
+        if ((a.clientCpf || '').replace(/\D/g, '') === cleanCpf) {
+          const history = a.notesHistory || [];
+          return { ...a, notesHistory: [newNote, ...history] };
+        }
+        return a;
+      }));
+      showToast('Anotação salva com sucesso no histórico do CPF!', 'success');
+      logAudit('ADD_CPF_NOTE', { cpf: cleanCpf, noteContent: noteData.content }, profile.name, profile.organizationId);
+    } catch (err) {
+      console.error('Erro ao adicionar nota do CPF:', err);
+      showToast('Erro ao salvar anotação.', 'error');
+    }
   };
 
   const handleUpdateGoal = async (newGoal: number, newEffGoal: number) => {
@@ -2493,6 +2570,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 theme={theme}
               />
             )}
+
+            {/* Painel Exclusivo de Risco no Dia para Supervisores/Gestores */}
+            {['supervisor', 'coordinator', 'manager', 'admin'].includes(profile.role) && (
+              <SupervisorDueDateRiskPanel
+                agreements={agreements}
+                profile={profile}
+                onOpenCpfHistory={(cpf) => setSelectedCpfForHistory(cpf)}
+                onOpenReceiptModal={(agreement) => setSelectedAgreementForReceipt(agreement)}
+                theme={theme}
+              />
+            )}
             {/* Barra Superior Executiva Unificada de 1 Linha (Opção B) */}
             {dashboardTab === 'financial' && (
               <div className={`flex flex-col gap-3 p-4 rounded-2xl border transition-all ${
@@ -3014,6 +3102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       showToast={showToast}
                       theme={theme}
                       onOpenNotes={(ag) => setNotesModalAgreement(ag)}
+                      onOpenReceiptModal={(ag) => setSelectedAgreementForReceipt(ag)}
                     />
                   </section>
                   )}
@@ -4353,6 +4442,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
         onSaveNote={handleSaveLeadNote}
         theme={theme}
       />
+
+      {selectedCpfForHistory && (
+        <CpfHistoryModal
+          isOpen={Boolean(selectedCpfForHistory)}
+          onClose={() => setSelectedCpfForHistory(null)}
+          cpf={selectedCpfForHistory}
+          agreements={agreements}
+          profile={profile}
+          onAddNote={handleAddCpfNote}
+        />
+      )}
+
+      {selectedAgreementForReceipt && (
+        <ReceiptAttachmentModal
+          isOpen={Boolean(selectedAgreementForReceipt)}
+          onClose={() => setSelectedAgreementForReceipt(null)}
+          agreement={selectedAgreementForReceipt}
+          profile={profile}
+          isDemoMode={profile.organizationId === 'sandbox-test'}
+          onSaveReceipt={handleSaveReceipt}
+        />
+      )}
 
       <HelpDrawer 
         isOpen={isHelpOpen}

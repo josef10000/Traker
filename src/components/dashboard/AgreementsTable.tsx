@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { 
   Eye, EyeClosed as EyeOff, ClockCounterClockwise as History, Sun, Moon, Check, Lightning as Zap, 
-  Warning as AlertTriangle, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Clock, Pencil as Edit3, Trash as Trash2, MagnifyingGlass as Search, CircleNotch as Loader2, ChatText as MessageSquare
+  Warning as AlertTriangle, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Clock, Pencil as Edit3, Trash as Trash2, MagnifyingGlass as Search, CircleNotch as Loader2, ChatText as MessageSquare, Paperclip
 } from '@phosphor-icons/react';
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
@@ -30,6 +30,7 @@ interface AgreementsTableProps {
   theme?: 'light' | 'dark';
   onCopyCpf?: (id: string, cpf: string) => void;
   onOpenNotes?: (agreement: Agreement) => void;
+  onOpenReceiptModal?: (agreement: Agreement) => void;
 }
 
 export const AgreementsTable: React.FC<AgreementsTableProps> = ({
@@ -51,7 +52,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
   showToast,
   theme = 'dark',
   onCopyCpf,
-  onOpenNotes
+  onOpenNotes,
+  onOpenReceiptModal
 }) => {
   return (
     <section className={`rounded-2xl overflow-hidden border ${
@@ -308,6 +310,26 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                 <span className="absolute -top-1 -right-1 flex h-2 w-2">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                </span>
+                              )}
+                            </button>
+                          {/* Anexo de Comprovante R2 */}
+                          {onOpenReceiptModal && (
+                            <button
+                              onClick={() => onOpenReceiptModal(agreement)}
+                              className={`p-1 rounded-md transition-all cursor-pointer relative ${
+                                agreement.receiptUrl
+                                  ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30'
+                                  : theme === 'dark'
+                                    ? 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                              }`}
+                              title={agreement.receiptUrl ? 'Ver Comprovante Anexo (R2)' : 'Anexar Comprovante (R2)'}
+                            >
+                              <Paperclip size={13} />
+                              {agreement.receiptUrl && (
+                                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                 </span>
                               )}
                             </button>

@@ -186,6 +186,9 @@ export interface Agreement {
   notesHistory?: AgreementNote[]; // Linha do tempo de notas de transição do lead
   scheduledAt?: string; // Data/Hora agendada para retorno
   forcedCollision?: boolean; // Bypass manual de colisão de CPF
+  receiptUrl?: string; // URL do comprovante salvo no R2
+  receiptFileName?: string; // Nome original do arquivo do comprovante
+  receiptUploadedAt?: string; // Data do upload do comprovante
 }
 
 
