@@ -1,4 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { fetchGrafanaHealthAndAlerts } from '../src/lib/grafanaClient';
 
 interface StatusResponse {
   timestamp: string;
@@ -31,7 +32,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const grafanaUrl = process.env.GRAFANA_URL || 'https://lankyquokka3421.grafana.net';
   const grafanaToken = process.env.GRAFANA_API_TOKEN;
-
   const now = new Date().toISOString();
 
   // Lista base de serviços monitorados
@@ -56,52 +56,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 1. Consultar a API de Saúde nativa do Grafana (/api/health)
-    const healthUrl = `${grafanaUrl.replace(/\/$/, '')}/api/health`;
-    const healthRes = await fetch(healthUrl, {
-      headers: {
-        'Authorization': `Bearer ${grafanaToken}`,
-        'Accept': 'application/json'
-      }
-    });
-
-    let grafanaHealthData: any = {};
-    if (healthRes.ok) {
-      grafanaHealthData = await healthRes.json().catch(() => ({}));
-    }
-
-    // 2. Consultar Alertas Ativos no Grafana Prometheus Alerting (/api/prometheus/grafana/api/v1/alerts)
-    const alertsUrl = `${grafanaUrl.replace(/\/$/, '')}/api/prometheus/grafana/api/v1/alerts`;
-    const alertsRes = await fetch(alertsUrl, {
-      headers: {
-        'Authorization': `Bearer ${grafanaToken}`,
-        'Accept': 'application/json'
-      }
-    });
-
-    let activeAlerts: any[] = [];
-    if (alertsRes.ok) {
-      const alertsData = await alertsRes.json().catch(() => ({}));
-      if (alertsData && alertsData.data && Array.isArray(alertsData.data.alerts)) {
-        activeAlerts = alertsData.data.alerts.filter((a: any) => a.state === 'firing');
-      }
-    }
+    const { grafanaConnected, healthData, activeAlerts } = await fetchGrafanaHealthAndAlerts(grafanaUrl, grafanaToken);
 
     // Calcular status geral com base no Grafana
-    const isGrafanaOk = healthRes.ok && grafanaHealthData.database === 'ok';
+    const isGrafanaOk = grafanaConnected && healthData.database === 'ok';
     const hasFiringAlerts = activeAlerts.length > 0;
 
     let overallStatus: 'operational' | 'degraded' | 'outage' = 'operational';
-    if (hasFiringAlerts) {
-      overallStatus = 'degraded';
-    } else if (!isGrafanaOk) {
+    if (hasFiringAlerts || !isGrafanaOk) {
       overallStatus = 'degraded';
     }
 
     const updatedServices = defaultServices.map(service => {
-      // Se houver algum alerta disparado para o serviço específico
       const alert = activeAlerts.find((a: any) => 
-        a.labels && a.labels.alertname && a.labels.alertname.toLowerCase().includes(service.name.toLowerCase())
+        a.labels?.alertname && a.labels.alertname.toLowerCase().includes(service.name.toLowerCase())
       );
       if (alert) {
         return {
@@ -116,11 +84,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       timestamp: now,
       status: overallStatus,
-      grafanaConnected: true,
+      grafanaConnected,
       services: updatedServices,
       details: {
-        grafanaVersion: grafanaHealthData.version || 'Grafana Cloud',
-        databaseHealth: grafanaHealthData.database || 'ok',
+        grafanaVersion: healthData.version || 'Grafana Cloud',
+        databaseHealth: healthData.database || 'ok',
         message: hasFiringAlerts 
           ? `Atenção: ${activeAlerts.length} alerta(s) ativado(s) no Grafana.` 
           : 'Todos os sistemas operando normalmente.'

@@ -1,4 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { fetchGrafanaHealthAndAlerts } from '../src/lib/grafanaClient';
 
 export interface SonarMetrics {
   securityRating: string;
@@ -89,42 +90,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sonarProjectKey = process.env.SONAR_PROJECT_KEY || 'josef10000_Traker';
   const sonarToken = process.env.SONAR_TOKEN;
 
-  let grafanaConnected = false;
-  let activeAlerts: any[] = [];
-  let grafanaHealthData: any = {};
-
-  // 3. Consultar Grafana Cloud API em tempo real
-  if (grafanaToken) {
-    try {
-      const healthUrl = `${grafanaUrl.replace(/\/$/, '')}/api/health`;
-      const healthRes = await fetch(healthUrl, {
-        headers: {
-          'Authorization': `Bearer ${grafanaToken}`,
-          'Accept': 'application/json'
-        }
-      });
-      if (healthRes.ok) {
-        grafanaHealthData = await healthRes.json().catch(() => ({}));
-        grafanaConnected = true;
-      }
-
-      const alertsUrl = `${grafanaUrl.replace(/\/$/, '')}/api/prometheus/grafana/api/v1/alerts`;
-      const alertsRes = await fetch(alertsUrl, {
-        headers: {
-          'Authorization': `Bearer ${grafanaToken}`,
-          'Accept': 'application/json'
-        }
-      });
-      if (alertsRes.ok) {
-        const alertsData = await alertsRes.json().catch(() => ({}));
-        if (alertsData?.data?.alerts && Array.isArray(alertsData.data.alerts)) {
-          activeAlerts = alertsData.data.alerts.filter((a: any) => a.state === 'firing');
-        }
-      }
-    } catch (err) {
-      console.warn('Grafana API fetch warning:', err);
-    }
-  }
+  // 3. Consultar Grafana Cloud API em tempo real via cliente compartilhado
+  const { grafanaConnected, healthData: grafanaHealthData, activeAlerts } = await fetchGrafanaHealthAndAlerts(grafanaUrl, grafanaToken);
 
   // 4. Consultar SonarCloud Web API em tempo real
   let sonarConnected = false;
