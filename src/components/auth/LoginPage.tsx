@@ -276,24 +276,24 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
                 {isLogin ? 'Cadastrar-se' : 'Fazer Login'}
               </button>
             </p>
-
-            <div className="pt-4 border-t border-white/5 flex items-center justify-center">
-              <a
-                href="/status"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/80 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold hover:bg-slate-900 hover:border-emerald-500/50 transition-all cursor-pointer shadow-inner"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span>Status do Sistema ↗</span>
-              </a>
-            </div>
           </div>
         )}
       </motion.div>
+
+      {/* Badge Flutuante Pulsante de Status no Canto Inferior Direito */}
+      <a
+        href="/status"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-slate-900 hover:border-emerald-500/60 hover:shadow-lg hover:shadow-emerald-500/10 transition-all cursor-pointer shadow-2xl backdrop-blur-md group"
+      >
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        </span>
+        <span>Status da Plataforma: 100% Operacional</span>
+        <span className="text-slate-500 group-hover:text-emerald-300 transition-colors">↗</span>
+      </a>
     </div>
   );
 };

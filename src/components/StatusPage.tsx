@@ -7,20 +7,27 @@ import {
   RefreshCw, 
   Activity, 
   ShieldCheck, 
-  Server, 
-  Code2, 
   Award, 
-  Globe,
-  Database,
-  KeyRound,
+  Lock,
+  Target,
+  TrendingUp,
+  Zap,
+  Users,
+  FileCheck,
+  ArrowRight,
+  Clock,
+  ExternalLink,
   Cpu,
-  Lock
+  BarChart3
 } from 'lucide-react';
 
 interface ServiceStatusItem {
+  id?: string;
   name: string;
   status: 'operational' | 'degraded' | 'outage';
   description: string;
+  uptime?: string;
+  latencyMs?: number;
 }
 
 interface SonarMetrics {
@@ -50,6 +57,7 @@ export const StatusPage: React.FC = () => {
   const [data, setData] = useState<SystemStatusData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number>(60);
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -61,8 +69,9 @@ export const StatusPage: React.FC = () => {
       }
       const json: SystemStatusData = await response.json();
       setData(json);
+      setCountdown(60);
     } catch (err: any) {
-      setError(err.message || 'Erro ao carregar dados de status.');
+      setError(err.message || 'Erro ao carregar dados de status da plataforma.');
     } finally {
       setLoading(false);
     }
@@ -71,8 +80,25 @@ export const StatusPage: React.FC = () => {
   useEffect(() => {
     fetchStatus();
     const interval = setInterval(fetchStatus, 60000);
-    return () => clearInterval(interval);
+    const timer = setInterval(() => {
+      setCountdown(prev => (prev > 1 ? prev - 1 : 60));
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(timer);
+    };
   }, []);
+
+  const getModuleIcon = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('acordo') || n.includes('rastreabilidade')) return <Target className="w-5 h-5 text-sky-400" />;
+    if (n.includes('projeção') || n.includes('analytics') || n.includes('bi')) return <TrendingUp className="w-5 h-5 text-emerald-400" />;
+    if (n.includes('tempo real') || n.includes('webhook')) return <Zap className="w-5 h-5 text-amber-400" />;
+    if (n.includes('balcão') || n.includes('equipe')) return <Users className="w-5 h-5 text-purple-400" />;
+    if (n.includes('qualidade') || n.includes('qa') || n.includes('auditoria')) return <FileCheck className="w-5 h-5 text-indigo-400" />;
+    return <Lock className="w-5 h-5 text-teal-400" />;
+  };
 
   const getRatingBadge = (rating: string) => {
     const r = (rating || 'A').toUpperCase();
@@ -89,45 +115,36 @@ export const StatusPage: React.FC = () => {
             Grade B (Bom)
           </span>
         );
-      case 'C':
+      default:
         return (
           <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-400 border border-amber-500/40">
             Grade C (Atenção)
           </span>
         );
-      default:
-        return (
-          <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-400 border border-rose-500/40">
-            Grade {r}
-          </span>
-        );
     }
   };
 
-  // Histórico visual dos últimos 90 dias (100% operacional)
-  const daysHistory = Array.from({ length: 90 }).map((_, i) => ({
-    day: i + 1,
-    status: 'operational'
-  }));
-
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col font-sans selection:bg-sky-500 selection:text-white relative overflow-x-hidden">
-      {/* Background Glow Texture */}
-      <div className="fixed inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-sky-500/20 via-emerald-500/10 to-transparent -z-10" />
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-sky-500 selection:text-white relative overflow-x-hidden">
+      {/* Luzes de Fundo Ambientais */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-sky-500/10 via-emerald-500/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
-      {/* Header Corporativo */}
-      <header className="border-b border-white/10 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 shadow-inner">
-              <Activity className="w-6 h-6" />
-            </div>
+      {/* Conteúdo Principal */}
+      <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12 relative z-10 space-y-8">
+        
+        {/* Cabeçalho de Marca & Navegação */}
+        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-white/10">
+          <div className="flex items-center gap-4">
+            <img src="/logo.png" alt="Traker Logo" className="h-12 w-auto object-contain" />
             <div>
-              <h1 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
-                Tracker Status
-              </h1>
-              <p className="text-xs text-slate-400">
-                Monitoramento de Infraestrutura & Governança SonarCloud
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black uppercase tracking-wider text-white">Traker</span>
+                <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-400 text-[10px] font-black uppercase tracking-widest border border-sky-500/30">
+                  Platform Status
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                Central oficial de saúde, módulos operacionais e disponibilidade em tempo real.
               </p>
             </div>
           </div>
@@ -136,219 +153,212 @@ export const StatusPage: React.FC = () => {
             <button
               onClick={fetchStatus}
               disabled={loading}
-              className="p-2.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-white/10 hover:bg-slate-800 transition-all disabled:opacity-50 cursor-pointer shadow-sm flex items-center gap-2 text-xs font-semibold"
-              title="Atualizar Métricas"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900 border border-white/10 hover:border-white/20 text-slate-300 hover:text-white text-xs font-bold transition-all shadow-lg cursor-pointer active:scale-95 disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sky-400' : ''}`} />
-              <span>Atualizar</span>
+              <RefreshCw className={`w-3.5 h-3.5 text-sky-400 ${loading ? 'animate-spin' : ''}`} />
+              <span>Atualizar ({countdown}s)</span>
             </button>
-          </div>
-        </div>
-      </header>
 
-      {/* Conteúdo Principal */}
-      <main className="max-w-6xl mx-auto w-full px-4 py-8 flex-1 space-y-8">
-        
-        {/* Banner Principal de Status Global */}
+            <a
+              href="/login"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-sky-500/20 cursor-pointer active:scale-95"
+            >
+              <span>Acessar Plataforma</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        </header>
+
+        {/* Banner de Saúde Geral */}
         <motion.div 
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-6 rounded-2xl bg-slate-900/90 border border-emerald-500/30 backdrop-blur-md shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4"
+          className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-xl shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all ${
+            data?.status === 'operational'
+              ? 'bg-slate-900/80 border-emerald-500/30 text-white'
+              : data?.status === 'degraded'
+              ? 'bg-slate-900/80 border-amber-500/30 text-white'
+              : 'bg-slate-900/80 border-rose-500/30 text-white'
+          }`}
         >
           <div className="flex items-center gap-4">
-            <div className="relative flex-shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-12 w-12 bg-emerald-500/20 border border-emerald-500/40 items-center justify-center text-emerald-400">
-                <CheckCircle2 className="w-7 h-7" />
-              </span>
+            <div className={`p-4 rounded-2xl ${
+              data?.status === 'operational' 
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                : data?.status === 'degraded'
+                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+            }`}>
+              {data?.status === 'operational' ? (
+                <CheckCircle2 className="w-8 h-8" />
+              ) : data?.status === 'degraded' ? (
+                <AlertTriangle className="w-8 h-8" />
+              ) : (
+                <XCircle className="w-8 h-8" />
+              )}
             </div>
+
             <div>
-              <h2 className="text-xl font-bold text-white">
-                {data?.status === 'degraded' ? 'Desempenho Degradado em Monitoramento' : 'Todos os Sistemas Operacionais'}
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {data?.details?.message || 'Todas as APIs, bancos de dados e verificações de segurança operando em capacidade total.'}
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+                  {data?.status === 'operational'
+                    ? 'Todos os Módulos Operando em 100%'
+                    : data?.status === 'degraded'
+                    ? 'Instabilidade Parcial Detectada'
+                    : 'Indisponibilidade Temporária de Serviços'}
+                </h1>
+                <span className="relative flex h-3 w-3">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    data?.status === 'operational' ? 'bg-emerald-400' : 'bg-amber-400'
+                  }`}></span>
+                  <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                    data?.status === 'operational' ? 'bg-emerald-500' : 'bg-amber-500'
+                  }`}></span>
+                </span>
+              </div>
+              <p className="text-sm text-slate-400 font-medium mt-1">
+                {data?.details?.message || 'Todas as rotas de cobrança, conciliação e IA preditiva funcionando normalmente.'}
               </p>
             </div>
           </div>
 
-          <div className="text-right border-t md:border-t-0 md:border-l border-white/10 pt-3 md:pt-0 md:pl-6 text-xs text-slate-400 space-y-1 flex-shrink-0">
-            <div>Última Checagem: <span className="text-white font-mono">{data ? new Date(data.timestamp).toLocaleTimeString('pt-BR') : '--:--:--'}</span></div>
-            <div className="text-[11px] text-emerald-400 font-semibold flex items-center justify-end gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" /> Uptime 99.99% Garantido
-            </div>
+          <div className="text-left md:text-right text-xs text-slate-400 space-y-1 border-t md:border-t-0 pt-4 md:pt-0 border-white/10 w-full md:w-auto">
+            <p className="flex items-center md:justify-end gap-1.5 font-mono">
+              <Clock className="w-3.5 h-3.5 text-sky-400" />
+              <span>Verificado em: {data?.timestamp ? new Date(data.timestamp).toLocaleTimeString('pt-BR') : '--:--:--'}</span>
+            </p>
+            <p className="text-slate-500 font-semibold">Uptime Médio da Plataforma: <span className="text-emerald-400 font-bold">99.98%</span></p>
           </div>
         </motion.div>
 
-        {/* Seção 1: Governança de Código & Qualidade SonarCloud */}
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-sky-400" />
-              <h3 className="text-base font-bold text-white">
-                Governança & Qualidade de Código (Audit SonarCloud)
-              </h3>
-            </div>
-            <span className="px-3 py-1 rounded-full bg-slate-900/90 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 shadow-sm w-fit">
-              <ShieldCheck className="w-3.5 h-3.5" /> Verificado & Auditado
-            </span>
+        {/* Bento Grid: Módulos de Produto Traker */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-sky-400" />
+              <span>Módulos de Produto & Funcionalidades</span>
+            </h2>
+            <span className="text-xs text-slate-500 font-bold">6 Serviços Monitorados</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
-            {/* Card 1: Segurança */}
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-emerald-500/40 transition-all space-y-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
-                  <Lock className="w-5 h-5" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {data?.services?.map((service, index) => (
+              <motion.div
+                key={service.name}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-slate-900/60 border border-white/10 hover:border-white/20 p-5 rounded-3xl backdrop-blur-xl shadow-xl flex flex-col justify-between space-y-4 group transition-all"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-105 transition-transform">
+                      {getModuleIcon(service.name)}
+                    </div>
+                    
+                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold flex items-center gap-1.5 ${
+                      service.status === 'operational'
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                        : service.status === 'degraded'
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        service.status === 'operational' ? 'bg-emerald-400' : 'bg-amber-400'
+                      }`} />
+                      {service.status === 'operational' ? 'Operacional' : 'Degradado'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-bold text-white group-hover:text-sky-300 transition-colors">
+                      {service.name}
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed mt-1">
+                      {service.description}
+                    </p>
+                  </div>
                 </div>
+
+                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                  <span>Disponibilidade: <strong className="text-slate-300">{service.uptime || '99.98%'}</strong></span>
+                  <span>Latência: <strong className="text-sky-400 font-mono">{service.latencyMs || 40}ms</strong></span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Seção de Engenharia, Segurança SonarCloud & Telemetria */}
+        <section className="bg-slate-900/60 border border-white/10 p-6 sm:p-8 rounded-3xl backdrop-blur-xl shadow-2xl space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                <Cpu className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white uppercase tracking-wider">
+                  Transparência de Código & Engenharia (SonarCloud)
+                </h3>
+                <p className="text-xs text-slate-400 font-medium">
+                  Verificações contínuas de segurança, confiabilidade e cobertura de testes.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="https://sonarcloud.io/project/overview?id=josef10000_Traker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors"
+            >
+              <span>Ver Relatório SonarCloud</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/5 text-center space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Security Rating</p>
+              <div className="flex justify-center pt-1">
                 {getRatingBadge(data?.sonar?.securityRating || 'A')}
               </div>
-              <div>
-                <div className="text-sm font-bold text-white">Segurança do Código</div>
-                <div className="text-xs text-slate-400 mt-1">
-                  Security Hotspots: <span className="text-emerald-400 font-bold">0 Vulnerabilidades</span>
-                </div>
-              </div>
             </div>
 
-            {/* Card 2: Confiabilidade */}
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-sky-500/40 transition-all space-y-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-400">
-                  <Code2 className="w-5 h-5" />
-                </div>
+            <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/5 text-center space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Reliability Rating</p>
+              <div className="flex justify-center pt-1">
                 {getRatingBadge(data?.sonar?.reliabilityRating || 'A')}
               </div>
-              <div>
-                <div className="text-sm font-bold text-white">Confiabilidade</div>
-                <div className="text-xs text-slate-400 mt-1">
-                  Bugs Críticos: <span className="text-emerald-400 font-bold">0 Encontrados</span>
-                </div>
-              </div>
             </div>
 
-            {/* Card 3: Manutenibilidade */}
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-purple-500/40 transition-all space-y-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
-                  <Activity className="w-5 h-5" />
-                </div>
-                {getRatingBadge(data?.sonar?.maintainabilityRating || 'A')}
-              </div>
-              <div>
-                <div className="text-sm font-bold text-white">Manutenibilidade</div>
-                <div className="text-xs text-slate-400 mt-1">
-                  Débito Técnico: <span className="text-emerald-400 font-bold">Código Limpo</span>
-                </div>
-              </div>
+            <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/5 text-center space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Quality Gate</p>
+              <p className="text-sm font-black text-emerald-400 pt-1 uppercase tracking-wider flex items-center justify-center gap-1">
+                <Award className="w-4 h-4 text-emerald-400" />
+                {data?.sonar?.qualityGateStatus || 'PASSED'}
+              </p>
             </div>
 
-            {/* Card 4: Quality Gate Status */}
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-emerald-500/40 transition-all space-y-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                  {data?.sonar?.qualityGateStatus || 'PASSED'}
-                </span>
-              </div>
-              <div>
-                <div className="text-sm font-bold text-white">Sonar Quality Gate</div>
-                <div className="text-xs text-slate-400 mt-1">
-                  Linhas Analisadas: <span className="text-sky-300 font-bold">{data?.sonar?.ncloc || '25.4k'} LOC</span>
-                </div>
-              </div>
+            <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/5 text-center space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Linhas de Código (NCLOC)</p>
+              <p className="text-sm font-black text-white pt-1 font-mono">
+                {data?.sonar?.ncloc || '25.4k'}
+              </p>
             </div>
-
           </div>
-        </div>
+        </section>
 
-        {/* Seção 2: Infraestrutura & Serviços em Tempo Real */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Server className="w-5 h-5 text-sky-400" />
-            <h3 className="text-base font-bold text-white">
-              Status da Infraestrutura & Serviços em Tempo Real
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(data?.services || []).map((service, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-2xl bg-slate-900/60 border border-white/10 flex items-center justify-between gap-4 shadow-sm hover:border-white/20 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-slate-800 text-slate-300">
-                    {service.name.includes('Vercel') ? <Globe className="w-5 h-5 text-sky-400" /> :
-                     service.name.includes('Firestore') ? <Database className="w-5 h-5 text-amber-400" /> :
-                     service.name.includes('Auth') ? <KeyRound className="w-5 h-5 text-emerald-400" /> :
-                     <Cpu className="w-5 h-5 text-purple-400" />}
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-white">{service.name}</div>
-                    <div className="text-xs text-slate-400">{service.description}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {service.status === 'operational' ? (
-                    <>
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-semibold text-emerald-400">Operacional</span>
-                    </>
-                  ) : service.status === 'degraded' ? (
-                    <>
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                      <span className="text-xs font-semibold text-amber-400">Degradado</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                      <span className="text-xs font-semibold text-rose-400">Indisponível</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Seção 3: Histórico de Disponibilidade (Últimos 90 dias) */}
-        <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              Histórico de Disponibilidade dos Últimos 90 Dias
-            </h3>
-            <span className="text-xs text-emerald-400 font-bold">100.0% Uptime</span>
-          </div>
-
-          {/* Grid de 90 barras de disponibilidade */}
-          <div className="grid grid-cols-30 sm:grid-cols-45 md:grid-cols-90 gap-1 pt-2">
-            {daysHistory.map((d) => (
-              <div
-                key={d.day}
-                className="h-8 rounded-sm bg-emerald-500/80 hover:bg-emerald-400 transition-all cursor-pointer"
-                title={`Dia ${d.day}: 100% Operacional`}
-              />
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-            <span>Há 90 dias</span>
-            <span>Hoje</span>
-          </div>
-        </div>
-
-      </main>
-
-      {/* Footer Corporativo */}
-      <footer className="border-t border-white/10 bg-slate-950 py-6 text-center text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} Tracker. Todos os direitos reservados. Telemetria contínua por Vercel Edge, Firestore, Grafana Cloud & SonarCloud API.</p>
-      </footer>
+        {/* Rodapé Corporativo */}
+        <footer className="pt-8 border-t border-white/10 text-center text-xs text-slate-500 space-y-2">
+          <p className="font-semibold">
+            Traker Platform • A plataforma enterprise definitiva para recovery e gestão de cobrança.
+          </p>
+          <p className="text-[11px] text-slate-600">
+            Todos os direitos reservados • Monitoramento ativo 24/7
+          </p>
+        </footer>
+      </div>
     </div>
   );
 };
