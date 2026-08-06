@@ -4,7 +4,6 @@ import {
   Info, 
   CaretUp, 
   CaretDown, 
-  Sparkle, 
   FileCsv as FileSpreadsheet,
   ChartLine,
   Target,
@@ -49,7 +48,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
   carga_acordos: {
     title: 'Carga de Acordos (Planilhas Externas)',
     icon: FileSpreadsheet,
-    whatItDoes: 'Importação e gestão de planilhas externas no sistema. Carregue suas planilhas de trabalho direto na plataforma para fazer edições, acompanhamento centralizado e reexportações a qualquer momento, eliminando a necessidade de controle manual fora do sistema.',
+    whatItDoes: 'Importação e gestão de planilhas externas no sistema. Carregue suas planilhas de trabalho direto na plataforma para fazer edições, acompanhamento centralizado e reexportações a qualquer momento.',
     benefitByRole: {
       member: 'Carregue sua planilha externa de atendimento, edite status diretamente na tela e exporte o arquivo atualizado quando precisar.',
       supervisor: 'Audite a carga de planilhas da sua equipe e garanta que todas as carteiras externas estejam atualizadas.',
@@ -61,7 +60,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
   portfolio: {
     title: 'Metas & Carteiras (Análises Aprofundadas)',
     icon: Target,
-    whatItDoes: 'Análises aprofundadas da operação. Verificação detalhada do desempenho individual de cada operador, notas de Qualidade (QA) cruzadas por colaborador, faturamento por carteira e dados comparativos de performance de todos os times.',
+    whatItDoes: 'Análises aprofundadas da operação. Verificação detalhada do desempenho individual de cada operador, notas de Qualidade (QA) cruzadas por colaborador e faturamento por carteira.',
     benefitByRole: {
       supervisor: 'Identifique quais operadores precisam de apoio individual, analise notas de QA cruzadas com vendas e acompanhe o batimento de metas do time.',
       manager: 'Avalie a rentabilidade de cada carteira de cobrança e o rendimento comparativo das equipes.',
@@ -137,7 +136,7 @@ const FEATURE_DETAILS: Record<string, FeatureDetail> = {
   backoffice: {
     title: 'Back Office',
     icon: FileSpreadsheet,
-    whatItDoes: 'Agilidade total para subir e baixar planilhas. Ao carregar seus arquivos, você consegue visualizar os dados da melhor forma possível, dar nomes às colunas, melhorar a visualização operacional, verificar o seu trabalho e ter agilidade na busca de dados como CPF.',
+    whatItDoes: 'Agilidade total para subir e baixar planilhas. Visualização estruturada de dados, nomes às colunas e busca rápida por CPF.',
     benefitByRole: {
       backoffice: 'Velocidade, agilidade operacional e a centralização do seu trabalho em um só local.',
       manager: 'Velocidade, agilidade e centralização total do tratamento de dados em um só local.',
@@ -154,11 +153,11 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
   const detail = FEATURE_DETAILS[activeTab] || {
     title: 'Módulo da Plataforma',
     icon: Info,
-    whatItDoes: 'Funcionalidade do sistema Tracker.',
+    whatItDoes: 'Funcionalidade do sistema Traker.',
     benefitByRole: {
       default: 'Acompanhe e gerencie as operações da sua empresa.'
     },
-    highlights: ['Tracker Platform']
+    highlights: ['Traker Platform']
   };
 
   const IconComp = detail.icon;
@@ -166,25 +165,23 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
 
   return (
     <div className="w-full mb-6 z-20">
-      <div className="p-5 rounded-3xl border bg-slate-900 border-purple-500/40 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-        {/* Efeito de Luz */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
-
-        {/* CABEÇALHO DO BANNER */}
+      <div className="p-5 rounded-3xl border bg-slate-900/90 border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+        
+        {/* CABEÇALHO SÓBRIO DO BANNER */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/25 shrink-0">
-              <IconComp size={24} weight="bold" />
+            <div className="w-11 h-11 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+              <IconComp size={24} weight="duotone" />
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-purple-300 bg-purple-500/20 px-2.5 py-0.5 rounded-lg border border-purple-500/30 flex items-center gap-1.5 shadow-sm">
-                  <Sparkle size={12} weight="bold" className="text-purple-400" /> Guia da Demonstração
+                <span className="text-[10px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/15 px-2.5 py-0.5 rounded-lg border border-sky-500/30">
+                  Guia da Demonstração
                 </span>
                 <span className="text-sm font-black text-white">{detail.title}</span>
               </div>
-              <p className="text-xs text-white font-bold line-clamp-1 mt-0.5 opacity-100">
+              <p className="text-xs text-slate-300 font-medium line-clamp-1 mt-0.5">
                 {detail.whatItDoes}
               </p>
             </div>
@@ -193,7 +190,7 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-black shrink-0 active:scale-95"
+            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold shrink-0 active:scale-95"
           >
             <span>{isExpanded ? 'Recolher' : 'Entender Tela'}</span>
             {isExpanded ? <CaretUp size={14} weight="bold" /> : <CaretDown size={14} weight="bold" />}
@@ -212,42 +209,42 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
             >
               <div className="mt-5 pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-3 gap-4">
                 
-                {/* CARD 1: O QUE ESTA TELA FAZ (TÍTULO AMARELO FORTE + LETRA BRANCA BRILHANTE) */}
-                <div className="p-4 rounded-2xl bg-slate-950 border border-amber-500/30 shadow-md space-y-2 flex flex-col justify-between">
+                {/* CARD 1: O QUE ESTA TELA FAZ */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 shadow-md space-y-2 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2" style={{ color: '#fbbf24' }}>
-                      <Target size={18} weight="bold" style={{ color: '#fbbf24' }} />
-                      <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: '#fbbf24' }}>
+                    <div className="flex items-center gap-2 text-sky-400">
+                      <Target size={18} weight="duotone" />
+                      <span className="text-[11px] font-black uppercase tracking-wider">
                         O que esta tela faz
                       </span>
                     </div>
-                    <p className="text-xs font-bold leading-relaxed mt-2.5 opacity-100" style={{ color: '#ffffff' }}>
+                    <p className="text-xs font-medium text-slate-300 leading-relaxed mt-2.5">
                       {detail.whatItDoes}
                     </p>
                   </div>
                 </div>
 
-                {/* CARD 2: BENEFÍCIO PARA O CARGO (TÍTULO ROXO + LETRA BRANCA BRILHANTE) */}
-                <div className="p-4 rounded-2xl bg-purple-950/70 border border-purple-500/50 shadow-md space-y-2 flex flex-col justify-between">
+                {/* CARD 2: BENEFÍCIO PARA O CARGO */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 shadow-md space-y-2 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2 text-purple-300">
-                      <RocketLaunch size={18} weight="bold" className="text-purple-300" />
-                      <span className="text-[11px] font-black uppercase tracking-wider text-purple-300">
+                    <div className="flex items-center gap-2 text-purple-400">
+                      <RocketLaunch size={18} weight="duotone" />
+                      <span className="text-[11px] font-black uppercase tracking-wider">
                         Benefício para {role === 'member' ? 'Operador' : role === 'supervisor' ? 'Supervisor' : role === 'manager' ? 'Gerente' : role === 'coordinator' ? 'Coordenador' : role === 'monitor' ? 'Monitor' : 'Back Office'}
                       </span>
                     </div>
-                    <p className="text-xs font-bold leading-relaxed mt-2.5 opacity-100" style={{ color: '#ffffff' }}>
+                    <p className="text-xs font-medium text-slate-300 leading-relaxed mt-2.5">
                       {benefitText}
                     </p>
                   </div>
                 </div>
 
-                {/* CARD 3: DESTAQUES PRINCIPAIS (TÍTULO AMARELO FORTE + PÍLULAS VERDES NÍTIDAS) */}
-                <div className="p-4 rounded-2xl bg-slate-950 border border-amber-500/30 shadow-md space-y-2 flex flex-col justify-between">
+                {/* CARD 3: DESTAQUES PRINCIPAIS */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 shadow-md space-y-2 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2" style={{ color: '#fbbf24' }}>
-                      <Lightbulb size={18} weight="bold" style={{ color: '#fbbf24' }} />
-                      <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: '#fbbf24' }}>
+                    <div className="flex items-center gap-2 text-emerald-400">
+                      <Lightbulb size={18} weight="duotone" />
+                      <span className="text-[11px] font-black uppercase tracking-wider">
                         Destaques Principais
                       </span>
                     </div>
@@ -255,9 +252,9 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
                       {detail.highlights.map((item, idx) => (
                         <span 
                           key={idx} 
-                          className="text-[11px] font-black text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-xl border border-emerald-500/50 shadow-sm flex items-center gap-1.5 opacity-100"
+                          className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 flex items-center gap-1.5"
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                           {item}
                         </span>
                       ))}
@@ -273,3 +270,5 @@ export const DemoFeatureBanner: React.FC<DemoFeatureBannerProps> = ({ activeTab,
     </div>
   );
 };
+
+export default DemoFeatureBanner;
