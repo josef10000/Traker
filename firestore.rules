@@ -2,29 +2,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Funções auxiliares de segurança
+    // Funções auxiliares de segurança otimizadas (Custom Claims com fallback transparente para Firestore Profile)
     function getProfile() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
     
     function getUserTeamId() {
-      return getProfile().teamId;
+      return request.auth.token.teamId != null ? request.auth.token.teamId : getProfile().teamId;
     }
 
     function getUserOrganizationId() {
-      return getProfile().organizationId;
+      return request.auth.token.organizationId != null ? request.auth.token.organizationId : getProfile().organizationId;
     }
     
+    function getUserRole() {
+      return request.auth.token.role != null ? request.auth.token.role : getProfile().role;
+    }
+
     function isSupervisor() {
-      return getProfile().role == 'supervisor';
+      return getUserRole() == 'supervisor';
     }
 
     function isManager() {
-      return getProfile().role == 'manager';
+      return getUserRole() == 'manager';
     }
 
     function isSuperAdmin() {
-      return getProfile().role == 'super_admin';
+      return getUserRole() == 'super_admin';
     }
     
     // Coleção de organizações (organizations)

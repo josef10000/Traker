@@ -91,9 +91,11 @@ O repositório mantém integração nativa com o **SonarCloud** (Projeto `josef1
 
 ## 🚀 Arquitetura & Otimização de Engenharia
 
-- **Cache Gate (Economia de ~95% no Firestore)**: A leitura de estatísticas e KPIs é validada por um "portão de frescor" no Firestore. Se não houver novas mutações, o sistema lê os dados diretamente do IndexedDB local com **custo 0 de leitura na nuvem**.
+- **Code-Splitting Avançado com Chunking Manual**: O bundler Vite divide dinamicamente o código de produção em pacotes separados por módulo (`vendor-charts`, `vendor-firebase`, `vendor-excel`, `vendor-icons` e `vendor-react-core`), garantindo downloads em paralelo e renderizações instantâneas.
+- **Validação com Custom Claims no Firestore**: As regras do Firestore checam preferencialmente as alegações customizadas de token (`request.auth.token.organizationId` / `role`), eliminando chamadas repetidas de `get()` e reduzindo o consumo/latência de leitura no banco.
+- **Cache Gate (Economia no Firestore)**: A leitura de estatísticas e KPIs é validada por um portão de frescor no Firestore. Se não houver novas mutações, o sistema lê os dados diretamente do IndexedDB local com custo 0 de leitura na nuvem.
 - **Paginação por Cursors**: Listagem de acordos via cursores nativos (`limit`, `startAfter`), reduzindo o consumo de memória e tráfego.
-- **Componentização Desacoplada**: Lógicas de negócio em hooks puros (`useAgreements`, `useTeamMembers`, `useNetworkStatus`) e modais centralizados em `DashboardModals.tsx`.
+- **Componentização Desacoplada**: Lógicas de negócio em hooks puros (`useAgreements`, `useTeamMembers`, `useNetworkStatus`) e modais centralizados.
 
 ---
 
