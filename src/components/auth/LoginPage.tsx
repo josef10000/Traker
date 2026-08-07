@@ -41,7 +41,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
     if (token) {
       setInviteToken(token);
       
-      if (token === 'demo' || token === 'demo-invite') {
+      if (token === 'demo' || token === 'demo-invite' || token.startsWith('inv-demo-')) {
         setInviteData({
           email: 'colaborador.exemplo@empresa.com',
           role: 'member',
@@ -100,6 +100,8 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
         if (inviteToken) {
           if (inviteToken.startsWith('sb-tok')) {
             sandboxService.acceptInvite(authResult.user.uid, inviteToken);
+          } else if (inviteToken === 'demo' || inviteToken === 'demo-invite' || inviteToken.startsWith('inv-demo-')) {
+            // Token de demonstração/teste - apenas simula aceite
           } else {
             await acceptInvite(authResult.user.uid, inviteToken);
           }
