@@ -1760,7 +1760,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleAddCpfNote = async (cpf: string, noteData: Omit<AgreementNote, 'id' | 'createdAt'>) => {
     const cleanCpf = cpf.replace(/\D/g, '');
     const newNote: AgreementNote = {
-      id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      id: `note_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
       ...noteData,
       createdAt: new Date().toISOString()
     };
