@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Warning, 
@@ -14,7 +14,9 @@ import {
   ShieldWarning, 
   Paperclip,
   CheckCircle,
-  Funnel
+  Funnel,
+  CaretLeft,
+  CaretRight
 } from '@phosphor-icons/react';
 import { Agreement, UserProfile } from '../../types';
 import { formatCurrency, formatCPF } from '../../utils/masks';
@@ -39,6 +41,17 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'value_desc' | 'value_asc' | 'name'>('value_desc');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (!carouselRef.current) return;
+    const scrollAmount = 360;
+    carouselRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  };
 
   // Exclusividade: exibe apenas para perfis de liderança
   const isSupervisorRole = ['supervisor', 'coordinator', 'manager', 'admin'].includes(profile.role);
@@ -176,7 +189,7 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
           </div>
         </div>
 
-        {/* CONTROLES: BUSCA E ORDENAÇÃO */}
+        {/* CONTROLES: BUSCA, ORDENAÇÃO E BOTÕES DE NAVEGAÇÃO LATERAL DO CARROSSEL */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
             <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -189,23 +202,48 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <span className="text-xs text-slate-400 font-bold flex items-center gap-1">
-              <SortDescending size={14} className="text-amber-400" /> Ordenar por:
-            </span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none focus:border-amber-500/50"
-            >
-              <option value="value_desc">💰 Maior Valor Primeiro</option>
-              <option value="value_asc">💵 Menor Valor Primeiro</option>
-              <option value="name">👤 Nome do Cliente</option>
-            </select>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400 font-bold flex items-center gap-1">
+                <SortDescending size={14} className="text-amber-400" /> Ordenar:
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none focus:border-amber-500/50"
+              >
+                <option value="value_desc">💰 Maior Valor</option>
+                <option value="value_asc">💵 Menor Valor</option>
+                <option value="name">👤 Nome do Cliente</option>
+              </select>
+            </div>
+
+            {/* SETAS DE NAVEGAÇÃO LATERAL DO CARROSSEL */}
+            {filteredAgreements.length > 0 && (
+              <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel('left')}
+                  className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
+                  title="Anterior"
+                >
+                  <CaretLeft size={16} weight="bold" />
+                </button>
+                <span className="text-[10px] font-bold text-slate-500 px-1">Arrastar</span>
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel('right')}
+                  className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
+                  title="Próximo"
+                >
+                  <CaretRight size={16} weight="bold" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* LISTA DE ACORDOS EM RISCO */}
+        {/* LISTA DE ACORDOS EM RISCO (CARROSSEL HORIZONTAL) */}
         {filteredAgreements.length === 0 ? (
           <div className="bg-slate-950/60 rounded-2xl p-8 border border-white/5 text-center space-y-2">
             <CheckCircle size={32} className="text-emerald-400 mx-auto" />
@@ -216,7 +254,10 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <div 
+            ref={carouselRef}
+            className="flex gap-4 overflow-x-auto pb-4 pt-1 scroll-smooth snap-x snap-mandatory"
+          >
             {filteredAgreements.map((agreement) => {
               const cleanCpf = (agreement.clientCpf || '').replace(/\D/g, '');
               const formattedCpf = formatCPF(agreement.clientCpf || '');
@@ -229,7 +270,7 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
               return (
                 <div
                   key={agreement.id}
-                  className="bg-slate-950/80 border border-amber-500/20 hover:border-amber-500/40 p-4 rounded-2xl space-y-3.5 transition-all shadow-md flex flex-col justify-between"
+                  className="min-w-[310px] max-w-[340px] w-full shrink-0 snap-start bg-slate-950/80 border border-amber-500/20 hover:border-amber-500/40 p-4 rounded-2xl space-y-3.5 transition-all shadow-md flex flex-col justify-between"
                 >
                   <div className="space-y-2">
                     {/* Header do Card */}
@@ -248,6 +289,14 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
                       </span>
                     </div>
 
+                    {/* DESTAQUE NOME DO OPERADOR */}
+                    <div className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-300 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 truncate">
+                        <User size={14} className="text-amber-400 shrink-0" />
+                        <span className="truncate">Operador: <strong className="text-white">{agreement.operatorName || 'Não Informado'}</strong></span>
+                      </span>
+                    </div>
+
                     {/* Detalhes do Cliente */}
                     <div className="text-xs text-slate-400 space-y-1 pt-1 border-t border-white/5 font-medium">
                       <div className="flex items-center justify-between">
@@ -260,12 +309,6 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
                           Histórico 360°
                         </button>
                       </div>
-
-                      {agreement.operatorName && (
-                        <p className="text-[11px] text-slate-400 truncate">
-                          Operador: <span className="text-slate-300 font-semibold">{agreement.operatorName}</span>
-                        </p>
-                      )}
                     </div>
                   </div>
 
