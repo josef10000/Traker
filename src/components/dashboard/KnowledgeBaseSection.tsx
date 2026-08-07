@@ -116,6 +116,17 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     });
   }, [articles, selectedCategory, searchQuery]);
 
+  // Cálculo da contagem por categoria
+  const categoryCounts = useMemo(() => {
+    return {
+      all: articles.length,
+      script: articles.filter(a => a.category === 'script').length,
+      announcement: articles.filter(a => a.category === 'announcement').length,
+      policy: articles.filter(a => a.category === 'policy').length,
+      faq: articles.filter(a => a.category === 'faq').length,
+    };
+  }, [articles]);
+
   // Cálculo da Paginação (6 itens por página)
   const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE) || 1;
 
@@ -253,18 +264,18 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className={`p-6 rounded-3xl border transition-all ${
-        isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+      <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+        isDark ? 'bg-slate-900/80 border-slate-800/80 backdrop-blur-md shadow-xl shadow-slate-950/40' : 'bg-white border-slate-200 shadow-sm'
       }`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              <BookOpen size={24} weight="duotone" />
+            <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-inner shrink-0">
+              <BookOpen size={22} weight="duotone" />
             </div>
             <div>
-              <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+              <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5">
                 <span>Base de Conhecimento & Roteiros</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-sky-500/20 text-sky-400 font-extrabold border border-sky-500/30">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-sky-500/20 text-sky-400 font-black border border-sky-500/30">
                   {filteredArticles.length} {filteredArticles.length === 1 ? 'item' : 'itens'}
                 </span>
               </h2>
@@ -272,15 +283,39 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2.5 w-full lg:w-auto">
+            <div className="relative flex-1 lg:w-72">
+              <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por termo ou tag..."
+                className={`w-full pl-9 pr-8 py-2 rounded-xl text-xs font-semibold outline-none border transition-all ${
+                  isDark 
+                    ? 'bg-slate-950/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/40' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-sky-500'
+                }`}
+              />
+              {searchQuery && (
+                <button 
+                  type="button" 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
             {canManage && (
               <button
                 type="button"
                 onClick={handleOpenNewForm}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-sky-500/25 transition-all shrink-0 cursor-pointer"
               >
-                <Plus size={16} weight="bold" />
-                <span>Novo Artigo / Script</span>
+                <Plus size={15} weight="bold" />
+                <span className="hidden sm:inline">Novo Artigo / Script</span>
               </button>
             )}
 
@@ -288,50 +323,57 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
                 title="Fechar Base de Conhecimento"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             )}
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/5">
-          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar">
+        <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/5">
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1 sm:pb-0 custom-scrollbar">
             {[
-              { id: 'all', label: 'Todos' },
-              { id: 'script', label: '💬 Scripts' },
-              { id: 'announcement', label: '🚨 Comunicados' },
-              { id: 'policy', label: '📜 Políticas' },
-              { id: 'faq', label: '❓ FAQ' }
+              { id: 'all', label: 'Todos', count: categoryCounts.all },
+              { id: 'script', label: '💬 Scripts', count: categoryCounts.script },
+              { id: 'announcement', label: '🚨 Comunicados', count: categoryCounts.announcement },
+              { id: 'policy', label: '📜 Políticas', count: categoryCounts.policy },
+              { id: 'faq', label: '❓ FAQ', count: categoryCounts.faq }
             ].map(cat => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id as any)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   selectedCategory === cat.id
-                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25 ring-1 ring-sky-400/50'
                     : isDark ? 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {cat.label}
+                <span>{cat.label}</span>
+                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                  selectedCategory === cat.id
+                    ? 'bg-white/20 text-white'
+                    : isDark ? 'bg-slate-800/80 text-slate-400' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {cat.count}
+                </span>
               </button>
             ))}
           </div>
 
-          <div className="relative w-full sm:w-80">
-            <MagnifyingGlass size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por termo ou tag..."
-              className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-semibold outline-none border transition-all ${
-                isDark ? 'bg-slate-950 border-slate-800 text-white focus:border-sky-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-sky-500'
-              }`}
-            />
-          </div>
+          {(selectedCategory !== 'all' || searchQuery) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory('all');
+                setSearchQuery('');
+              }}
+              className="text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors whitespace-nowrap shrink-0"
+            >
+              Limpar Filtros
+            </button>
+          )}
         </div>
       </div>
 
