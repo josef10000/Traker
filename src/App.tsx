@@ -18,6 +18,7 @@ import { Toast, ToastType } from './components/ui/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
 import { StatusPage } from './components/StatusPage';
+import { SpotlightSearchModal } from './components/dashboard/SpotlightSearchModal';
 
 const isMasterAdminEmail = (email?: string | null): boolean => {
   if (!email) return false;
@@ -39,6 +40,18 @@ export function AppContent() {
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSpotlightOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean; demoRestrictedRole?: UserRole } | null>(() => {
     try {
       const saved = sessionStorage.getItem('tracker_demo_simulation');
@@ -628,19 +641,26 @@ export function AppContent() {
       </Routes>
 
       {profile && (
-        <ProfileSettings
-          isOpen={isProfileModalOpen}
-          onClose={() => setIsProfileModalOpen(false)}
-          profile={profile}
-          initialTab={profileInitialTab}
-          onUpdate={refreshProfile}
-          onCreateTeam={() => {
-            setIsProfileModalOpen(false);
-            navigate('/create-team');
-          }}
-          showToast={showToast}
-          theme={profile.theme || 'dark'}
-        />
+        <>
+          <ProfileSettings
+            isOpen={isProfileModalOpen}
+            onClose={() => setIsProfileModalOpen(false)}
+            profile={profile}
+            initialTab={profileInitialTab}
+            onUpdate={refreshProfile}
+            onCreateTeam={() => {
+              setIsProfileModalOpen(false);
+              navigate('/create-team');
+            }}
+            showToast={showToast}
+            theme={profile.theme || 'dark'}
+          />
+          <SpotlightSearchModal 
+            isOpen={isSpotlightOpen} 
+            onClose={() => setIsSpotlightOpen(false)} 
+            profile={profile} 
+          />
+        </>
       )}
     </>
   );

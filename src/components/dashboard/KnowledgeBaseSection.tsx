@@ -21,7 +21,10 @@ import {
   Image as ImageIcon,
   UploadSimple,
   Eye,
-  CheckCircle
+  CheckCircle,
+  Star,
+  TextT,
+  Clock
 } from '@phosphor-icons/react';
 import { KnowledgeArticle, KnowledgeCategory, UserProfile } from '../../types';
 import { 
@@ -51,9 +54,50 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   const canManage = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin' || profile.role === 'monitor';
 
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory | 'all' | 'favorites'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Sistema de Favoritos salvos por operador
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(`tracker_favorites_${profile.uid}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleFavorite = (articleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavorites(prev => {
+      const next = prev.includes(articleId) 
+        ? prev.filter(id => id !== articleId) 
+        : [...prev, articleId];
+      try {
+        localStorage.setItem(`tracker_favorites_${profile.uid}`, JSON.stringify(next));
+      } catch (err) {
+        console.error('Erro ao salvar favoritos:', err);
+      }
+      return next;
+    });
+  };
+
+  // Estado do Modo Teleprompter Lateral Flutuante
+  const [teleprompterArticle, setTeleprompterArticle] = useState<KnowledgeArticle | null>(null);
+  const [teleprompterFontSize, setTeleprompterFontSize] = useState<number>(16);
+
+  // Extração de Tags Únicas de todos os artigos para a Nuvem de Tags
+  const availableTags = useMemo(() => {
+    const set = new Set<string>();
+    articles.forEach(art => {
+      if (art.tags && Array.isArray(art.tags)) {
+        art.tags.forEach(t => set.add(t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`));
+      }
+    });
+    return Array.from(set).slice(0, 12);
+  }, [articles]);
 
   // Paginação: 6 por página
   const ITEMS_PER_PAGE = 6;
@@ -97,14 +141,25 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   // Reset da página atual ao filtrar por categoria ou termo de busca
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, selectedTag]);
 
-  // Filtragem inteligente por categoria e palavra-chave
+  // Filtragem inteligente por categoria, tag e palavra-chave
   const filteredArticles = useMemo(() => {
     return articles.filter(art => {
-      const matchesCat = selectedCategory === 'all' || art.category === selectedCategory;
+      let matchesCat = true;
+      if (selectedCategory === 'favorites') {
+        matchesCat = favorites.includes(art.id);
+      } else if (selectedCategory !== 'all') {
+        matchesCat = art.category === selectedCategory;
+      }
+
+      const matchesTag = !selectedTag || (art.tags && art.tags.some(t => {
+        const normTag = t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`;
+        return normTag.toLowerCase() === selectedTag.toLowerCase();
+      }));
+
       const q = searchQuery.toLowerCase().trim();
-      if (!q) return matchesCat;
+      if (!q) return matchesCat && matchesTag;
 
       const matchesQuery = 
         art.title.toLowerCase().includes(q) ||
@@ -112,20 +167,40 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
         (art.copyableScript && art.copyableScript.toLowerCase().includes(q)) ||
         (art.tags && art.tags.some(t => t.toLowerCase().includes(q)));
 
-      return matchesCat && matchesQuery;
+      return matchesCat && matchesTag && matchesQuery;
     });
-  }, [articles, selectedCategory, searchQuery]);
+  }, [articles, selectedCategory, searchQuery, selectedTag, favorites]);
 
   // Cálculo da contagem por categoria
   const categoryCounts = useMemo(() => {
     return {
       all: articles.length,
+      favorites: favorites.length,
       script: articles.filter(a => a.category === 'script').length,
       announcement: articles.filter(a => a.category === 'announcement').length,
       policy: articles.filter(a => a.category === 'policy').length,
       faq: articles.filter(a => a.category === 'faq').length,
     };
-  }, [articles]);
+  }, [articles, favorites]);
+
+  // Helper para destacar variáveis dinâmicas no script ex: [NOME_DO_CLIENTE]
+  const renderHighlightedScript = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(\[[^\]]+\])/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('[') && part.endsWith(']')) {
+        return (
+          <span 
+            key={idx} 
+            className="inline-block px-1.5 py-0.5 my-0.5 rounded-md text-[11px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
 
   // Cálculo da Paginação (6 itens por página)
   const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE) || 1;
@@ -332,47 +407,72 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/5">
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1 sm:pb-0 custom-scrollbar">
-            {[
-              { id: 'all', label: 'Todos', count: categoryCounts.all },
-              { id: 'script', label: '💬 Scripts', count: categoryCounts.script },
-              { id: 'announcement', label: '🚨 Comunicados', count: categoryCounts.announcement },
-              { id: 'policy', label: '📜 Políticas', count: categoryCounts.policy },
-              { id: 'faq', label: '❓ FAQ', count: categoryCounts.faq }
-            ].map(cat => (
+        <div className="flex flex-col gap-3 pt-3 border-t border-white/5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1 sm:pb-0 custom-scrollbar">
+              {[
+                { id: 'all', label: 'Todos', count: categoryCounts.all },
+                { id: 'favorites', label: '⭐ Favoritos', count: categoryCounts.favorites },
+                { id: 'script', label: '💬 Scripts', count: categoryCounts.script },
+                { id: 'announcement', label: '🚨 Comunicados', count: categoryCounts.announcement },
+                { id: 'policy', label: '📜 Políticas', count: categoryCounts.policy },
+                { id: 'faq', label: '❓ FAQ', count: categoryCounts.faq }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id as any)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    selectedCategory === cat.id
+                      ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25 ring-1 ring-sky-400/50'
+                      : isDark ? 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>{cat.label}</span>
+                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                    selectedCategory === cat.id
+                      ? 'bg-white/20 text-white'
+                      : isDark ? 'bg-slate-800/80 text-slate-400' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {cat.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {(selectedCategory !== 'all' || searchQuery || selectedTag) && (
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id as any)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  selectedCategory === cat.id
-                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25 ring-1 ring-sky-400/50'
-                    : isDark ? 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSearchQuery('');
+                  setSelectedTag(null);
+                }}
+                className="text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors whitespace-nowrap shrink-0"
               >
-                <span>{cat.label}</span>
-                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                  selectedCategory === cat.id
-                    ? 'bg-white/20 text-white'
-                    : isDark ? 'bg-slate-800/80 text-slate-400' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {cat.count}
-                </span>
+                Limpar Filtros
               </button>
-            ))}
+            )}
           </div>
 
-          {(selectedCategory !== 'all' || searchQuery) && (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCategory('all');
-                setSearchQuery('');
-              }}
-              className="text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors whitespace-nowrap shrink-0"
-            >
-              Limpar Filtros
-            </button>
+          {/* Nuvem de Tags Clicáveis */}
+          {availableTags.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-white/5 text-xs">
+              <span className="text-[11px] font-bold text-slate-500 shrink-0">Tags:</span>
+              {availableTags.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setSelectedTag(prev => prev === tag ? null : tag)}
+                  className={`px-2.5 py-0.5 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
+                    selectedTag === tag
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
+                      : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/5'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>
@@ -381,122 +481,161 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
         {filteredArticles.length === 0 ? (
           <div className="md:col-span-2 py-20 text-center text-slate-500 space-y-4 bg-slate-900/30 rounded-3xl border border-white/5">
             <BookOpen size={56} className="mx-auto opacity-20" />
-            <p className="text-sm font-semibold">Nenhum script ou artigo encontrado para o filtro atual.</p>
+            <p className="text-sm font-semibold">Nenhum script ou artigo encontrado para os filtros selecionados.</p>
           </div>
         ) : (
-          paginatedArticles.map(art => (
-            <div
-              key={art.id}
-              className={`p-6 rounded-3xl border transition-all flex flex-col justify-between relative group ${
-                art.isUrgent
-                  ? 'bg-rose-950/20 border-rose-500/40 shadow-xl shadow-rose-500/5'
-                  : art.isPinned
-                  ? 'bg-sky-950/20 border-sky-500/30 shadow-xl shadow-sky-500/5'
-                  : isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {art.isPinned && <span className="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 font-bold text-[10px]">📌 Fixado</span>}
-                    {art.isUrgent && <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 font-bold text-[10px] animate-pulse">🚨 Urgente</span>}
-                    {getCategoryBadge(art.category)}
+          paginatedArticles.map(art => {
+            const readingTimeMin = Math.max(1, Math.ceil(((art.content?.length || 0) + (art.copyableScript?.length || 0)) / 400));
+            const isUnreadUrgent = art.requireAcknowledgement && !art.acknowledgements?.[profile.uid];
+
+            return (
+              <div
+                key={art.id}
+                className={`p-6 rounded-3xl border transition-all flex flex-col justify-between relative group ${
+                  art.isUrgent
+                    ? 'bg-rose-950/20 border-rose-500/40 shadow-xl shadow-rose-500/5'
+                    : art.isPinned
+                    ? 'bg-sky-950/20 border-sky-500/30 shadow-xl shadow-sky-500/5'
+                    : isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isUnreadUrgent && <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px] animate-pulse">🟢 Novo</span>}
+                      {art.isPinned && <span className="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 font-bold text-[10px]">📌 Fixado</span>}
+                      {art.isUrgent && <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 font-bold text-[10px] animate-pulse">🚨 Urgente</span>}
+                      {getCategoryBadge(art.category)}
+                      <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold ml-1">
+                        <Clock size={12} className="text-slate-500" />
+                        <span>{readingTimeMin} min</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleFavorite(art.id, e)}
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                          favorites.includes(art.id) 
+                            ? 'text-amber-400 bg-amber-400/10 hover:bg-amber-400/20' 
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/10'
+                        }`}
+                        title={favorites.includes(art.id) ? 'Remover dos Favoritos' : 'Marcar como Favorito'}
+                      >
+                        <Star size={16} weight={favorites.includes(art.id) ? 'fill' : 'regular'} />
+                      </button>
+
+                      {canManage && (
+                        <>
+                          <button type="button" onClick={() => handleOpenEditForm(art)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-sky-400 transition-colors cursor-pointer"><PencilSimple size={15} /></button>
+                          <button type="button" onClick={() => handleDeleteArticle(art.id)} className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"><Trash size={15} /></button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  {canManage && (
-                    <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                      <button type="button" onClick={() => handleOpenEditForm(art)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-sky-400 transition-colors cursor-pointer"><PencilSimple size={15} /></button>
-                      <button type="button" onClick={() => handleDeleteArticle(art.id)} className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"><Trash size={15} /></button>
+
+                  <h3 className="text-base font-black tracking-tight text-white mb-2">{art.title}</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed font-medium mb-4 whitespace-pre-wrap">{art.content}</p>
+
+                  {art.imageUrl && (
+                    <div 
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setPreviewModalImage(art.imageUrl || null)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPreviewModalImage(art.imageUrl || null); } }}
+                      className="mb-4 relative rounded-2xl overflow-hidden border border-white/10 group/img cursor-pointer bg-slate-950/50 outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                      <img 
+                        src={art.imageUrl} 
+                        alt={art.title} 
+                        className="w-full max-h-64 object-cover group-hover/img:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-bold text-xs">
+                        <Eye size={18} />
+                        <span>Clique para Ampliar</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {art.copyableScript && (
+                    <div className={`p-4 rounded-2xl border mb-4 space-y-2.5 transition-colors ${
+                      isDark ? 'bg-slate-950/70 border-white/10 text-slate-200 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-800 shadow-sm'
+                    }`}>
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="text-xs font-bold tracking-tight text-sky-400 flex items-center gap-1.5">
+                          💬 Roteiro de Atendimento
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setTeleprompterArticle(art)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                            title="Abrir Gaveta Lateral do Teleprompter"
+                          >
+                            <PushPin size={13} />
+                            <span>Teleprompter</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyScript(art)}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              copiedId === art.id ? 'bg-emerald-500 text-white' : 'bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white'
+                            }`}
+                          >
+                            {copiedId === art.id ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar</>}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="font-sans text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap select-all font-medium opacity-95">
+                        {renderHighlightedScript(art.copyableScript)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BLOCO DE CONFIRMAÇÃO DE LEITURA DO ARTIGO/COMUNICADO */}
+                  {art.requireAcknowledgement && (
+                    <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 mb-4 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                          <CheckCircle size={15} className={art.acknowledgements?.[profile.uid] ? 'text-emerald-400' : 'text-amber-400'} />
+                          <span>Ciência do Comunicado</span>
+                        </span>
+
+                        {art.acknowledgements?.[profile.uid] ? (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            🟢 Ciente em {new Date(art.acknowledgements[profile.uid]).toLocaleDateString('pt-BR')}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleAcknowledgeArticle(art.id)}
+                            className="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <CheckCircle size={14} weight="bold" />
+                            <span>Confirmar Ciência</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {canManage && art.acknowledgements && (
+                        <p className="text-[10px] text-slate-400 font-semibold pt-1 border-t border-white/5">
+                          📊 <strong>Adesão da Equipe:</strong> {Object.keys(art.acknowledgements).length} colaborador(es) confirmaram ciência.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
 
-                <h3 className="text-base font-black tracking-tight text-white mb-2">{art.title}</h3>
-                <p className="text-xs text-slate-300 leading-relaxed font-medium mb-4 whitespace-pre-wrap">{art.content}</p>
-
-                {art.imageUrl && (
-                  <div 
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setPreviewModalImage(art.imageUrl || null)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPreviewModalImage(art.imageUrl || null); } }}
-                    className="mb-4 relative rounded-2xl overflow-hidden border border-white/10 group/img cursor-pointer bg-slate-950/50 outline-none focus:ring-2 focus:ring-sky-500"
-                  >
-                    <img 
-                      src={art.imageUrl} 
-                      alt={art.title} 
-                      className="w-full max-h-64 object-cover group-hover/img:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-bold text-xs">
-                      <Eye size={18} />
-                      <span>Clique para Ampliar</span>
-                    </div>
+                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {art.tags?.map((tag, idx) => <span key={idx} className="px-2 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/5">#{tag}</span>)}
                   </div>
-                )}
-
-                {art.copyableScript && (
-                  <div className={`p-4 rounded-2xl border mb-4 space-y-2.5 transition-colors ${
-                    isDark ? 'bg-slate-950/70 border-white/10 text-slate-200 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-800 shadow-sm'
-                  }`}>
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <span className="text-xs font-bold tracking-tight text-sky-400">Roteiro de Atendimento</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyScript(art)}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          copiedId === art.id ? 'bg-emerald-500 text-white' : 'bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white'
-                        }`}
-                      >
-                        {copiedId === art.id ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar</>}
-                      </button>
-                    </div>
-                    <div className="font-sans text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap select-all font-medium opacity-95">
-                      {art.copyableScript}
-                    </div>
-                  </div>
-                )}
-
-                {/* BLOCO DE CONFIRMAÇÃO DE LEITURA DO ARTIGO/COMUNICADO */}
-                {art.requireAcknowledgement && (
-                  <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 mb-4 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                        <CheckCircle size={15} className={art.acknowledgements?.[profile.uid] ? 'text-emerald-400' : 'text-amber-400'} />
-                        <span>Ciência do Comunicado</span>
-                      </span>
-
-                      {art.acknowledgements?.[profile.uid] ? (
-                        <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          🟢 Ciente em {new Date(art.acknowledgements[profile.uid]).toLocaleDateString('pt-BR')}
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleAcknowledgeArticle(art.id)}
-                          className="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1"
-                        >
-                          <CheckCircle size={14} weight="bold" />
-                          <span>Confirmar Ciência</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {canManage && art.acknowledgements && (
-                      <p className="text-[10px] text-slate-400 font-semibold pt-1 border-t border-white/5">
-                        📊 <strong>Alcance:</strong> {Object.keys(art.acknowledgements).length} colaborador(es) deram ciente.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
-                <div className="flex items-center gap-1.5">
-                  {art.tags?.map((tag, idx) => <span key={idx} className="px-2 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/5">#{tag}</span>)}
+                  <span>Por <strong className="text-slate-300">{art.createdByName}</strong> • {new Date(art.createdAt).toLocaleDateString('pt-BR')}</span>
                 </div>
-                <span>Por <strong className="text-slate-300">{art.createdByName}</strong> • {new Date(art.createdAt).toLocaleDateString('pt-BR')}</span>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -626,6 +765,72 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TELEPROMPTER GAVETA LATERAL FLUTUANTE */}
+      {teleprompterArticle && (
+        <div className="fixed inset-0 z-[110] flex justify-end bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full sm:w-[480px] h-full bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col p-6 space-y-4 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-2">
+                <PushPin size={20} className="text-sky-400" />
+                <h3 className="text-base font-bold text-white">Modo Teleprompter</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-slate-800 rounded-xl p-1 border border-slate-700">
+                  <button 
+                    type="button" 
+                    onClick={() => setTeleprompterFontSize(prev => Math.max(12, prev - 2))}
+                    className="p-1 rounded text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700"
+                    title="Diminuir Fonte"
+                  >
+                    A-
+                  </button>
+                  <span className="text-xs font-bold text-slate-400 px-1">{teleprompterFontSize}px</span>
+                  <button 
+                    type="button" 
+                    onClick={() => setTeleprompterFontSize(prev => Math.min(28, prev + 2))}
+                    className="p-1 rounded text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700"
+                    title="Aumentar Fonte"
+                  >
+                    A+
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTeleprompterArticle(null)}
+                  className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
+              <h2 className="text-lg font-black text-white">{teleprompterArticle.title}</h2>
+              <div 
+                className="font-sans leading-relaxed whitespace-pre-wrap text-slate-200 bg-slate-950/60 p-4 rounded-2xl border border-slate-800"
+                style={{ fontSize: `${teleprompterFontSize}px` }}
+              >
+                {renderHighlightedScript(teleprompterArticle.copyableScript || teleprompterArticle.content)}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => handleCopyScript(teleprompterArticle)}
+                className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all ${
+                  copiedId === teleprompterArticle.id
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-sky-500 hover:bg-sky-400 text-white shadow-sky-500/20'
+                }`}
+              >
+                {copiedId === teleprompterArticle.id ? <><Check size={16} /> Copiado para a Área de Transferência</> : <><Copy size={16} /> Copiar Script Completo</>}
+              </button>
+            </div>
           </div>
         </div>
       )}
