@@ -1740,7 +1740,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
 
     if (isDemo) {
-      setAgreements(prev => prev.map(a => a.id === agreementId ? { ...a, ...updatedFields } : a));
+      refreshAgreements();
       showToast('Comprovante salvo na Sandbox R2 (retenção de 24h)!', 'success');
       return;
     }
@@ -1748,7 +1748,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     try {
       const agreementRef = doc(db, 'agreements', agreementId);
       await updateDoc(agreementRef, updatedFields);
-      setAgreements(prev => prev.map(a => a.id === agreementId ? { ...a, ...updatedFields } : a));
+      refreshAgreements();
       showToast('Comprovante salvo no Cloudflare R2 (retenção de 1 ano)!', 'success');
       logAudit('ATTACH_RECEIPT', { agreementId, ...receiptData }, profile.name, profile.organizationId);
     } catch (err) {
@@ -1765,16 +1765,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       createdAt: new Date().toISOString()
     };
 
-    const matchingAgreements = agreements.filter(a => (a.clientCpf || '').replace(/\D/g, '') === cleanCpf);
+    const matchingAgreements = monthAgreements.filter(a => (a.clientCpf || '').replace(/\D/g, '') === cleanCpf);
 
     if (profile.organizationId === 'sandbox-test') {
-      setAgreements(prev => prev.map(a => {
-        if ((a.clientCpf || '').replace(/\D/g, '') === cleanCpf) {
-          const history = a.notesHistory || [];
-          return { ...a, notesHistory: [newNote, ...history] };
-        }
-        return a;
-      }));
+      refreshAgreements();
       showToast('Anotação adicionada ao histórico do CPF!', 'success');
       return;
     }
@@ -1788,13 +1782,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
       await batch.commit();
 
-      setAgreements(prev => prev.map(a => {
-        if ((a.clientCpf || '').replace(/\D/g, '') === cleanCpf) {
-          const history = a.notesHistory || [];
-          return { ...a, notesHistory: [newNote, ...history] };
-        }
-        return a;
-      }));
+      refreshAgreements();
       showToast('Anotação salva com sucesso no histórico do CPF!', 'success');
       logAudit('ADD_CPF_NOTE', { cpf: cleanCpf, noteContent: noteData.content }, profile.name, profile.organizationId);
     } catch (err) {
@@ -2574,7 +2562,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* Painel Exclusivo de Risco no Dia para Supervisores/Gestores */}
             {['supervisor', 'coordinator', 'manager', 'admin'].includes(profile.role) && (
               <SupervisorDueDateRiskPanel
-                agreements={agreements}
+                agreements={monthAgreements}
                 profile={profile}
                 onOpenCpfHistory={(cpf) => setSelectedCpfForHistory(cpf)}
                 onOpenReceiptModal={(agreement) => setSelectedAgreementForReceipt(agreement)}
@@ -4448,7 +4436,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           isOpen={Boolean(selectedCpfForHistory)}
           onClose={() => setSelectedCpfForHistory(null)}
           cpf={selectedCpfForHistory}
-          agreements={agreements}
+          agreements={monthAgreements}
           profile={profile}
           onAddNote={handleAddCpfNote}
         />

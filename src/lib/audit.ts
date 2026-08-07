@@ -23,7 +23,9 @@ export interface AuditLog {
     | 'DELETE_ORGANIZATION'
     | 'UPDATE_ORGANIZATION_LIMITS'
     | 'FORCE_COLLISION'
-    | 'EXPORT_CSV';
+    | 'EXPORT_CSV'
+    | 'ATTACH_RECEIPT'
+    | 'ADD_CPF_NOTE';
   details: Record<string, any>;
   timestamp: string;
   previousHash?: string;
