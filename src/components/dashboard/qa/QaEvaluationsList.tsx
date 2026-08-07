@@ -11,6 +11,9 @@ interface QaEvaluationsListProps {
   isSuperUser: boolean;
   theme?: 'light' | 'dark';
   onToggleBestPractice?: (evalId: string, currentVal: boolean) => void;
+  currentUser?: UserProfile | null;
+  onAcknowledgeEvaluation?: (evalId: string, replyComment?: string) => Promise<void> | void;
+  onRecordView?: (evalId: string) => Promise<void> | void;
 }
 
 export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
@@ -19,7 +22,10 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
   competences,
   isSuperUser,
   theme = 'dark',
-  onToggleBestPractice
+  onToggleBestPractice,
+  currentUser,
+  onAcknowledgeEvaluation,
+  onRecordView
 }) => {
   const [filterBestPracticeOnly, setFilterBestPracticeOnly] = useState(false);
   const [selectedEvalForCard, setSelectedEvalForCard] = useState<QaEvaluation | null>(null);
@@ -47,6 +53,9 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
         evaluatorName={activeEvaluatorName}
         competences={competences}
         theme={theme}
+        currentUser={currentUser}
+        onAcknowledgeEvaluation={onAcknowledgeEvaluation}
+        onRecordView={onRecordView}
       />
 
       {/* Filtro Rápido de Best Practices / Gravações Modelo */}
@@ -99,6 +108,7 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
                   {isSuperUser && <th className="px-6 py-4">Operador</th>}
                   <th className="px-6 py-4">Mídia / Protocolo</th>
                   <th className="px-6 py-4">Nota</th>
+                  <th className="px-6 py-4">Status Leitura</th>
                   <th className="px-6 py-4">Competências Chave</th>
                   <th className="px-6 py-4">Feedback / Ficha</th>
                   <th className="px-6 py-4 text-center">Ações</th>
@@ -144,6 +154,21 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
                         }`}>
                           {e.score}%
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {e.acknowledgedAt ? (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title={`Ciente em ${new Date(e.acknowledgedAt).toLocaleString('pt-BR')}`}>
+                            🟢 Ciente
+                          </span>
+                        ) : e.readAt ? (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20" title={`Visualizado em ${new Date(e.readAt).toLocaleString('pt-BR')}`}>
+                            🟡 Lido
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            🔴 Pendente
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 max-w-[200px]">
                         <div className="flex flex-wrap gap-1">

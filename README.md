@@ -27,6 +27,7 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **📜 Prontuário 360° por CPF** | Histórico cronológico completo do cliente por CPF com registro de acordos passados, operadores e mural de anotações internas. |
 | **📁 Retenção R2 de Comprovantes** | Central de anexo de comprovantes bancários em nuvem R2 (retenção 24h na Sandbox e 1 ano em Produção). |
 | **🎨 Design Enterprise Pastel** | Interface minimalista em Dark Mode com **Glassmorphism**, reduzindo o cansaço visual e otimizando o espaço vertical. |
+| **🔔 Sino & Confirmação de Ciência** | Entrega de 100% das notificações exclusivamente pelo sino (0 modais na tela no login) e sistema de confirmação de leitura com ciente e tréplica para QA e Comunicados. |
 
 ---
 

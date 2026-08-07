@@ -20,13 +20,15 @@ import {
   CaretRight,
   Image as ImageIcon,
   UploadSimple,
-  Eye
+  Eye,
+  CheckCircle
 } from '@phosphor-icons/react';
 import { KnowledgeArticle, KnowledgeCategory, UserProfile } from '../../types';
 import { 
   subscribeKnowledgeArticles, 
   saveKnowledgeArticle, 
-  deleteKnowledgeArticle 
+  deleteKnowledgeArticle,
+  acknowledgeKnowledgeArticle
 } from '../../lib/knowledgeBaseService';
 import { uploadImage } from '../../lib/imageUpload';
 import { notifyAnnouncementPublished } from '../../lib/notifications';
@@ -70,7 +72,18 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   const [formTagsStr, setFormTagsStr] = useState('');
   const [formIsPinned, setFormIsPinned] = useState(false);
   const [formIsUrgent, setFormIsUrgent] = useState(false);
+  const [formRequireAck, setFormRequireAck] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleAcknowledgeArticle = async (articleId: string) => {
+    try {
+      await acknowledgeKnowledgeArticle(profile.organizationId || 'sandbox-test', articleId, profile.uid);
+      if (showToast) showToast('Confirmação de leitura e ciência registrada!', 'success');
+    } catch (err) {
+      console.error('Erro ao confirmar ciente do comunicado:', err);
+      if (showToast) showToast('Erro ao registrar ciência.', 'error');
+    }
+  };
 
   // Escuta os artigos da organização em tempo real
   useEffect(() => {
@@ -143,6 +156,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     setFormTagsStr('');
     setFormIsPinned(false);
     setFormIsUrgent(false);
+    setFormRequireAck(false);
     setIsFormOpen(true);
   };
 
@@ -158,6 +172,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     setFormTagsStr(art.tags ? art.tags.join(', ') : '');
     setFormIsPinned(art.isPinned);
     setFormIsUrgent(art.isUrgent);
+    setFormRequireAck(art.requireAcknowledgement || false);
     setIsFormOpen(true);
   };
 
@@ -185,6 +200,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
         tags: tags.length > 0 ? tags : undefined,
         isPinned: formIsPinned,
         isUrgent: formIsUrgent,
+        requireAcknowledgement: formRequireAck,
         createdByUid: profile.uid,
         createdByName: profile.displayName || profile.email.split('@')[0],
         createdByRole: profile.role
@@ -396,6 +412,39 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* BLOCO DE CONFIRMAÇÃO DE LEITURA DO ARTIGO/COMUNICADO */}
+                {art.requireAcknowledgement && (
+                  <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 mb-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                        <CheckCircle size={15} className={art.acknowledgements?.[profile.uid] ? 'text-emerald-400' : 'text-amber-400'} />
+                        <span>Ciência do Comunicado</span>
+                      </span>
+
+                      {art.acknowledgements?.[profile.uid] ? (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          🟢 Ciente em {new Date(art.acknowledgements[profile.uid]).toLocaleDateString('pt-BR')}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleAcknowledgeArticle(art.id)}
+                          className="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <CheckCircle size={14} weight="bold" />
+                          <span>Confirmar Ciência</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {canManage && art.acknowledgements && (
+                      <p className="text-[10px] text-slate-400 font-semibold pt-1 border-t border-white/5">
+                        📊 <strong>Alcance:</strong> {Object.keys(art.acknowledgements).length} colaborador(es) deram ciente.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
@@ -514,6 +563,11 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
               </div>
 
               <div className="pt-2 border-t border-white/5 space-y-3">
+                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-emerald-400 hover:text-emerald-300">
+                  <input type="checkbox" checked={formRequireAck} onChange={(e) => setFormRequireAck(e.target.checked)} className="w-4 h-4 rounded accent-emerald-500" />
+                  <span>🟢 Exigir Confirmação de Leitura e Ciência dos Colaboradores</span>
+                </label>
+
                 <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-sky-400 hover:text-sky-300">
                   <input type="checkbox" checked={enableCopyableScript} onChange={(e) => { setEnableCopyableScript(e.target.checked); if (!e.target.checked) setFormCopyableScript(''); }} className="w-4 h-4 rounded accent-sky-500" />
                   <span>💬 Incluir Bloco de Roteiro de Atendimento</span>

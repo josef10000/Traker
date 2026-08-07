@@ -168,6 +168,10 @@ export const DashboardHeader = ({
       if (onNavigateTab) {
         onNavigateTab('knowledge_base');
       }
+    } else if (notif.type === 'qa_evaluated') {
+      if (onNavigateTab) {
+        onNavigateTab('qa');
+      }
     } else if (notif.type === 'payment_released' && notif.referenceId) {
       if (onViewPayment) {
         onViewPayment(notif.referenceId);

@@ -14,6 +14,9 @@ interface QaEvaluationCardModalProps {
   evaluatorName?: string;
   competences: QaCompetence[];
   theme?: 'light' | 'dark';
+  currentUser?: UserProfile | null;
+  onAcknowledgeEvaluation?: (evalId: string, replyComment?: string) => Promise<void> | void;
+  onRecordView?: (evalId: string) => Promise<void> | void;
 }
 
 export const QaEvaluationCardModal: React.FC<QaEvaluationCardModalProps> = ({
@@ -23,9 +26,37 @@ export const QaEvaluationCardModal: React.FC<QaEvaluationCardModalProps> = ({
   operator,
   evaluatorName = 'Monitor de Qualidade',
   competences,
-  theme = 'dark'
+  theme = 'dark',
+  currentUser,
+  onAcknowledgeEvaluation,
+  onRecordView
 }) => {
+  const [operatorReplyText, setOperatorReplyText] = React.useState('');
+  const [isSubmittingAck, setIsSubmittingAck] = React.useState(false);
+
+  // Registra visualização de leitura automaticamente quando o operador abre o modal
+  React.useEffect(() => {
+    if (isOpen && evaluation && currentUser && onRecordView) {
+      const isOperator = currentUser.uid === evaluation.operatorId || currentUser.role === 'operator';
+      if (isOperator && !evaluation.readAt) {
+        onRecordView(evaluation.id);
+      }
+    }
+  }, [isOpen, evaluation?.id, currentUser?.uid, evaluation?.readAt, onRecordView]);
+
   if (!isOpen || !evaluation) return null;
+
+  const isOperatorUser = currentUser?.uid === evaluation.operatorId || currentUser?.role === 'operator';
+
+  const handleConfirmAck = async () => {
+    if (!onAcknowledgeEvaluation) return;
+    setIsSubmittingAck(true);
+    try {
+      await onAcknowledgeEvaluation(evaluation.id, operatorReplyText.trim() || undefined);
+    } finally {
+      setIsSubmittingAck(false);
+    }
+  };
 
   const opName = operator?.displayName || (operator?.email ? operator.email.split('@')[0] : 'Operador');
   const formattedScore = `${evaluation.score}%`;
@@ -231,6 +262,74 @@ export const QaEvaluationCardModal: React.FC<QaEvaluationCardModalProps> = ({
                   );
                 })}
               </div>
+            </div>
+
+            {/* SEÇÃO DE CONFIRMAÇÃO DE LEITURA & CIENTE DO OPERADOR */}
+            <div className={`p-5 rounded-2xl border space-y-3.5 ${
+              theme === 'dark' ? 'bg-slate-950/60 border-white/10' : 'bg-slate-50 border-slate-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <CheckCircle size={16} className={evaluation.acknowledgedAt ? 'text-emerald-400' : evaluation.readAt ? 'text-amber-400' : 'text-slate-500'} />
+                  <span>Confirmação de Leitura e Ciência (Feedback)</span>
+                </h4>
+
+                {/* BADGE DE STATUS PARA MONITOR / SUPERVISOR */}
+                {evaluation.acknowledgedAt ? (
+                  <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    🟢 Ciente em {new Date(evaluation.acknowledgedAt).toLocaleString('pt-BR')}
+                  </span>
+                ) : evaluation.readAt ? (
+                  <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    🟡 Lido em {new Date(evaluation.readAt).toLocaleString('pt-BR')}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                    🔴 Pendente de Leitura
+                  </span>
+                )}
+              </div>
+
+              {/* CONTEÚDO DA RESPOSTA DO OPERADOR OU FORMULÁRIO DE ACEITE */}
+              {evaluation.acknowledgedAt ? (
+                <div className="space-y-1.5 pt-2 border-t border-white/5 text-xs text-slate-300">
+                  <p className="font-semibold text-emerald-400">
+                    ✅ O operador confirmou estar ciente destas recomendações de qualidade.
+                  </p>
+                  {evaluation.operatorReply && (
+                    <p className="p-3 rounded-xl bg-slate-900 border border-white/5 italic text-slate-200">
+                      💬 <strong>Tréplica do Operador:</strong> "{evaluation.operatorReply}"
+                    </p>
+                  )}
+                </div>
+              ) : isOperatorUser ? (
+                <div className="space-y-3 pt-2 border-t border-white/10">
+                  <p className="text-xs text-slate-300">
+                    Por favor, confirme que você leu a monitoria e compreendeu os pontos de melhoria apresentados. Se desejar, você pode adicionar um comentário de tréplica:
+                  </p>
+
+                  <textarea
+                    value={operatorReplyText}
+                    onChange={(e) => setOperatorReplyText(e.target.value)}
+                    placeholder="Adicionar um comentário / observação de tréplica (opcional)..."
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 min-h-[60px]"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={isSubmittingAck}
+                    onClick={handleConfirmAck}
+                    className="w-full py-2.5 rounded-xl font-extrabold text-xs bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white shadow-lg shadow-emerald-600/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={16} weight="bold" />
+                    <span>{isSubmittingAck ? 'Registrando...' : 'Confirmar Ciência e Assinar Feedback'}</span>
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic pt-1 border-t border-white/5">
+                  Aguardando confirmação de ciência pelo operador.
+                </p>
+              )}
             </div>
 
           </div>

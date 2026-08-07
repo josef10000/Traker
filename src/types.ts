@@ -363,6 +363,9 @@ export interface QaEvaluation {
   clientReason?: string;               // Motivo apresentado pelo cliente
   objections?: string;                 // Objeções para não negociar
   improvementOpportunities?: string[]; // Oportunidades de melhoria (tópicos)
+  readAt?: string;                     // Timestamp de quando o operador visualizou a monitoria
+  acknowledgedAt?: string;             // Timestamp de quando o operador marcou como "Ciente"
+  operatorReply?: string;              // Comentário / Tréplica opcional do operador
 }
 
 export interface Pdi {
@@ -523,7 +526,7 @@ export interface AppNotification {
   senderUserId?: string;          // Quem executou a ação (para filtro de auto-notificação)
   title: string;
   message: string;
-  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled' | 'high_value_break' | 'agenda_reminder' | 'lead_assigned' | 'agreement_note' | 'announcement' | 'knowledge_base';
+  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled' | 'high_value_break' | 'agenda_reminder' | 'lead_assigned' | 'agreement_note' | 'announcement' | 'knowledge_base' | 'qa_evaluated';
   referenceId?: string;          // ID do fechamento de pagamento ou transferência associado
   read: boolean;
   createdAt: string;
@@ -635,6 +638,8 @@ export interface KnowledgeArticle {
   copyableScript?: string;
   imageUrl?: string;
   tags?: string[];
+  requireAcknowledgement?: boolean;           // Exige ciente do colaborador
+  acknowledgements?: Record<string, string>;  // Map de operatorUid -> acknowledgedAtTimestamp
   createdByUid: string;
   createdByName: string;
   createdByRole: string;

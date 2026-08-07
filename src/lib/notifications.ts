@@ -178,3 +178,24 @@ export const notifyAnnouncementPublished = async (
     console.error('Erro ao notificar comunicado da operação:', err);
   }
 };
+
+/**
+ * Notifica o operador quando uma nova monitoria de qualidade (QA) é realizada
+ */
+export const notifyQaEvaluationCreated = async (
+  operatorId: string,
+  score: number,
+  evaluatorName: string,
+  evaluationId: string,
+  senderUserId?: string,
+  isSandbox: boolean = false
+): Promise<void> => {
+  await createNotification({
+    userId: operatorId,
+    senderUserId,
+    title: `📋 Nova Monitoria de QA (${score} pts)`,
+    message: `Sua monitoria foi realizada por ${evaluatorName} com nota ${score}/100. Clique para revisar seu feedback.`,
+    type: 'qa_evaluated',
+    referenceId: evaluationId
+  }, isSandbox);
+};

@@ -183,3 +183,35 @@ export const subscribeKnowledgeArticles = (
     callback([]);
   });
 };
+
+/**
+ * Registra a confirmação de leitura / ciente de um colaborador em um artigo/comunicado
+ */
+export const acknowledgeKnowledgeArticle = async (
+  orgId: string,
+  articleId: string,
+  userId: string
+): Promise<void> => {
+  const now = new Date().toISOString();
+
+  if (orgId === 'sandbox-test') {
+    const articles = getLocalArticles(orgId);
+    const existingIndex = articles.findIndex(a => a.id === articleId);
+    if (existingIndex >= 0) {
+      const art = articles[existingIndex];
+      const acks = art.acknowledgements || {};
+      acks[userId] = now;
+      articles[existingIndex] = { ...art, acknowledgements: acks, updatedAt: now };
+      saveLocalArticles(orgId, articles);
+    }
+    return;
+  }
+
+  const articleRef = doc(db, 'knowledge_articles', articleId);
+  await setDoc(articleRef, {
+    acknowledgements: {
+      [userId]: now
+    },
+    updatedAt: now
+  }, { merge: true });
+};

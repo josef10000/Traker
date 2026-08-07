@@ -3,6 +3,7 @@ import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, deleteDoc
 import { db } from '../../lib/firebase';
 import { UserProfile, QaCompetence, QaEvaluation, Pdi, Team, QaSettings, Agreement } from '../../types';
 import { sandboxService } from '../../lib/sandboxService';
+import { notifyQaEvaluationCreated } from '../../lib/notifications';
 import { calculateQaStats, calculateOpPerformance, getExpiredPdisCount } from '../../lib/qaService';
 import { QaOverview } from './qa/QaOverview';
 import { QaEvaluationsList } from './qa/QaEvaluationsList';
@@ -401,6 +402,14 @@ export const QaDashboard = ({
       }
 
       sandboxService.updateOperatorQaDates(data.operatorId, undefined, 'evaluated', now.split('T')[0]);
+      await notifyQaEvaluationCreated(
+        data.operatorId,
+        Math.round(finalScore),
+        profile.displayName || profile.email.split('@')[0],
+        evalId,
+        profile.uid,
+        true
+      );
       showToast('Avaliação do Sandbox registrada com sucesso!', 'success');
       setIsEvalModalOpen(false);
       return;
@@ -451,11 +460,57 @@ export const QaDashboard = ({
         qaCycleStatus: 'evaluated',
         lastQaDate: now.split('T')[0]
       });
+
+      // Dispara notificação no sino do operador sobre a nova monitoria
+      await notifyQaEvaluationCreated(
+        data.operatorId,
+        Math.round(finalScore),
+        profile.displayName || profile.email.split('@')[0],
+        evalId,
+        profile.uid,
+        profile.organizationId === 'sandbox-test'
+      );
+
       showToast('Avaliação de QA registrada com sucesso!', 'success');
       setIsEvalModalOpen(false);
     } catch (err) {
       console.error(err);
       showToast('Erro ao salvar avaliação.', 'error');
+    }
+  };
+
+  const handleRecordView = async (evalId: string) => {
+    const now = new Date().toISOString();
+    if (profile.organizationId === 'sandbox-test') {
+      setEvaluations(prev => prev.map(e => e.id === evalId ? { ...e, readAt: e.readAt || now } : e));
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'qa_evaluations', evalId), {
+        readAt: now
+      });
+    } catch (err) {
+      console.error('Erro ao registrar visualização de leitura:', err);
+    }
+  };
+
+  const handleAcknowledgeEvaluation = async (evalId: string, replyComment?: string) => {
+    const now = new Date().toISOString();
+    if (profile.organizationId === 'sandbox-test') {
+      setEvaluations(prev => prev.map(e => e.id === evalId ? { ...e, readAt: e.readAt || now, acknowledgedAt: now, operatorReply: replyComment } : e));
+      showToast('Confirmação de ciência registrada com sucesso!', 'success');
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'qa_evaluations', evalId), {
+        readAt: now,
+        acknowledgedAt: now,
+        operatorReply: replyComment || null
+      });
+      showToast('Confirmação de ciência e feedback registradas com sucesso!', 'success');
+    } catch (err) {
+      console.error('Erro ao registrar ciência da monitoria:', err);
+      showToast('Erro ao registrar ciência.', 'error');
     }
   };
 
@@ -716,6 +771,9 @@ export const QaDashboard = ({
               isSuperUser={isSuperUser}
               theme={theme}
               onToggleBestPractice={handleToggleBestPractice}
+              currentUser={profile}
+              onAcknowledgeEvaluation={handleAcknowledgeEvaluation}
+              onRecordView={handleRecordView}
             />
           )}
 
