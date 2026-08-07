@@ -16,7 +16,9 @@ import {
   CheckCircle,
   Funnel,
   CaretLeft,
-  CaretRight
+  CaretRight,
+  CaretUp,
+  CaretDown
 } from '@phosphor-icons/react';
 import { Agreement, UserProfile } from '../../types';
 import { formatCurrency, formatCPF } from '../../utils/masks';
@@ -41,6 +43,7 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'value_desc' | 'value_asc' | 'name'>('value_desc');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -167,224 +170,274 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
             </div>
           </div>
 
-          {/* MÉTRICAS DE RESGATE DO DIA */}
-          <div className="grid grid-cols-3 gap-3 bg-slate-950/80 p-3 rounded-2xl border border-white/10 text-center">
-            <div className="px-2">
-              <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider block">Em Risco Hoje</span>
-              <span className="text-sm font-black text-white font-mono">{formatCurrency(totalValueAtRisk)}</span>
-              <span className="text-[10px] text-slate-400 block font-bold">{pendingAgreements.length} pendentes</span>
-            </div>
-
-            <div className="px-2 border-x border-white/10">
-              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">Resgatados</span>
-              <span className="text-sm font-black text-emerald-300 font-mono">{formatCurrency(totalValueRescued)}</span>
-              <span className="text-[10px] text-slate-400 block font-bold">{paidAgreements.length} quitados</span>
-            </div>
-
-            <div className="px-2">
-              <span className="text-[10px] font-black text-sky-400 uppercase tracking-wider block">Efetividade</span>
-              <span className="text-sm font-black text-sky-300 font-mono">{rescueRate}%</span>
-              <span className="text-[10px] text-slate-400 block font-bold">taxa do dia</span>
-            </div>
-          </div>
-        </div>
-
-        {/* CONTROLES: BUSCA, ORDENAÇÃO E BOTÕES DE NAVEGAÇÃO LATERAL DO CARROSSEL */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-80">
-            <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por cliente, CPF ou operador..."
-              className="w-full bg-slate-950 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50"
-            />
-          </div>
-
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400 font-bold flex items-center gap-1">
-                <SortDescending size={14} className="text-amber-400" /> Ordenar:
-              </span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none focus:border-amber-500/50"
-              >
-                <option value="value_desc">💰 Maior Valor</option>
-                <option value="value_asc">💵 Menor Valor</option>
-                <option value="name">👤 Nome do Cliente</option>
-              </select>
-            </div>
-
-            {/* SETAS DE NAVEGAÇÃO LATERAL DO CARROSSEL */}
-            {filteredAgreements.length > 0 && (
-              <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => scrollCarousel('left')}
-                  className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
-                  title="Anterior"
-                >
-                  <CaretLeft size={16} weight="bold" />
-                </button>
-                <span className="text-[10px] font-bold text-slate-500 px-1">Arrastar</span>
-                <button
-                  type="button"
-                  onClick={() => scrollCarousel('right')}
-                  className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
-                  title="Próximo"
-                >
-                  <CaretRight size={16} weight="bold" />
-                </button>
+          <div className="flex items-center gap-3">
+            {/* MÉTRICAS DE RESGATE DO DIA */}
+            <div className="grid grid-cols-3 gap-3 bg-slate-950/80 p-3 rounded-2xl border border-white/10 text-center flex-1 md:flex-none">
+              <div className="px-2">
+                <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider block">Em Risco Hoje</span>
+                <span className="text-sm font-black text-white font-mono">{formatCurrency(totalValueAtRisk)}</span>
+                <span className="text-[10px] text-slate-400 block font-bold">{pendingAgreements.length} pendentes</span>
               </div>
-            )}
+
+              <div className="px-2 border-x border-white/10">
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">Resgatados</span>
+                <span className="text-sm font-black text-emerald-300 font-mono">{formatCurrency(totalValueRescued)}</span>
+                <span className="text-[10px] text-slate-400 block font-bold">{paidAgreements.length} quitados</span>
+              </div>
+
+              <div className="px-2">
+                <span className="text-[10px] font-black text-sky-400 uppercase tracking-wider block">Efetividade</span>
+                <span className="text-sm font-black text-sky-300 font-mono">{rescueRate}%</span>
+                <span className="text-[10px] text-slate-400 block font-bold">taxa do dia</span>
+              </div>
+            </div>
+
+            {/* BOTÃO DE MINIMIZAR / EXPANDIR PAINEL */}
+            <button
+              type="button"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-950/80 hover:bg-slate-900 border border-white/10 text-slate-300 hover:text-white rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0"
+              title={isCollapsed ? 'Expandir Painel' : 'Minimizar Painel'}
+            >
+              {isCollapsed ? (
+                <>
+                  <CaretDown size={16} className="text-amber-400" />
+                  <span className="hidden sm:inline">Expandir</span>
+                </>
+              ) : (
+                <>
+                  <CaretUp size={16} className="text-amber-400" />
+                  <span className="hidden sm:inline">Minimizar</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* LISTA DE ACORDOS EM RISCO (CARROSSEL HORIZONTAL) */}
-        {filteredAgreements.length === 0 ? (
-          <div className="bg-slate-950/60 rounded-2xl p-8 border border-white/5 text-center space-y-2">
-            <CheckCircle size={32} className="text-emerald-400 mx-auto" />
-            <p className="text-sm font-bold text-slate-300">
-              {pendingAgreements.length === 0 
-                ? 'Excelente! Nenhum acordo pendente de vencimento para o dia de hoje.' 
-                : 'Nenhum acordo encontrado com os filtros selecionados.'}
-            </p>
-          </div>
-        ) : (
-          <div 
-            ref={carouselRef}
-            className="flex gap-4 overflow-x-auto pb-4 pt-1 scroll-smooth snap-x snap-mandatory"
-          >
-            {filteredAgreements.map((agreement) => {
-              const cleanCpf = (agreement.clientCpf || '').replace(/\D/g, '');
-              const formattedCpf = formatCPF(agreement.clientCpf || '');
-              const customMsg = getCustomMessage(agreement);
+        {/* CORPO DO PAINEL (EXIBIDO SOMENTE SE NÃO ESTIVER MINIMIZADO) */}
+        {!isCollapsed && (
+          <>
+            {/* CONTROLES: BUSCA, ORDENAÇÃO E BOTÕES DE NAVEGAÇÃO LATERAL DO CARROSSEL */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-80">
+                <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por cliente, CPF ou operador..."
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
 
-              const keyCpf = `cpf_${agreement.id}`;
-              const keyName = `name_${agreement.id}`;
-              const keyMsg = `msg_${agreement.id}`;
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-slate-400 font-bold flex items-center gap-1">
+                    <SortDescending size={14} className="text-amber-400" /> Ordenar:
+                  </span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none focus:border-amber-500/50"
+                  >
+                    <option value="value_desc">💰 Maior Valor</option>
+                    <option value="value_asc">💵 Menor Valor</option>
+                    <option value="name">👤 Nome do Cliente</option>
+                  </select>
+                </div>
 
-              return (
-                <div
-                  key={agreement.id}
-                  className="min-w-[310px] max-w-[340px] w-full shrink-0 snap-start bg-slate-950/80 border border-amber-500/20 hover:border-amber-500/40 p-4 rounded-2xl space-y-3.5 transition-all shadow-md flex flex-col justify-between"
-                >
-                  <div className="space-y-2">
-                    {/* Header do Card */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
-                          Vence Hoje
-                        </span>
-                        <h4 className="font-bold text-sm text-white line-clamp-1">
-                          {agreement.clientName}
-                        </h4>
-                      </div>
-
-                      <span className="font-mono font-black text-sm text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 shrink-0">
-                        {formatCurrency(agreement.value || 0)}
-                      </span>
-                    </div>
-
-                    {/* DESTAQUE NOME DO OPERADOR */}
-                    <div className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-300 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 truncate">
-                        <User size={14} className="text-amber-400 shrink-0" />
-                        <span className="truncate">Operador: <strong className="text-white">{agreement.operatorName || 'Não Informado'}</strong></span>
-                      </span>
-                    </div>
-
-                    {/* Detalhes do Cliente */}
-                    <div className="text-xs text-slate-400 space-y-1 pt-1 border-t border-white/5 font-medium">
-                      <div className="flex items-center justify-between">
-                        <span>CPF: <strong className="text-slate-200 font-mono">{formattedCpf}</strong></span>
-                        <button
-                          type="button"
-                          onClick={() => onOpenCpfHistory(cleanCpf)}
-                          className="text-[11px] font-bold text-sky-400 hover:text-sky-300 underline cursor-pointer"
-                        >
-                          Histórico 360°
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* AÇÕES RÁPIDAS EM 1-CLIQUE (SEM BOTÃO DE PIX) */}
-                  <div className="space-y-2 pt-2 border-t border-white/10">
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {/* Botão Copiar CPF */}
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(cleanCpf, keyCpf)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                      >
-                        {copiedId === keyCpf ? (
-                          <Check size={14} className="text-emerald-400" />
-                        ) : (
-                          <Copy size={14} className="text-sky-400" />
-                        )}
-                        <span>{copiedId === keyCpf ? 'Copiado!' : 'Copiar CPF'}</span>
-                      </button>
-
-                      {/* Botão Copiar Nome */}
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(agreement.clientName, keyName)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                      >
-                        {copiedId === keyName ? (
-                          <Check size={14} className="text-emerald-400" />
-                        ) : (
-                          <User size={14} className="text-indigo-400" />
-                        )}
-                        <span>{copiedId === keyName ? 'Copiado!' : 'Copiar Nome'}</span>
-                      </button>
-                    </div>
-
-                    {/* Botões de Mensagem */}
-                    <div className="flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(customMsg, keyMsg)}
-                        className="flex-1 px-2.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-[11px] font-bold text-amber-300 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                      >
-                        {copiedId === keyMsg ? (
-                          <Check size={14} className="text-emerald-400" />
-                        ) : (
-                          <ChatText size={14} className="text-amber-400" />
-                        )}
-                        <span>{copiedId === keyMsg ? 'Mensagem Copiada!' : 'Copiar Mensagem'}</span>
-                      </button>
-
-                      {onOpenMessageTemplates && (
-                        <button
-                          type="button"
-                          onClick={() => onOpenMessageTemplates(agreement)}
-                          className="px-2.5 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[11px] font-bold text-blue-400 flex items-center justify-center gap-1 transition-all"
-                          title="Central de Templates"
-                        >
-                          <span>Templates</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Botão Anexo de Comprovante R2 */}
+                {/* SETAS DE NAVEGAÇÃO LATERAL DO CARROSSEL */}
+                {filteredAgreements.length > 0 && (
+                  <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-white/10">
                     <button
                       type="button"
-                      onClick={() => onOpenReceiptModal(agreement)}
-                      className="w-full px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-[11px] font-bold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-all"
+                      onClick={() => scrollCarousel('left')}
+                      className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
+                      title="Anterior"
                     >
-                      <Paperclip size={14} className={agreement.receiptUrl ? 'text-emerald-400' : 'text-slate-500'} />
-                      <span>{agreement.receiptUrl ? 'Ver Comprovante Anexo' : 'Anexar Comprovante (R2)'}</span>
+                      <CaretLeft size={16} weight="bold" />
+                    </button>
+                    <span className="text-[10px] font-bold text-slate-500 px-1">Arrastar</span>
+                    <button
+                      type="button"
+                      onClick={() => scrollCarousel('right')}
+                      className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
+                      title="Próximo"
+                    >
+                      <CaretRight size={16} weight="bold" />
                     </button>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                )}
+              </div>
+            </div>
+
+            {/* LISTA DE ACORDOS EM RISCO (CARROSSEL HORIZONTAL) */}
+            {filteredAgreements.length === 0 ? (
+              <div className="bg-slate-950/60 rounded-2xl p-8 border border-white/5 text-center space-y-2">
+                <CheckCircle size={32} className="text-emerald-400 mx-auto" />
+                <p className="text-sm font-bold text-slate-300">
+                  {pendingAgreements.length === 0 
+                    ? 'Excelente! Nenhum acordo pendente de vencimento para o dia de hoje.' 
+                    : 'Nenhum acordo encontrado com os filtros selecionados.'}
+                </p>
+              </div>
+            ) : (
+              <div 
+                ref={carouselRef}
+                className="flex gap-4 overflow-x-auto pb-4 pt-1 scroll-smooth snap-x snap-mandatory"
+              >
+                {filteredAgreements.map((agreement) => {
+                  const cleanCpf = (agreement.clientCpf || '').replace(/\D/g, '');
+                  const formattedCpf = formatCPF(agreement.clientCpf || '');
+                  const customMsg = getCustomMessage(agreement);
+
+                  const keyCpf = `cpf_${agreement.id}`;
+                  const keyName = `name_${agreement.id}`;
+                  const keyMsg = `msg_${agreement.id}`;
+
+                  return (
+                    <div
+                      key={agreement.id}
+                      className="min-w-[310px] max-w-[340px] w-full shrink-0 snap-start bg-slate-950/80 border border-amber-500/20 hover:border-amber-500/40 p-4 rounded-2xl space-y-3.5 transition-all shadow-md flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        {/* Header do Card */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
+                              Vence Hoje
+                            </span>
+                            <h4 className="font-bold text-sm text-white line-clamp-1">
+                              {agreement.clientName}
+                            </h4>
+                          </div>
+
+                          <span className="font-mono font-black text-sm text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 shrink-0">
+                            {formatCurrency(agreement.value || 0)}
+                          </span>
+                        </div>
+
+                        {/* DESTAQUE NOME DO OPERADOR */}
+                        <div className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-300 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 truncate">
+                            <User size={14} className="text-amber-400 shrink-0" />
+                            <span className="truncate">Operador: <strong className="text-white">{agreement.operatorName || 'Não Informado'}</strong></span>
+                          </span>
+                        </div>
+
+                        {/* Detalhes do Cliente */}
+                        <div className="text-xs text-slate-400 space-y-1 pt-1 border-t border-white/5 font-medium">
+                          <div className="flex items-center justify-between">
+                            <span>CPF: <strong className="text-slate-200 font-mono">{formattedCpf}</strong></span>
+                            <button
+                              type="button"
+                              onClick={() => onOpenCpfHistory(cleanCpf)}
+                              className="text-[11px] font-bold text-sky-400 hover:text-sky-300 underline cursor-pointer"
+                            >
+                              Histórico 360°
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* AÇÕES RÁPIDAS EM 1-CLIQUE */}
+                      <div className="space-y-2 pt-2 border-t border-white/10">
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {/* Botão Copiar CPF */}
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(cleanCpf, keyCpf)}
+                            className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                          >
+                            {copiedId === keyCpf ? (
+                              <Check size={14} className="text-emerald-400" />
+                            ) : (
+                              <Copy size={14} className="text-sky-400" />
+                            )}
+                            <span>{copiedId === keyCpf ? 'Copiado!' : 'Copiar CPF'}</span>
+                          </button>
+
+                          {/* Botão Copiar Nome */}
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(agreement.clientName, keyName)}
+                            className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                          >
+                            {copiedId === keyName ? (
+                              <Check size={14} className="text-emerald-400" />
+                            ) : (
+                              <User size={14} className="text-indigo-400" />
+                            )}
+                            <span>{copiedId === keyName ? 'Copiado!' : 'Copiar Nome'}</span>
+                          </button>
+                        </div>
+
+                        {/* Botões de Mensagem */}
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(customMsg, keyMsg)}
+                            className="flex-1 px-2.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-[11px] font-bold text-amber-300 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                          >
+                            {copiedId === keyMsg ? (
+                              <Check size={14} className="text-emerald-400" />
+                            ) : (
+                              <ChatText size={14} className="text-amber-400" />
+                            )}
+                            <span>{copiedId === keyMsg ? 'Mensagem Copiada!' : 'Copiar Mensagem'}</span>
+                          </button>
+
+                          {onOpenMessageTemplates && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenMessageTemplates(agreement)}
+                              className="px-2.5 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[11px] font-bold text-blue-400 flex items-center justify-center gap-1 transition-all"
+                              title="Central de Templates"
+                            >
+                              <span>Templates</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* COMPROVANTE: EXIBE MINIATURA SE ANEXADO, OU BOTÃO DE ANEXAR (SEM R2) */}
+                        {agreement.receiptUrl ? (
+                          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                            <img
+                              src={agreement.receiptUrl}
+                              alt="Comprovante Anexado"
+                              className="w-10 h-10 object-cover rounded-lg border border-emerald-500/40 cursor-pointer hover:scale-105 transition-transform shrink-0"
+                              onClick={() => onOpenReceiptModal(agreement)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[11px] font-bold text-emerald-400 block truncate">
+                                ✅ Comprovante Anexado
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => onOpenReceiptModal(agreement)}
+                                className="text-[10px] text-slate-300 hover:text-white underline cursor-pointer truncate block"
+                              >
+                                Ver imagem completa
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onOpenReceiptModal(agreement)}
+                            className="w-full px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-[11px] font-bold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-all"
+                          >
+                            <Paperclip size={14} className="text-slate-500" />
+                            <span>Anexar Comprovante</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

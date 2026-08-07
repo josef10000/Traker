@@ -315,26 +315,34 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             </button>
                           )}
 
-                          {/* Anexo de Comprovante R2 */}
+                          {/* Anexo de Comprovante */}
                           {onOpenReceiptModal && (
-                            <button
-                              onClick={() => onOpenReceiptModal(agreement)}
-                              className={`p-1 rounded-md transition-all cursor-pointer relative ${
-                                agreement.receiptUrl
-                                  ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30'
-                                  : theme === 'dark'
+                            agreement.receiptUrl ? (
+                              <button
+                                onClick={() => onOpenReceiptModal(agreement)}
+                                className="flex items-center gap-1 p-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer"
+                                title="Ver Comprovante Anexo"
+                              >
+                                <img
+                                  src={agreement.receiptUrl}
+                                  alt="Comprovante"
+                                  className="w-5 h-5 object-cover rounded"
+                                />
+                                <Paperclip size={12} className="text-emerald-400" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => onOpenReceiptModal(agreement)}
+                                className={`p-1 rounded-md transition-all cursor-pointer ${
+                                  theme === 'dark'
                                     ? 'text-slate-400 hover:text-white hover:bg-slate-800'
                                     : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
-                              }`}
-                              title={agreement.receiptUrl ? 'Ver Comprovante Anexo (R2)' : 'Anexar Comprovante (R2)'}
-                            >
-                              <Paperclip size={13} />
-                              {agreement.receiptUrl && (
-                                <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                </span>
-                              )}
-                            </button>
+                                }`}
+                                title="Anexar Comprovante"
+                              >
+                                <Paperclip size={13} />
+                              </button>
+                            )
                           )}
                         </div>
 
