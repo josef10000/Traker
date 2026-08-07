@@ -26,9 +26,6 @@ const isMasterAdminEmail = (email?: string | null): boolean => {
 };
 
 export function AppContent() {
-  if (typeof window !== 'undefined' && window.location.pathname === '/status') {
-    return <StatusPage />;
-  }
   const [designMode, setDesignMode] = useDesignMode();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(() => {

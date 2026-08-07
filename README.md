@@ -158,9 +158,22 @@ VITE_R2_UPLOAD_ENDPOINT=https://seu-upload-worker.r2.workers.dev
 > - **Ambiente Sandbox / Testes (`sandbox-24h/`)**: Imagens e prints de tratativa expiram e são removidos automaticamente em **24 horas** (metadado `x-amz-meta-ttl: 86400`).
 > - **Base de Conhecimento (`kb-1year/`)**: Imagens anexadas a manuais e roteiros expiram e são removidos automaticamente em **1 ano / 365 dias** (metadado `x-amz-meta-ttl: 31536000`).
 
-### 3. Rodar em Desenvolvimento
+### 3. Rodar em Desenvolvimento & Scripts
 ```bash
+# Rodar ambiente local de desenvolvimento
 npm run dev
+
+# Executar checagem de tipos estáticos sem emitir arquivos
+npm run lint
+
+# Executar testes unitários e de integração com Vitest
+npm run test
+
+# Limpar diretório dist de build de forma segura e cross-platform (Windows/Linux/macOS)
+npm run clean
+
+# Gerar pacote de produção otimizado
+npm run build
 ```
 
 ---
@@ -171,3 +184,6 @@ O repositório utiliza **GitHub Actions** para executar verificações automatiz
 - **TypeScript Typecheck**: Compilação e checagem estática de tipos (`tsc --noEmit`).
 - **Production Build Check**: Garante que o bundler Vite gere o pacote de produção sem falhas.
 - **SonarCloud Analysis**: Análise automática de segurança, confiabilidade e métricas de manutenibilidade.
+- **Segurança de Endpoints Serverless**: Varredura contra exposição de chaves privadas (`RESEND_API_KEY`) no bundle do cliente.
+- **Tags de Restauração**: Restauração garantida via tag de versão (`backup-pre-refactor-20260807`).
+

@@ -34,9 +34,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'E-mail de destino e URL do convite são obrigatórios.' });
     }
 
-    // Leitura estritamente segura da chave de API nas variáveis de ambiente do servidor Node
+    // Leitura estritamente segura da chave de API nas variáveis de ambiente privadas do servidor Node
     const apiKey = (
-      process.env.VITE_RESEND_API_KEY || 
       process.env.RESEND_API_KEY || 
       process.env.resend_api_key ||
       process.env.RESEND_KEY ||
@@ -45,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!apiKey) {
       return res.status(500).json({ 
-        error: 'A chave da API do Resend (RESEND_API_KEY ou VITE_RESEND_API_KEY) não foi encontrada no servidor da Vercel.' 
+        error: 'A chave da API do Resend (RESEND_API_KEY) não foi encontrada no servidor da Vercel.' 
       });
     }
 
