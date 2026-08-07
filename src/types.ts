@@ -47,6 +47,17 @@ export interface TabulationReasonConfig {
   active: boolean;
 }
 
+export interface MessageTemplate {
+  id: string;
+  title: string;
+  content: string;
+  category: 'vencimento' | 'preventiva' | 'confirmacao' | 'geral';
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  organizationId: string;
+}
+
 export interface InternalMessage {
   id: string;
   senderId: string;

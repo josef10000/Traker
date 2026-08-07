@@ -24,6 +24,7 @@ interface SupervisorDueDateRiskPanelProps {
   profile: UserProfile;
   onOpenCpfHistory: (cpf: string) => void;
   onOpenReceiptModal: (agreement: Agreement) => void;
+  onOpenMessageTemplates?: (agreement: Agreement) => void;
   theme?: 'dark' | 'light';
 }
 
@@ -32,6 +33,7 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
   profile,
   onOpenCpfHistory,
   onOpenReceiptModal,
+  onOpenMessageTemplates,
   theme = 'dark'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -299,19 +301,32 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
                       </button>
                     </div>
 
-                    {/* Botão Copiar Mensagem Personalizada */}
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(customMsg, keyMsg)}
-                      className="w-full px-2.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-[11px] font-bold text-amber-300 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                    >
-                      {copiedId === keyMsg ? (
-                        <Check size={14} className="text-emerald-400" />
-                      ) : (
-                        <ChatText size={14} className="text-amber-400" />
+                    {/* Botões de Mensagem */}
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(customMsg, keyMsg)}
+                        className="flex-1 px-2.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-[11px] font-bold text-amber-300 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                      >
+                        {copiedId === keyMsg ? (
+                          <Check size={14} className="text-emerald-400" />
+                        ) : (
+                          <ChatText size={14} className="text-amber-400" />
+                        )}
+                        <span>{copiedId === keyMsg ? 'Mensagem Copiada!' : 'Copiar Mensagem'}</span>
+                      </button>
+
+                      {onOpenMessageTemplates && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenMessageTemplates(agreement)}
+                          className="px-2.5 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[11px] font-bold text-blue-400 flex items-center justify-center gap-1 transition-all"
+                          title="Central de Templates"
+                        >
+                          <span>Templates</span>
+                        </button>
                       )}
-                      <span>{copiedId === keyMsg ? 'Mensagem Copiada!' : 'Copiar Mensagem de Cobrança'}</span>
-                    </button>
+                    </div>
 
                     {/* Botão Anexo de Comprovante R2 */}
                     <button

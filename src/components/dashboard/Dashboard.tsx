@@ -1,9 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sidebar } from './Sidebar';
-import { AuditTab } from './AuditTab';
 import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
-import { BiAnalyticsTab } from './BiAnalyticsTab';
 import { DimensionamentoSitesSection } from './DimensionamentoSitesSection';
 import { HourlyActivityTrackerSection } from './HourlyActivityTrackerSection';
 import { KnowledgeBaseSection } from './KnowledgeBaseSection';
@@ -68,6 +66,15 @@ import { InvitesSection } from './InvitesSection';
 import { OrgTreeSection } from './OrgTreeSection';
 import { TransfersSection } from './TransfersSection';
 
+// Lazy Loading de Abas Pesadas para Otimização de Performance
+const BiAnalyticsTab = lazy(() => import('./BiAnalyticsTab').then(m => ({ default: m.BiAnalyticsTab })));
+const AttendanceTabulationTab = lazy(() => import('./AttendanceTabulationTab').then(m => ({ default: m.AttendanceTabulationTab })));
+const BackOfficeTab = lazy(() => import('./BackOfficeTab').then(m => ({ default: m.BackOfficeTab })));
+const AuditTab = lazy(() => import('./AuditTab').then(m => ({ default: m.AuditTab })));
+const QaDashboard = lazy(() => import('./QaDashboard').then(m => ({ default: m.QaDashboard })));
+const RecoveryPoolTab = lazy(() => import('./RecoveryPoolTab').then(m => ({ default: m.RecoveryPoolTab })));
+const SupportTab = lazy(() => import('./SupportTab').then(m => ({ default: m.SupportTab })));
+
 // Hooks customizados
 import { useAgreements } from '../../hooks/useAgreements';
 import { useTeamMembers } from '../../hooks/useTeamMembers';
@@ -75,19 +82,14 @@ import { useDashboardStats } from '../../hooks/useDashboardStats';
 
 // Componentes extraídos
 import { DashboardHeader } from './DashboardHeader';
-import { SupportTab } from './SupportTab';
 import { StatsGrid } from './StatsGrid';
-import { BackOfficeTab } from './BackOfficeTab';
 import { PortfolioGoalsPanel } from './PortfolioGoalsPanel';
 import { AdvancedInsights } from './AdvancedInsights';
 import { AgreementsTable } from './AgreementsTable';
 import { TeamManagementTab } from './TeamManagementTab';
 import { DailyAgendaSection } from './DailyAgendaSection';
-import { RecoveryPoolTab } from './RecoveryPoolTab';
-import { QaDashboard } from './QaDashboard';
 import { TeamPerformance } from './TeamPerformance';
 import { FinancialPerformanceInsights } from './FinancialPerformanceInsights';
-import { AttendanceTabulationTab } from './AttendanceTabulationTab';
 import { InternalChatWidget } from '../chat/InternalChatWidget';
 
 // Modais do sistema
@@ -106,6 +108,7 @@ import { DemoFeatureBanner } from '../demo/DemoFeatureBanner';
 import { SupervisorDueDateRiskPanel } from './SupervisorDueDateRiskPanel';
 import { CpfHistoryModal } from '../modals/CpfHistoryModal';
 import { ReceiptAttachmentModal } from '../modals/ReceiptAttachmentModal';
+import { MessageTemplatesModal } from '../modals/MessageTemplatesModal';
 
 interface DashboardProps {
   user: User;
@@ -239,6 +242,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [notesModalAgreement, setNotesModalAgreement] = useState<Agreement | null>(null);
   const [selectedCpfForHistory, setSelectedCpfForHistory] = useState<string | null>(null);
   const [selectedAgreementForReceipt, setSelectedAgreementForReceipt] = useState<Agreement | null>(null);
+  const [isMessageTemplatesOpen, setIsMessageTemplatesOpen] = useState<boolean>(false);
+  const [selectedAgreementForTemplate, setSelectedAgreementForTemplate] = useState<Agreement | null>(null);
 
   // Escuta todas as anotações/presenças da organização
   useEffect(() => {
@@ -2566,6 +2571,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 profile={profile}
                 onOpenCpfHistory={(cpf) => setSelectedCpfForHistory(cpf)}
                 onOpenReceiptModal={(agreement) => setSelectedAgreementForReceipt(agreement)}
+                onOpenMessageTemplates={(agreement) => {
+                  setSelectedAgreementForTemplate(agreement);
+                  setIsMessageTemplatesOpen(true);
+                }}
                 theme={theme}
               />
             )}
@@ -3103,31 +3112,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* CONTEÚDO DA ABA BALCÃO DE RECUPERAÇÃO */}
               {dashboardTab === 'recovery' && (
-                <RecoveryPoolTab
-                  profile={profile}
-                  managedTeamsData={managedTeamsData}
-                  showToast={showToast}
-                  onAttend={(agreement) => {
-                    setEditingAgreement(agreement);
-                    setIsModalOpen(true);
-                  }}
-                  onTakeOverSuccess={() => {
-                    doMarkStale();
-                    refreshAgreements();
-                  }}
-                  theme={theme}
-                />
+                <Suspense fallback={<div className="p-12 text-center text-slate-400 text-xs font-bold animate-pulse">Carregando Balcão de Recuperação...</div>}>
+                  <RecoveryPoolTab
+                    profile={profile}
+                    managedTeamsData={managedTeamsData}
+                    showToast={showToast}
+                    onAttend={(agreement) => {
+                      setEditingAgreement(agreement);
+                      setIsModalOpen(true);
+                    }}
+                    onTakeOverSuccess={() => {
+                      doMarkStale();
+                      refreshAgreements();
+                    }}
+                    theme={theme}
+                  />
+                </Suspense>
               )}
 
               {/* CONTEÚDO DA ABA DE TABULAÇÃO & CONVERSÃO REAL */}
               {dashboardTab === 'tabulation' && (
-                <AttendanceTabulationTab
-                  profile={profile}
-                  showToast={showToast}
-                  agreements={monthAgreements}
-                  teamsData={managedTeamsData}
-                  theme={theme}
-                />
+                <Suspense fallback={<div className="p-12 text-center text-slate-400 text-xs font-bold animate-pulse">Carregando Tabulação & Conversão...</div>}>
+                  <AttendanceTabulationTab
+                    profile={profile}
+                    showToast={showToast}
+                    agreements={monthAgreements}
+                    teamsData={managedTeamsData}
+                    theme={theme}
+                  />
+                </Suspense>
               )}
 
               {/* CONTEÚDO DA ABA DE BASE DE CONHECIMENTO & SCRIPTS */}
@@ -3171,24 +3184,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
 
-                  {qaMasterSubTab === 'audit' ? (
-                    <AuditTab
-                      profile={profile}
-                      organizationId={profile.organizationId || ''}
-                      showToast={showToast}
-                      theme={theme}
-                    />
-                  ) : (
-                    <QaDashboard
-                      profile={profile}
-                      currentTeamMembers={currentTeamMembers}
-                      managedTeamsData={managedTeamsData}
-                      agreements={monthAgreements}
-                      attendanceStatuses={attendanceStatuses}
-                      showToast={showToast}
-                      theme={theme}
-                    />
-                  )}
+                  <Suspense fallback={<div className="p-12 text-center text-slate-400 text-xs font-bold animate-pulse">Carregando Governança & QA...</div>}>
+                    {qaMasterSubTab === 'audit' ? (
+                      <AuditTab
+                        profile={profile}
+                        organizationId={profile.organizationId || ''}
+                        showToast={showToast}
+                        theme={theme}
+                      />
+                    ) : (
+                      <QaDashboard
+                        profile={profile}
+                        currentTeamMembers={currentTeamMembers}
+                        managedTeamsData={managedTeamsData}
+                        agreements={monthAgreements}
+                        attendanceStatuses={attendanceStatuses}
+                        showToast={showToast}
+                        theme={theme}
+                      />
+                    )}
+                  </Suspense>
                 </div>
               )}
 
@@ -3224,32 +3239,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                   )}
 
-                  {biMasterSubTab === 'goals' && profile.role !== 'member' ? (
-                    <PortfolioGoalsPanel
-                      profile={profile}
-                      monthAgreements={monthAgreements}
-                      currentTeamMembers={currentTeamMembers}
-                      selectedMonth={selectedMonth}
-                      selectedYear={selectedYear}
-                      showToast={showToast}
-                      selectedTeamId={selectedTeamId}
-                      supervisors={supervisors}
-                      managedTeamsData={managedTeamsData}
-                    />
-                  ) : (
-                    <BiAnalyticsTab
-                      profile={profile}
-                      agreements={monthAgreements}
-                      stats={stats}
-                      teamsData={managedTeamsData}
-                      selectedMonth={selectedMonth}
-                      selectedYear={selectedYear}
-                      setSelectedMonth={setSelectedMonth}
-                      setSelectedYear={setSelectedYear}
-                      showToast={showToast}
-                      theme={theme}
-                    />
-                  )}
+                  <Suspense fallback={<div className="p-12 text-center text-slate-400 text-xs font-bold animate-pulse">Carregando BI Estratégico...</div>}>
+                    {biMasterSubTab === 'goals' && profile.role !== 'member' ? (
+                      <PortfolioGoalsPanel
+                        profile={profile}
+                        monthAgreements={monthAgreements}
+                        currentTeamMembers={currentTeamMembers}
+                        selectedMonth={selectedMonth}
+                        selectedYear={selectedYear}
+                        showToast={showToast}
+                        selectedTeamId={selectedTeamId}
+                        supervisors={supervisors}
+                        managedTeamsData={managedTeamsData}
+                      />
+                    ) : (
+                      <BiAnalyticsTab
+                        profile={profile}
+                        agreements={monthAgreements}
+                        stats={stats}
+                        teamsData={managedTeamsData}
+                        selectedMonth={selectedMonth}
+                        selectedYear={selectedYear}
+                        setSelectedMonth={setSelectedMonth}
+                        setSelectedYear={setSelectedYear}
+                        showToast={showToast}
+                        theme={theme}
+                      />
+                    )}
+                  </Suspense>
                 </div>
               )}
 
@@ -3269,16 +3286,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* CONTEÚDO DA ABA DE SUPORTE */}
               {dashboardTab === 'support' && (profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor') && (
-                <SupportTab
-                  profile={profile}
-                  organizationId={profile.organizationId || ''}
-                  organizationName={organizationName}
-                  crmOrgId={crmOrgId}
-                  crmClientId={crmClientId}
-                  crmPublicToken={crmPublicToken}
-                  showToast={showToast}
-                  theme={theme}
-                />
+                <Suspense fallback={<div className="p-12 text-center text-slate-400 text-xs font-bold animate-pulse">Carregando Suporte...</div>}>
+                  <SupportTab
+                    profile={profile}
+                    organizationId={profile.organizationId || ''}
+                    organizationName={organizationName}
+                    crmOrgId={crmOrgId}
+                    crmClientId={crmClientId}
+                    crmPublicToken={crmPublicToken}
+                    showToast={showToast}
+                    theme={theme}
+                  />
+                </Suspense>
               )}
 
               {/* CONTEÚDO DA ABA DE BACK OFFICE / CARGA DE ACORDOS */}
@@ -4450,6 +4469,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
           profile={profile}
           isDemoMode={profile.organizationId === 'sandbox-test'}
           onSaveReceipt={handleSaveReceipt}
+        />
+      )}
+
+      {isMessageTemplatesOpen && (
+        <MessageTemplatesModal
+          isOpen={isMessageTemplatesOpen}
+          onClose={() => setIsMessageTemplatesOpen(false)}
+          profile={profile}
+          agreement={selectedAgreementForTemplate || undefined}
+          onSelectAndCopy={() => {
+            showToast('Mensagem enviada para a área de transferência!', 'success');
+            setIsMessageTemplatesOpen(false);
+          }}
         />
       )}
 
