@@ -56,8 +56,8 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
     });
   };
 
-  // Exclusividade: exibe apenas para perfis de liderança
-  const isSupervisorRole = ['supervisor', 'coordinator', 'manager', 'admin'].includes(profile.role);
+  // Exclusividade: exibe apenas para o perfil de supervisor
+  const isSupervisorRole = profile.role === 'supervisor';
 
   // Data de hoje em formato YYYY-MM-DD
   const todayStr = useMemo(() => {

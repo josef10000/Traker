@@ -2564,8 +2564,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
             )}
 
-            {/* Painel Exclusivo de Risco no Dia para Supervisores/Gestores */}
-            {['supervisor', 'coordinator', 'manager', 'admin'].includes(profile.role) && (
+            {/* Painel Exclusivo de Risco no Dia estritamente para Supervisores */}
+            {profile.role === 'supervisor' && (
               <SupervisorDueDateRiskPanel
                 agreements={monthAgreements}
                 profile={profile}
