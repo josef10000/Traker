@@ -21,7 +21,7 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **📡 Resiliência Offline-First** | Operação ininterrupta sem internet via **IndexedDB Cache Gate**, com sincronização automática na reconexão. |
 | **📈 Grafana & Observabilidade** | Telemetria contínua com Grafana Cloud para monitoramento de métricas, throughput de rede e saúde do SaaS. |
 | **🛡️ SonarCloud Security A** | Análise estática contínua de segurança, prevenção de bugs e 0 vulnerabilidades em pipeline CI/CD. |
-| **📊 BI & Forecast Preditivo** | Analytics em 6 visões com projeções N+1 semana a semana (W1-W4), projeção preditiva por membro da equipe, análise de sazonalidade, curva de liquidez e rastreamento de descontos. |
+| **📊 BI & Forecast Preditivo** | Analytics estruturado em 4 visões focadas (Visão Geral & Heatmaps, Matriz de Canais, Análise de Descontos e Forecast Preditivo com Maturação), eliminando visões estáticas e consolidando scores preditivos. |
 | **⏱️ Jornada Hora a Hora** | Cockpit de acompanhamento de produção em tempo real com **Banco de Pausas Flexível de 72 min/dia**. |
 | **🚨 Risco em Vencimento no Dia** | Painel estritamente exclusivo para o cargo de **Supervisor** em carrossel horizontal navegável, ordenação por maior valor, operador destacado e cópia rápida em 1-clique (CPF, Nome e Mensagens). |
 | **📜 Prontuário 360° por CPF** | Histórico cronológico completo do cliente por CPF com registro de acordos passados, operadores e mural de anotações internas. |

@@ -261,7 +261,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
   // Estados dos Filtros
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>('all');
   const [selectedOperatorFilter, setSelectedOperatorFilter] = useState<string>('all');
-  const [biSubTab, setBiSubTab] = useState<'overview' | 'channels' | 'qa_roi' | 'predictive' | 'discounts' | 'forecast'>('overview');
+  const [biSubTab, setBiSubTab] = useState<'overview' | 'channels' | 'discounts' | 'forecast'>('overview');
   const [heatmapMetric, setHeatmapMetric] = useState<'total' | 'success' | 'paid_value' | 'real_conversion' | 'specific_reason'>('total');
   const [heatmapSelectedReason, setHeatmapSelectedReason] = useState<string>('all');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -957,30 +957,6 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
         </button>
 
         <button
-          onClick={() => setBiSubTab('qa_roi')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-            biSubTab === 'qa_roi'
-              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40 shadow-lg shadow-purple-500/10'
-              : 'bg-slate-900/40 text-slate-400 hover:text-slate-200 border border-white/5'
-          }`}
-        >
-          <ShieldWarning size={18} />
-          <span>🛡️ 3. Quadrante QA vs. Performance (ROI)</span>
-        </button>
-
-        <button
-          onClick={() => setBiSubTab('predictive')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-            biSubTab === 'predictive'
-              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-lg shadow-amber-500/10'
-              : 'bg-slate-900/40 text-slate-400 hover:text-slate-200 border border-white/5'
-          }`}
-        >
-          <TrendingUp size={18} />
-          <span>🔮 4. Maturação & Alerta Preditivo</span>
-        </button>
-
-        <button
           onClick={() => setBiSubTab('discounts')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
             biSubTab === 'discounts'
@@ -989,7 +965,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
           }`}
         >
           <Tag size={18} />
-          <span>🏷️ 5. Análise de Descontos</span>
+          <span>🏷️ 3. Análise de Descontos</span>
         </button>
 
         <button
@@ -1001,7 +977,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
           }`}
         >
           <TrendingUp size={18} />
-          <span>🔮 6. Forecast & Tendências</span>
+          <span>🔮 4. Forecast & Tendências Preditivas</span>
         </button>
       </div>
 
@@ -1166,115 +1142,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
         </div>
       )}
 
-      {/* SUB-ABA 3: QUADRANTE QA VS PERFORMANCE (ROI) */}
-      {biSubTab === 'qa_roi' && (
-        <div className="space-y-6 animate-fadeIn">
-          <div className="p-6 rounded-[2rem] border bg-slate-900/40 border-white/5 shadow-xl space-y-6">
-            <div>
-              <h3 className="text-base font-black uppercase tracking-wider text-slate-100 flex items-center gap-2">
-                <ShieldWarning size={20} className="text-purple-400" />
-                <span>Quadrante QA vs. Performance (Matriz ROI de Qualidade)</span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Cruzamento entre a nota técnica de monitoria (%) e o atingimento financeiro da meta R$
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Quadrante 1: Top Performer */}
-              <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                <span className="text-xs font-black text-emerald-400 uppercase tracking-wider block">
-                  🌟 Top Performers (QA ≥ 85% | Meta ≥ 100%)
-                </span>
-                <p className="text-xs text-slate-300">
-                  Operadores de alta rentabilidade que mantêm 100% de conformidade técnica e normas da operação.
-                </p>
-                <div className="text-xs font-mono font-bold text-emerald-300 pt-2">
-                  Recomendação: Reconhecimento & Bonificação
-                </div>
-              </div>
-
-              {/* Quadrante 2: Risco Compliance */}
-              <div className="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 space-y-2">
-                <span className="text-xs font-black text-rose-400 uppercase tracking-wider block">
-                  🚨 Risco de Compliance (QA &lt; 85% | Meta ≥ 100%)
-                </span>
-                <p className="text-xs text-slate-300">
-                  Vendem bem, mas cometem desvios de processo ou scripts de negociação sem autorização.
-                </p>
-                <div className="text-xs font-mono font-bold text-rose-300 pt-2">
-                  Recomendação: Feedback de Ajuste Imediato
-                </div>
-              </div>
-
-              {/* Quadrante 3: Didático */}
-              <div className="p-5 rounded-2xl bg-sky-500/10 border border-sky-500/20 space-y-2">
-                <span className="text-xs font-black text-sky-400 uppercase tracking-wider block">
-                  📚 Didático / Argumentação (QA ≥ 85% | Meta &lt; 80%)
-                </span>
-                <p className="text-xs text-slate-300">
-                  Seguem o script com maestria, porém necessitam de reforço nas técnicas de fechamento.
-                </p>
-                <div className="text-xs font-mono font-bold text-sky-300 pt-2">
-                  Recomendação: Treinamento de Fechamento / Pitch
-                </div>
-              </div>
-
-              {/* Quadrante 4: Reciclagem Urgente */}
-              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-2">
-                <span className="text-xs font-black text-amber-400 uppercase tracking-wider block">
-                  ⚠️ Reciclagem Urgente (QA &lt; 85% | Meta &lt; 80%)
-                </span>
-                <p className="text-xs text-slate-300">
-                  Apresentam baixo resultado financeiro e inconformidades frequentes em chamadas.
-                </p>
-                <div className="text-xs font-mono font-bold text-amber-300 pt-2">
-                  Recomendação: Plano de Desenvolvimento Individual (PDI)
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SUB-ABA 4: MATURAÇÃO & ALERTA PREDITIVO DE QUEBRA */}
-      {biSubTab === 'predictive' && (
-        <div className="space-y-6 animate-fadeIn">
-          <div className="p-6 rounded-[2rem] border bg-slate-900/40 border-white/5 shadow-xl space-y-6">
-            <div>
-              <h3 className="text-base font-black uppercase tracking-wider text-slate-100 flex items-center gap-2">
-                <TrendingUp size={20} className="text-amber-400" />
-                <span>Maturação do Devedor & Score Preditivo de Quebra</span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Frequência ideal de acionamentos por CPF até o acordo e régua preditiva de prevenção de inadimplência
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-5 rounded-2xl bg-slate-800/60 border border-white/10 text-center space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Média de Acionamentos / CPF</span>
-                <span className="text-2xl font-black text-amber-400">3,4 contatos</span>
-                <span className="text-[10px] text-slate-500 block">Até a formalização do acordo</span>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-800/60 border border-white/10 text-center space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Tempo Médio de Maturação</span>
-                <span className="text-2xl font-black text-sky-400">4,2 dias</span>
-                <span className="text-[10px] text-slate-500 block">Do 1º contato ao pagamento</span>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-800/60 border border-white/10 text-center space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Assertividade Preditiva</span>
-                <span className="text-2xl font-black text-emerald-400">92,4%</span>
-                <span className="text-[10px] text-slate-500 block">Acurácia dos alertas de quebra</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SUB-ABA 5: RASTREAMENTO & MÉTRICAS DE DESCONTO */}
+      {/* SUB-ABA 3: RASTREAMENTO & MÉTRICAS DE DESCONTO */}
       {biSubTab === 'discounts' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Cabeçalho do Bloco */}
@@ -1529,6 +1397,38 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
               <p className="text-[11px] text-slate-400">
                 {forecastData.activeOperatorsCount} op. na visão • ~{forecastData.avgAttendancesPerOperator} atend/op.
               </p>
+          </div>
+
+          {/* 🔮 MATURAÇÃO DO DEVEDOR & SCORE PREDITIVO DE QUEBRA */}
+          <div className="p-6 rounded-[2rem] border bg-slate-900/40 border-white/5 shadow-xl space-y-6">
+            <div>
+              <h3 className="text-base font-black uppercase tracking-wider text-slate-100 flex items-center gap-2">
+                <TrendingUp size={20} className="text-amber-400" />
+                <span>Maturação do Devedor & Score Preditivo de Quebra</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Frequência ideal de acionamentos por CPF até o acordo e régua preditiva de prevenção de inadimplência
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-5 rounded-2xl bg-slate-800/60 border border-white/10 text-center space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Média de Acionamentos / CPF</span>
+                <span className="text-2xl font-black text-amber-400">3,4 contatos</span>
+                <span className="text-[10px] text-slate-500 block">Até a formalização do acordo</span>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-slate-800/60 border border-white/10 text-center space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Tempo Médio de Maturação</span>
+                <span className="text-2xl font-black text-sky-400">4,2 dias</span>
+                <span className="text-[10px] text-slate-500 block">Do 1º contato ao pagamento</span>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-slate-800/60 border border-white/10 text-center space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Assertividade Preditiva</span>
+                <span className="text-2xl font-black text-emerald-400">92,4%</span>
+                <span className="text-[10px] text-slate-500 block">Acurácia dos alertas de quebra</span>
+              </div>
             </div>
           </div>
 
