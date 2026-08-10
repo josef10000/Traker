@@ -3152,59 +3152,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 />
               )}
 
-              {/* CONTEÚDO DA ABA DE QUALIDADE & GOVERNANÇA (QA + AUDITORIA) */}
-              {(dashboardTab === 'qa' || dashboardTab === 'audit') && (
-                <div className="space-y-6">
-                  {/* Navegação de Sub-abas */}
-                  <div className={`p-1.5 rounded-2xl border flex items-center gap-1.5 overflow-x-auto ${
-                    theme === 'dark' ? 'bg-slate-900/40 border-white/5' : 'bg-white border-slate-200 shadow-sm'
-                  }`}>
-                    <button
-                      onClick={() => setQaMasterSubTab('evaluations')}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-                        qaMasterSubTab === 'evaluations'
-                          ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
-                          : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span>🎙️ Monitorias de QA & Script</span>
-                    </button>
-
-                    {(profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'supervisor' || profile.role === 'super_admin') && (
-                      <button
-                        onClick={() => setQaMasterSubTab('audit')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-                          qaMasterSubTab === 'audit'
-                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20'
-                            : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span>🔒 Trilha de Auditoria & LGPD</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <Suspense fallback={<div className="p-12 text-center text-slate-400 text-xs font-bold animate-pulse">Carregando Governança & QA...</div>}>
-                    {qaMasterSubTab === 'audit' ? (
-                      <AuditTab
-                        profile={profile}
-                        organizationId={profile.organizationId || ''}
-                        showToast={showToast}
-                        theme={theme}
-                      />
-                    ) : (
-                      <QaDashboard
-                        profile={profile}
-                        currentTeamMembers={currentTeamMembers}
-                        managedTeamsData={managedTeamsData}
-                        agreements={monthAgreements}
-                        attendanceStatuses={attendanceStatuses}
-                        showToast={showToast}
-                        theme={theme}
-                      />
-                    )}
-                  </Suspense>
-                </div>
+              {/* CONTEÚDO DA ABA DE QUALIDADE (QA) */}
+              {dashboardTab === 'qa' && (
+                <Suspense fallback={<div className="p-12 text-center text-slate-400 text-xs font-bold animate-pulse">Carregando Qualidade & QA...</div>}>
+                  <QaDashboard
+                    profile={profile}
+                    currentTeamMembers={currentTeamMembers}
+                    managedTeamsData={managedTeamsData}
+                    agreements={monthAgreements}
+                    attendanceStatuses={attendanceStatuses}
+                    showToast={showToast}
+                    theme={theme}
+                  />
+                </Suspense>
               )}
 
               {/* CONTEÚDO DA ABA DE BI, METAS & PERFORMANCE */}
