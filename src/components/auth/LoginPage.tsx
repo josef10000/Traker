@@ -320,7 +320,8 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    minLength={6}
+                    minLength={8}
+                    title="A senha deve ter pelo menos 8 caracteres"
                     className="w-full bg-slate-950/80 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-white text-sm focus:outline-none focus:border-sky-500 transition-all placeholder:text-slate-600 font-medium"
                   />
                   <button

@@ -1,5 +1,28 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// ---------------------------------------------------------------------------
+// Rate-limit simples em memória (server-side, sem dependência extra).
+// Limite: 10 chamadas por IP por janela de 1 hora.
+// Em produção com múltiplas instâncias Vercel, substitua por Vercel KV ou Redis.
+// ---------------------------------------------------------------------------
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hora
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true; // permitido
+  }
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false; // bloqueado
+  }
+  entry.count++;
+  return true; // permitido
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS Headers - Restringe origens permitidas
   const allowedOrigins = [
@@ -27,11 +50,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Método não permitido. Use POST.' });
   }
 
-  try {
-    const { recipientEmail, orgName, roleName, inviteUrl, fromName = 'Tracker System' } = req.body || {};
+  // Rate-limit por IP
+  const clientIp = (req.headers['x-forwarded-for'] as string || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!checkRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'Limite de requisições excedido. Tente novamente em 1 hora.' });
+  }
 
-    if (!recipientEmail || !inviteUrl) {
-      return res.status(400).json({ error: 'E-mail de destino e URL do convite são obrigatórios.' });
+  try {
+    const body = req.body || {};
+    const recipientEmail: string = typeof body.recipientEmail === 'string' ? body.recipientEmail.trim() : '';
+    const orgName: string = typeof body.orgName === 'string' ? body.orgName.trim().slice(0, 200) : 'Empresa';
+    const roleName: string = typeof body.roleName === 'string' ? body.roleName.trim().slice(0, 100) : 'Membro';
+    const inviteUrl: string = typeof body.inviteUrl === 'string' ? body.inviteUrl.trim() : '';
+    const fromName: string = typeof body.fromName === 'string' ? body.fromName.trim().slice(0, 100) : 'Tracker System';
+
+    // Validação de payload
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!recipientEmail || !emailRegex.test(recipientEmail)) {
+      return res.status(400).json({ error: 'E-mail de destino inválido.' });
+    }
+    if (!inviteUrl || (!inviteUrl.startsWith('https://') && !inviteUrl.startsWith('http://'))) {
+      return res.status(400).json({ error: 'URL do convite inválida.' });
     }
 
     // Leitura estritamente segura da chave de API nas variáveis de ambiente privadas do servidor Node

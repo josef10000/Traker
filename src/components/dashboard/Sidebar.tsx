@@ -18,6 +18,7 @@ import {
   Lock
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
+import { checkIsSuperUser } from '../../utils/roles';
 
 interface SidebarProps {
   profile: UserProfile;
@@ -34,7 +35,7 @@ export const Sidebar = ({
   organizationName,
   onLogoutClick
 }: SidebarProps) => {
-  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator' || profile.role === 'super_admin' || profile.role === 'monitor';
+  const isSuperUser = checkIsSuperUser(profile.role);
 
   const categories = [
     {

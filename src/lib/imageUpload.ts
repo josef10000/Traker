@@ -139,43 +139,29 @@ export async function uploadImage(
   // 2. Compacta a imagem para formato WebP ultra-leve
   const compressedDataUrl = await compressImage(input, maxWidth, quality);
 
-  const accountId = import.meta.env.VITE_R2_ACCOUNT_ID;
-  const bucketName = import.meta.env.VITE_R2_BUCKET_NAME;
-  const accessKeyId = import.meta.env.VITE_R2_ACCESS_KEY_ID;
-  const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
-  const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
-
   const uploadEndpoint = import.meta.env.VITE_R2_UPLOAD_ENDPOINT;
-
-  // Se houver um endpoint de upload R2 ou credenciais completas
-  if (uploadEndpoint || (accountId && bucketName && accessKeyId && secretAccessKey && publicUrl)) {
+  // SEGURANCA: Credenciais de storage (ACCESS_KEY_ID, SECRET_ACCESS_KEY) NUNCA devem estar
+  // no frontend. Use VITE_R2_UPLOAD_ENDPOINT apontando para um endpoint serverless (Cloudflare Worker
+  // ou Vercel Function) que assina e executa o upload no servidor.
+  if (uploadEndpoint) {
     try {
       const filename = `${targetFolder}/${secureRandomId('file')}.webp`;
-      const cleanPublicBaseUrl = publicUrl?.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
-      const targetEndpoint = uploadEndpoint || (cleanPublicBaseUrl && !cleanPublicBaseUrl.includes('.r2.dev') ? `${cleanPublicBaseUrl}/${filename}` : null);
+      const blob = dataUrlToBlob(compressedDataUrl);
+      const uploadResponse = await fetch(`${uploadEndpoint}?key=${encodeURIComponent(filename)}&expiresAt=${encodeURIComponent(expiresAtISO)}&ttl=${ttlSeconds}&retention=${retentionType}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/webp' },
+        body: blob,
+      });
 
-      if (targetEndpoint) {
-        const blob = dataUrlToBlob(compressedDataUrl);
-        const uploadResponse = await fetch(targetEndpoint, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'image/webp',
-            'x-amz-meta-expires-at': expiresAtISO,
-            'x-amz-meta-ttl': String(ttlSeconds),
-            'x-amz-meta-retention': retentionType,
-            'x-amz-meta-sandbox': String(isSandbox)
-          },
-          body: blob,
-        });
-
-        if (uploadResponse.ok) {
-          return targetEndpoint;
-        }
+      if (uploadResponse.ok) {
+        const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || '';
+        const cleanPublicBaseUrl = publicUrl.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
+        return cleanPublicBaseUrl ? `${cleanPublicBaseUrl}/${filename}` : uploadEndpoint;
       }
     } catch (error) {
       console.warn('Alerta R2: Falha ao enviar para o Cloudflare R2:', error);
       if (!allowFallback) {
-        throw new Error('Falha no upload para o Cloudflare R2. Verifique a conexão ou as credenciais.');
+        throw new Error('Falha no upload para o Cloudflare R2. Verifique a conexao ou as credenciais.');
       }
     }
   }

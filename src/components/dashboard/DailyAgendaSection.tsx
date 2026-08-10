@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Clock, Phone, Play, Copy, Calendar, CircleNotch as Loader2, CaretUp, CaretDown } from '@phosphor-icons/react';
 import { Agreement, UserProfile } from '../../types';
 import { CustomSelect } from '../ui/CustomSelect';
+import { checkIsSuperUser } from '../../utils/roles';
 
 interface DailyAgendaSectionProps {
   scheduledAgreements: Agreement[];
@@ -33,7 +34,7 @@ export const DailyAgendaSection = ({
   showToast,
   theme = 'dark'
 }: DailyAgendaSectionProps) => {
-  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin';
+  const isSuperUser = checkIsSuperUser(profile.role);
 
   // Estado para recolher / expandir a agenda
   const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => {

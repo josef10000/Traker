@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { UserProfile, QaCompetence, QaEvaluation, Pdi, Team, QaSettings, Agreement } from '../../types';
 import { sandboxService } from '../../lib/sandboxService';
 import { notifyQaEvaluationCreated } from '../../lib/notifications';
+import { checkIsSuperUser } from '../../utils/roles';
 import { calculateQaStats, calculateOpPerformance, getExpiredPdisCount } from '../../lib/qaService';
 import { QaOverview } from './qa/QaOverview';
 import { QaEvaluationsList } from './qa/QaEvaluationsList';
@@ -33,7 +34,7 @@ export const QaDashboard = ({
   showToast,
   theme = 'dark'
 }: QaDashboardProps) => {
-  const isSuperUser = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'super_admin' || profile.role === 'monitor' || profile.role === 'coordinator';
+  const isSuperUser = checkIsSuperUser(profile.role);
 
   // Estados principais
   const [competences, setCompetences] = useState<QaCompetence[]>([]);

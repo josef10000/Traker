@@ -14,6 +14,11 @@ export interface SendEmailResult {
   error?: string;
 }
 
+/**
+ * Envia e-mail de convite exclusivamente via endpoint serverless /api/send-email (Vercel).
+ * SEGURANCA: A chave Resend NUNCA e exposta no bundle do browser.
+ * Ela reside apenas na variavel de ambiente privada RESEND_API_KEY do servidor Vercel.
+ */
 export const sendInviteEmail = async ({
   recipientEmail,
   orgName,
@@ -22,23 +27,14 @@ export const sendInviteEmail = async ({
   fromName = 'Tracker System'
 }: SendInviteEmailParams): Promise<SendEmailResult> => {
   try {
-    // 1. Tenta chamar o Endpoint Serverless Nativo da Vercel (/api/send-email)
     const response = await fetch('/api/send-email', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        recipientEmail,
-        orgName,
-        roleName,
-        inviteUrl,
-        fromName
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientEmail, orgName, roleName, inviteUrl, fromName })
     });
 
     const responseText = await response.text();
-    let data: any = {};
+    let data: Record<string, unknown> = {};
     try {
       data = JSON.parse(responseText);
     } catch {
@@ -48,83 +44,19 @@ export const sendInviteEmail = async ({
     if (response.ok && data.success) {
       return {
         success: true,
-        messageId: data.id
+        messageId: typeof data.id === 'string' ? data.id : undefined
       };
     }
 
-    // Se o endpoint da Vercel retornar erro, trata com o fallback
-    if (!response.ok && data.error) {
-      const apiKey = (import.meta.env.VITE_RESEND_API_KEY || '').trim();
-      if (apiKey) {
-        return await sendDirectResendEmail({ recipientEmail, orgName, roleName, inviteUrl, fromName, apiKey });
-      }
-      return {
-        success: false,
-        error: typeof data.error === 'string' ? data.error : JSON.stringify(data.error)
-      };
-    }
+    const errorMsg = typeof data.error === 'string'
+      ? data.error
+      : `Falha ao enviar e-mail (HTTP ${response.status}).`;
 
-    return {
-      success: true,
-      messageId: data.id
-    };
-  } catch (error: any) {
-    const apiKey = (import.meta.env.VITE_RESEND_API_KEY || '').trim();
-    if (apiKey) {
-      return await sendDirectResendEmail({ recipientEmail, orgName, roleName, inviteUrl, fromName, apiKey });
-    }
-
-    return {
-      success: false,
-      error: error.message || 'Erro ao comunicar com a API de e-mails.'
-    };
+    return { success: false, error: errorMsg };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Erro ao comunicar com a API de e-mails.';
+    return { success: false, error: msg };
   }
 };
 
-const sendDirectResendEmail = async ({
-  recipientEmail,
-  orgName,
-  roleName,
-  inviteUrl,
-  fromName,
-  apiKey
-}: SendInviteEmailParams & { apiKey: string }): Promise<SendEmailResult> => {
-  const htmlContent = generateInviteEmailHtml({
-    recipientEmail,
-    orgName,
-    roleName,
-    inviteUrl
-  });
-
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: `${fromName} <notificacoes@hubsymples.com.br>`,
-        to: [recipientEmail],
-        subject: `🚀 Convite de Acesso — ${orgName} (Tracker Platform)`,
-        html: htmlContent
-      })
-    });
-
-    const resText = await res.text();
-    let data: any = {};
-    try {
-      data = JSON.parse(resText);
-    } catch {
-      data = { message: resText };
-    }
-
-    if (!res.ok) {
-      return { success: false, error: data.message || 'Erro no Resend.' };
-    }
-
-    return { success: true, messageId: data.id };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
-};
+export { generateInviteEmailHtml };
