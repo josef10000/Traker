@@ -42,9 +42,9 @@
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^22.14.0",
-    "@vercel/node": "^5.8.22",
+    "@vercel/node": "^5.9.8",
     "autoprefixer": "^10.4.21",
-    "firebase-admin": "^12.1.0",
+    "firebase-admin": "^13.6.0",
     "jsdom": "^24.0.0",
     "sonarqube-scanner": "^5.0.0",
     "tailwindcss": "^4.1.14",
@@ -52,5 +52,15 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.3",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "ajv": "^8.17.1",
+    "js-yaml": "^5.2.3",
+    "smol-toml": "^1.6.1",
+    "uuid": "^11.1.1",
+    "undici": "^6.28.0",
+    "minimatch": "^9.0.5",
+    "path-to-regexp": "^6.3.0",
+    "esbuild": "^0.28.2"
   }
 }
