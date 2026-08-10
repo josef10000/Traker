@@ -12,7 +12,9 @@ import {
   User, 
   Clock, 
   DownloadSimple, 
-  FileText
+  FileText,
+  CaretLeft,
+  CaretRight
 } from '@phosphor-icons/react';
 import { AuditLog } from '../../lib/audit';
 import { sandboxService } from '../../lib/sandboxService';
@@ -35,11 +37,18 @@ export const AuditTab: React.FC<AuditTabProps> = ({
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Filtros
+  // Filtros & Paginação
   const [searchCpf, setSearchCpf] = useState<string>('');
   const [selectedAction, setSelectedAction] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | '7days'>('all');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const LOGS_PER_PAGE = 15;
+
+  // Resetar página ao alterar qualquer filtro
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchCpf, selectedAction, selectedUser, dateFilter]);
 
   const isSandbox = profile.organizationId === 'sandbox-test';
 
@@ -148,6 +157,13 @@ export const AuditTab: React.FC<AuditTabProps> = ({
       return true;
     });
   }, [logs, searchCpf, selectedAction, selectedUser, dateFilter]);
+
+  // Paginação dos logs
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / LOGS_PER_PAGE));
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * LOGS_PER_PAGE;
+    return filteredLogs.slice(start, start + LOGS_PER_PAGE);
+  }, [filteredLogs, currentPage]);
 
   // Rótulos e Badges de Ação
   const getActionBadge = (action: AuditLog['action']) => {
@@ -377,7 +393,7 @@ export const AuditTab: React.FC<AuditTabProps> = ({
           </div>
         ) : (
           <div className="divide-y divide-white/5">
-            {filteredLogs.map(log => {
+            {paginatedLogs.map(log => {
               const date = new Date(log.timestamp);
               const formattedDate = date.toLocaleDateString('pt-BR');
               const formattedTime = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -447,6 +463,49 @@ export const AuditTab: React.FC<AuditTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* CONTROLE DE PAGINAÇÃO */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/40 border border-white/10">
+          <span className="text-xs text-slate-400 font-semibold">
+            Exibindo <strong className="text-slate-200">{(currentPage - 1) * LOGS_PER_PAGE + 1}</strong> a <strong className="text-slate-200">{Math.min(currentPage * LOGS_PER_PAGE, filteredLogs.length)}</strong> de <strong className="text-slate-200">{filteredLogs.length}</strong> eventos
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="p-2 rounded-xl bg-slate-900 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              title="Página Anterior"
+            >
+              <CaretLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => setCurrentPage(page)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  currentPage === page
+                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              className="p-2 rounded-xl bg-slate-900 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              title="Próxima Página"
+            >
+              <CaretRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
