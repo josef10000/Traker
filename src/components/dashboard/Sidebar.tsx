@@ -14,7 +14,8 @@ import {
   PhoneCall as TabulationIcon,
   MonitorPlay as ExecutiveIcon,
   Clock,
-  BookOpen
+  BookOpen,
+  Lock
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
 
@@ -107,9 +108,16 @@ export const Sidebar = ({
         {
           id: 'qa',
           label: 'Qualidade & Governança',
-          description: 'Monitorias de QA, auditoria de CPFs e compliance LGPD.',
+          description: 'Monitorias de QA e fichas de avaliação comportamental.',
           icon: QaIcon,
           show: profile.role !== 'backoffice'
+        },
+        {
+          id: 'audit',
+          label: 'Trilha de Auditoria & LGPD',
+          description: 'Logs imutáveis de ações, acessos a CPF e compliance LGPD.',
+          icon: Lock,
+          show: isSuperUser && profile.role !== 'backoffice'
         }
       ]
     },
