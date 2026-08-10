@@ -1397,6 +1397,7 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
               <p className="text-[11px] text-slate-400">
                 {forecastData.activeOperatorsCount} op. na visão • ~{forecastData.avgAttendancesPerOperator} atend/op.
               </p>
+            </div>
           </div>
 
           {/* 🔮 MATURAÇÃO DO DEVEDOR & SCORE PREDITIVO DE QUEBRA */}
