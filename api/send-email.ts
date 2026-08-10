@@ -2,11 +2,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // ---------------------------------------------------------------------------
 // Rate-limit simples em memória (server-side, sem dependência extra).
-// Limite: 10 chamadas por IP por janela de 1 hora.
+// Limite: 100 chamadas por IP por janela de 1 hora.
 // Em produção com múltiplas instâncias Vercel, substitua por Vercel KV ou Redis.
 // ---------------------------------------------------------------------------
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_MAX = 100;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hora
 
 function checkRateLimit(ip: string): boolean {
