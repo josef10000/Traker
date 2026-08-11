@@ -30,6 +30,39 @@ service cloud.firestore {
     function isSuperAdmin() {
       return getUserRole() == 'super_admin';
     }
+
+    // Validação de schema para acordos (agreements)
+    function isValidAgreement() {
+      let d = request.resource.data;
+      return d.clientName is string
+        && d.clientName.size() > 0
+        && d.clientName.size() <= 500
+        && d.value is number
+        && d.value >= 0
+        && d.dueDate is string
+        && d.dueDate.size() > 0
+        && d.operatorId is string
+        && d.organizationId is string;
+    }
+
+    // Conjunto de ações permitidas nos logs de auditoria
+    function isValidAuditAction() {
+      let validActions = [
+        'REVEAL_CPF',
+        'ANONIMIZE_CLIENT',
+        'EXPORT_CSV_COMPLETE',
+        'AGREEMENT_CREATED',
+        'AGREEMENT_UPDATED',
+        'AGREEMENT_DELETED',
+        'INVITE_SENT',
+        'USER_ROLE_CHANGED',
+        'USER_REMOVED',
+        'LOGIN',
+        'LOGOUT',
+        'SETTINGS_UPDATED'
+      ];
+      return request.resource.data.action in validActions;
+    }
     
     // Coleção de organizações (organizations)
     match /organizations/{orgId} {
@@ -73,11 +106,18 @@ service cloud.firestore {
         && (isSuperAdmin() || (
           getUserOrganizationId() == request.resource.data.organizationId
           && (isSupervisor() || isManager() || request.resource.data.operatorId == request.auth.uid)
+          && isValidAgreement()
         ));
         
       // CORRIGIDO: Apenas o dono do acordo (operatorId) ou super_admin podem editar/excluir.
       // Supervisor e Manager NÃO têm mais permissão de alterar acordos de outros operadores.
-      allow update, delete: if request.auth != null 
+      allow update: if request.auth != null 
+        && (
+          isSuperAdmin() 
+          || (resource.data.operatorId == request.auth.uid && isValidAgreement())
+        );
+
+      allow delete: if request.auth != null 
         && (
           isSuperAdmin() 
           || resource.data.operatorId == request.auth.uid
@@ -97,7 +137,9 @@ service cloud.firestore {
     match /audit_logs/{logId} {
       allow create: if request.auth != null 
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.organizationId == getUserOrganizationId();
+        && request.resource.data.organizationId == getUserOrganizationId()
+        && request.resource.data.action is string
+        && isValidAuditAction();
       allow read: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == resource.data.organizationId));
       allow update, delete: if false; // Logs são imutáveis e perenes
     }

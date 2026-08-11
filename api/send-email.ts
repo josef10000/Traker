@@ -1,42 +1,67 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Redis } from '@upstash/redis';
 
 // ---------------------------------------------------------------------------
-// Rate-limit simples em memória (server-side, sem dependência extra).
+// Rate-limit centralizado via Upstash Redis.
+// Funciona corretamente em múltiplas instâncias Vercel (stateless serverless).
 // Limite: 100 chamadas por IP por janela de 1 hora.
-// Em produção com múltiplas instâncias Vercel, substitua por Vercel KV ou Redis.
 // ---------------------------------------------------------------------------
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 100;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hora
+const RATE_LIMIT_WINDOW_S = 60 * 60; // 1 hora em segundos (TTL do Redis)
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true; // permitido
+// Fail-fast: se a chave não estiver configurada, lança erro no startup
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
+async function checkRateLimit(ip: string): Promise<boolean> {
+  const key = `rate_limit:send_email:${ip}`;
+  const count = await redis.incr(key);
+  if (count === 1) {
+    // Primeira requisição na janela — define o TTL
+    await redis.expire(key, RATE_LIMIT_WINDOW_S);
   }
-  if (entry.count >= RATE_LIMIT_MAX) {
-    return false; // bloqueado
-  }
-  entry.count++;
-  return true; // permitido
+  return count <= RATE_LIMIT_MAX;
 }
 
+// Security headers HTTP aplicados em todas as respostas
+function setSecurityHeaders(res: VercelResponse): void {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'none'; frame-ancestors 'none'"
+  );
+}
+
+// Domínios permitidos para o inviteUrl (evita open redirect)
+const ALLOWED_INVITE_DOMAINS = [
+  'traker-app.firebaseapp.com',
+  'traker-app.web.app',
+  'localhost',
+];
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS Headers - Restringe origens permitidas
+  // Security headers em todas as respostas
+  setSecurityHeaders(res);
+
+  // CORS Headers — restringe origens permitidas
   const allowedOrigins = [
     'https://traker-app.firebaseapp.com',
-    'https://traker-app.web.app'
+    'https://traker-app.web.app',
   ];
   const origin = req.headers.origin || req.headers.referer || '';
-  const isAllowedOrigin = import.meta?.env?.DEV || process.env.NODE_ENV !== 'production' || allowedOrigins.some(o => origin.startsWith(o));
+  const isDev = process.env.NODE_ENV !== 'production';
+  const isAllowedOrigin = isDev || allowedOrigins.some((o) => origin.startsWith(o));
 
   if (origin && isAllowedOrigin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else if (!origin) {
     // Requisição same-origin ou server-to-server legítima
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -50,9 +75,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Método não permitido. Use POST.' });
   }
 
-  // Rate-limit por IP
-  const clientIp = (req.headers['x-forwarded-for'] as string || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
-  if (!checkRateLimit(clientIp)) {
+  // Rate-limit por IP via Upstash Redis (centralizado entre instâncias)
+  const clientIp = (
+    (req.headers['x-forwarded-for'] as string) ||
+    req.socket?.remoteAddress ||
+    'unknown'
+  ).split(',')[0].trim();
+
+  const allowed = await checkRateLimit(clientIp);
+  if (!allowed) {
     return res.status(429).json({ error: 'Limite de requisições excedido. Tente novamente em 1 hora.' });
   }
 
@@ -71,6 +102,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (!inviteUrl || (!inviteUrl.startsWith('https://') && !inviteUrl.startsWith('http://'))) {
       return res.status(400).json({ error: 'URL do convite inválida.' });
+    }
+    // Validação de domínio: inviteUrl deve pertencer a um domínio autorizado
+    try {
+      const parsedUrl = new URL(inviteUrl);
+      const isAllowedDomain = ALLOWED_INVITE_DOMAINS.some(
+        (d) => parsedUrl.hostname === d || parsedUrl.hostname.endsWith(`.${d}`)
+      );
+      if (!isAllowedDomain && process.env.NODE_ENV === 'production') {
+        return res.status(400).json({ error: 'Domínio do convite não autorizado.' });
+      }
+    } catch {
+      return res.status(400).json({ error: 'URL do convite malformada.' });
     }
 
     // Leitura estritamente segura da chave de API nas variáveis de ambiente privadas do servidor Node

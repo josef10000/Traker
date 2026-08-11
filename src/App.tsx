@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { WarningCircle, CircleNotch, IconContext } from '@phosphor-icons/react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { useDesignMode } from './hooks/useDesignMode';
+import { useInactivityLogout } from './hooks/useInactivityLogout';
 import { auth, db } from './lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LoginPage } from './components/auth/LoginPage';
@@ -28,6 +29,7 @@ const isMasterAdminEmail = (email?: string | null): boolean => {
 
 export function AppContent() {
   const [designMode, setDesignMode] = useDesignMode();
+
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(() => {
     try {
@@ -97,6 +99,13 @@ export function AppContent() {
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ message, type });
   };
+
+  // Logout automático por inatividade de 1 hora (ativo apenas quando usuário está autenticado)
+  useInactivityLogout(
+    user
+      ? () => showToast('Sessão encerrada por inatividade. Faça login novamente.', 'warning')
+      : undefined
+  );
 
   useEffect(() => {
     // Safety timer: Desbloqueia o carregamento em no máximo 800ms independente de rede/Firestore

@@ -10,6 +10,7 @@ import { auth } from '../../lib/firebase';
 import { validateInvite, acceptInvite } from '../../lib/teams';
 import { sandboxService } from '../../lib/sandboxService';
 import { ToastType } from '../ui/Toast';
+import { PasswordStrengthBar } from '../ui/PasswordStrengthBar';
 
 interface LoginPageProps {
   onAuthSuccess: () => void;
@@ -320,8 +321,8 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    minLength={8}
-                    title="A senha deve ter pelo menos 8 caracteres"
+                    minLength={12}
+                    title="A senha deve ter pelo menos 12 caracteres"
                     className="w-full bg-slate-950/80 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-white text-sm focus:outline-none focus:border-sky-500 transition-all placeholder:text-slate-600 font-medium"
                   />
                   <button
@@ -332,6 +333,8 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
                     {showPassword ? <EyeClosed size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
+                {/* Barra de força de senha — visível apenas no modo de cadastro */}
+                {!isLogin && <PasswordStrengthBar password={password} />}
               </div>
 
               <button disabled={loading} type="submit" className="w-full bg-sky-500 py-4.5 rounded-2xl font-black text-white hover:bg-sky-400 transition-all shadow-xl shadow-sky-500/25 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer">
