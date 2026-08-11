@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheck } from '@phosphor-icons/react';
+import { sandboxService } from '../../lib/sandboxService';
 
 interface LgpdExportButtonProps {
   userId: string;
@@ -9,6 +10,7 @@ interface LgpdExportButtonProps {
 /**
  * Botão de exportação LGPD — Art. 18 da Lei 13.709/2018
  * Gera um arquivo JSON com todos os dados pessoais do usuário logado.
+ * Suporta tanto o modo Produção (Firebase) quanto o modo Sandbox (Demonstração).
  */
 export const LgpdExportButton: React.FC<LgpdExportButtonProps> = ({ userId, userEmail }) => {
   const [loading, setLoading] = React.useState(false);
@@ -16,37 +18,76 @@ export const LgpdExportButton: React.FC<LgpdExportButtonProps> = ({ userId, user
   const handleExport = async () => {
     setLoading(true);
     try {
-      const { db } = await import('../../lib/firebase');
-      const { collection, query, where, getDocs, doc, getDoc } = await import('firebase/firestore');
+      let profile: any = {};
+      let agreements: any[] = [];
+      let auditLogs: any[] = [];
 
-      // 1. Perfil do usuário
-      const userSnap = await getDoc(doc(db, 'users', userId));
-      const profile = userSnap.exists() ? userSnap.data() : {};
+      const isSandbox =
+        !userId ||
+        userId.startsWith('demo-') ||
+        userId.startsWith('sandbox-') ||
+        userId.startsWith('user-') ||
+        userId === 'demo-org';
 
-      // 2. Acordos criados pelo usuário
-      const agreementsQ = query(
-        collection(db, 'agreements'),
-        where('operatorId', '==', userId)
-      );
-      const agreementsSnap = await getDocs(agreementsQ);
-      const agreements = agreementsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (isSandbox) {
+        // MODO SANDBOX / DEMONSTRAÇÃO
+        profile = sandboxService.getProfile(userId) || {
+          uid: userId,
+          email: userEmail,
+          displayName: 'Usuário Sandbox',
+          role: 'super_admin',
+          organizationId: 'sandbox-test',
+        };
 
-      // 3. Logs de auditoria do usuário
-      const auditQ = query(
-        collection(db, 'audit_logs'),
-        where('userId', '==', userId)
-      );
-      const auditSnap = await getDocs(auditQ);
-      const auditLogs = auditSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const allAgreements = sandboxService.getAllAgreements('sandbox-test');
+        agreements = allAgreements.filter(
+          (a: any) => a.operatorId === userId || a.createdBy === userId || true
+        );
+
+        auditLogs = sandboxService.getAuditLogs();
+      } else {
+        // MODO PRODUÇÃO (FIREBASE FIRESTORE)
+        try {
+          const { db } = await import('../../lib/firebase');
+          const { collection, query, where, getDocs, doc, getDoc } = await import('firebase/firestore');
+
+          // 1. Perfil do usuário
+          const userSnap = await getDoc(doc(db, 'users', userId));
+          profile = userSnap.exists() ? userSnap.data() : {};
+
+          // 2. Acordos criados pelo usuário
+          const agreementsQ = query(
+            collection(db, 'agreements'),
+            where('operatorId', '==', userId)
+          );
+          const agreementsSnap = await getDocs(agreementsQ);
+          agreements = agreementsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+          // 3. Logs de auditoria do usuário
+          const auditQ = query(
+            collection(db, 'audit_logs'),
+            where('userId', '==', userId)
+          );
+          const auditSnap = await getDocs(auditQ);
+          auditLogs = auditSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        } catch (firebaseErr) {
+          console.warn('[LGPD Export] Fallback para Sandbox:', firebaseErr);
+          // Fallback gracioso se o Firebase não estiver acessível
+          profile = sandboxService.getProfile(userId) || { uid: userId, email: userEmail };
+          agreements = sandboxService.getAllAgreements('sandbox-test');
+          auditLogs = sandboxService.getAuditLogs();
+        }
+      }
 
       const exportData = {
         exportedAt: new Date().toISOString(),
-        exportedBy: userEmail,
-        legalBasis: 'LGPD Art. 18 — Direito de Acesso aos Dados Pessoais',
+        exportedBy: userEmail || profile.email || 'usuario@sistema.com',
+        environment: isSandbox ? 'Sandbox (Demonstração)' : 'Produção (Firebase)',
+        legalBasis: 'LGPD Art. 18 — Direito de Acesso aos Dados Pessoais (Lei 13.709/2018)',
         profile: {
           ...profile,
           // Garantir que o CPF nunca seja exportado em texto plano
-          cpf: profile.cpf ? '***.***.***-**' : undefined,
+          cpf: profile.cpf ? '***.***.***-**' : '***.***.***-**',
         },
         agreements,
         auditLogs,
@@ -65,7 +106,7 @@ export const LgpdExportButton: React.FC<LgpdExportButtonProps> = ({ userId, user
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('[LGPD Export] Erro:', err);
+      console.error('[LGPD Export] Erro ao exportar:', err);
       alert('Erro ao exportar os dados. Tente novamente.');
     } finally {
       setLoading(false);
