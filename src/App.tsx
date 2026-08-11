@@ -103,7 +103,7 @@ export function AppContent() {
   // Logout automático por inatividade de 1 hora (ativo apenas quando usuário está autenticado)
   useInactivityLogout(
     user
-      ? () => showToast('Sessão encerrada por inatividade. Faça login novamente.', 'warning')
+      ? () => showToast('Sessão encerrada por inatividade. Faça login novamente.', 'info')
       : undefined
   );
 
