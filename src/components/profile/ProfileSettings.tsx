@@ -43,6 +43,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 import { Avatar } from '../ui/Avatar';
 import { ClosingPjSection } from './ClosingPjSection';
+import { LgpdExportButton } from '../settings/LgpdExportButton';
 import { 
   getTeamData, 
   deleteTeam, 
@@ -1510,6 +1511,20 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   )}
                 </button>
               </form>
+
+              {/* Seção LGPD — Privacidade & Direitos dos Dados (Art. 18) */}
+              <div className="pt-4 border-t border-white/10 space-y-2.5">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheck size={16} className="text-emerald-400" />
+                    Privacidade & Direitos LGPD
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Conforme o Art. 18 da Lei 13.709/2018 (LGPD), você pode baixar a qualquer momento uma cópia estruturada de todos os seus dados cadastrais, acordos criados e registros de auditoria vinculados à sua conta.
+                  </p>
+                </div>
+                <LgpdExportButton userId={profile.uid} userEmail={profile.email} />
+              </div>
             </div>
           )}
 
