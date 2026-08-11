@@ -130,7 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // HTML corporativo clássico com fundo preto
+    // HTML corporativo fiel ao design Stitch (Dark Theme com accent ciano)
     const htmlContent = `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -139,25 +139,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Convite de Acesso Corporativo — ${orgName}</title>
   <style>
-    body { margin: 0; padding: 0; background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #e5e5e5; -webkit-font-smoothing: antialiased; }
-    .wrapper { width: 100%; table-layout: fixed; background-color: #000000; padding: 48px 12px; }
-    .main-card { max-width: 560px; margin: 0 auto; background-color: #0a0a0a; border: 1px solid #262626; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); }
-    .header { padding: 40px 40px 28px 40px; text-align: center; background-color: #0d0d0d; border-bottom: 1px solid #1f1f1f; }
-    .brand-title { font-size: 20px; font-weight: 900; letter-spacing: 0.2em; color: #ffffff; text-transform: uppercase; margin: 0; }
-    .brand-subtitle { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; color: #a3a3a3; text-transform: uppercase; margin-top: 6px; }
+    body { margin: 0; padding: 0; background-color: #0b0e14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #e2e8f0; -webkit-font-smoothing: antialiased; }
+    .wrapper { width: 100%; table-layout: fixed; background-color: #0b0e14; padding: 48px 12px; }
+    .main-card { max-width: 580px; margin: 0 auto; background-color: #121721; border: 1px solid #1e2638; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); }
+    .header { padding: 36px 40px 24px 40px; text-align: center; background-color: #121721; border-bottom: 1px solid #1c2333; }
+    .brand-title { font-size: 22px; font-weight: 800; letter-spacing: 0.25em; color: #ffffff; text-transform: uppercase; margin: 0; }
+    .brand-subtitle { font-size: 9px; font-weight: 700; letter-spacing: 0.3em; color: #718096; text-transform: uppercase; margin-top: 6px; }
     .body-content { padding: 40px; }
-    .salutation { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #737373; margin: 0 0 12px 0; }
-    .title { font-size: 22px; font-weight: 700; color: #ffffff; margin-top: 0; margin-bottom: 20px; line-height: 1.35; letter-spacing: -0.01em; }
-    .paragraph { font-size: 14px; line-height: 1.7; color: #a3a3a3; margin-bottom: 28px; }
-    .info-box { background-color: #121212; border: 1px solid #262626; border-left: 3px solid #ffffff; border-radius: 8px; padding: 18px 24px; margin-bottom: 32px; }
-    .info-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #737373; margin-bottom: 6px; display: block; }
-    .info-value { font-size: 15px; font-weight: 700; color: #ffffff; }
+    .salutation { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #8a99ad; margin: 0 0 16px 0; }
+    .title { font-size: 22px; font-weight: 600; color: #f8fafc; margin-top: 0; margin-bottom: 18px; line-height: 1.4; letter-spacing: -0.01em; }
+    .paragraph { font-size: 14px; line-height: 1.7; color: #94a3b8; margin-bottom: 28px; }
+    .info-box { background-color: #171d2a; border: 1px solid #222b3d; border-left: 3px solid #0099ff; border-radius: 6px; padding: 18px 22px; margin-bottom: 32px; }
+    .info-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #8a99ad; margin-bottom: 8px; display: block; }
+    .info-value { font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px; }
     .btn-container { text-align: center; margin-top: 36px; margin-bottom: 36px; }
-    .btn-action { display: inline-block; background-color: #ffffff; color: #000000 !important; font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 16px 40px; border-radius: 8px; text-decoration: none; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15); }
-    .fallback-container { border-top: 1px dashed #262626; padding-top: 24px; margin-top: 24px; }
-    .fallback-text { font-size: 12px; color: #737373; margin-bottom: 10px; }
-    .fallback-box { background-color: #050505; border: 1px solid #1f1f1f; border-radius: 6px; padding: 12px 14px; word-break: break-all; font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 11px; color: #a3a3a3; }
-    .footer { padding: 28px 40px; background-color: #050505; border-top: 1px solid #171717; text-align: center; font-size: 11px; line-height: 1.6; color: #525252; }
+    .btn-action { display: inline-block; background-color: #0099ff; color: #000000 !important; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; padding: 16px 44px; border-radius: 4px; text-decoration: none; transition: all 0.2s ease; box-shadow: 0 4px 20px rgba(0, 153, 255, 0.35); }
+    .divider { border-top: 1px dashed #222b3d; margin: 32px 0 28px 0; }
+    .fallback-text { font-size: 12px; color: #718096; margin-bottom: 12px; }
+    .fallback-box { background-color: #0d111a; border: 1px solid #1c2333; border-radius: 6px; padding: 14px 16px; word-break: break-all; font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 11px; color: #8a99ad; line-height: 1.5; }
+    .footer { padding: 28px 40px; background-color: #121721; border-top: 1px solid #1c2333; text-align: center; font-size: 11px; line-height: 1.7; color: #64748b; }
   </style>
 </head>
 <body>
@@ -174,20 +174,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           Você foi convidado para integrar o sistema corporativo da empresa <strong>${orgName}</strong> na plataforma <strong>Tracker</strong>.
         </p>
         <div class="info-box">
-          <span class="info-label">Cargo / Função Atribuída:</span>
-          <div class="info-value">${roleName}</div>
+          <span class="info-label">CARGO / FUNÇÃO ATRIBUÍDA:</span>
+          <div class="info-value">🏢 ${roleName}</div>
         </div>
         <div class="btn-container">
           <a href="${inviteUrl}" target="_blank" class="btn-action">
             ACEITAR CONVITE DE ACESSO
           </a>
         </div>
-        <div class="fallback-container">
-          <p class="fallback-text">
-            Se o botão acima não abrir automaticamente, utilize o link direto corporativo:
-          </p>
-          <div class="fallback-box">${inviteUrl}</div>
-        </div>
+        <div class="divider"></div>
+        <p class="fallback-text">
+          Se o botão acima não abrir automaticamente, utilize o link direto corporativo:
+        </p>
+        <div class="fallback-box">${inviteUrl}</div>
       </div>
       <div class="footer">
         <p style="margin: 0 0 6px 0;">Este convite corporativo é de uso exclusivo do e-mail <strong>${recipientEmail}</strong>.</p>
