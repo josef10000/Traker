@@ -9,20 +9,54 @@ import { Redis } from '@upstash/redis';
 const RATE_LIMIT_MAX = 100;
 const RATE_LIMIT_WINDOW_S = 60 * 60; // 1 hora em segundos (TTL do Redis)
 
-// Fail-fast: se a chave não estiver configurada, lança erro no startup
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+let redisClient: Redis | null = null;
+
+function getRedisClient(): Redis | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  if (!redisClient) {
+    try {
+      redisClient = new Redis({ url, token });
+    } catch (err) {
+      console.warn('[Upstash Redis Init Warning]:', err);
+      return null;
+    }
+  }
+  return redisClient;
+}
+
+// Fallback em memória caso o Redis esteja indisponível ou não configurado
+const memoryRateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 async function checkRateLimit(ip: string): Promise<boolean> {
-  const key = `rate_limit:send_email:${ip}`;
-  const count = await redis.incr(key);
-  if (count === 1) {
-    // Primeira requisição na janela — define o TTL
-    await redis.expire(key, RATE_LIMIT_WINDOW_S);
+  // Tentativa com Upstash Redis
+  try {
+    const redis = getRedisClient();
+    if (redis) {
+      const key = `rate_limit:send_email:${ip}`;
+      const count = await redis.incr(key);
+      if (count === 1) {
+        await redis.expire(key, RATE_LIMIT_WINDOW_S);
+      }
+      return count <= RATE_LIMIT_MAX;
+    }
+  } catch (err) {
+    console.warn('[Upstash Redis RateLimit Error, falling back to memory]:', err);
   }
-  return count <= RATE_LIMIT_MAX;
+
+  // Fallback em memória
+  const now = Date.now();
+  const entry = memoryRateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    memoryRateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_S * 1000 });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  entry.count++;
+  return true;
 }
 
 // Security headers HTTP aplicados em todas as respostas
