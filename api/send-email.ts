@@ -75,7 +75,12 @@ function setSecurityHeaders(res: VercelResponse): void {
 const ALLOWED_INVITE_DOMAINS = [
   'traker-app.firebaseapp.com',
   'traker-app.web.app',
+  'firebaseapp.com',
+  'web.app',
+  'hubsymples.com.br',
+  'vercel.app',
   'localhost',
+  '127.0.0.1',
 ];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
