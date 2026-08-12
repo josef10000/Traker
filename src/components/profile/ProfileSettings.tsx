@@ -74,9 +74,11 @@ interface ProfileSettingsProps {
   showToast: (message: string, type?: ToastType) => void;
   theme?: UserProfile['theme'];
   initialTab?: string;
+  onOpenReconciliation?: () => void;
+  onOpenMessageTemplates?: () => void;
 }
 
-export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast, theme = 'dark', initialTab }: ProfileSettingsProps) {
+export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast, theme = 'dark', initialTab, onOpenReconciliation, onOpenMessageTemplates }: ProfileSettingsProps) {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
   const [avatarStyle, setAvatarStyle] = useState(profile.avatarStyle || 'initials');
@@ -1113,8 +1115,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 </button>
               </div>
 
-              {/* Grupo 4: Demonstração (Apenas Sandbox) */}
-              {profile.organizationId === 'sandbox-test' && (
+              {/* Grupo 4: Demonstração (Apenas Sandbox para cargos de gestão/supervisão) */}
+              {profile.organizationId === 'sandbox-test' && ['supervisor', 'coordinator', 'manager', 'super_admin'].includes(profile.role) && (
                 <div className="space-y-1">
                   <span className="text-[9px] font-black text-amber-500/80 uppercase tracking-widest px-2 block mb-1">
                     Ambiente Sandbox
@@ -1148,7 +1150,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               )}
 
               {/* Grupo 5: Gestão (Apenas Coordenador, Gerente e Admin) */}
-              {(profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'super_admin' || profile.organizationId === 'sandbox-test') && (
+              {['coordinator', 'manager', 'super_admin'].includes(profile.role) && (
                 <div className="space-y-1">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2 block mb-1">
                     Gestão
@@ -1956,11 +1958,12 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     type="button"
                     onClick={() => {
                       onClose();
+                      if (onOpenReconciliation) onOpenReconciliation();
                     }}
                     className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-sky-500/20 cursor-pointer active:scale-95 flex items-center gap-2"
                   >
                     <Calculator size={16} />
-                    <span>Ir para o Dashboard Principal</span>
+                    <span>Abrir Painel de Conciliação</span>
                   </button>
                 </div>
               </div>

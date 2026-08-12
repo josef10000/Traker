@@ -537,6 +537,8 @@ export function AppContent() {
           }}
           showToast={showToast}
           theme={simulatedProfile.theme || 'dark'}
+          onOpenReconciliation={() => window.dispatchEvent(new CustomEvent('open-reconciliation'))}
+          onOpenMessageTemplates={() => window.dispatchEvent(new CustomEvent('open-message-templates'))}
         />
       </>
     );
@@ -672,6 +674,8 @@ export function AppContent() {
             }}
             showToast={showToast}
             theme={profile.theme || 'dark'}
+            onOpenReconciliation={() => window.dispatchEvent(new CustomEvent('open-reconciliation'))}
+            onOpenMessageTemplates={() => window.dispatchEvent(new CustomEvent('open-message-templates'))}
           />
           <SpotlightSearchModal 
             isOpen={isSpotlightOpen} 

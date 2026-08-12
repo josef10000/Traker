@@ -19,7 +19,8 @@ import {
   Moon,
   Sun,
   Bell,
-  WifiSlash
+  WifiSlash,
+  ChatCircleDots
 } from '@phosphor-icons/react';
 import { UserProfile, Team, AppNotification } from '../../types';
 import { Avatar } from '../ui/Avatar';
@@ -43,6 +44,7 @@ interface DashboardHeaderProps {
   setIsWebhookSettingsOpen: (open: boolean) => void;
   setIsImportCsvOpen: (open: boolean) => void;
   setIsReconciliationModalOpen: (open: boolean) => void;
+  setIsMessageTemplatesOpen?: (open: boolean) => void;
   setIsModalOpen: (open: boolean) => void;
   showToast: (message: string, type?: ToastType) => void;
   onSearchCpf: (cpf: string) => void;
@@ -78,6 +80,7 @@ export const DashboardHeader = ({
   setIsWebhookSettingsOpen,
   setIsImportCsvOpen,
   setIsReconciliationModalOpen,
+  setIsMessageTemplatesOpen,
   setIsModalOpen,
   showToast,
   onSearchCpf,
@@ -539,6 +542,22 @@ export const DashboardHeader = ({
                     >
                       <Calculator size={16} className="text-sky-500" />
                       <span>Conciliar Acordos</span>
+                    </button>
+                  )}
+
+                  {/* Roteiros & Scripts de Fala */}
+                  {setIsMessageTemplatesOpen && (
+                    <button
+                      onClick={() => {
+                        setIsToolsOpen(false);
+                        setIsMessageTemplatesOpen(true);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
+                        theme === 'dark' ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                      }`}
+                    >
+                      <ChatCircleDots size={16} className="text-emerald-400" />
+                      <span>Roteiros & Scripts de Fala</span>
                     </button>
                   )}
 

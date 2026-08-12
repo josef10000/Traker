@@ -31,6 +31,7 @@ interface AgreementsTableProps {
   onCopyCpf?: (id: string, cpf: string) => void;
   onOpenNotes?: (agreement: Agreement) => void;
   onOpenReceiptModal?: (agreement: Agreement) => void;
+  onOpenMessageTemplate?: (agreement: Agreement) => void;
 }
 
 export const AgreementsTable: React.FC<AgreementsTableProps> = ({
@@ -53,7 +54,8 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
   theme = 'dark',
   onCopyCpf,
   onOpenNotes,
-  onOpenReceiptModal
+  onOpenReceiptModal,
+  onOpenMessageTemplate
 }) => {
   return (
     <section className={`rounded-2xl overflow-hidden border ${
@@ -475,6 +477,17 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                                   title={isCheckedToday ? 'Remover marcação de conferido hoje' : 'Conferir Acordo (Marcar como checado no turno de hoje)'}
                                 >
                                   <Search size={14} weight="bold" />
+                                </button>
+                              )}
+
+                              {/* Slot: Copiar Script de Fala / Roteiro de Atendimento */}
+                              {onOpenMessageTemplate && (
+                                <button
+                                  onClick={() => onOpenMessageTemplate(agreement)}
+                                  className="p-1.5 bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white rounded-lg transition-all border border-sky-500/20 active:scale-95 cursor-pointer"
+                                  title="Script de Fala (Copiar modelo de mensagem interpolado com dados do acordo)"
+                                >
+                                  <MessageSquare size={14} weight="bold" />
                                 </button>
                               )}
 

@@ -245,6 +245,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isMessageTemplatesOpen, setIsMessageTemplatesOpen] = useState<boolean>(false);
   const [selectedAgreementForTemplate, setSelectedAgreementForTemplate] = useState<Agreement | null>(null);
 
+  // Listener global para abrirem modais disparados de subcomponentes/Perfil
+  useEffect(() => {
+    const handleOpenReconcil = () => setIsReconciliationModalOpen(true);
+    const handleOpenTemplates = () => setIsMessageTemplatesOpen(true);
+
+    window.addEventListener('open-reconciliation', handleOpenReconcil);
+    window.addEventListener('open-message-templates', handleOpenTemplates);
+    return () => {
+      window.removeEventListener('open-reconciliation', handleOpenReconcil);
+      window.removeEventListener('open-message-templates', handleOpenTemplates);
+    };
+  }, []);
+
   // Escuta todas as anotações/presenças da organização
   useEffect(() => {
     if (!profile.organizationId || !isTabVisible) return;
@@ -2547,6 +2560,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
               setIsImportCsvOpen={setIsImportCsvOpen}
               setIsReconciliationModalOpen={setIsReconciliationModalOpen}
+              setIsMessageTemplatesOpen={setIsMessageTemplatesOpen}
               setIsModalOpen={setIsModalOpen}
               showToast={showToast}
               onSearchCpf={handleSearchCpf}
@@ -3116,6 +3130,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       theme={theme}
                       onOpenNotes={(ag) => setNotesModalAgreement(ag)}
                       onOpenReceiptModal={(ag) => setSelectedAgreementForReceipt(ag)}
+                      onOpenMessageTemplate={(ag) => {
+                        setSelectedAgreementForTemplate(ag);
+                        setIsMessageTemplatesOpen(true);
+                      }}
                     />
                   </section>
                   )}

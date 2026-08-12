@@ -1257,6 +1257,49 @@ html[data-theme='light'] .driver-popover-progress-text {
 }
 
 /* ==========================================================================
+   SISTEMA DE TEMAS DE CORES DO TRACKER (Configurável por Usuário)
+   ========================================================================== */
+
+/* 1. Cyber Ciano (Sideral - Padrão) */
+[data-theme="cyan"],
+[data-theme="cyan"] body {
+  background-color: #080e1a !important;
+  color: #f8fafc;
+}
+
+/* 2. Neon Obsidian (Púrpura / Ônix) */
+[data-theme="obsidian"],
+[data-theme="obsidian"] body,
+[data-theme="purple"],
+[data-theme="purple"] body {
+  background-color: #0a0812 !important;
+  color: #faf5ff;
+}
+
+/* 3. Emerald Financial (Verde Esmeralda) */
+[data-theme="emerald"],
+[data-theme="emerald"] body {
+  background-color: #061412 !important;
+  color: #ecfdf5;
+}
+
+/* 4. Sunset Amber (Dourado Executivo) */
+[data-theme="amber"],
+[data-theme="amber"] body {
+  background-color: #12100e !important;
+  color: #fffbeb;
+}
+
+/* 5. Monochrome Slate (Safira Frio) */
+[data-theme="slate"],
+[data-theme="slate"] body,
+[data-theme="dark"],
+[data-theme="dark"] body {
+  background-color: #0f172a !important;
+  color: #f8fafc;
+}
+
+/* ==========================================================================
    CURSORES CUSTOMIZADOS DO TRACKER (Configurável por Usuário)
    ========================================================================== */
 
