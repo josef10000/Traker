@@ -37,15 +37,15 @@ export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) =>
             {/* Overlay Gradiente Profundo */}
             <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-slate-950/60 backdrop-blur-[1px]"></div>
             
-            {/* Luzes Dinâmicas Suaves e Lentas */}
+            {/* Luzes Dinâmicas Suaves e Lentas (Otimizadas com transform-gpu) */}
             <motion.div 
               animate={{ 
                 opacity: [0.1, 0.2, 0.1],
                 scale: [1, 1.1, 1],
                 x: [0, 20, 0]
               }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-sky-400/10 blur-[120px] rounded-full"
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-sky-400/10 blur-[100px] rounded-full transform-gpu will-change-transform"
             />
           </motion.div>
         )}
@@ -61,22 +61,22 @@ export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) =>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(168,85,247,0.2),transparent_70%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,rgba(139,92,246,0.1),transparent_50%)]" />
             
-            {/* Floating Stars/Particles */}
-            <div className="absolute inset-0">
-              {purpleParticles.map((p) => (
+            {/* Floating Stars/Particles (Reduzido para otimizar quadros por segundo) */}
+            <div className="absolute inset-0 pointer-events-none">
+              {purpleParticles.slice(0, 12).map((p) => (
                 <motion.div
                   key={p.id}
                   initial={{ opacity: p.initialOpacity }}
                   animate={{ 
                     opacity: [0.1, 0.5, 0.1],
-                    scale: [1, 1.5, 1],
+                    scale: [1, 1.3, 1],
                   }}
                   transition={{ 
                     duration: p.duration, 
                     repeat: Infinity,
                     delay: p.delay
                   }}
-                  className="absolute w-0.5 h-0.5 bg-white rounded-full"
+                  className="absolute w-0.5 h-0.5 bg-white rounded-full transform-gpu"
                   style={{ 
                     top: p.top, 
                     left: p.left,
@@ -88,12 +88,11 @@ export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) =>
             {/* Deep Cosmic Clouds */}
             <motion.div 
               animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [0.2, 0.3, 0.2],
-                rotate: [0, 5, 0]
+                scale: [1, 1.15, 1],
+                opacity: [0.2, 0.3, 0.2]
               }}
-              transition={{ duration: 20, repeat: Infinity }}
-              className="absolute top-1/4 left-1/3 w-[800px] h-[800px] bg-purple-900/20 blur-[150px] rounded-full"
+              transition={{ duration: 25, repeat: Infinity }}
+              className="absolute top-1/4 left-1/3 w-[800px] h-[800px] bg-purple-900/20 blur-[120px] rounded-full transform-gpu will-change-transform"
             />
           </motion.div>
         )}
