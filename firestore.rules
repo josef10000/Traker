@@ -64,6 +64,11 @@ service cloud.firestore {
       return request.resource.data.action in validActions;
     }
     
+    // Coleção de e-mails (mail) - Firebase Trigger Email Extension
+    match /mail/{mailId} {
+      allow create: if request.auth != null;
+    }
+
     // Coleção de organizações (organizations)
     match /organizations/{orgId} {
       allow create: if request.auth != null;

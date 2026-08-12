@@ -91,19 +91,15 @@ export const sendBackupCodesEmail = async (
   lastSandboxEmail = payload;
   emailListeners.forEach(listener => listener(payload));
 
-  // Dispara disparo real de e-mail via Firestore Trigger Mail & Web Mail Hook
-  try {
-    await addDoc(collection(db, 'mail'), {
-      to: [recipientEmail],
-      message: {
-        subject: payload.subject,
-        html: payload.html
-      },
-      createdAt: sentAt
-    });
-  } catch (e) {
-    console.warn('Mail trigger note:', e);
-  }
+  // Dispara disparo real de e-mail em segundo plano
+  addDoc(collection(db, 'mail'), {
+    to: [recipientEmail],
+    message: {
+      subject: payload.subject,
+      html: payload.html
+    },
+    createdAt: sentAt
+  }).catch((e) => console.warn('Mail trigger note:', e));
 
   // Disparo via Web API Public Mailer Endpoint de Produção
   try {

@@ -159,14 +159,15 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         backupCodes
       };
 
-      if (adminProfile.uid) {
+      const targetUid = adminProfile.uid || auth.currentUser?.uid;
+      if (targetUid) {
         if (isSandbox) {
           sandboxService.setProfile({
             ...adminProfile,
             ...patchData
           });
         } else {
-          await setDoc(doc(db, 'users', adminProfile.uid), patchData, { merge: true });
+          await setDoc(doc(db, 'users', targetUid), patchData, { merge: true });
         }
       }
 
