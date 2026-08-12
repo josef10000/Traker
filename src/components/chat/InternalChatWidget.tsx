@@ -47,7 +47,12 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
   const [searchUserQuery, setSearchUserQuery] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeletingConversation, setIsDeletingConversation] = useState(false);
+  const [discountValueInput, setDiscountValueInput] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const formatMoney = (val: number) => {
+    return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
 
   // Filtrar outros colaboradores da mesma empresa (excluindo a si próprio)
   const availableUsers = collaborators.filter(u => u.uid !== profile.uid && 
@@ -223,17 +228,17 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
     }
   };
 
-  // Solicitar Alçada / Desconto via Chat
-  const handleSendDiscountRequest = async (cpf: string, discountPercent: number) => {
-    if (!activeRecipient) return;
+  // Solicitar Alçada / Valor Proposto via Chat (Valor Bruto em R$)
+  const handleSendDiscountRequest = async (cpf: string, requestedValue: number) => {
+    if (!activeRecipient || requestedValue <= 0) return;
 
     const discountData: DiscountRequestData = {
       cpf,
-      discountPercent,
+      requestedValue,
       status: 'pending'
     };
 
-    const textToSend = `🏷️ Solicitando aprovação de alçada: Desconto de ${discountPercent}% para o CPF ${formatCPF(cpf)}.`;
+    const textToSend = `🏷️ Solicitando aprovação de alçada: Valor final de ${formatMoney(requestedValue)} para o CPF ${formatCPF(cpf)}.`;
 
     const newMsgObj: InternalMessage = {
       id: `msg-${Date.now()}`,
@@ -248,11 +253,13 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
       organizationId: profile.organizationId || 'demo'
     };
 
+    setDiscountValueInput('');
+
     if (profile.organizationId === 'sandbox-test' || !db) {
       const updatedList = [...messages, newMsgObj];
       setMessages(updatedList);
       localStorage.setItem(`sandbox_messages_${profile.organizationId}`, JSON.stringify(updatedList));
-      if (showToast) showToast(`Solicitação de alçada (${discountPercent}%) enviada!`, 'info');
+      if (showToast) showToast(`Solicitação de alçada (${formatMoney(requestedValue)}) enviada!`, 'info');
       return;
     }
 
@@ -268,7 +275,7 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
         read: false,
         organizationId: profile.organizationId
       });
-      if (showToast) showToast(`Solicitação de alçada (${discountPercent}%) enviada com sucesso!`, 'info');
+      if (showToast) showToast(`Solicitação de alçada (${formatMoney(requestedValue)}) enviada com sucesso!`, 'info');
     } catch (err) {
       console.error('Erro ao solicitar desconto:', err);
       if (showToast) showToast('Erro ao enviar solicitação de desconto.', 'error');
@@ -308,13 +315,13 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
         {
           type: 'DESCONTO_ALCADA_CHAT',
           cpf: updatedData.cpf,
-          discountPercent: updatedData.discountPercent,
+          requestedValue: updatedData.requestedValue,
           approvedBy: profile.displayName || profile.email
         },
         profile.displayName || 'Supervisor',
         profile.organizationId
       );
-      if (showToast) showToast(`✅ Desconto de ${updatedData.discountPercent}% APROVADO e enviado ao sistema!`, 'success');
+      if (showToast) showToast(`✅ Valor de ${formatMoney(updatedData.requestedValue)} APROVADO e enviado ao sistema!`, 'success');
     } else {
       if (showToast) showToast(`❌ Solicitação de desconto recusada pelo supervisor.`, 'info');
     }
@@ -586,7 +593,7 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                               {renderMessageContent(msg.text)}
                             </div>
 
-                            {/* Card Interativo de Alçada de Desconto */}
+                            {/* Card Interativo de Alçada de Desconto (Valor Bruto em R$) */}
                             {hasDiscount && msg.discountRequest && (
                               <div className="mt-2 p-3 rounded-xl bg-slate-950/80 border border-white/10 space-y-2 text-left">
                                 <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-1.5">
@@ -595,7 +602,7 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                                     <span>Solicitação de Alçada</span>
                                   </span>
                                   <span className="text-[10px] font-mono font-bold text-amber-300">
-                                    {msg.discountRequest.discountPercent}% OFF
+                                    {formatMoney(msg.discountRequest.requestedValue)}
                                   </span>
                                 </div>
 
@@ -613,7 +620,7 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                                           className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shadow-md shadow-emerald-500/20"
                                         >
                                           <CheckCircle size={13} weight="bold" />
-                                          <span>Aprovar Desconto</span>
+                                          <span>Aprovar {formatMoney(msg.discountRequest.requestedValue)}</span>
                                         </button>
                                         <button
                                           type="button"
@@ -640,7 +647,7 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                                       <span>Aprovado por {msg.discountRequest.approvedByName || 'Supervisor'}</span>
                                     </div>
                                     <p className="text-[9px] text-emerald-300/80 font-normal">
-                                      Desconto de {msg.discountRequest.discountPercent}% confirmado e registrado no sistema com auditoria SHA-256.
+                                      Valor de {formatMoney(msg.discountRequest.requestedValue)} confirmado e registrado no sistema com auditoria SHA-256.
                                     </p>
                                   </div>
                                 )}
@@ -673,27 +680,33 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
             {/* Rodapé: Input de Envio & Botões Rápidos de Alçada */}
             {activeRecipient && (
               <div className="p-3 border-t border-white/10 bg-slate-900/80 space-y-2 shrink-0">
-                {/* Atalho de Alçada de Desconto quando um CPF for detectado */}
+                {/* Input de Valor para Pedir Alçada quando um CPF for detectado */}
                 {extractCpfFromText(inputText) && (
-                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-sky-500/10 border border-sky-500/20">
+                  <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20">
                     <span className="text-[10px] font-bold text-sky-300 flex items-center gap-1 shrink-0">
                       <Tag size={12} />
                       <span>Pedir Alçada (CPF {formatCPF(extractCpfFromText(inputText)!)}):</span>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleSendDiscountRequest(extractCpfFromText(inputText)!, 10)}
-                      className="px-2 py-0.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-bold text-[10px] transition-all cursor-pointer shadow"
-                    >
-                      10% OFF
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSendDiscountRequest(extractCpfFromText(inputText)!, 20)}
-                      className="px-2 py-0.5 rounded-lg bg-purple-500 hover:bg-purple-400 text-white font-bold text-[10px] transition-all cursor-pointer shadow"
-                    >
-                      20% OFF
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                      <div className="relative flex-1">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
+                        <input
+                          type="number"
+                          placeholder="Ex: 2000"
+                          value={discountValueInput}
+                          onChange={(e) => setDiscountValueInput(e.target.value)}
+                          className="w-full pl-8 pr-2 py-1 rounded-lg text-xs bg-slate-950 border border-white/10 text-white font-mono placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!discountValueInput || Number(discountValueInput) <= 0}
+                        onClick={() => handleSendDiscountRequest(extractCpfFromText(inputText)!, Number(discountValueInput))}
+                        className="px-3 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-white font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow shrink-0"
+                      >
+                        Enviar R$ {discountValueInput ? Number(discountValueInput).toLocaleString('pt-BR') : '0'}
+                      </button>
+                    </div>
                   </div>
                 )}
 

@@ -60,7 +60,7 @@ export interface MessageTemplate {
 
 export interface DiscountRequestData {
   cpf: string;
-  discountPercent: number;
+  requestedValue: number;
   agreementId?: string;
   status: 'pending' | 'approved' | 'rejected';
   approvedBy?: string;
