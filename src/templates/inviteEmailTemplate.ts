@@ -22,180 +22,233 @@ export const generateInviteEmailHtml = ({
     body {
       margin: 0;
       padding: 0;
-      background-color: #000000;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      color: #e5e5e5;
+      background-color: #030712;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #f8fafc;
       -webkit-font-smoothing: antialiased;
     }
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #000000;
-      padding: 48px 12px;
+      background-color: #030712;
+      padding: 40px 12px;
     }
     .main-card {
-      max-width: 560px;
+      max-width: 580px;
       margin: 0 auto;
-      background-color: #0a0a0a;
-      border: 1px solid #262626;
-      border-radius: 16px;
+      background-color: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
-    .header {
-      padding: 40px 40px 28px 40px;
+    .header-bar {
+      background: linear-gradient(135deg, #0284c7 0%, #3b82f6 50%, #6366f1 100%);
+      padding: 36px 40px;
       text-align: center;
-      background-color: #0d0d0d;
-      border-bottom: 1px solid #1f1f1f;
     }
-    .brand-title {
-      font-size: 20px;
-      font-weight: 900;
-      letter-spacing: 0.2em;
+    .header-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 9999px;
+      padding: 4px 14px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.15em;
       color: #ffffff;
       text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .brand-title {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      color: #ffffff;
       margin: 0;
     }
     .brand-subtitle {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.25em;
-      color: #a3a3a3;
+      letter-spacing: 0.2em;
+      color: #e0f2fe;
       text-transform: uppercase;
-      margin-top: 6px;
+      margin-top: 4px;
     }
     .body-content {
       padding: 40px;
     }
     .salutation {
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #737373;
-      margin: 0 0 12px 0;
-    }
-    .title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-top: 0;
-      margin-bottom: 20px;
-      line-height: 1.35;
-      letter-spacing: -0.01em;
-    }
-    .paragraph {
-      font-size: 14px;
-      line-height: 1.7;
-      color: #a3a3a3;
-      margin-bottom: 28px;
-    }
-    .info-box {
-      background-color: #121212;
-      border: 1px solid #262626;
-      border-left: 3px solid #ffffff;
-      border-radius: 8px;
-      padding: 18px 24px;
-      margin-bottom: 32px;
-    }
-    .info-label {
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: #737373;
-      margin-bottom: 6px;
+      color: #38bdf8;
+      margin: 0 0 8px 0;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-top: 0;
+      margin-bottom: 16px;
+      line-height: 1.35;
+    }
+    .paragraph {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #94a3b8;
+      margin-bottom: 28px;
+    }
+    .grid-container {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+    }
+    .grid-row {
+      margin-bottom: 14px;
+    }
+    .grid-row:last-child {
+      margin-bottom: 0;
+    }
+    .grid-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #64748b;
+      margin-bottom: 4px;
       display: block;
     }
-    .info-value {
+    .grid-value {
       font-size: 15px;
       font-weight: 700;
+      color: #f8fafc;
+    }
+    .role-badge {
+      display: inline-block;
+      background-color: #0284c7;
       color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
     .btn-container {
       text-align: center;
-      margin-top: 36px;
-      margin-bottom: 36px;
+      margin: 32px 0;
     }
     .btn-action {
       display: inline-block;
-      background-color: #ffffff;
-      color: #000000 !important;
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0.12em;
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      color: #ffffff !important;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding: 16px 40px;
-      border-radius: 8px;
+      padding: 18px 42px;
+      border-radius: 14px;
       text-decoration: none;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.5);
+    }
+    .security-notice {
+      background-color: rgba(56, 189, 248, 0.05);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.5;
     }
     .fallback-container {
-      border-top: 1px dashed #262626;
+      border-top: 1px solid #334155;
       padding-top: 24px;
       margin-top: 24px;
     }
     .fallback-text {
       font-size: 12px;
-      color: #737373;
+      color: #64748b;
       margin-bottom: 10px;
     }
     .fallback-box {
-      background-color: #050505;
-      border: 1px solid #1f1f1f;
-      border-radius: 6px;
+      background-color: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
       padding: 12px 14px;
       word-break: break-all;
-      font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 11px;
-      color: #a3a3a3;
+      color: #38bdf8;
     }
     .footer {
       padding: 28px 40px;
-      background-color: #050505;
-      border-top: 1px solid #171717;
+      background-color: #090d16;
+      border-top: 1px solid #1e293b;
       text-align: center;
       font-size: 11px;
       line-height: 1.6;
-      color: #525252;
+      color: #64748b;
     }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="main-card">
-      <!-- CABEÇALHO CORPORATIVO CLÁSSICO -->
-      <div class="header">
-        <h2 class="brand-title">TRACKER</h2>
-        <div class="brand-subtitle">CORPORATE PLATFORM</div>
+      <!-- CABEÇALHO COM GRADIENTE -->
+      <div class="header-bar">
+        <div class="header-badge">✦ CONVITE CORPORATIVO DE ACESSO</div>
+        <h1 class="brand-title">TRACKER</h1>
+        <div class="brand-subtitle">Gestão Inteligente & Recuperação de Crédito</div>
       </div>
 
       <!-- CORPO DO E-MAIL -->
       <div class="body-content">
-        <div class="salutation">CONVITE DE ACESSO OFICIAL</div>
-        <h1 class="title">Sua credencial para acessar a empresa ${orgName} está pronta.</h1>
+        <div class="salutation">BEM-VINDO À PLATAFORMA</div>
+        <h2 class="title">Você foi convidado para integrar a empresa ${orgName}.</h2>
         
         <p class="paragraph">
-          Você foi convidado para integrar o sistema corporativo da empresa <strong>${orgName}</strong> na plataforma <strong>Tracker</strong>.
+          Sua credencial de acesso foi gerada com sucesso. Clique no botão abaixo para aceitar o convite, configurar sua conta e definir sua senha de acesso ao sistema corporativo.
         </p>
 
-        <!-- CARGO CORPORATIVO -->
-        <div class="info-box">
-          <span class="info-label">Cargo / Função Atribuída:</span>
-          <div class="info-value">${roleName}</div>
+        <!-- CARD DE CREDENCIAIS -->
+        <div class="grid-container">
+          <div class="grid-row">
+            <span class="grid-label">Empresa / Organização</span>
+            <div class="grid-value">${orgName}</div>
+          </div>
+          <div class="grid-row" style="margin-top: 16px;">
+            <span class="grid-label">Cargo / Perfil de Acesso</span>
+            <div style="margin-top: 4px;">
+              <span class="role-badge">${roleName}</span>
+            </div>
+          </div>
+          <div class="grid-row" style="margin-top: 16px;">
+            <span class="grid-label">E-mail Convidado</span>
+            <div class="grid-value" style="font-size: 13px; color: #94a3b8;">${recipientEmail}</div>
+          </div>
         </div>
 
-        <!-- BOTÃO CLÁSSICO DE ALTA DENSIDADE -->
+        <!-- AVISO DE SEGURANÇA -->
+        <div class="security-notice">
+          🔒 <strong>Acesso Seguro:</strong> Este convite é individual, intransferível e vinculado ao e-mail <strong>${recipientEmail}</strong>.
+        </div>
+
+        <!-- BOTÃO CTA DE IMPACTO -->
         <div class="btn-container">
           <a href="${inviteUrl}" target="_blank" class="btn-action">
-            ACEITAR CONVITE DE ACESSO
+            ACEITAR CONVITE E DEFINIR SENHA ➔
           </a>
         </div>
 
+        <!-- LINK DIRETO DE CONTINGÊNCIA -->
         <div class="fallback-container">
           <p class="fallback-text">
-            Se o botão acima não abrir automaticamente, utilize o link direto corporativo:
+            Se o botão acima não funcionar, copie e cole o link seguro direto abaixo em seu navegador:
           </p>
           <div class="fallback-box">
             ${inviteUrl}
@@ -203,10 +256,10 @@ export const generateInviteEmailHtml = ({
         </div>
       </div>
 
-      <!-- RODAPÉ CORPORATIVO -->
+      <!-- RODAPÉ -->
       <div class="footer">
-        <p style="margin: 0 0 6px 0;">Este convite corporativo é de uso exclusivo do e-mail <strong>${recipientEmail}</strong>.</p>
-        <p style="margin: 0;">Tracker Platform • Todos os direitos reservados.</p>
+        <p style="margin: 0 0 6px 0;">Este e-mail foi gerado automaticamente pela plataforma <strong>Tracker</strong>.</p>
+        <p style="margin: 0;">© ${new Date().getFullYear()} Tracker Platform • Todos os direitos reservados.</p>
       </div>
     </div>
   </div>
