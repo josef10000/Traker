@@ -304,9 +304,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [profile?.role]);
 
-  // Garante que o Monitor/QA acesse apenas sub-abas permitidas dentro de Gestão de Pessoas
+  // Garante que Supervisor/Monitor/QA não acesse a sub-aba de Fechamento PJ
   useEffect(() => {
-    if ((profile?.role === 'monitor' || profile?.role === 'qa') && ['closing_pj', 'teams_mgmt', 'org_tree', 'invites', 'dimensionamento', 'transfers'].includes(coordinationSubTab)) {
+    if (['supervisor', 'monitor', 'qa'].includes(profile?.role || '') && coordinationSubTab === 'closing_pj') {
       setCoordinationSubTab('performance');
     }
   }, [profile?.role, coordinationSubTab]);
@@ -3413,16 +3413,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </button>
                       {profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <>
-                          <button
-                            onClick={() => setCoordinationSubTab('closing_pj')}
-                            className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                              coordinationSubTab === 'closing_pj'
-                                ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
-                                : 'text-slate-400 hover:text-white border border-transparent'
-                            }`}
-                          >
-                            💰 Fechamentos PJ
-                          </button>
+                          {(profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'super_admin') && (
+                            <button
+                              onClick={() => setCoordinationSubTab('closing_pj')}
+                              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                coordinationSubTab === 'closing_pj'
+                                  ? 'bg-primary/10 text-primary border border-primary/20 shadow-md shadow-primary/5'
+                                  : 'text-slate-400 hover:text-white border border-transparent'
+                              }`}
+                            >
+                              💰 Fechamentos PJ
+                            </button>
+                          )}
                           <button
                             onClick={() => setCoordinationSubTab('teams_mgmt')}
                             className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
@@ -3739,8 +3741,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       )}
 
-                      {/* SUB-ABA 3: FECHAMENTO PJ */}
-                      {coordinationSubTab === 'closing_pj' && profile.role !== 'monitor' && profile.role !== 'qa' && (
+                      {/* SUB-ABA 3: FECHAMENTO PJ (Apenas para Coordenador, Gerente e Super Admin) */}
+                      {coordinationSubTab === 'closing_pj' && (profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'super_admin') && (
                         <ClosingPjSection
                           profile={profile}
                           theme={theme}

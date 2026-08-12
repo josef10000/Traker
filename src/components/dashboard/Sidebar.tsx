@@ -102,7 +102,9 @@ export const Sidebar = ({
         {
           id: 'people',
           label: 'Gestão de Pessoas & Operação',
-          description: 'Membros da equipe, convites, presença/assiduidade e fechamento PJ.',
+          description: ['coordinator', 'manager', 'super_admin'].includes(profile.role) 
+            ? 'Membros da equipe, convites, presença/assiduidade e fechamento PJ.'
+            : 'Membros da equipe, convites, presença/assiduidade e indicadores de performance.',
           icon: TeamIcon,
           show: isSuperUser && profile.role !== 'backoffice'
         },
