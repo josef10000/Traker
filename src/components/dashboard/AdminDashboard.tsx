@@ -72,9 +72,10 @@ interface AdminDashboardProps {
   onLogoutSuccess: () => void;
   showToast: (message: string, type?: ToastType) => void;
   onStartSimulation: (role: 'manager' | 'supervisor' | 'member' | 'monitor' | 'backoffice' | 'coordinator') => void;
+  onUpdateProfile?: (updated: Partial<UserProfile>) => void;
 }
 
-export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation }: AdminDashboardProps) => {
+export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSimulation, onUpdateProfile }: AdminDashboardProps) => {
   const { theme, toggleTheme } = useTheme();
   const [designMode, setDesignMode] = useDesignMode();
 
@@ -171,6 +172,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
       const updated = { ...adminProfile, ...patchData };
       setAdminProfile(updated);
+      onUpdateProfile?.(patchData);
       try {
         localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
       } catch {}
@@ -206,6 +208,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
       const updated = { ...adminProfile, ...patchData };
       setAdminProfile(updated);
+      onUpdateProfile?.(patchData);
       try {
         localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
       } catch {}

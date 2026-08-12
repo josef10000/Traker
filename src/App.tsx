@@ -123,11 +123,17 @@ export function AppContent() {
           setLoading(false);
         }
 
-        const fetchProfilePromise = getUserProfile(u.uid);
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 800));
-
         try {
-          let userProfile = await Promise.race([fetchProfilePromise, timeoutPromise]);
+          let userProfile: UserProfile | null = null;
+          try {
+            const cached = localStorage.getItem('tracker_cached_profile');
+            if (cached) userProfile = JSON.parse(cached);
+          } catch {}
+
+          const freshProfile = await getUserProfile(u.uid);
+          if (freshProfile) {
+            userProfile = freshProfile;
+          }
 
           if (isMasterAdminEmail(u.email)) {
             if (!userProfile) {
@@ -138,28 +144,22 @@ export function AppContent() {
                 role: 'super_admin',
                 createdAt: new Date().toISOString()
               };
-              setDoc(doc(db, 'users', u.uid), userProfile).catch(() => {});
+              setDoc(doc(db, 'users', u.uid), userProfile, { merge: true }).catch(() => {});
             } else if (userProfile.role !== 'super_admin') {
               userProfile.role = 'super_admin';
               setDoc(doc(db, 'users', u.uid), { role: 'super_admin' }, { merge: true }).catch(() => {});
             }
           } else {
             if (!userProfile) {
-              const cached = localStorage.getItem('tracker_cached_profile');
-              if (cached) {
-                try { userProfile = JSON.parse(cached); } catch {}
-              }
-              if (!userProfile) {
-                userProfile = {
-                  uid: u.uid,
-                  email: u.email || 'operador@traker.com.br',
-                  displayName: u.displayName || u.email?.split('@')[0] || 'Novo Usuário',
-                  role: 'manager',
-                  organizationId: 'org-master',
-                  createdAt: new Date().toISOString()
-                };
-                setDoc(doc(db, 'users', u.uid), userProfile).catch(() => {});
-              }
+              userProfile = {
+                uid: u.uid,
+                email: u.email || 'operador@traker.com.br',
+                displayName: u.displayName || u.email?.split('@')[0] || 'Novo Usuário',
+                role: 'manager',
+                organizationId: 'org-master',
+                createdAt: new Date().toISOString()
+              };
+              setDoc(doc(db, 'users', u.uid), userProfile, { merge: true }).catch(() => {});
             }
             if (!userProfile.organizationId) {
               userProfile.organizationId = 'org-master';
@@ -640,6 +640,7 @@ export function AppContent() {
               onLogoutSuccess={refreshProfile}
               showToast={showToast}
               onStartSimulation={(role) => setSimulation({ active: true, role })}
+              onUpdateProfile={(updated) => setProfile(prev => prev ? { ...prev, ...updated } : null)}
             />
           } />
           <Route path="/status" element={<StatusPage />} />
