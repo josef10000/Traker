@@ -179,11 +179,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       };
 
       await saveProfileFields(patchData);
-
-      if (isSandbox) {
-        setSandboxEmailPreview(emailResult);
-      }
-
+      setSandboxEmailPreview(emailResult);
       showToast('Windows Hello ativado com sucesso! Códigos de contingência enviados para o seu e-mail.', 'success');
     } catch (err: any) {
       console.error(err);

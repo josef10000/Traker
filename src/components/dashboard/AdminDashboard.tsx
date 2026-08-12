@@ -175,14 +175,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
       } catch {}
 
-      if (isSandbox) {
-        setSandboxEmailPreview(emailResult);
-      }
-
-      showToast('Windows Hello 2FA ativado para o SuperAdmin! Códigos salvos e enviados por e-mail.', 'success');
+      setSandboxEmailPreview(emailResult);
+      showToast('Windows Hello 2FA ativado com sucesso! Códigos gerados e enviados por e-mail.', 'success');
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || 'Erro ao ativar Windows Hello.', 'error');
+      showToast(err.message || 'Erro ao ativar o Windows Hello.', 'error');
     } finally {
       setIsEnrollingHello(false);
     }

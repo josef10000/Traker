@@ -74,11 +74,14 @@ export const registerWindowsHello = async (
 
     const userIdBytes = new TextEncoder().encode(userId);
 
+    const hostname = window.location.hostname;
+    const isIpOrLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+
     const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
       challenge: challenge.buffer as ArrayBuffer,
       rp: {
-        name: 'Tracker SaaS - Noverde',
-        id: window.location.hostname
+        name: 'Tracker SaaS',
+        ...(isIpOrLocalhost ? {} : { id: hostname })
       },
       user: {
         id: userIdBytes.buffer as ArrayBuffer,
@@ -90,9 +93,7 @@ export const registerWindowsHello = async (
         { alg: -257, type: 'public-key' } // RS256
       ],
       authenticatorSelection: {
-        authenticatorAttachment: 'platform', // Força o Windows Hello / TPM da máquina
-        userVerification: 'required',
-        residentKey: 'preferred'
+        userVerification: 'preferred'
       },
       timeout: 60000,
       attestation: 'none'
