@@ -30,7 +30,7 @@ const isMasterAdminEmail = (email?: string | null): boolean => {
 export function AppContent() {
   const [designMode, setDesignMode] = useDesignMode();
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(auth.currentUser);
   const [profile, setProfile] = useState<UserProfile | null>(() => {
     try {
       const cached = localStorage.getItem('tracker_cached_profile');
@@ -40,7 +40,7 @@ export function AppContent() {
     }
   });
   const [isOrgActive, setIsOrgActive] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => auth.currentUser !== null);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
 
