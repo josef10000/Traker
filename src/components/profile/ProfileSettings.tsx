@@ -1079,8 +1079,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
                   }`}
                 >
-                  <Palette size={16} className="text-purple-400" />
-                  <span>Aparência & Temas</span>
+                  <CursorClick size={16} className="text-purple-400" />
+                  <span>Estilo do Cursor</span>
                 </button>
               </div>
 
@@ -1644,179 +1644,15 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
             <div className="space-y-6 max-w-2xl animate-fadeIn">
               <div>
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Palette size={22} className="text-purple-400" />
-                  Aparência & Personalização
+                  <CursorClick size={22} className="text-purple-400" />
+                  Estilos de Ponteiros & Cursores
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Personalize as cores do sistema e o visual do cursor do mouse.
+                  Personalize o ponteiro do mouse ao navegar pela plataforma.
                 </p>
               </div>
 
-              {/* Seção 1: Temas de Cores do Sistema */}
-              <div className="border border-white/10 bg-slate-900/40 rounded-3xl p-5 space-y-4">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                    Temas de Cores do Sistema
-                  </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Selecione o esquema de cores que melhor se adapta à sua rotina.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Tema Padrão: Dark Sideral */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setCurrentTheme('dark');
-                      document.documentElement.setAttribute('data-theme', 'dark');
-                      await saveProfileFields({ theme: 'dark' });
-                      if (showToast) showToast('Tema Padrão (Dark Sideral) ativado', 'success');
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      currentTheme === 'dark' || currentTheme === 'default' || !currentTheme
-                        ? 'bg-sky-500/15 border-sky-500/50 text-white shadow-md shadow-sky-500/10'
-                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-slate-400 shadow-sm shadow-slate-400/50" />
-                        <p className="text-xs font-bold text-slate-200">⚡ Tema Padrão (Dark Sideral)</p>
-                      </div>
-                      <p className="text-[10px] text-slate-400">Ambiente de alta produtividade escuro</p>
-                    </div>
-                    {(currentTheme === 'dark' || currentTheme === 'default' || !currentTheme) && <CheckCircle size={16} className="text-sky-400 shrink-0" />}
-                  </button>
-
-                  {/* Tema 1: Cyber Ciano */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setCurrentTheme('cyan');
-                      document.documentElement.setAttribute('data-theme', 'cyan');
-                      await saveProfileFields({ theme: 'cyan' });
-                      if (showToast) showToast('Tema Cyber Ciano ativado', 'success');
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      currentTheme === 'cyan'
-                        ? 'bg-cyan-500/15 border-cyan-500/50 text-white shadow-md shadow-cyan-500/10'
-                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" />
-                        <p className="text-xs font-bold text-cyan-400">⚡ Cyber Ciano</p>
-                      </div>
-                      <p className="text-[10px] text-slate-400">Ciano elétrico com fundo azul sideral</p>
-                    </div>
-                    {currentTheme === 'cyan' && <CheckCircle size={16} className="text-cyan-400 shrink-0" />}
-                  </button>
-
-                  {/* Tema 2: Neon Obsidian */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setCurrentTheme('obsidian');
-                      document.documentElement.setAttribute('data-theme', 'obsidian');
-                      await saveProfileFields({ theme: 'obsidian' });
-                      if (showToast) showToast('Tema Neon Obsidian ativado', 'success');
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      currentTheme === 'obsidian' || currentTheme === 'purple'
-                        ? 'bg-purple-500/15 border-purple-500/50 text-white shadow-md shadow-purple-500/10'
-                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50" />
-                        <p className="text-xs font-bold text-purple-400">🟣 Neon Obsidian</p>
-                      </div>
-                      <p className="text-[10px] text-slate-400">Púrpura neon com fundo ônix escuro</p>
-                    </div>
-                    {(currentTheme === 'obsidian' || currentTheme === 'purple') && <CheckCircle size={16} className="text-purple-400 shrink-0" />}
-                  </button>
-
-                  {/* Tema 3: Emerald Financial */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setCurrentTheme('emerald');
-                      document.documentElement.setAttribute('data-theme', 'emerald');
-                      await saveProfileFields({ theme: 'emerald' });
-                      if (showToast) showToast('Tema Emerald Financial ativado', 'success');
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      currentTheme === 'emerald'
-                        ? 'bg-emerald-500/15 border-emerald-500/50 text-white shadow-md shadow-emerald-500/10'
-                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
-                        <p className="text-xs font-bold text-emerald-400">🟢 Emerald Financial</p>
-                      </div>
-                      <p className="text-[10px] text-slate-400">Verde esmeralda com fundo grafite</p>
-                    </div>
-                    {currentTheme === 'emerald' && <CheckCircle size={16} className="text-emerald-400 shrink-0" />}
-                  </button>
-
-                  {/* Tema 4: Sunset Amber */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setCurrentTheme('amber');
-                      document.documentElement.setAttribute('data-theme', 'amber');
-                      await saveProfileFields({ theme: 'amber' });
-                      if (showToast) showToast('Tema Sunset Amber ativado', 'success');
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      currentTheme === 'amber'
-                        ? 'bg-amber-500/15 border-amber-500/50 text-white shadow-md shadow-amber-500/10'
-                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50" />
-                        <p className="text-xs font-bold text-amber-400">🟠 Sunset Amber</p>
-                      </div>
-                      <p className="text-[10px] text-slate-400">Dourado executivo com fundo vulcânico</p>
-                    </div>
-                    {currentTheme === 'amber' && <CheckCircle size={16} className="text-amber-400 shrink-0" />}
-                  </button>
-
-                  {/* Tema 5: Monochrome Slate */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setCurrentTheme('slate');
-                      document.documentElement.setAttribute('data-theme', 'slate');
-                      await saveProfileFields({ theme: 'slate' });
-                      if (showToast) showToast('Tema Monochrome Slate ativado', 'success');
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      currentTheme === 'slate'
-                        ? 'bg-sky-500/15 border-sky-500/50 text-white shadow-md shadow-sky-500/10'
-                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-sky-300 shadow-sm shadow-sky-300/50" />
-                        <p className="text-xs font-bold text-sky-300">⚪ Monochrome Slate</p>
-                      </div>
-                      <p className="text-[10px] text-slate-400">Safira frio com estilo ultra-clean</p>
-                    </div>
-                    {currentTheme === 'slate' && <CheckCircle size={16} className="text-sky-300 shrink-0" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Seção 2: Estilos de Cursor do Sistema */}
+              {/* Estilos de Cursor do Sistema */}
               <div className="border border-white/10 bg-slate-900/40 rounded-3xl p-5 space-y-4">
                 <div>
                   <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
