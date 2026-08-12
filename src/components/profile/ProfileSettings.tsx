@@ -72,7 +72,7 @@ interface ProfileSettingsProps {
   onUpdate: (updatedData?: any) => void;
   onCreateTeam: () => void;
   showToast: (message: string, type?: ToastType) => void;
-  theme?: 'light' | 'dark' | 'sky' | 'purple';
+  theme?: UserProfile['theme'];
   initialTab?: string;
 }
 
@@ -86,7 +86,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'teams' | 'invites' | 'sandbox' | 'goals' | 'org_tree' | 'transfers' | 'schedule' | 'closing_pj'>('profile');
+  type ProfileTab = 'profile' | 'closing_pj' | 'schedule' | 'appearance' | 'reconciliation' | 'lgpd' | 'simulation' | 'sandbox' | 'teams';
+  const [activeTab, setActiveTab] = useState<ProfileTab>((initialTab as ProfileTab) || 'profile');
 
   const saveProfileFields = async (fields: Partial<UserProfile>) => {
     const updatedData = {
@@ -1010,75 +1011,161 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               </div>
             </div>
 
-            <nav className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar flex-1 max-h-[45vh]">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('profile');
-                  setSelectedTeamForMembers(null);
-                }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
-                  activeTab === 'profile'
-                    ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <UserIcon size={16} />
-                Meu Perfil
-              </button>
-
-              {(profile.role === 'member' || profile.role === 'supervisor' || profile.role === 'backoffice') && (
+            <nav className="flex flex-col gap-3.5 overflow-y-auto custom-scrollbar flex-1 max-h-[55vh] pr-1">
+              {/* Grupo 1: Perfil & Operação */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2 block mb-1">
+                  Perfil & Operação
+                </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveTab('schedule');
-                    setSelectedTeamForMembers(null);
-                  }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
-                    activeTab === 'schedule'
-                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  onClick={() => { setActiveTab('profile'); setSelectedTeamForMembers(null); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                    activeTab === 'profile'
+                      ? 'bg-primary/10 text-primary border-primary/25 shadow-sm'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
                   }`}
                 >
-                  <Calendar size={16} />
-                  Minha Escala
+                  <UserIcon size={16} />
+                  <span>Meu Perfil</span>
                 </button>
-              )}
 
-              {profile.organizationId === 'sandbox-test' && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveTab('sandbox');
-                    setSelectedTeamForMembers(null);
-                  }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
-                    activeTab === 'sandbox'
-                      ? 'bg-sky-500/10 text-sky-400 border-sky-500/20 shadow-md shadow-sky-500/5'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <Globe size={16} />
-                  Simulação Sandbox
-                </button>
-              )}
-
-              {profile.role !== 'manager' && profile.role !== 'coordinator' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('closing_pj');
-                    setSelectedTeamForMembers(null);
-                  }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border border-transparent ${
+                  onClick={() => { setActiveTab('closing_pj'); setSelectedTeamForMembers(null); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
                     activeTab === 'closing_pj'
-                      ? 'bg-primary/10 text-primary border-primary/25 shadow-md shadow-primary/5'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-primary/10 text-primary border-primary/25 shadow-sm'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
                   }`}
                 >
                   <Calculator size={16} />
-                  Minhas Prestações PJ
+                  <span>Minha Prestação PJ</span>
                 </button>
+
+                {(profile.role === 'member' || profile.role === 'supervisor' || profile.role === 'backoffice') && (
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('schedule'); setSelectedTeamForMembers(null); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                      activeTab === 'schedule'
+                        ? 'bg-primary/10 text-primary border-primary/25 shadow-sm'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                    }`}
+                  >
+                    <Calendar size={16} />
+                    <span>Minha Escala & Ponto</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Grupo 2: Personalização & Design */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2 block mb-1">
+                  Personalização
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('appearance'); setSelectedTeamForMembers(null); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                    activeTab === 'appearance'
+                      ? 'bg-purple-500/10 text-purple-400 border-purple-500/25 shadow-sm'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                  }`}
+                >
+                  <Palette size={16} className="text-purple-400" />
+                  <span>Aparência & Temas</span>
+                </button>
+              </div>
+
+              {/* Grupo 3: Ferramentas Operacionais */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2 block mb-1">
+                  Ferramentas
+                </span>
+                {/* Conciliação de Acordos (ESTREITAMENTE apenas Operador e Supervisor) */}
+                {(profile.role === 'member' || profile.role === 'supervisor') && (
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('reconciliation'); setSelectedTeamForMembers(null); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                      activeTab === 'reconciliation'
+                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/25 shadow-sm'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                    }`}
+                  >
+                    <Calculator size={16} className="text-sky-400" />
+                    <span>Conciliação de Acordos</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('lgpd'); setSelectedTeamForMembers(null); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                    activeTab === 'lgpd'
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 shadow-sm'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                  }`}
+                >
+                  <ShieldCheck size={16} className="text-emerald-400" />
+                  <span>Privacidade LGPD</span>
+                </button>
+              </div>
+
+              {/* Grupo 4: Demonstração (Apenas Sandbox) */}
+              {profile.organizationId === 'sandbox-test' && (
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black text-amber-500/80 uppercase tracking-widest px-2 block mb-1">
+                    Ambiente Sandbox
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('simulation'); setSelectedTeamForMembers(null); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                      activeTab === 'simulation'
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/25 shadow-sm'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                    }`}
+                  >
+                    <Users size={16} className="text-amber-400" />
+                    <span>Simulação de Cargos</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('sandbox'); setSelectedTeamForMembers(null); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                      activeTab === 'sandbox'
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/25 shadow-sm'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                    }`}
+                  >
+                    <Globe size={16} className="text-amber-400" />
+                    <span>Painel Sandbox</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Grupo 5: Gestão (Apenas Coordenador, Gerente e Admin) */}
+              {(profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'super_admin' || profile.organizationId === 'sandbox-test') && (
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2 block mb-1">
+                    Gestão
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('teams'); setSelectedTeamForMembers(null); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                      activeTab === 'teams'
+                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/25 shadow-sm'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                    }`}
+                  >
+                    <Users size={16} />
+                    <span>Gerenciar Equipes</span>
+                  </button>
+                </div>
               )}
             </nav>
           </div>
@@ -1564,19 +1651,169 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 </button>
               </form>
 
-              {/* Seção Estilo do Cursor do Sistema */}
-              <div className="pt-4 border-t border-white/10 space-y-3">
+            </div>
+          )}
+
+          {/* ABA: APARÊNCIA & PERSONALIZAÇÃO */}
+          {activeTab === 'appearance' && (
+            <div className="space-y-6 max-w-2xl animate-fadeIn">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Palette size={22} className="text-purple-400" />
+                  Aparência & Personalização
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Personalize as cores do sistema e o visual do cursor do mouse.
+                </p>
+              </div>
+
+              {/* Seção 1: Temas de Cores do Sistema */}
+              <div className="border border-white/10 bg-slate-900/40 rounded-3xl p-5 space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    Temas de Cores do Sistema
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Selecione o esquema de cores que melhor se adapta à sua rotina.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Tema 1: Cyber Ciano */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      document.documentElement.setAttribute('data-theme', 'cyan');
+                      await saveProfileFields({ theme: 'cyan' });
+                      if (showToast) showToast('Tema Cyber Ciano ativado', 'success');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      (profile.theme || 'cyan') === 'cyan'
+                        ? 'bg-sky-500/15 border-sky-500/50 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" />
+                        <p className="text-xs font-bold text-cyan-400">⚡ Cyber Ciano</p>
+                      </div>
+                      <p className="text-[10px] text-slate-400">Ciano elétrico com fundo azul sideral</p>
+                    </div>
+                    {(profile.theme || 'cyan') === 'cyan' && <CheckCircle size={16} className="text-cyan-400 shrink-0" />}
+                  </button>
+
+                  {/* Tema 2: Neon Obsidian */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      document.documentElement.setAttribute('data-theme', 'obsidian');
+                      await saveProfileFields({ theme: 'obsidian' });
+                      if (showToast) showToast('Tema Neon Obsidian ativado', 'success');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      profile.theme === 'obsidian' || profile.theme === 'purple'
+                        ? 'bg-purple-500/15 border-purple-500/50 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50" />
+                        <p className="text-xs font-bold text-purple-400">🟣 Neon Obsidian</p>
+                      </div>
+                      <p className="text-[10px] text-slate-400">Púrpura neon com fundo ônix escuro</p>
+                    </div>
+                    {(profile.theme === 'obsidian' || profile.theme === 'purple') && <CheckCircle size={16} className="text-purple-400 shrink-0" />}
+                  </button>
+
+                  {/* Tema 3: Emerald Financial */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      document.documentElement.setAttribute('data-theme', 'emerald');
+                      await saveProfileFields({ theme: 'emerald' });
+                      if (showToast) showToast('Tema Emerald Financial ativado', 'success');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      profile.theme === 'emerald'
+                        ? 'bg-emerald-500/15 border-emerald-500/50 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
+                        <p className="text-xs font-bold text-emerald-400">🟢 Emerald Financial</p>
+                      </div>
+                      <p className="text-[10px] text-slate-400">Verde esmeralda com fundo grafite</p>
+                    </div>
+                    {profile.theme === 'emerald' && <CheckCircle size={16} className="text-emerald-400 shrink-0" />}
+                  </button>
+
+                  {/* Tema 4: Sunset Amber */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      document.documentElement.setAttribute('data-theme', 'amber');
+                      await saveProfileFields({ theme: 'amber' });
+                      if (showToast) showToast('Tema Sunset Amber ativado', 'success');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      profile.theme === 'amber'
+                        ? 'bg-amber-500/15 border-amber-500/50 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50" />
+                        <p className="text-xs font-bold text-amber-400">🟠 Sunset Amber</p>
+                      </div>
+                      <p className="text-[10px] text-slate-400">Dourado executivo com fundo vulcânico</p>
+                    </div>
+                    {profile.theme === 'amber' && <CheckCircle size={16} className="text-amber-400 shrink-0" />}
+                  </button>
+
+                  {/* Tema 5: Monochrome Slate */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      document.documentElement.setAttribute('data-theme', 'slate');
+                      await saveProfileFields({ theme: 'slate' });
+                      if (showToast) showToast('Tema Monochrome Slate ativado', 'success');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      profile.theme === 'slate'
+                        ? 'bg-sky-500/15 border-sky-500/50 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-sky-300 shadow-sm shadow-sky-300/50" />
+                        <p className="text-xs font-bold text-sky-300">⚪ Monochrome Slate</p>
+                      </div>
+                      <p className="text-[10px] text-slate-400">Safira frio com estilo ultra-clean</p>
+                    </div>
+                    {profile.theme === 'slate' && <CheckCircle size={16} className="text-sky-300 shrink-0" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Seção 2: Estilos de Cursor do Sistema */}
+              <div className="border border-white/10 bg-slate-900/40 rounded-3xl p-5 space-y-4">
                 <div>
                   <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                     <CursorClick size={16} className="text-sky-400" />
                     <span>Estilo do Cursor do Sistema</span>
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Personalize o ponteiro do mouse ao navegar pela plataforma Tracker.
+                    Personalize o ponteiro do mouse ao navegar pela plataforma.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Opção 1: Padrão Windows */}
                   <button
                     type="button"
@@ -1682,22 +1919,96 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   </button>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Seção LGPD — Privacidade & Direitos dos Dados (Art. 18) */}
-              <div className="pt-4 border-t border-white/10 space-y-2.5">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldCheck size={16} className="text-emerald-400" />
-                    Privacidade & Direitos LGPD
-                  </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Conforme o Art. 18 da Lei 13.709/2018 (LGPD), você pode baixar a qualquer momento uma cópia estruturada de todos os seus dados cadastrais, acordos criados e registros de auditoria vinculados à sua conta.
-                  </p>
-                </div>
-                <LgpdExportButton userId={profile.uid} userEmail={profile.email} />
+          {/* ABA: CONCILIAÇÃO DE ACORDOS (Apenas Operador e Supervisor) */}
+          {activeTab === 'reconciliation' && (profile.role === 'member' || profile.role === 'supervisor') && (
+            <div className="space-y-6 max-w-2xl animate-fadeIn">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Calculator size={22} className="text-sky-400" />
+                  Conciliação de Acordos
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Painel de conferência e conciliação manual de liquidações financeiras.
+                </p>
               </div>
 
+              <div className="border border-sky-500/30 bg-sky-500/10 rounded-3xl p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-3 bg-sky-500/20 rounded-2xl text-sky-400 border border-sky-500/30 shrink-0">
+                    <Calculator size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Central de Conciliação Operacional</h4>
+                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                      A conciliação permite validar pagamentos com relatórios bancários importados e checar divergências de extratos no sistema.
+                    </p>
+                  </div>
+                </div>
 
+                <div className="pt-3 border-t border-sky-500/20 flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-[11px] text-sky-300 font-medium">
+                    ✓ Acesso restrito a Operadores e Supervisores.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-sky-500/20 cursor-pointer active:scale-95 flex items-center gap-2"
+                  >
+                    <Calculator size={16} />
+                    <span>Ir para o Dashboard Principal</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ABA: PRIVACIDADE LGPD */}
+          {activeTab === 'lgpd' && (
+            <div className="space-y-6 max-w-2xl animate-fadeIn">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <ShieldCheck size={22} className="text-emerald-400" />
+                  Privacidade & Direitos LGPD
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Exercício de direitos do titular dos dados conforme a Lei 13.709/2018 (LGPD).
+                </p>
+              </div>
+
+              <div className="border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 space-y-4">
+                <div>
+                  <h4 className="text-sm font-bold text-emerald-300 uppercase tracking-wider">
+                    Art. 18 da Lei 13.709/2018 (LGPD)
+                  </h4>
+                  <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                    Você pode baixar a qualquer momento uma cópia estruturada de todos os seus dados cadastrais, históricos de acordos e registros de auditoria vinculados à sua conta na plataforma.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-emerald-500/20">
+                  <LgpdExportButton userId={profile.uid} userEmail={profile.email} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ABA: SIMULAÇÃO DE CARGOS (Apenas Sandbox) */}
+          {activeTab === 'simulation' && profile.organizationId === 'sandbox-test' && (
+            <div className="space-y-6 max-w-2xl animate-fadeIn">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Users size={22} className="text-amber-400" />
+                  Simulação de Cargos (Sandbox)
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Alterne visões de cargos para testar a experiência do usuário na demonstração.
+                </p>
+              </div>
             </div>
           )}
 

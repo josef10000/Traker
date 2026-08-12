@@ -56,7 +56,7 @@ interface DashboardHeaderProps {
   organizationName: string;
   /** Callback para ativar a aba de suporte */
   onSupportTabClick: () => void;
-  theme?: 'light' | 'dark';
+  theme?: UserProfile['theme'];
   /** Callback para alternar entre dark e light mode */
   onToggleTheme?: () => void;
   supervisors?: UserProfile[];

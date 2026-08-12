@@ -37,7 +37,7 @@ import {
 
 interface ClosingPjSectionProps {
   profile: UserProfile;
-  theme?: 'light' | 'dark' | 'sky' | 'purple';
+  theme?: UserProfile['theme'];
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 

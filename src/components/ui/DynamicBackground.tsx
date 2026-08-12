@@ -21,97 +21,88 @@ export const DynamicBackground = ({ theme = 'dark' }: DynamicBackgroundProps) =>
   return (
     <div className="fixed inset-0 -z-50 overflow-hidden pointer-events-none">
       <AnimatePresence mode="wait">
-        {theme === 'sky' && (
+        {(theme === 'cyan' || theme === 'sky') && (
           <motion.div
-            key="sky"
+            key="cyan"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-[#082f49]"
+            className="absolute inset-0 bg-[#080e1a]"
           >
-            {/* Textura de Grão (Noise) */}
-            <div className="absolute inset-0 opacity-[0.15] mix-blend-overlay pointer-events-none" 
-                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
-            </div>
-
-            {/* Overlay Gradiente Profundo */}
-            <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-slate-950/60 backdrop-blur-[1px]"></div>
-            
-            {/* Luzes Dinâmicas Suaves e Lentas (Otimizadas com transform-gpu) */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,153,255,0.08),transparent_60%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(0,229,255,0.05),transparent_50%)]" />
             <motion.div 
-              animate={{ 
-                opacity: [0.1, 0.2, 0.1],
-                scale: [1, 1.1, 1],
-                x: [0, 20, 0]
-              }}
+              animate={{ opacity: [0.1, 0.2, 0.1], scale: [1, 1.08, 1] }}
               transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-sky-400/10 blur-[100px] rounded-full transform-gpu will-change-transform"
+              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-sky-500/10 blur-[100px] rounded-full transform-gpu will-change-transform"
             />
           </motion.div>
         )}
 
-        {theme === 'purple' && (
+        {(theme === 'obsidian' || theme === 'purple') && (
           <motion.div
-            key="purple"
+            key="obsidian"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-[#0c0a09]"
+            className="absolute inset-0 bg-[#0a0812]"
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(168,85,247,0.2),transparent_70%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,rgba(139,92,246,0.1),transparent_50%)]" />
-            
-            {/* Floating Stars/Particles (Reduzido para otimizar quadros por segundo) */}
-            <div className="absolute inset-0 pointer-events-none">
-              {purpleParticles.slice(0, 12).map((p) => (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: p.initialOpacity }}
-                  animate={{ 
-                    opacity: [0.1, 0.5, 0.1],
-                    scale: [1, 1.3, 1],
-                  }}
-                  transition={{ 
-                    duration: p.duration, 
-                    repeat: Infinity,
-                    delay: p.delay
-                  }}
-                  className="absolute w-0.5 h-0.5 bg-white rounded-full transform-gpu"
-                  style={{ 
-                    top: p.top, 
-                    left: p.left,
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Deep Cosmic Clouds */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(168,85,247,0.15),transparent_70%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,rgba(139,92,246,0.08),transparent_50%)]" />
             <motion.div 
-              animate={{ 
-                scale: [1, 1.15, 1],
-                opacity: [0.2, 0.3, 0.2]
-              }}
+              animate={{ scale: [1, 1.12, 1], opacity: [0.15, 0.25, 0.15] }}
               transition={{ duration: 25, repeat: Infinity }}
-              className="absolute top-1/4 left-1/3 w-[800px] h-[800px] bg-purple-900/20 blur-[120px] rounded-full transform-gpu will-change-transform"
+              className="absolute top-1/4 left-1/3 w-[800px] h-[800px] bg-purple-900/15 blur-[120px] rounded-full transform-gpu will-change-transform"
             />
           </motion.div>
         )}
 
-        {theme === 'dark' && (
+        {theme === 'emerald' && (
           <motion.div
-            key="dark"
+            key="emerald"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-[#020617]"
+            className="absolute inset-0 bg-[#061412]"
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.03),transparent_50%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(30,41,59,0.2),transparent_50%)]" />
-            
-            {/* Subtle Gradient Lines */}
-            <div className="absolute inset-0 opacity-[0.03]" 
-                 style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '100px 100px' }} 
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.12),transparent_60%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(5,150,105,0.06),transparent_50%)]" />
+            <motion.div 
+              animate={{ opacity: [0.1, 0.2, 0.1], scale: [1, 1.1, 1] }}
+              transition={{ duration: 25, repeat: Infinity }}
+              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-emerald-500/10 blur-[110px] rounded-full transform-gpu will-change-transform"
             />
+          </motion.div>
+        )}
+
+        {theme === 'amber' && (
+          <motion.div
+            key="amber"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-[#12100e]"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.12),transparent_60%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(217,119,6,0.06),transparent_50%)]" />
+            <motion.div 
+              animate={{ opacity: [0.1, 0.2, 0.1], scale: [1, 1.08, 1] }}
+              transition={{ duration: 25, repeat: Infinity }}
+              className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-amber-500/10 blur-[110px] rounded-full transform-gpu will-change-transform"
+            />
+          </motion.div>
+        )}
+
+        {(theme === 'slate' || theme === 'dark') && (
+          <motion.div
+            key="slate"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-[#0f172a]"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.04),transparent_50%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(30,41,59,0.2),transparent_50%)]" />
           </motion.div>
         )}
       </AnimatePresence>

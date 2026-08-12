@@ -55,11 +55,13 @@ export function AppContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Aplica dinamicamente a preferência de cursor customizado
+  // Aplica dinamicamente a preferência de tema de cores e cursor customizado
   useEffect(() => {
     const cursorStyle = profile?.customCursorStyle || 'cyan_enterprise';
+    const themeStyle = profile?.theme || 'cyan';
     document.documentElement.setAttribute('data-cursor', cursorStyle);
-  }, [profile?.customCursorStyle]);
+    document.documentElement.setAttribute('data-theme', themeStyle);
+  }, [profile?.customCursorStyle, profile?.theme]);
   const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean; demoRestrictedRole?: UserRole } | null>(() => {
     try {
       const saved = sessionStorage.getItem('tracker_demo_simulation');

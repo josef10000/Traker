@@ -117,7 +117,7 @@ export interface UserProfile {
   organizationId?: string; // Tenant ID no SaaS
   managedTeams?: string[]; // Para supervisores que gerenciam múltiplos times
   jobTitle?: string;
-  theme?: 'dark' | 'sky' | 'purple';
+  theme?: 'cyan' | 'obsidian' | 'emerald' | 'amber' | 'slate' | 'dark' | 'sky' | 'purple';
   customCursorStyle?: 'default' | 'cyan_enterprise' | 'precision_ring' | 'ambient_glow';
   portfolio?: string;
   monthlyGoal?: number;
