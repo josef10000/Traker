@@ -94,7 +94,13 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
     try {
       if (isLogin) {
         const userCred = await signInWithEmailAndPassword(auth, email, password);
-        const profile = await getUserProfile(userCred.user.uid);
+        let profile = await getUserProfile(userCred.user.uid);
+        if (!profile) {
+          try {
+            const cached = localStorage.getItem('tracker_cached_profile');
+            if (cached) profile = JSON.parse(cached);
+          } catch {}
+        }
         if (profile?.isWebAuthnEnabled) {
           setPending2FaUser(profile);
           setLoading(false);

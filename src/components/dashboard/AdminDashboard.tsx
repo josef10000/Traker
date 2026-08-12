@@ -43,6 +43,7 @@ import { signOut } from 'firebase/auth';
 import { regenerateManagerInviteToken, generateSecureToken } from '../../lib/teams';
 import { registerWindowsHello, generateBackupCodes } from '../../lib/webAuthnService';
 import { sendBackupCodesEmail, EmailPayload } from '../../lib/emailService';
+import { sandboxService } from '../../lib/sandboxService';
 import { 
   collection, 
   onSnapshot, 
@@ -142,7 +143,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const handleEnableWindowsHello = async () => {
     setIsEnrollingHello(true);
     try {
-      const isSandbox = adminProfile.organizationId === 'sandbox-test' || !adminProfile.organizationId;
+      const isSandbox = adminProfile.organizationId === 'sandbox-test';
       const cred = await registerWindowsHello(adminProfile.uid, adminProfile.email, adminProfile.displayName || adminProfile.email, isSandbox);
       const backupCodes = generateBackupCodes(5);
 
@@ -157,11 +158,22 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         backupCodes
       };
 
-      if (!isSandbox && adminProfile.uid) {
-        await updateDoc(doc(db, 'users', adminProfile.uid), patchData);
+      if (adminProfile.uid) {
+        if (isSandbox) {
+          sandboxService.setProfile({
+            ...adminProfile,
+            ...patchData
+          });
+        } else {
+          await setDoc(doc(db, 'users', adminProfile.uid), patchData, { merge: true });
+        }
       }
 
-      setAdminProfile(prev => ({ ...prev, ...patchData }));
+      const updated = { ...adminProfile, ...patchData };
+      setAdminProfile(updated);
+      try {
+        localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
+      } catch {}
 
       if (isSandbox) {
         setSandboxEmailPreview(emailResult);
@@ -184,11 +196,23 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         backupCodes: []
       };
 
-      if (adminProfile.organizationId !== 'sandbox-test' && adminProfile.uid) {
-        await updateDoc(doc(db, 'users', adminProfile.uid), patchData);
+      if (adminProfile.uid) {
+        if (adminProfile.organizationId === 'sandbox-test') {
+          sandboxService.setProfile({
+            ...adminProfile,
+            ...patchData
+          });
+        } else {
+          await setDoc(doc(db, 'users', adminProfile.uid), patchData, { merge: true });
+        }
       }
 
-      setAdminProfile(prev => ({ ...prev, ...patchData }));
+      const updated = { ...adminProfile, ...patchData };
+      setAdminProfile(updated);
+      try {
+        localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
+      } catch {}
+
       showToast('Windows Hello 2FA desativado.', 'info');
     } catch (err) {
       console.error(err);
