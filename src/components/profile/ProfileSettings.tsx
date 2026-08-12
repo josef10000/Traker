@@ -1581,6 +1581,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <button
                     type="button"
                     onClick={async () => {
+                      document.documentElement.setAttribute('data-cursor', 'default');
+                      document.body?.setAttribute('data-cursor', 'default');
                       await saveProfileFields({ customCursorStyle: 'default' });
                       if (showToast) showToast('Cursor padrão do sistema selecionado', 'info');
                     }}
@@ -1605,6 +1607,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <button
                     type="button"
                     onClick={async () => {
+                      document.documentElement.setAttribute('data-cursor', 'cyan_enterprise');
+                      document.body?.setAttribute('data-cursor', 'cyan_enterprise');
                       await saveProfileFields({ customCursorStyle: 'cyan_enterprise' });
                       if (showToast) showToast('Cursor Ciano Enterprise ativado', 'success');
                     }}
@@ -1629,6 +1633,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <button
                     type="button"
                     onClick={async () => {
+                      document.documentElement.setAttribute('data-cursor', 'precision_ring');
+                      document.body?.setAttribute('data-cursor', 'precision_ring');
                       await saveProfileFields({ customCursorStyle: 'precision_ring' });
                       if (showToast) showToast('Cursor de Precisão Reticular ativado', 'success');
                     }}
@@ -1653,6 +1659,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <button
                     type="button"
                     onClick={async () => {
+                      document.documentElement.setAttribute('data-cursor', 'ambient_glow');
+                      document.body?.setAttribute('data-cursor', 'ambient_glow');
                       await saveProfileFields({ customCursorStyle: 'ambient_glow' });
                       if (showToast) showToast('Cursor Halo Ambient Glow ativado', 'success');
                     }}

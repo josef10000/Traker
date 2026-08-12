@@ -1260,47 +1260,80 @@ html[data-theme='light'] .driver-popover-progress-text {
    CURSORES CUSTOMIZADOS DO TRACKER (Configurável por Usuário)
    ========================================================================== */
 
-/* 1. Ciano Enterprise (Futurista) */
-html[data-cursor="cyan_enterprise"],
-html[data-cursor="cyan_enterprise"] body {
-  cursor: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 3L10.07 19.97L13.58 13.58L19.97 10.07L3 3Z' fill='%230099ff' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") 3 3, auto !important;
+/* 1. Ciano Enterprise (Futurista - Padrão) */
+[data-cursor="cyan_enterprise"],
+[data-cursor="cyan_enterprise"] body,
+[data-cursor="cyan_enterprise"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l7.07 16.97 3.51-6.39 6.39-3.51L3 3z' fill='%230099ff' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") 3 3, auto !important;
 }
-html[data-cursor="cyan_enterprise"] button,
-html[data-cursor="cyan_enterprise"] a,
-html[data-cursor="cyan_enterprise"] input,
-html[data-cursor="cyan_enterprise"] select,
-html[data-cursor="cyan_enterprise"] textarea,
-html[data-cursor="cyan_enterprise"] [role="button"],
-html[data-cursor="cyan_enterprise"] .cursor-pointer {
-  cursor: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 3L10.07 19.97L13.58 13.58L19.97 10.07L3 3Z' fill='%2300e5ff' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='14' cy='14' r='3.5' fill='%2300ffcc' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 3 3, pointer !important;
+
+[data-cursor="cyan_enterprise"] button,
+[data-cursor="cyan_enterprise"] button *,
+[data-cursor="cyan_enterprise"] a,
+[data-cursor="cyan_enterprise"] a *,
+[data-cursor="cyan_enterprise"] input,
+[data-cursor="cyan_enterprise"] select,
+[data-cursor="cyan_enterprise"] textarea,
+[data-cursor="cyan_enterprise"] [role="button"],
+[data-cursor="cyan_enterprise"] .cursor-pointer,
+[data-cursor="cyan_enterprise"] .cursor-pointer * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l7.07 16.97 3.51-6.39 6.39-3.51L3 3z' fill='%2300e5ff' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='14' cy='14' r='3.5' fill='%2300ffcc' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 3 3, pointer !important;
 }
 
 /* 2. Precisão Reticular (High-Tech) */
-html[data-cursor="precision_ring"],
-html[data-cursor="precision_ring"] body {
-  cursor: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='8' stroke='%2300e5ff' stroke-width='1.5' stroke-dasharray='2 2'/%3E%3Ccircle cx='12' cy='12' r='3' fill='%2300e5ff' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 12 12, auto !important;
+[data-cursor="precision_ring"],
+[data-cursor="precision_ring"] body,
+[data-cursor="precision_ring"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8' stroke='%2300e5ff' stroke-width='1.5' stroke-dasharray='3 2' fill='none'/%3E%3Ccircle cx='12' cy='12' r='3' fill='%2300e5ff' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 12 12, auto !important;
 }
-html[data-cursor="precision_ring"] button,
-html[data-cursor="precision_ring"] a,
-html[data-cursor="precision_ring"] input,
-html[data-cursor="precision_ring"] select,
-html[data-cursor="precision_ring"] textarea,
-html[data-cursor="precision_ring"] [role="button"],
-html[data-cursor="precision_ring"] .cursor-pointer {
-  cursor: url("data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='14' cy='14' r='11' stroke='%2300ffcc' stroke-width='1.8'/%3E%3Ccircle cx='14' cy='14' r='4' fill='%2300ffcc' stroke='%23ffffff' stroke-width='1.2'/%3E%3C/svg%3E") 14 14, pointer !important;
+
+[data-cursor="precision_ring"] button,
+[data-cursor="precision_ring"] button *,
+[data-cursor="precision_ring"] a,
+[data-cursor="precision_ring"] a *,
+[data-cursor="precision_ring"] input,
+[data-cursor="precision_ring"] select,
+[data-cursor="precision_ring"] textarea,
+[data-cursor="precision_ring"] [role="button"],
+[data-cursor="precision_ring"] .cursor-pointer,
+[data-cursor="precision_ring"] .cursor-pointer * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='11' stroke='%2300ffcc' stroke-width='1.8' fill='none'/%3E%3Ccircle cx='14' cy='14' r='4' fill='%2300ffcc' stroke='%23ffffff' stroke-width='1.2'/%3E%3C/svg%3E") 14 14, pointer !important;
 }
 
 /* 3. Halo Ambient Glow (Brilho Neon) */
-html[data-cursor="ambient_glow"],
-html[data-cursor="ambient_glow"] body {
-  cursor: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='12' fill='%230099ff' fill-opacity='0.3' filter='blur(2px)'/%3E%3Cpath d='M6 6L13.07 22.97L16.58 16.58L22.97 13.07L6 6Z' fill='%2300e5ff' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") 6 6, auto !important;
+[data-cursor="ambient_glow"],
+[data-cursor="ambient_glow"] body,
+[data-cursor="ambient_glow"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' fill='%230099ff' fill-opacity='0.4'/%3E%3Cpath d='M6 6l7.07 16.97 3.51-6.39 6.39-3.51L6 6z' fill='%2300e5ff' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") 6 6, auto !important;
 }
-html[data-cursor="ambient_glow"] button,
-html[data-cursor="ambient_glow"] a,
-html[data-cursor="ambient_glow"] input,
-html[data-cursor="ambient_glow"] select,
-html[data-cursor="ambient_glow"] textarea,
-html[data-cursor="ambient_glow"] [role="button"],
-html[data-cursor="ambient_glow"] .cursor-pointer {
-  cursor: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23a855f7' fill-opacity='0.4' filter='blur(2px)'/%3E%3Cpath d='M6 6L13.07 22.97L16.58 16.58L22.97 13.07L6 6Z' fill='%23c084fc' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='16.5' cy='16.5' r='3.5' fill='%2300ffcc' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 6 6, pointer !important;
+
+[data-cursor="ambient_glow"] button,
+[data-cursor="ambient_glow"] button *,
+[data-cursor="ambient_glow"] a,
+[data-cursor="ambient_glow"] a *,
+[data-cursor="ambient_glow"] input,
+[data-cursor="ambient_glow"] select,
+[data-cursor="ambient_glow"] textarea,
+[data-cursor="ambient_glow"] [role="button"],
+[data-cursor="ambient_glow"] .cursor-pointer,
+[data-cursor="ambient_glow"] .cursor-pointer * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='%23a855f7' fill-opacity='0.5'/%3E%3Cpath d='M6 6l7.07 16.97 3.51-6.39 6.39-3.51L6 6z' fill='%23c084fc' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='16.5' cy='16.5' r='3.5' fill='%2300ffcc' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 6 6, pointer !important;
+}
+
+/* 4. Padrão do Sistema (Default OS Cursor) */
+[data-cursor="default"],
+[data-cursor="default"] body,
+[data-cursor="default"] * {
+  cursor: auto !important;
+}
+[data-cursor="default"] button,
+[data-cursor="default"] button *,
+[data-cursor="default"] a,
+[data-cursor="default"] a *,
+[data-cursor="default"] input,
+[data-cursor="default"] select,
+[data-cursor="default"] textarea,
+[data-cursor="default"] [role="button"],
+[data-cursor="default"] .cursor-pointer {
+  cursor: pointer !important;
 }
