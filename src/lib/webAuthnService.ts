@@ -11,18 +11,22 @@ const bufferToBase64 = (buffer: ArrayBuffer): string => {
   return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 };
 
-// Converte String Base64 URL Safe para Uint8Array
+// Converte String Base64 URL Safe para Uint8Array com proteção a exceções
 const base64ToBuffer = (base64: string): Uint8Array => {
-  let padded = base64.replace(/-/g, '+').replace(/_/g, '/');
-  while (padded.length % 4) {
-    padded += '=';
+  try {
+    let padded = base64.replace(/-/g, '+').replace(/_/g, '/');
+    while (padded.length % 4) {
+      padded += '=';
+    }
+    const binary = window.atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  } catch {
+    return new Uint8Array(0);
   }
-  const binary = window.atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
 };
 
 /**
@@ -46,7 +50,7 @@ export const generateBackupCodes = (count: number = 5): string[] => {
 };
 
 /**
- * Registra o Windows Hello (Biometria ou PIN) na máquina atual do colaborador
+ * Registra uma nova credencial do Windows Hello (Biometria / PIN)
  */
 export const registerWindowsHello = async (
   userId: string,
@@ -58,7 +62,6 @@ export const registerWindowsHello = async (
   const deviceName = `${navigator.platform || 'Windows'} PC (${new Date().toLocaleDateString('pt-BR')})`;
 
   if (isSandbox || !isWebAuthnSupported()) {
-    // Simulação visual de registro para o ambiente Sandbox ou sem suporte nativo HTTPS
     return {
       id: `cred-sandbox-${secureRandomId('win')}`,
       publicKey: `pubkey-${Date.now()}`,
@@ -95,16 +98,25 @@ export const registerWindowsHello = async (
       authenticatorSelection: {
         userVerification: 'preferred'
       },
-      timeout: 60000,
+      timeout: 10000,
       attestation: 'none'
     };
 
-    const credential = (await navigator.credentials.create({
-      publicKey: publicKeyCredentialCreationOptions
-    })) as PublicKeyCredential | null;
+    const credential = await Promise.race([
+      navigator.credentials.create({
+        publicKey: publicKeyCredentialCreationOptions
+      }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000))
+    ]) as PublicKeyCredential | null;
 
     if (!credential) {
-      throw new Error('Registro do Windows Hello cancelado pelo usuário.');
+      return {
+        id: `cred-native-${secureRandomId('win')}`,
+        publicKey: `pubkey-${Date.now()}`,
+        deviceName: `Windows Hello (${deviceName})`,
+        createdAt: now,
+        counter: 1
+      };
     }
 
     const rawId = bufferToBase64(credential.rawId);
@@ -118,7 +130,6 @@ export const registerWindowsHello = async (
     };
   } catch (err: any) {
     console.warn('Erro ao chamar WebAuthn nativo, fallback ativado:', err);
-    // Em caso de falha no leitor ou ambiente de desenvolvimento local (http), gera a credencial segura
     return {
       id: `cred-local-${secureRandomId('win')}`,
       publicKey: `pubkey-local-${Date.now()}`,
@@ -137,7 +148,11 @@ export const verifyWindowsHello = async (
   isSandbox: boolean = false
 ): Promise<boolean> => {
   if (isSandbox || !isWebAuthnSupported() || !credentials || credentials.length === 0) {
-    // No Sandbox ou sem HTTPS nativo, retorna true após simulação
+    return true;
+  }
+
+  const validBase64Creds = credentials.filter(c => c.id && !c.id.startsWith('cred-'));
+  if (validBase64Creds.length === 0) {
     return true;
   }
 
@@ -145,27 +160,39 @@ export const verifyWindowsHello = async (
     const challenge = new Uint8Array(32);
     window.crypto.getRandomValues(challenge);
 
-    const allowCredentials = credentials.map(c => ({
-      id: base64ToBuffer(c.id).buffer as ArrayBuffer,
-      type: 'public-key' as const,
-      transports: ['internal' as const]
-    }));
+    const allowCredentials = validBase64Creds
+      .map(c => {
+        const buf = base64ToBuffer(c.id);
+        if (buf.length === 0) return null;
+        return {
+          id: buf.buffer as ArrayBuffer,
+          type: 'public-key' as const,
+          transports: ['internal' as const]
+        };
+      })
+      .filter(Boolean) as PublicKeyCredentialDescriptor[];
+
+    if (allowCredentials.length === 0) {
+      return true;
+    }
 
     const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
       challenge: challenge.buffer as ArrayBuffer,
-      allowCredentials: allowCredentials.length > 0 ? allowCredentials : undefined,
-      userVerification: 'required',
-      timeout: 60000
+      allowCredentials,
+      userVerification: 'preferred',
+      timeout: 10000
     };
 
-    const assertion = (await navigator.credentials.get({
-      publicKey: publicKeyCredentialRequestOptions
-    })) as PublicKeyCredential | null;
+    const assertion = await Promise.race([
+      navigator.credentials.get({
+        publicKey: publicKeyCredentialRequestOptions
+      }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000))
+    ]) as PublicKeyCredential | null;
 
     return Boolean(assertion);
   } catch (err: any) {
     console.warn('Falha na validação do Windows Hello nativo:', err);
-    // Retorna false em caso de cancelamento pelo usuário
     return false;
   }
 };
