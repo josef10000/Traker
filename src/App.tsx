@@ -54,6 +54,12 @@ export function AppContent() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Aplica dinamicamente a preferência de cursor customizado
+  useEffect(() => {
+    const cursorStyle = profile?.customCursorStyle || 'cyan_enterprise';
+    document.documentElement.setAttribute('data-cursor', cursorStyle);
+  }, [profile?.customCursorStyle]);
   const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean; demoRestrictedRole?: UserRole } | null>(() => {
     try {
       const saved = sessionStorage.getItem('tracker_demo_simulation');

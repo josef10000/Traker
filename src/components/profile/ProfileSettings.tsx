@@ -28,6 +28,7 @@ import {
   CaretLeft,
   Info,
   Calculator,
+  CursorClick,
   Camera,
   UploadSimple,
   CircleNotch,
@@ -1562,6 +1563,117 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   )}
                 </button>
               </form>
+
+              {/* Seção Estilo do Cursor do Sistema */}
+              <div className="pt-4 border-t border-white/10 space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <CursorClick size={16} className="text-sky-400" />
+                    <span>Estilo do Cursor do Sistema</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Personalize o ponteiro do mouse ao navegar pela plataforma Tracker.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Opção 1: Padrão Windows */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await saveProfileFields({ customCursorStyle: 'default' });
+                      if (showToast) showToast('Cursor padrão do sistema selecionado', 'info');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      (profile.customCursorStyle || 'cyan_enterprise') === 'default'
+                        ? 'bg-sky-500/10 border-sky-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5">
+                        <span>🖥️ Padrão do Sistema</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Ponteiro original do seu SO</p>
+                    </div>
+                    {(profile.customCursorStyle || 'cyan_enterprise') === 'default' && (
+                      <CheckCircle size={16} className="text-sky-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 2: Ciano Enterprise */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await saveProfileFields({ customCursorStyle: 'cyan_enterprise' });
+                      if (showToast) showToast('Cursor Ciano Enterprise ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      (profile.customCursorStyle || 'cyan_enterprise') === 'cyan_enterprise'
+                        ? 'bg-sky-500/10 border-sky-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-sky-400">
+                        <span>⚡ Ciano Enterprise</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Vetor ciano com foco nos botões</p>
+                    </div>
+                    {(profile.customCursorStyle || 'cyan_enterprise') === 'cyan_enterprise' && (
+                      <CheckCircle size={16} className="text-sky-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 3: Precisão Reticular */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await saveProfileFields({ customCursorStyle: 'precision_ring' });
+                      if (showToast) showToast('Cursor de Precisão Reticular ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      profile.customCursorStyle === 'precision_ring'
+                        ? 'bg-purple-500/10 border-purple-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-purple-400">
+                        <span>🎯 Precisão Reticular</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Ponto + anel de mira High-Tech</p>
+                    </div>
+                    {profile.customCursorStyle === 'precision_ring' && (
+                      <CheckCircle size={16} className="text-purple-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 4: Halo Ambient Glow */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await saveProfileFields({ customCursorStyle: 'ambient_glow' });
+                      if (showToast) showToast('Cursor Halo Ambient Glow ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      profile.customCursorStyle === 'ambient_glow'
+                        ? 'bg-emerald-500/10 border-emerald-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-emerald-400">
+                        <span>✨ Halo Ambient Glow</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Seta com aura neon animada</p>
+                    </div>
+                    {profile.customCursorStyle === 'ambient_glow' && (
+                      <CheckCircle size={16} className="text-emerald-400 shrink-0" />
+                    )}
+                  </button>
+                </div>
+              </div>
 
               {/* Seção LGPD — Privacidade & Direitos dos Dados (Art. 18) */}
               <div className="pt-4 border-t border-white/10 space-y-2.5">
