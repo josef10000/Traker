@@ -11,14 +11,19 @@ import {
   Building,
   Sparkle,
   Trash,
-  WarningCircle
+  WarningCircle,
+  Tag,
+  CheckCircle,
+  XCircle,
+  Percent
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserProfile, InternalMessage } from '../../types';
+import { UserProfile, InternalMessage, DiscountRequestData } from '../../types';
 import { Avatar } from '../ui/Avatar';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { formatCPF } from '../../utils/masks';
+import { logAudit } from '../../lib/audit';
 
 interface InternalChatWidgetProps {
   profile: UserProfile;
@@ -215,6 +220,103 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
       if (showToast) showToast('Erro ao enviar mensagem no chat.', 'error');
+    }
+  };
+
+  // Solicitar Alçada / Desconto via Chat
+  const handleSendDiscountRequest = async (cpf: string, discountPercent: number) => {
+    if (!activeRecipient) return;
+
+    const discountData: DiscountRequestData = {
+      cpf,
+      discountPercent,
+      status: 'pending'
+    };
+
+    const textToSend = `🏷️ Solicitando aprovação de alçada: Desconto de ${discountPercent}% para o CPF ${formatCPF(cpf)}.`;
+
+    const newMsgObj: InternalMessage = {
+      id: `msg-${Date.now()}`,
+      senderId: profile.uid,
+      senderName: profile.displayName || 'Usuário',
+      receiverId: activeRecipient.uid,
+      text: textToSend,
+      cpfReference: cpf,
+      discountRequest: discountData,
+      createdAt: new Date().toISOString(),
+      read: false,
+      organizationId: profile.organizationId || 'demo'
+    };
+
+    if (profile.organizationId === 'sandbox-test' || !db) {
+      const updatedList = [...messages, newMsgObj];
+      setMessages(updatedList);
+      localStorage.setItem(`sandbox_messages_${profile.organizationId}`, JSON.stringify(updatedList));
+      if (showToast) showToast(`Solicitação de alçada (${discountPercent}%) enviada!`, 'info');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'internal_messages'), {
+        senderId: profile.uid,
+        senderName: profile.displayName || 'Usuário',
+        receiverId: activeRecipient.uid,
+        text: textToSend,
+        cpfReference: cpf,
+        discountRequest: discountData,
+        createdAt: serverTimestamp(),
+        read: false,
+        organizationId: profile.organizationId
+      });
+      if (showToast) showToast(`Solicitação de alçada (${discountPercent}%) enviada com sucesso!`, 'info');
+    } catch (err) {
+      console.error('Erro ao solicitar desconto:', err);
+      if (showToast) showToast('Erro ao enviar solicitação de desconto.', 'error');
+    }
+  };
+
+  // Aprovar ou Recusar Alçada de Desconto pelo Chat
+  const handleApproveDiscount = async (msgId: string, action: 'approved' | 'rejected') => {
+    const targetMsg = messages.find(m => m.id === msgId);
+    if (!targetMsg || !targetMsg.discountRequest) return;
+
+    const updatedData: DiscountRequestData = {
+      ...targetMsg.discountRequest,
+      status: action,
+      approvedBy: profile.uid,
+      approvedByName: profile.displayName || profile.email || 'Supervisor',
+      approvedAt: new Date().toISOString()
+    };
+
+    if (profile.organizationId === 'sandbox-test' || !db) {
+      const updatedList = messages.map(m => m.id === msgId ? { ...m, discountRequest: updatedData } : m);
+      setMessages(updatedList);
+      localStorage.setItem(`sandbox_messages_${profile.organizationId}`, JSON.stringify(updatedList));
+    } else {
+      try {
+        await updateDoc(doc(db, 'internal_messages', msgId), {
+          discountRequest: updatedData
+        });
+      } catch (e) {
+        console.error('Erro ao atualizar desconto no Firestore', e);
+      }
+    }
+
+    if (action === 'approved') {
+      logAudit(
+        'UPDATE_AGREEMENT',
+        {
+          type: 'DESCONTO_ALCADA_CHAT',
+          cpf: updatedData.cpf,
+          discountPercent: updatedData.discountPercent,
+          approvedBy: profile.displayName || profile.email
+        },
+        profile.displayName || 'Supervisor',
+        profile.organizationId
+      );
+      if (showToast) showToast(`✅ Desconto de ${updatedData.discountPercent}% APROVADO e enviado ao sistema!`, 'success');
+    } else {
+      if (showToast) showToast(`❌ Solicitação de desconto recusada pelo supervisor.`, 'info');
     }
   };
 
@@ -465,13 +567,16 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                   ) : (
                     activeConversationMessages.map((msg) => {
                       const isMe = msg.senderId === profile.uid;
+                      const isSupervisorOrAbove = ['supervisor', 'coordinator', 'manager', 'super_admin'].includes(profile.role);
+                      const hasDiscount = Boolean(msg.discountRequest);
+
                       return (
                         <div
                           key={msg.id}
                           className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                         >
                           <div
-                            className={`max-w-[85%] p-3 rounded-2xl text-xs space-y-1 ${
+                            className={`max-w-[85%] p-3 rounded-2xl text-xs space-y-2 ${
                               isMe
                                 ? 'bg-sky-600 text-white rounded-br-none shadow-md shadow-sky-600/20'
                                 : 'bg-slate-900 border border-white/10 text-slate-200 rounded-bl-none'
@@ -480,6 +585,75 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                             <div className="break-words leading-relaxed">
                               {renderMessageContent(msg.text)}
                             </div>
+
+                            {/* Card Interativo de Alçada de Desconto */}
+                            {hasDiscount && msg.discountRequest && (
+                              <div className="mt-2 p-3 rounded-xl bg-slate-950/80 border border-white/10 space-y-2 text-left">
+                                <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-1.5">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 flex items-center gap-1">
+                                    <Tag size={14} />
+                                    <span>Solicitação de Alçada</span>
+                                  </span>
+                                  <span className="text-[10px] font-mono font-bold text-amber-300">
+                                    {msg.discountRequest.discountPercent}% OFF
+                                  </span>
+                                </div>
+
+                                <p className="text-[11px] text-slate-300">
+                                  CPF do Cliente: <strong>{formatCPF(msg.discountRequest.cpf)}</strong>
+                                </p>
+
+                                {msg.discountRequest.status === 'pending' && (
+                                  <div className="pt-1">
+                                    {isSupervisorOrAbove ? (
+                                      <div className="flex items-center gap-1.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleApproveDiscount(msg.id, 'approved')}
+                                          className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shadow-md shadow-emerald-500/20"
+                                        >
+                                          <CheckCircle size={13} weight="bold" />
+                                          <span>Aprovar Desconto</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleApproveDiscount(msg.id, 'rejected')}
+                                          className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                                        >
+                                          <XCircle size={13} weight="bold" />
+                                          <span>Recusar</span>
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[10px] text-amber-400 italic flex items-center gap-1">
+                                        <Sparkle size={12} />
+                                        <span>Aguardando confirmação do supervisor...</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {msg.discountRequest.status === 'approved' && (
+                                  <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold space-y-0.5">
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle size={14} weight="fill" />
+                                      <span>Aprovado por {msg.discountRequest.approvedByName || 'Supervisor'}</span>
+                                    </div>
+                                    <p className="text-[9px] text-emerald-300/80 font-normal">
+                                      Desconto de {msg.discountRequest.discountPercent}% confirmado e registrado no sistema com auditoria SHA-256.
+                                    </p>
+                                  </div>
+                                )}
+
+                                {msg.discountRequest.status === 'rejected' && (
+                                  <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold flex items-center gap-1">
+                                    <XCircle size={14} weight="fill" />
+                                    <span>Solicitação recusada por {msg.discountRequest.approvedByName || 'Supervisor'}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             <div className={`flex items-center gap-1 text-[9px] ${isMe ? 'text-sky-200 justify-end' : 'text-slate-500'}`}>
                               <span>
                                 {new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -496,25 +670,51 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
               )}
             </div>
 
-            {/* Rodapé: Input de Envio (Apenas na tela de chat ativo) */}
+            {/* Rodapé: Input de Envio & Botões Rápidos de Alçada */}
             {activeRecipient && (
-              <form onSubmit={handleSendMessage} className="p-3 border-t border-white/10 bg-slate-900/80 flex items-center gap-2 shrink-0">
-                <input
-                  type="text"
-                  placeholder="Digite sua mensagem ou digite um CPF..."
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl text-xs bg-slate-950 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                />
-                <button
-                  type="submit"
-                  disabled={!inputText.trim()}
-                  className="p-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:hover:bg-sky-500 text-white transition-all cursor-pointer shrink-0 shadow-md shadow-sky-500/20"
-                  title="Enviar mensagem"
-                >
-                  <PaperPlaneRight size={16} weight="fill" />
-                </button>
-              </form>
+              <div className="p-3 border-t border-white/10 bg-slate-900/80 space-y-2 shrink-0">
+                {/* Atalho de Alçada de Desconto quando um CPF for detectado */}
+                {extractCpfFromText(inputText) && (
+                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-sky-500/10 border border-sky-500/20">
+                    <span className="text-[10px] font-bold text-sky-300 flex items-center gap-1 shrink-0">
+                      <Tag size={12} />
+                      <span>Pedir Alçada (CPF {formatCPF(extractCpfFromText(inputText)!)}):</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSendDiscountRequest(extractCpfFromText(inputText)!, 10)}
+                      className="px-2 py-0.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-bold text-[10px] transition-all cursor-pointer shadow"
+                    >
+                      10% OFF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendDiscountRequest(extractCpfFromText(inputText)!, 20)}
+                      className="px-2 py-0.5 rounded-lg bg-purple-500 hover:bg-purple-400 text-white font-bold text-[10px] transition-all cursor-pointer shadow"
+                    >
+                      20% OFF
+                    </button>
+                  </div>
+                )}
+
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Digite mensagem ou CPF para solicitar alçada..."
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl text-xs bg-slate-950 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!inputText.trim()}
+                    className="p-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:hover:bg-sky-500 text-white transition-all cursor-pointer shrink-0 shadow-md shadow-sky-500/20"
+                    title="Enviar mensagem"
+                  >
+                    <PaperPlaneRight size={16} weight="fill" />
+                  </button>
+                </form>
+              </div>
             )}
           </motion.div>
         )}

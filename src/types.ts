@@ -58,6 +58,16 @@ export interface MessageTemplate {
   organizationId: string;
 }
 
+export interface DiscountRequestData {
+  cpf: string;
+  discountPercent: number;
+  agreementId?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedByName?: string;
+  approvedAt?: string;
+}
+
 export interface InternalMessage {
   id: string;
   senderId: string;
@@ -66,6 +76,7 @@ export interface InternalMessage {
   text: string;
   cpfReference?: string;
   agreementId?: string;
+  discountRequest?: DiscountRequestData;
   createdAt: string;
   read: boolean;
   organizationId: string;
