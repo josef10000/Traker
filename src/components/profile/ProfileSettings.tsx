@@ -1957,6 +1957,141 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       <CheckCircle size={16} className="text-emerald-400 shrink-0" />
                     )}
                   </button>
+
+                  {/* Opção 5: Neon Violet (Laser Gaming) */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentCursor('neon_violet');
+                      document.documentElement.setAttribute('data-cursor', 'neon_violet');
+                      document.body?.setAttribute('data-cursor', 'neon_violet');
+                      await saveProfileFields({ customCursorStyle: 'neon_violet' as any });
+                      if (showToast) showToast('Cursor Neon Violet ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentCursor === 'neon_violet'
+                        ? 'bg-purple-500/10 border-purple-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-purple-400">
+                        <span>🟣 Neon Violet (Laser Gaming)</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Vetor violeta neon com brilho magenta</p>
+                    </div>
+                    {currentCursor === 'neon_violet' && (
+                      <CheckCircle size={16} className="text-purple-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 6: Emerald Matrix (Verde Hacker) */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentCursor('emerald_matrix');
+                      document.documentElement.setAttribute('data-cursor', 'emerald_matrix');
+                      document.body?.setAttribute('data-cursor', 'emerald_matrix');
+                      await saveProfileFields({ customCursorStyle: 'emerald_matrix' as any });
+                      if (showToast) showToast('Cursor Emerald Matrix ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentCursor === 'emerald_matrix'
+                        ? 'bg-emerald-500/10 border-emerald-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-emerald-400">
+                        <span>🟢 Emerald Matrix (Verde Hacker)</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Ponteiro verde menta minimalista</p>
+                    </div>
+                    {currentCursor === 'emerald_matrix' && (
+                      <CheckCircle size={16} className="text-emerald-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 7: Solar Gold (Dourado Executivo) */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentCursor('solar_gold');
+                      document.documentElement.setAttribute('data-cursor', 'solar_gold');
+                      document.body?.setAttribute('data-cursor', 'solar_gold');
+                      await saveProfileFields({ customCursorStyle: 'solar_gold' as any });
+                      if (showToast) showToast('Cursor Solar Gold ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentCursor === 'solar_gold'
+                        ? 'bg-amber-500/10 border-amber-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-amber-400">
+                        <span>🟠 Solar Gold (Dourado Executivo)</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Ponteiro metálico polido de alta elegância</p>
+                    </div>
+                    {currentCursor === 'solar_gold' && (
+                      <CheckCircle size={16} className="text-amber-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 8: Stealth Ops (Mira Tática) */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentCursor('stealth_ops');
+                      document.documentElement.setAttribute('data-cursor', 'stealth_ops');
+                      document.body?.setAttribute('data-cursor', 'stealth_ops');
+                      await saveProfileFields({ customCursorStyle: 'stealth_ops' as any });
+                      if (showToast) showToast('Cursor Stealth Ops ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentCursor === 'stealth_ops'
+                        ? 'bg-rose-500/10 border-rose-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-rose-400">
+                        <span>🔴 Stealth Ops (Mira Tática)</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Mira de alta precisão com laser vermelho</p>
+                    </div>
+                    {currentCursor === 'stealth_ops' && (
+                      <CheckCircle size={16} className="text-rose-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 9: Diamond Crystal (Cristal Diamond) */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentCursor('diamond_crystal');
+                      document.documentElement.setAttribute('data-cursor', 'diamond_crystal');
+                      document.body?.setAttribute('data-cursor', 'diamond_crystal');
+                      await saveProfileFields({ customCursorStyle: 'diamond_crystal' as any });
+                      if (showToast) showToast('Cursor Diamond Crystal ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentCursor === 'diamond_crystal'
+                        ? 'bg-sky-500/10 border-sky-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-sky-300">
+                        <span>💎 Diamond Crystal (Cristal Diamond)</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Diamante lapidado translúcido futurista</p>
+                    </div>
+                    {currentCursor === 'diamond_crystal' && (
+                      <CheckCircle size={16} className="text-sky-300 shrink-0" />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>

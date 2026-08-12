@@ -1380,3 +1380,98 @@ html[data-theme='light'] .driver-popover-progress-text {
 [data-cursor="default"] .cursor-pointer {
   cursor: pointer !important;
 }
+
+/* 5. Neon Violet (Laser Gaming) */
+[data-cursor="neon_violet"],
+[data-cursor="neon_violet"] body,
+[data-cursor="neon_violet"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l7.07 16.97 3.51-6.39 6.39-3.51L3 3z' fill='%23a855f7' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") 3 3, auto !important;
+}
+[data-cursor="neon_violet"] button,
+[data-cursor="neon_violet"] button *,
+[data-cursor="neon_violet"] a,
+[data-cursor="neon_violet"] a *,
+[data-cursor="neon_violet"] input,
+[data-cursor="neon_violet"] select,
+[data-cursor="neon_violet"] textarea,
+[data-cursor="neon_violet"] [role="button"],
+[data-cursor="neon_violet"] .cursor-pointer,
+[data-cursor="neon_violet"] .cursor-pointer * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l7.07 16.97 3.51-6.39 6.39-3.51L3 3z' fill='%23c084fc' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='14' cy='14' r='3.5' fill='%23f0abfc' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 3 3, pointer !important;
+}
+
+/* 6. Emerald Matrix (Verde Hacker) */
+[data-cursor="emerald_matrix"],
+[data-cursor="emerald_matrix"] body,
+[data-cursor="emerald_matrix"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l7.07 16.97 3.51-6.39 6.39-3.51L3 3z' fill='%2310b981' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") 3 3, auto !important;
+}
+[data-cursor="emerald_matrix"] button,
+[data-cursor="emerald_matrix"] button *,
+[data-cursor="emerald_matrix"] a,
+[data-cursor="emerald_matrix"] a *,
+[data-cursor="emerald_matrix"] input,
+[data-cursor="emerald_matrix"] select,
+[data-cursor="emerald_matrix"] textarea,
+[data-cursor="emerald_matrix"] [role="button"],
+[data-cursor="emerald_matrix"] .cursor-pointer,
+[data-cursor="emerald_matrix"] .cursor-pointer * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l7.07 16.97 3.51-6.39 6.39-3.51L3 3z' fill='%2334d399' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='14' cy='14' r='3.5' fill='%236ee7b7' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 3 3, pointer !important;
+}
+
+/* 7. Solar Gold (Dourado Executivo) */
+[data-cursor="solar_gold"],
+[data-cursor="solar_gold"] body,
+[data-cursor="solar_gold"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l7.07 16.97 3.51-6.39 6.39-3.51L3 3z' fill='%23f59e0b' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") 3 3, auto !important;
+}
+[data-cursor="solar_gold"] button,
+[data-cursor="solar_gold"] button *,
+[data-cursor="solar_gold"] a,
+[data-cursor="solar_gold"] a *,
+[data-cursor="solar_gold"] input,
+[data-cursor="solar_gold"] select,
+[data-cursor="solar_gold"] textarea,
+[data-cursor="solar_gold"] [role="button"],
+[data-cursor="solar_gold"] .cursor-pointer,
+[data-cursor="solar_gold"] .cursor-pointer * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l7.07 16.97 3.51-6.39 6.39-3.51L3 3z' fill='%23fbbf24' stroke='%23ffffff' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='14' cy='14' r='3.5' fill='%23fde047' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E") 3 3, pointer !important;
+}
+
+/* 8. Stealth Ops (Mira Tática Ops) */
+[data-cursor="stealth_ops"],
+[data-cursor="stealth_ops"] body,
+[data-cursor="stealth_ops"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='2' x2='12' y2='22' stroke='%2338bdf8' stroke-width='1.5'/%3E%3Cline x1='2' y1='12' x2='22' y2='12' stroke='%2338bdf8' stroke-width='1.5'/%3E%3Ccircle cx='12' cy='12' r='2' fill='%23ef4444'/%3E%3C/svg%3E") 12 12, auto !important;
+}
+[data-cursor="stealth_ops"] button,
+[data-cursor="stealth_ops"] button *,
+[data-cursor="stealth_ops"] a,
+[data-cursor="stealth_ops"] a *,
+[data-cursor="stealth_ops"] input,
+[data-cursor="stealth_ops"] select,
+[data-cursor="stealth_ops"] textarea,
+[data-cursor="stealth_ops"] [role="button"],
+[data-cursor="stealth_ops"] .cursor-pointer,
+[data-cursor="stealth_ops"] .cursor-pointer * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='10' stroke='%2300ffcc' stroke-width='1.5' fill='none'/%3E%3Cline x1='14' y1='2' x2='14' y2='26' stroke='%2300ffcc' stroke-width='1.5'/%3E%3Cline x1='2' y1='14' x2='26' y2='14' stroke='%2300ffcc' stroke-width='1.5'/%3E%3Ccircle cx='14' cy='14' r='3' fill='%23ef4444'/%3E%3C/svg%3E") 14 14, pointer !important;
+}
+
+/* 9. Diamond Crystal (Cristal Diamond) */
+[data-cursor="diamond_crystal"],
+[data-cursor="diamond_crystal"] body,
+[data-cursor="diamond_crystal"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpolygon points='12,2 22,12 12,22 2,12' fill='%2338bdf8' fill-opacity='0.8' stroke='%23ffffff' stroke-width='1.5'/%3E%3C/svg%3E") 12 12, auto !important;
+}
+[data-cursor="diamond_crystal"] button,
+[data-cursor="diamond_crystal"] button *,
+[data-cursor="diamond_crystal"] a,
+[data-cursor="diamond_crystal"] a *,
+[data-cursor="diamond_crystal"] input,
+[data-cursor="diamond_crystal"] select,
+[data-cursor="diamond_crystal"] textarea,
+[data-cursor="diamond_crystal"] [role="button"],
+[data-cursor="diamond_crystal"] .cursor-pointer,
+[data-cursor="diamond_crystal"] .cursor-pointer * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpolygon points='14,2 26,14 14,26 2,14' fill='%2300ffcc' fill-opacity='0.85' stroke='%23ffffff' stroke-width='1.5'/%3E%3Ccircle cx='14' cy='14' r='3' fill='%23ffffff'/%3E%3C/svg%3E") 14 14, pointer !important;
+}
