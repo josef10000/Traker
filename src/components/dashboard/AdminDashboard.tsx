@@ -813,18 +813,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               )}
             </div>
 
-            {/* BOTÃO 2FA WINDOWS HELLO SUPERADMIN */}
-            <button
-              onClick={() => setIsSecurityModalOpen(true)}
-              className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-2 border ${
-                adminProfile.isWebAuthnEnabled
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
-              }`}
-            >
-              <Fingerprint size={16} weight="bold" />
-              <span>{adminProfile.isWebAuthnEnabled ? '2FA Windows Hello: Ativo' : 'Ativar 2FA Windows Hello'}</span>
-            </button>
+
 
             {/* BOTÃO TESTAR E-MAIL RESEND */}
             <button
@@ -1370,132 +1359,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           </div>
         </div>
       )}
-      {/* MODAL DE SEGURANÇA 2FA DO SUPERADMIN */}
-      {isSecurityModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 p-6 space-y-6 shadow-2xl bg-slate-900 text-white relative overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <h3 className="text-base font-black flex items-center gap-2 text-sky-400">
-                <Fingerprint size={20} />
-                <span>Autenticação 2FA SuperAdmin (Windows Hello)</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsSecurityModalOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Proteja a sua conta de <strong>SuperAdmin</strong> exigindo a digital ou PIN nativo do seu Windows em <strong>100% dos logins</strong>.
-              </p>
-
-              <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/10 space-y-3">
-                {adminProfile.isWebAuthnEnabled ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
-                      <CheckCircle size={18} />
-                      <span>Windows Hello Ativado na sua Conta Master</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400">
-                      Códigos de emergência vinculados e enviados para <strong>{adminProfile.email}</strong>.
-                    </p>
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={handleEnableWindowsHello}
-                        disabled={isEnrollingHello}
-                        className="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        {isEnrollingHello ? 'Atualizando...' : 'Reenviar Códigos por E-mail'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDisableWindowsHello}
-                        className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
-                      >
-                        Desativar 2FA
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-xs font-bold text-slate-200">
-                      Vincular Biometria / PIN do Windows
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      Gera automaticamente 5 códigos de recuperação e os envia para {adminProfile.email}.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleEnableWindowsHello}
-                      disabled={isEnrollingHello}
-                      className="w-full py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-sky-500/25 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <Fingerprint size={18} />
-                      <span>{isEnrollingHello ? 'Ativando...' : 'Ativar Windows Hello Agora'}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsSecurityModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Simulação de E-mail Enviado no Sandbox */}
-      {sandboxEmailPreview && (
-        <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 text-white text-left">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
-              <span className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
-                <Envelope size={18} />
-                <span>Simulador Sandbox: E-mail Enviado</span>
-              </span>
-              <button onClick={() => setSandboxEmailPreview(null)} className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="text-xs text-slate-300 space-y-1 bg-slate-950/80 p-3 rounded-xl border border-white/5">
-              <p><strong>Para:</strong> {sandboxEmailPreview.to}</p>
-              <p><strong>Assunto:</strong> {sandboxEmailPreview.subject}</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 text-center space-y-2 max-h-60 overflow-y-auto">
-              <p className="text-xs text-amber-400 font-bold">🔑 Códigos de Contingência (Emergência):</p>
-              <div className="grid grid-cols-1 gap-1.5 font-mono text-sm font-black text-emerald-400 tracking-wider">
-                {sandboxEmailPreview.backupCodes.map((code, idx) => (
-                  <div key={idx} className="p-2 rounded-lg bg-white/5 border border-white/5">{code}</div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSandboxEmailPreview(null)}
-                className="px-5 py-2.5 rounded-xl bg-sky-500 text-white font-bold text-xs cursor-pointer"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* DIÁLOGO DE CONFIRMAÇÃO DE EXCLUSÃO DE EMPRESA */}
       <CustomConfirm

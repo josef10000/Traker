@@ -93,19 +93,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
     setLoading(true);
     try {
       if (isLogin) {
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
-        let profile = await getUserProfile(userCred.user.uid);
-        if (!profile) {
-          try {
-            const cached = localStorage.getItem('tracker_cached_profile');
-            if (cached) profile = JSON.parse(cached);
-          } catch {}
-        }
-        if (profile?.isWebAuthnEnabled) {
-          setPending2FaUser(profile);
-          setLoading(false);
-          return;
-        }
+        await signInWithEmailAndPassword(auth, email, password);
       } else {
         if (inviteData && email.trim().toLowerCase() !== inviteData.email.toLowerCase()) {
           throw new Error(`Este link de convite pertence a ${inviteData.email}. Por favor, registre-se com este e-mail.`);
@@ -394,27 +382,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
         <span className="text-slate-500 group-hover:text-emerald-300 transition-colors">↗</span>
       </a>
 
-      {pending2FaUser && (
-        <WindowsHello2FaModal
-          user={pending2FaUser}
-          isOpen={Boolean(pending2FaUser)}
-          isSandbox={pending2FaUser.organizationId === 'sandbox-test'}
-          onSuccess={(usedCode) => {
-            if (usedCode) {
-              showToast(`Autenticado com código de emergência (${usedCode})!`, 'success');
-            } else {
-              showToast('Autenticação biométrica do Windows Hello concluída!', 'success');
-            }
-            setPending2FaUser(null);
-            onAuthSuccess();
-          }}
-          onCancel={() => {
-            setPending2FaUser(null);
-            auth.signOut();
-            showToast('Autenticação em 2 etapas cancelada.', 'info');
-          }}
-        />
-      )}
+
     </div>
   );
 };

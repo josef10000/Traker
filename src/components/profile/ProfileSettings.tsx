@@ -1577,78 +1577,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 <LgpdExportButton userId={profile.uid} userEmail={profile.email} />
               </div>
 
-              {/* Seção 2FA — Autenticação Nativa com Windows Hello (Biometria / PIN) */}
-              <div className="pt-4 border-t border-white/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                      <Fingerprint size={16} className="text-sky-400" />
-                      <span>Windows Hello & Autenticação 2FA</span>
-                    </h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Exige a digital ou o PIN nativo do seu Windows em <strong>100% dos logins</strong> para máxima proteção.
-                    </p>
-                  </div>
-                  {profile.isWebAuthnEnabled && (
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                      <CheckCircle size={13} />
-                      <span>Ativo</span>
-                    </span>
-                  )}
-                </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 space-y-3">
-                  {profile.isWebAuthnEnabled ? (
-                    <div className="space-y-2.5">
-                      <div className="text-xs text-slate-300 flex items-center gap-2">
-                        <CheckCircle size={16} className="text-emerald-400 shrink-0" />
-                        <span>Sua conta está protegida por <strong>Windows Hello</strong>.</span>
-                      </div>
-                      <p className="text-[11px] text-slate-400">
-                        Códigos de contingência enviados para <strong>{profile.email}</strong>.
-                      </p>
-
-                      <div className="pt-2 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={handleEnableWindowsHello}
-                          disabled={isEnrollingHello}
-                          className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          {isEnrollingHello ? 'Atualizando...' : 'Reenviar Códigos por E-mail'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleDisableWindowsHello}
-                          className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
-                        >
-                          Desativar Windows Hello
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-slate-200">
-                          Vincular Digital / PIN do Windows
-                        </p>
-                        <p className="text-[10px] text-slate-400">
-                          Envia automaticamente um kit de códigos de emergência para {profile.email}.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleEnableWindowsHello}
-                        disabled={isEnrollingHello}
-                        className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-sky-500/20 transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1.5"
-                      >
-                        <Fingerprint size={16} />
-                        <span>{isEnrollingHello ? 'Ativando...' : 'Ativar Windows Hello'}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           )}
 
