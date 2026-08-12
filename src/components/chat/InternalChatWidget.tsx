@@ -15,7 +15,8 @@ import {
   Tag,
   CheckCircle,
   XCircle,
-  Percent
+  Percent,
+  Copy
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile, InternalMessage, DiscountRequestData } from '../../types';
@@ -254,6 +255,7 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
     };
 
     setDiscountValueInput('');
+    setInputText('');
 
     if (profile.organizationId === 'sandbox-test' || !db) {
       const updatedList = [...messages, newMsgObj];
@@ -606,9 +608,22 @@ export const InternalChatWidget: React.FC<InternalChatWidgetProps> = ({
                                   </span>
                                 </div>
 
-                                <p className="text-[11px] text-slate-300">
-                                  CPF do Cliente: <strong>{formatCPF(msg.discountRequest.cpf)}</strong>
-                                </p>
+                                <div className="flex items-center justify-between gap-2 text-[11px] text-slate-300">
+                                  <span>CPF do Cliente: <strong>{formatCPF(msg.discountRequest.cpf)}</strong></span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const cleanCpf = msg.discountRequest.cpf.replace(/\D/g, '');
+                                      navigator.clipboard.writeText(cleanCpf);
+                                      if (showToast) showToast(`CPF ${formatCPF(msg.discountRequest.cpf)} copiado para a área de transferência!`, 'success');
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold text-[10px] flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shrink-0 shadow-sm"
+                                    title="Copiar CPF de forma simples em 1-clique"
+                                  >
+                                    <Copy size={13} weight="bold" />
+                                    <span>Copiar CPF</span>
+                                  </button>
+                                </div>
 
                                 {msg.discountRequest.status === 'pending' && (
                                   <div className="pt-1">
