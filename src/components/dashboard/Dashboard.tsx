@@ -2541,7 +2541,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               selectedTeamId={selectedTeamId}
               managedTeamsData={managedTeamsData}
               isPresentMode={isPresentMode}
-              onSettingsClick={() => setIsSettingsModalOpen(true)}
+              onSettingsClick={onSettingsClick}
               setIsTeamSelectorOpen={setIsTeamSelectorOpen}
               setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
               setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
