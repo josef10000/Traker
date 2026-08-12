@@ -28,7 +28,6 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **📁 Retenção R2 de Comprovantes** | Central de anexo de comprovantes bancários em nuvem R2 (retenção 24h na Sandbox e 1 ano em Produção). |
 | **🎨 Design Enterprise Pastel** | Interface minimalista em Dark Mode com **Glassmorphism**, reduzindo o cansaço visual e otimizando o espaço vertical. |
 | **🔔 Sino & Confirmação de Ciência** | Entrega de 100% das notificações exclusivamente pelo sino (0 modais na tela no login) e sistema de confirmação de leitura com ciente e tréplica para QA e Comunicados. |
-| **🔑 Windows Hello 2FA & Passkeys** | Autenticação 2FA nativa por biometria/PIN do Windows via WebAuthn, envio automático do kit de códigos de contingência por e-mail e lembrete de engajamento no sino após 1h de sessão. |
 
 ---
 
