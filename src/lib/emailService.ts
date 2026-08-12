@@ -101,18 +101,5 @@ export const sendBackupCodesEmail = async (
     createdAt: sentAt
   }).catch((e) => console.warn('Mail trigger note:', e));
 
-  // Disparo via Web API Public Mailer Endpoint de Produção
-  try {
-    fetch('https://formspree.io/f/mqkngqbw', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: recipientEmail,
-        subject: payload.subject,
-        message: `Códigos de emergência 2FA Windows Hello para ${recipientEmail}:\n\n` + backupCodes.join('\n')
-      })
-    }).catch(() => {});
-  } catch {}
-
   return payload;
 };
