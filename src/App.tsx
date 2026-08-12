@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
 import { StatusPage } from './components/StatusPage';
 import { SpotlightSearchModal } from './components/dashboard/SpotlightSearchModal';
+import { WindowsHello2FaModal } from './components/auth/WindowsHello2FaModal';
 
 const isMasterAdminEmail = (email?: string | null): boolean => {
   if (!email) return false;
@@ -43,6 +44,7 @@ export function AppContent() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+  const [pending2FaUser, setPending2FaUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -162,6 +164,10 @@ export function AppContent() {
             if (!userProfile.organizationId) {
               userProfile.organizationId = 'org-master';
             }
+          }
+
+          if (userProfile?.isWebAuthnEnabled) {
+            setPending2FaUser(userProfile);
           }
 
           setProfile(userProfile);
@@ -583,6 +589,34 @@ export function AppContent() {
             Voltar ao Login
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (pending2FaUser) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4">
+        <WindowsHello2FaModal
+          user={pending2FaUser}
+          isOpen={Boolean(pending2FaUser)}
+          isSandbox={pending2FaUser.organizationId === 'sandbox-test'}
+          onSuccess={(usedCode) => {
+            if (usedCode) {
+              showToast(`Autenticado com código de emergência (${usedCode})!`, 'success');
+            } else {
+              showToast('Autenticação biométrica do Windows Hello concluída!', 'success');
+            }
+            setPending2FaUser(null);
+          }}
+          onCancel={() => {
+            setPending2FaUser(null);
+            setUser(null);
+            setProfile(null);
+            try { localStorage.removeItem('tracker_cached_profile'); } catch {}
+            signOut(auth);
+            showToast('Autenticação em 2 etapas cancelada.', 'info');
+          }}
+        />
       </div>
     );
   }
