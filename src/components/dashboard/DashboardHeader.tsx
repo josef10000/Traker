@@ -178,6 +178,8 @@ export const DashboardHeader = ({
       }
     } else if (notif.type === 'presencial_scheduled') {
       onSettingsClick('schedule');
+    } else if (notif.type === 'windows_hello_reminder') {
+      onSettingsClick('profile');
     } else if (notif.type === 'transfer_requested' || notif.type === 'invoice_issued' || notif.type === 'contested') {
       onSettingsClick(); // Abre as configurações
     }

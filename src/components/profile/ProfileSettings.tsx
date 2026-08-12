@@ -31,7 +31,10 @@ import {
   Camera,
   UploadSimple,
   CircleNotch,
-  Pencil
+  Pencil,
+  Fingerprint,
+  Envelope,
+  CheckCircle
 } from '@phosphor-icons/react';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -39,6 +42,8 @@ import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest, Col
 import { sandboxService } from '../../lib/sandboxService';
 import { getCollaborationNotes } from '../../lib/notes';
 import { createNotification } from '../../lib/notifications';
+import { registerWindowsHello, generateBackupCodes } from '../../lib/webAuthnService';
+import { sendBackupCodesEmail, EmailPayload } from '../../lib/emailService';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 import { Avatar } from '../ui/Avatar';
@@ -150,6 +155,56 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const handleSwitchAvatarType = async (type: 'custom' | 'api') => {
     setAvatarType(type);
     await saveProfileFields({ avatarType: type });
+  };
+
+  const [isEnrollingHello, setIsEnrollingHello] = useState(false);
+  const [sandboxEmailPreview, setSandboxEmailPreview] = useState<EmailPayload | null>(null);
+
+  const handleEnableWindowsHello = async () => {
+    setIsEnrollingHello(true);
+    try {
+      const isSandbox = profile.organizationId === 'sandbox-test';
+      const cred = await registerWindowsHello(profile.uid, profile.email, profile.displayName || profile.email, isSandbox);
+      const backupCodes = generateBackupCodes(5);
+
+      const emailResult = await sendBackupCodesEmail(profile.email, profile.displayName || profile.email, backupCodes, isSandbox);
+
+      const existingCreds = profile.webAuthnCredentials || [];
+      const updatedCreds = [...existingCreds.filter(c => c.id !== cred.id), cred];
+
+      const patchData = {
+        isWebAuthnEnabled: true,
+        webAuthnCredentials: updatedCreds,
+        backupCodes
+      };
+
+      await saveProfileFields(patchData);
+
+      if (isSandbox) {
+        setSandboxEmailPreview(emailResult);
+      }
+
+      showToast('Windows Hello ativado com sucesso! Códigos de contingência enviados para o seu e-mail.', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || 'Erro ao ativar o Windows Hello.', 'error');
+    } finally {
+      setIsEnrollingHello(false);
+    }
+  };
+
+  const handleDisableWindowsHello = async () => {
+    try {
+      await saveProfileFields({
+        isWebAuthnEnabled: false,
+        webAuthnCredentials: [],
+        backupCodes: []
+      });
+      showToast('Windows Hello desativado da sua conta.', 'info');
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao desativar Windows Hello.', 'error');
+    }
   };
   
   useEffect(() => {
@@ -1525,6 +1580,79 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 </div>
                 <LgpdExportButton userId={profile.uid} userEmail={profile.email} />
               </div>
+
+              {/* Seção 2FA — Autenticação Nativa com Windows Hello (Biometria / PIN) */}
+              <div className="pt-4 border-t border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                      <Fingerprint size={16} className="text-sky-400" />
+                      <span>Windows Hello & Autenticação 2FA</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Exige a digital ou o PIN nativo do seu Windows em <strong>100% dos logins</strong> para máxima proteção.
+                    </p>
+                  </div>
+                  {profile.isWebAuthnEnabled && (
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <CheckCircle size={13} />
+                      <span>Ativo</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 space-y-3">
+                  {profile.isWebAuthnEnabled ? (
+                    <div className="space-y-2.5">
+                      <div className="text-xs text-slate-300 flex items-center gap-2">
+                        <CheckCircle size={16} className="text-emerald-400 shrink-0" />
+                        <span>Sua conta está protegida por <strong>Windows Hello</strong>.</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Códigos de contingência enviados para <strong>{profile.email}</strong>.
+                      </p>
+
+                      <div className="pt-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handleEnableWindowsHello}
+                          disabled={isEnrollingHello}
+                          className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {isEnrollingHello ? 'Atualizando...' : 'Reenviar Códigos por E-mail'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDisableWindowsHello}
+                          className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
+                        >
+                          Desativar Windows Hello
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-slate-200">
+                          Vincular Digital / PIN do Windows
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          Envia automaticamente um kit de códigos de emergência para {profile.email}.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleEnableWindowsHello}
+                        disabled={isEnrollingHello}
+                        className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-sky-500/20 transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                      >
+                        <Fingerprint size={16} />
+                        <span>{isEnrollingHello ? 'Ativando...' : 'Ativar Windows Hello'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -2695,6 +2823,47 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           </div>
         </div>
       )}
+      {/* Modal de Simulação de E-mail Enviado no Sandbox */}
+      {sandboxEmailPreview && (
+        <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 text-white text-left">
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                <Envelope size={18} />
+                <span>Simulador Sandbox: E-mail Enviado</span>
+              </span>
+              <button onClick={() => setSandboxEmailPreview(null)} className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-300 space-y-1 bg-slate-950/80 p-3 rounded-xl border border-white/5">
+              <p><strong>Para:</strong> {sandboxEmailPreview.to}</p>
+              <p><strong>Assunto:</strong> {sandboxEmailPreview.subject}</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 text-center space-y-2 max-h-60 overflow-y-auto">
+              <p className="text-xs text-amber-400 font-bold">🔑 Códigos de Contingência (Emergência):</p>
+              <div className="grid grid-cols-1 gap-1.5 font-mono text-sm font-black text-emerald-400 tracking-wider">
+                {sandboxEmailPreview.backupCodes.map((code, idx) => (
+                  <div key={idx} className="p-2 rounded-lg bg-white/5 border border-white/5">{code}</div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSandboxEmailPreview(null)}
+                className="px-5 py-2.5 rounded-xl bg-sky-500 text-white font-bold text-xs cursor-pointer"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <CustomConfirm 
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}

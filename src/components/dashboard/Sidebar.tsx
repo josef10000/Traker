@@ -102,7 +102,7 @@ export const Sidebar = ({
         {
           id: 'people',
           label: 'Gestão de Pessoas & Operação',
-          description: ['coordinator', 'manager', 'super_admin'].includes(profile.role) 
+          description: profile.role === 'coordinator' 
             ? 'Membros da equipe, convites, presença/assiduidade e fechamento PJ.'
             : 'Membros da equipe, convites, presença/assiduidade e indicadores de performance.',
           icon: TeamIcon,

@@ -304,9 +304,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [profile?.role]);
 
-  // Garante que Supervisor/Monitor/QA não acesse a sub-aba de Fechamento PJ
+  // Garante que estritamente apenas Coordenadores acessem a sub-aba de Fechamento PJ
   useEffect(() => {
-    if (['supervisor', 'monitor', 'qa'].includes(profile?.role || '') && coordinationSubTab === 'closing_pj') {
+    if (profile?.role !== 'coordinator' && coordinationSubTab === 'closing_pj') {
       setCoordinationSubTab('performance');
     }
   }, [profile?.role, coordinationSubTab]);
@@ -317,6 +317,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedTargetTeamForTransfer, setSelectedTargetTeamForTransfer] = useState<string>('');
 
   // Carrega supervisores da organização (para gerente e coordenador)
+  // Lembrete de Engajamento do Windows Hello no Sino após 1 Hora de Uso
+  useEffect(() => {
+    if (!profile?.uid || profile?.isWebAuthnEnabled) return;
+
+    const timer = setTimeout(() => {
+      createNotification({
+        userId: profile.uid,
+        title: '🔒 Aumente a Segurança da sua Conta',
+        message: 'Você sabia que pode entrar no Tracker usando a digital ou PIN do seu Windows? Ative o Windows Hello no seu perfil.',
+        type: 'windows_hello_reminder'
+      }, profile.organizationId === 'sandbox-test');
+    }, 3600000);
+
+    return () => clearTimeout(timer);
+  }, [profile?.uid, profile?.isWebAuthnEnabled, profile?.organizationId]);
+
   useEffect(() => {
     if ((profile.role !== 'manager' && profile.role !== 'coordinator') || !profile.organizationId) return;
 
@@ -3413,7 +3429,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </button>
                       {profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <>
-                          {(profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'super_admin') && (
+                          {profile.role === 'coordinator' && (
                             <button
                               onClick={() => setCoordinationSubTab('closing_pj')}
                               className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
@@ -3741,8 +3757,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       )}
 
-                      {/* SUB-ABA 3: FECHAMENTO PJ (Apenas para Coordenador, Gerente e Super Admin) */}
-                      {coordinationSubTab === 'closing_pj' && (profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'super_admin') && (
+                      {/* SUB-ABA 3: FECHAMENTO PJ (Estritamente para Coordenador) */}
+                      {coordinationSubTab === 'closing_pj' && profile.role === 'coordinator' && (
                         <ClosingPjSection
                           profile={profile}
                           theme={theme}

@@ -129,6 +129,17 @@ export interface UserProfile {
   shiftStartHour?: number;    // Padrão: 8 (08:00)
   shiftEndHour?: number;      // Padrão: 17 (17:00)
   dailyPauseAllowance?: number; // Padrão: 72 (minutos de pausa permitidos por dia)
+  isWebAuthnEnabled?: boolean;
+  webAuthnCredentials?: WebAuthnCredential[];
+  backupCodes?: string[];
+}
+
+export interface WebAuthnCredential {
+  id: string;
+  publicKey: string;
+  deviceName: string;
+  createdAt: string;
+  counter: number;
 }
 
 export interface QaSettings {
@@ -526,7 +537,7 @@ export interface AppNotification {
   senderUserId?: string;          // Quem executou a ação (para filtro de auto-notificação)
   title: string;
   message: string;
-  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled' | 'high_value_break' | 'agenda_reminder' | 'lead_assigned' | 'agreement_note' | 'announcement' | 'knowledge_base' | 'qa_evaluated';
+  type: 'payment_released' | 'invoice_issued' | 'contested' | 'transfer_requested' | 'system' | 'presencial_scheduled' | 'high_value_break' | 'agenda_reminder' | 'lead_assigned' | 'agreement_note' | 'announcement' | 'knowledge_base' | 'qa_evaluated' | 'windows_hello_reminder';
   referenceId?: string;          // ID do fechamento de pagamento ou transferência associado
   read: boolean;
   createdAt: string;

@@ -7,10 +7,12 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
-import { validateInvite, acceptInvite } from '../../lib/teams';
+import { validateInvite, acceptInvite, getUserProfile } from '../../lib/teams';
 import { sandboxService } from '../../lib/sandboxService';
 import { ToastType } from '../ui/Toast';
 import { PasswordStrengthBar } from '../ui/PasswordStrengthBar';
+import { WindowsHello2FaModal } from './WindowsHello2FaModal';
+import { UserProfile } from '../../types';
 
 interface LoginPageProps {
   onAuthSuccess: () => void;
@@ -25,6 +27,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [pending2FaUser, setPending2FaUser] = useState<UserProfile | null>(null);
 
   // Estados do Onboarding por Convite
   const [inviteToken, setInviteToken] = useState<string | null>(null);
@@ -90,7 +93,13 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
     setLoading(true);
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const profile = await getUserProfile(userCred.user.uid);
+        if (profile?.isWebAuthnEnabled) {
+          setPending2FaUser(profile);
+          setLoading(false);
+          return;
+        }
       } else {
         if (inviteData && email.trim().toLowerCase() !== inviteData.email.toLowerCase()) {
           throw new Error(`Este link de convite pertence a ${inviteData.email}. Por favor, registre-se com este e-mail.`);
@@ -378,6 +387,28 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
         <span>Status da Plataforma: 100% Operacional</span>
         <span className="text-slate-500 group-hover:text-emerald-300 transition-colors">↗</span>
       </a>
+
+      {pending2FaUser && (
+        <WindowsHello2FaModal
+          user={pending2FaUser}
+          isOpen={Boolean(pending2FaUser)}
+          isSandbox={pending2FaUser.organizationId === 'sandbox-test'}
+          onSuccess={(usedCode) => {
+            if (usedCode) {
+              showToast(`Autenticado com código de emergência (${usedCode})!`, 'success');
+            } else {
+              showToast('Autenticação biométrica do Windows Hello concluída!', 'success');
+            }
+            setPending2FaUser(null);
+            onAuthSuccess();
+          }}
+          onCancel={() => {
+            setPending2FaUser(null);
+            auth.signOut();
+            showToast('Autenticação em 2 etapas cancelada.', 'info');
+          }}
+        />
+      )}
     </div>
   );
 };
