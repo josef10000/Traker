@@ -85,6 +85,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [avatarSeed, setAvatarSeed] = useState(profile.avatarSeed || '');
   const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
   const [avatarType, setAvatarType] = useState<'custom' | 'api'>(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
+  const [currentTheme, setCurrentTheme] = useState<string>(profile.theme || 'dark');
+  const [currentCursor, setCurrentCursor] = useState<string>(profile.customCursorStyle || 'default');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
@@ -310,6 +312,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       setJobTitle(profile.jobTitle || '');
       setAvatarStyle(profile.avatarStyle || 'initials');
       setAvatarSeed(profile.avatarSeed || '');
+      setCurrentTheme(profile.theme || 'dark');
+      setCurrentCursor(profile.customCursorStyle || 'default');
       setIsSaveSuccess(false);
       setActiveTab('profile');
       setSelectedTeamForMembers(null);
@@ -978,7 +982,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
 
   if (!isOpen) return null;
 
-  const showAdminTabs = profile.role === 'supervisor' || profile.role === 'manager' || profile.role === 'coordinator';
+  const showAdminTabs = ['supervisor', 'coordinator', 'manager', 'admin', 'super_admin'].includes(profile.role) || profile.organizationId === 'sandbox-test';
 
   return (
     <div 
@@ -1681,17 +1685,43 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Tema Padrão: Dark Sideral */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentTheme('dark');
+                      document.documentElement.setAttribute('data-theme', 'dark');
+                      await saveProfileFields({ theme: 'dark' });
+                      if (showToast) showToast('Tema Padrão (Dark Sideral) ativado', 'success');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentTheme === 'dark' || currentTheme === 'default' || !currentTheme
+                        ? 'bg-sky-500/15 border-sky-500/50 text-white shadow-md shadow-sky-500/10'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-slate-400 shadow-sm shadow-slate-400/50" />
+                        <p className="text-xs font-bold text-slate-200">⚡ Tema Padrão (Dark Sideral)</p>
+                      </div>
+                      <p className="text-[10px] text-slate-400">Ambiente de alta produtividade escuro</p>
+                    </div>
+                    {(currentTheme === 'dark' || currentTheme === 'default' || !currentTheme) && <CheckCircle size={16} className="text-sky-400 shrink-0" />}
+                  </button>
+
                   {/* Tema 1: Cyber Ciano */}
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentTheme('cyan');
                       document.documentElement.setAttribute('data-theme', 'cyan');
                       await saveProfileFields({ theme: 'cyan' });
                       if (showToast) showToast('Tema Cyber Ciano ativado', 'success');
                     }}
                     className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      (profile.theme || 'cyan') === 'cyan'
-                        ? 'bg-sky-500/15 border-sky-500/50 text-white'
+                      currentTheme === 'cyan'
+                        ? 'bg-cyan-500/15 border-cyan-500/50 text-white shadow-md shadow-cyan-500/10'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
                   >
@@ -1702,20 +1732,21 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </div>
                       <p className="text-[10px] text-slate-400">Ciano elétrico com fundo azul sideral</p>
                     </div>
-                    {(profile.theme || 'cyan') === 'cyan' && <CheckCircle size={16} className="text-cyan-400 shrink-0" />}
+                    {currentTheme === 'cyan' && <CheckCircle size={16} className="text-cyan-400 shrink-0" />}
                   </button>
 
                   {/* Tema 2: Neon Obsidian */}
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentTheme('obsidian');
                       document.documentElement.setAttribute('data-theme', 'obsidian');
                       await saveProfileFields({ theme: 'obsidian' });
                       if (showToast) showToast('Tema Neon Obsidian ativado', 'success');
                     }}
                     className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      profile.theme === 'obsidian' || profile.theme === 'purple'
-                        ? 'bg-purple-500/15 border-purple-500/50 text-white'
+                      currentTheme === 'obsidian' || currentTheme === 'purple'
+                        ? 'bg-purple-500/15 border-purple-500/50 text-white shadow-md shadow-purple-500/10'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
                   >
@@ -1726,20 +1757,21 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </div>
                       <p className="text-[10px] text-slate-400">Púrpura neon com fundo ônix escuro</p>
                     </div>
-                    {(profile.theme === 'obsidian' || profile.theme === 'purple') && <CheckCircle size={16} className="text-purple-400 shrink-0" />}
+                    {(currentTheme === 'obsidian' || currentTheme === 'purple') && <CheckCircle size={16} className="text-purple-400 shrink-0" />}
                   </button>
 
                   {/* Tema 3: Emerald Financial */}
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentTheme('emerald');
                       document.documentElement.setAttribute('data-theme', 'emerald');
                       await saveProfileFields({ theme: 'emerald' });
                       if (showToast) showToast('Tema Emerald Financial ativado', 'success');
                     }}
                     className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      profile.theme === 'emerald'
-                        ? 'bg-emerald-500/15 border-emerald-500/50 text-white'
+                      currentTheme === 'emerald'
+                        ? 'bg-emerald-500/15 border-emerald-500/50 text-white shadow-md shadow-emerald-500/10'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
                   >
@@ -1750,20 +1782,21 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </div>
                       <p className="text-[10px] text-slate-400">Verde esmeralda com fundo grafite</p>
                     </div>
-                    {profile.theme === 'emerald' && <CheckCircle size={16} className="text-emerald-400 shrink-0" />}
+                    {currentTheme === 'emerald' && <CheckCircle size={16} className="text-emerald-400 shrink-0" />}
                   </button>
 
                   {/* Tema 4: Sunset Amber */}
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentTheme('amber');
                       document.documentElement.setAttribute('data-theme', 'amber');
                       await saveProfileFields({ theme: 'amber' });
                       if (showToast) showToast('Tema Sunset Amber ativado', 'success');
                     }}
                     className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      profile.theme === 'amber'
-                        ? 'bg-amber-500/15 border-amber-500/50 text-white'
+                      currentTheme === 'amber'
+                        ? 'bg-amber-500/15 border-amber-500/50 text-white shadow-md shadow-amber-500/10'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
                   >
@@ -1774,20 +1807,21 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </div>
                       <p className="text-[10px] text-slate-400">Dourado executivo com fundo vulcânico</p>
                     </div>
-                    {profile.theme === 'amber' && <CheckCircle size={16} className="text-amber-400 shrink-0" />}
+                    {currentTheme === 'amber' && <CheckCircle size={16} className="text-amber-400 shrink-0" />}
                   </button>
 
                   {/* Tema 5: Monochrome Slate */}
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentTheme('slate');
                       document.documentElement.setAttribute('data-theme', 'slate');
                       await saveProfileFields({ theme: 'slate' });
                       if (showToast) showToast('Tema Monochrome Slate ativado', 'success');
                     }}
                     className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      profile.theme === 'slate'
-                        ? 'bg-sky-500/15 border-sky-500/50 text-white'
+                      currentTheme === 'slate'
+                        ? 'bg-sky-500/15 border-sky-500/50 text-white shadow-md shadow-sky-500/10'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
                   >
@@ -1798,7 +1832,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </div>
                       <p className="text-[10px] text-slate-400">Safira frio com estilo ultra-clean</p>
                     </div>
-                    {profile.theme === 'slate' && <CheckCircle size={16} className="text-sky-300 shrink-0" />}
+                    {currentTheme === 'slate' && <CheckCircle size={16} className="text-sky-300 shrink-0" />}
                   </button>
                 </div>
               </div>
@@ -1820,13 +1854,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentCursor('default');
                       document.documentElement.setAttribute('data-cursor', 'default');
                       document.body?.setAttribute('data-cursor', 'default');
                       await saveProfileFields({ customCursorStyle: 'default' });
                       if (showToast) showToast('Cursor padrão do sistema selecionado', 'info');
                     }}
                     className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      (profile.customCursorStyle || 'cyan_enterprise') === 'default'
+                      currentCursor === 'default'
                         ? 'bg-sky-500/10 border-sky-500/40 text-white'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
@@ -1837,7 +1872,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </p>
                       <p className="text-[10px] text-slate-400">Ponteiro original do seu SO</p>
                     </div>
-                    {(profile.customCursorStyle || 'cyan_enterprise') === 'default' && (
+                    {currentCursor === 'default' && (
                       <CheckCircle size={16} className="text-sky-400 shrink-0" />
                     )}
                   </button>
@@ -1846,13 +1881,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentCursor('cyan_enterprise');
                       document.documentElement.setAttribute('data-cursor', 'cyan_enterprise');
                       document.body?.setAttribute('data-cursor', 'cyan_enterprise');
                       await saveProfileFields({ customCursorStyle: 'cyan_enterprise' });
                       if (showToast) showToast('Cursor Ciano Enterprise ativado', 'success');
                     }}
                     className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      (profile.customCursorStyle || 'cyan_enterprise') === 'cyan_enterprise'
+                      currentCursor === 'cyan_enterprise'
                         ? 'bg-sky-500/10 border-sky-500/40 text-white'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
@@ -1863,7 +1899,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </p>
                       <p className="text-[10px] text-slate-400">Vetor ciano com foco nos botões</p>
                     </div>
-                    {(profile.customCursorStyle || 'cyan_enterprise') === 'cyan_enterprise' && (
+                    {currentCursor === 'cyan_enterprise' && (
                       <CheckCircle size={16} className="text-sky-400 shrink-0" />
                     )}
                   </button>
@@ -1872,13 +1908,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentCursor('precision_ring');
                       document.documentElement.setAttribute('data-cursor', 'precision_ring');
                       document.body?.setAttribute('data-cursor', 'precision_ring');
                       await saveProfileFields({ customCursorStyle: 'precision_ring' });
                       if (showToast) showToast('Cursor de Precisão Reticular ativado', 'success');
                     }}
                     className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      profile.customCursorStyle === 'precision_ring'
+                      currentCursor === 'precision_ring'
                         ? 'bg-purple-500/10 border-purple-500/40 text-white'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
@@ -1889,7 +1926,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </p>
                       <p className="text-[10px] text-slate-400">Ponto + anel de mira High-Tech</p>
                     </div>
-                    {profile.customCursorStyle === 'precision_ring' && (
+                    {currentCursor === 'precision_ring' && (
                       <CheckCircle size={16} className="text-purple-400 shrink-0" />
                     )}
                   </button>
@@ -1898,13 +1935,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <button
                     type="button"
                     onClick={async () => {
+                      setCurrentCursor('ambient_glow');
                       document.documentElement.setAttribute('data-cursor', 'ambient_glow');
                       document.body?.setAttribute('data-cursor', 'ambient_glow');
                       await saveProfileFields({ customCursorStyle: 'ambient_glow' });
                       if (showToast) showToast('Cursor Halo Ambient Glow ativado', 'success');
                     }}
                     className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      profile.customCursorStyle === 'ambient_glow'
+                      currentCursor === 'ambient_glow'
                         ? 'bg-emerald-500/10 border-emerald-500/40 text-white'
                         : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
                     }`}
@@ -1915,7 +1953,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </p>
                       <p className="text-[10px] text-slate-400">Seta com aura neon animada</p>
                     </div>
-                    {profile.customCursorStyle === 'ambient_glow' && (
+                    {currentCursor === 'ambient_glow' && (
                       <CheckCircle size={16} className="text-emerald-400 shrink-0" />
                     )}
                   </button>
