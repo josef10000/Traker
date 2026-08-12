@@ -42,6 +42,16 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
     ? (currentTeamMembers.find(m => m.uid === selectedEvalForCard.evaluatorId)?.displayName || 'Monitor de Qualidade')
     : 'Monitor de Qualidade';
 
+  const handleAcknowledgeCard = async (evalId: string, replyComment?: string) => {
+    if (onAcknowledgeEvaluation) {
+      await onAcknowledgeEvaluation(evalId, replyComment);
+      const now = new Date().toISOString();
+      if (selectedEvalForCard && selectedEvalForCard.id === evalId) {
+        setSelectedEvalForCard(prev => prev ? { ...prev, readAt: prev.readAt || now, acknowledgedAt: now, operatorReply: replyComment } : null);
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Modal Ficha Completa */}
@@ -54,7 +64,7 @@ export const QaEvaluationsList: React.FC<QaEvaluationsListProps> = ({
         competences={competences}
         theme={theme}
         currentUser={currentUser}
-        onAcknowledgeEvaluation={onAcknowledgeEvaluation}
+        onAcknowledgeEvaluation={handleAcknowledgeCard}
         onRecordView={onRecordView}
       />
 

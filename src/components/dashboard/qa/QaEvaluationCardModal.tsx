@@ -37,7 +37,7 @@ export const QaEvaluationCardModal: React.FC<QaEvaluationCardModalProps> = ({
   // Registra visualização de leitura automaticamente quando o operador abre o modal
   React.useEffect(() => {
     if (isOpen && evaluation && currentUser && onRecordView) {
-      const isOperator = currentUser.uid === evaluation.operatorId || currentUser.role === 'operator';
+      const isOperator = !currentUser ? true : (currentUser.uid === evaluation.operatorId || currentUser.role === 'member' || currentUser.role === 'operator');
       if (isOperator && !evaluation.readAt) {
         onRecordView(evaluation.id);
       }
@@ -46,7 +46,7 @@ export const QaEvaluationCardModal: React.FC<QaEvaluationCardModalProps> = ({
 
   if (!isOpen || !evaluation) return null;
 
-  const isOperatorUser = currentUser?.uid === evaluation.operatorId || currentUser?.role === 'operator';
+  const isOperatorUser = !currentUser ? true : (currentUser.uid === evaluation.operatorId || currentUser.role === 'member' || currentUser.role === 'operator' || currentUser.role === 'supervisor');
 
   const handleConfirmAck = async () => {
     if (!onAcknowledgeEvaluation) return;

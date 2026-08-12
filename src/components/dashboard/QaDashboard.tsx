@@ -497,8 +497,9 @@ export const QaDashboard = ({
 
   const handleAcknowledgeEvaluation = async (evalId: string, replyComment?: string) => {
     const now = new Date().toISOString();
+    setEvaluations(prev => prev.map(e => e.id === evalId ? { ...e, readAt: e.readAt || now, acknowledgedAt: now, operatorReply: replyComment } : e));
+    
     if (profile.organizationId === 'sandbox-test') {
-      setEvaluations(prev => prev.map(e => e.id === evalId ? { ...e, readAt: e.readAt || now, acknowledgedAt: now, operatorReply: replyComment } : e));
       showToast('Confirmação de ciência registrada com sucesso!', 'success');
       return;
     }
