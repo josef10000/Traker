@@ -15,7 +15,46 @@ import {
   Megaphone,
   CheckCircle
 } from '@phosphor-icons/react';
-import { DashboardWidgetConfig, WidgetId, UserProfile } from '../../types';
+import { DashboardWidgetConfig, WidgetId, UserProfile, UserRole } from '../../types';
+
+export const isWidgetAllowedForRole = (id: WidgetId, role: UserRole): boolean => {
+  switch (id) {
+    case 'personal_goal':
+      // Metas financeiras/acordos (operadores, supervisores e gestão)
+      return ['member', 'supervisor', 'coordinator', 'manager', 'super_admin'].includes(role);
+
+    case 'hourly_cockpit':
+      // Cockpit Hora a Hora e Controle de Pausas (exclusivo para gestão/coordenação/supervisão)
+      return ['coordinator', 'manager', 'supervisor', 'super_admin'].includes(role);
+
+    case 'risk_carousel':
+      // CPFs em risco de vencimento (operação de cobrança)
+      return ['member', 'supervisor', 'coordinator', 'manager', 'super_admin'].includes(role);
+
+    case 'crm_callbacks':
+      // Agenda CRM de retornos (operadores, supervisores, gestão e backoffice)
+      return ['member', 'supervisor', 'coordinator', 'manager', 'backoffice', 'super_admin'].includes(role);
+
+    case 'quick_actions':
+      // Atalhos rápidos
+      return true;
+
+    case 'mini_bi':
+      // Mini BI de Conversão & Arrecadação (gestão, coordenação e supervisão)
+      return ['supervisor', 'coordinator', 'manager', 'super_admin'].includes(role);
+
+    case 'wiki_announcements':
+      // Avisos da Wiki Corporativa (todos os cargos)
+      return true;
+
+    case 'qa_radar':
+      // Radar de Qualidade e Monitoria (operadores, monitores, supervisores e gestão)
+      return ['member', 'monitor', 'supervisor', 'coordinator', 'manager', 'super_admin'].includes(role);
+
+    default:
+      return true;
+  }
+};
 
 interface DashboardWidgetManagerModalProps {
   isOpen: boolean;
@@ -105,7 +144,9 @@ export const DashboardWidgetManagerModal: React.FC<DashboardWidgetManagerModalPr
     const existingIds = new Set(existing.map(w => w.id));
     const missing = DEFAULT_DASHBOARD_WIDGETS.filter(d => !existingIds.has(d.id));
     const merged = [...existing, ...missing];
-    return merged.sort((a, b) => a.order - b.order);
+    return merged
+      .filter(w => isWidgetAllowedForRole(w.id, profile.role))
+      .sort((a, b) => a.order - b.order);
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -131,8 +172,9 @@ export const DashboardWidgetManagerModal: React.FC<DashboardWidgetManagerModalPr
   };
 
   const handleResetToDefault = () => {
-    setWidgets(DEFAULT_DASHBOARD_WIDGETS);
-    if (showToast) showToast('Widgets restaurados para o padrão do sistema!', 'info');
+    const roleDefault = DEFAULT_DASHBOARD_WIDGETS.filter(w => isWidgetAllowedForRole(w.id, profile.role));
+    setWidgets(roleDefault);
+    if (showToast) showToast('Widgets restaurados para o padrão do seu cargo!', 'info');
   };
 
   const handleSave = async () => {
