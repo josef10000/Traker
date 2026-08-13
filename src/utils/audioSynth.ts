@@ -4,6 +4,7 @@
  */
 
 let audioCtx: AudioContext | null = null;
+let suspendTimeout: any = null;
 
 const getAudioContext = (): AudioContext | null => {
   if (typeof window === 'undefined') return null;
@@ -16,6 +17,15 @@ const getAudioContext = (): AudioContext | null => {
   if (audioCtx && audioCtx.state === 'suspended') {
     audioCtx.resume().catch(() => {});
   }
+
+  // Agendar suspensão após 15 segundos para economizar RAM e recursos de hardware
+  if (suspendTimeout) clearTimeout(suspendTimeout);
+  suspendTimeout = setTimeout(() => {
+    if (audioCtx && audioCtx.state === 'running') {
+      audioCtx.suspend().catch(() => {});
+    }
+  }, 15000);
+
   return audioCtx;
 };
 

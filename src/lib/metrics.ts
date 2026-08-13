@@ -464,6 +464,9 @@ export const calculateForecastStats = (
   };
 };
 
+// Cache LRU em memória para estatísticas consolidadas
+const statsCacheMap = new Map<string, { time: number; data: DashboardStats }>();
+
 /**
  * Função principal consolidadora que recebe acordos e metas e retorna
  * as estatísticas consolidadas do dashboard.
@@ -476,6 +479,12 @@ export const calculateDashboardStats = (
   selectedYear: number,
   today: Date = new Date()
 ): DashboardStats => {
+  const cacheKey = `${selectedMonth}_${selectedYear}_${monthlyGoal}_${monthAgreements.length}_${filteredAgreements.length}_${monthAgreements[0]?.id || ''}_${monthAgreements[monthAgreements.length - 1]?.id || ''}_${monthAgreements[0]?.updatedAt || ''}`;
+  const cached = statsCacheMap.get(cacheKey);
+  if (cached && (Date.now() - cached.time) < 15000) {
+    return cached.data;
+  }
+
   const todayZero = new Date(today);
   todayZero.setHours(0, 0, 0, 0);
 
@@ -534,7 +543,7 @@ export const calculateDashboardStats = (
     ? (paidAgreementsFiltered.length / realTargetAgreements.length) * 100
     : 0;
 
-  return {
+  const resultStats: DashboardStats = {
     totalProjected,
     totalPaid: totalPaidFiltered,
     filteredPaidValue: totalPaidFiltered,
@@ -655,6 +664,10 @@ export const calculateDashboardStats = (
       return acc;
     }, {} as Record<number, number>)
   };
+
+  if (statsCacheMap.size > 20) statsCacheMap.clear();
+  statsCacheMap.set(cacheKey, { time: Date.now(), data: resultStats });
+  return resultStats;
 };
 
 /**

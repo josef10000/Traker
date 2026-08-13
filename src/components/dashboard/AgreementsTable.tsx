@@ -7,6 +7,8 @@ import {
 import { Agreement, AgreementStatus, UserProfile } from '../../types';
 import { formatCurrency, maskCPF } from '../../utils/masks';
 import { parseLocalDate } from '../../utils/date';
+import { StatusBadge } from '../ui/StatusBadge';
+import { Skeleton } from '../ui/Skeleton';
 import { OriginBadge } from './OriginBadge';
 import { logAudit } from '../../lib/audit';
 
@@ -87,10 +89,19 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
           >
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="animate-spin text-primary" size={32} />
-                    <span>Carregando acordos...</span>
+                <td colSpan={7} className="p-6">
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex items-center gap-4 py-2">
+                        <Skeleton className="h-10 w-48 rounded-xl" />
+                        <Skeleton className="h-8 w-24 rounded-xl" />
+                        <Skeleton className="h-8 w-24 rounded-xl" />
+                        <Skeleton className="h-8 w-28 rounded-xl" />
+                        <Skeleton className="h-8 w-24 rounded-xl" />
+                        <Skeleton className="h-8 w-28 rounded-xl" />
+                        <Skeleton className="h-8 w-24 rounded-xl ml-auto" />
+                      </div>
+                    ))}
                   </div>
                 </td>
               </tr>
@@ -134,85 +145,16 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                     : 'hover:bg-slate-50 border-l-amber-500/30 bg-slate-50/60';
                 };
 
-                // Badge de Status Unificado
+                // Badge de Status Unificado Animado
                 const renderStatusBadge = () => {
-                  if (agreement.status === AgreementStatus.PAID) {
-                    return (
-                      <span 
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                          theme === 'dark' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        }`}
-                        title="Status: Pago — Acordo quitado e verificado no sistema"
-                      >
-                        <CheckCircle2 size={12} weight="bold" />
-                        Pago
-                      </span>
-                    );
-                  }
-                  if (isOverdue && isCheckedToday) {
-                    return (
-                      <span 
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                          theme === 'dark' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-rose-100 text-rose-800 border-rose-300'
-                        }`}
-                        title="Status: Quebrado — O cliente não efetuou o pagamento no prazo estipulado"
-                      >
-                        <AlertTriangle size={12} weight="bold" />
-                        Quebrado
-                      </span>
-                    );
-                  }
-                  if (isOverdue && !isCheckedToday) {
-                    return (
-                      <span 
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                          theme === 'dark' ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' : 'bg-amber-100 text-amber-800 border-amber-300'
-                        }`}
-                        title="Status: Vencido — Data limite expirada aguardando confirmação de pagamento"
-                      >
-                        <AlertTriangle size={12} weight="bold" />
-                        Vencido
-                      </span>
-                    );
-                  }
-                  if (isPriorityOntem) {
-                    return (
-                      <span 
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                          theme === 'dark' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-amber-500 text-white border-amber-400'
-                        }`}
-                        title="Status: Prioridade — Acordo registrado anteriormente pendente de acompanhamento"
-                      >
-                        <Zap size={12} weight="bold" />
-                        Prioridade
-                      </span>
-                    );
-                  }
-                  if (isCheckedToday) {
-                    return (
-                      <span 
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-xs ${
-                          theme === 'dark' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-sky-500 text-white border-sky-400'
-                        }`}
-                        title="Status: Conferido Hoje — Acordo checado pelo operador no turno de hoje"
-                      >
-                        <Check size={12} weight="bold" />
-                        Conferido
-                      </span>
-                    );
-                  }
                   return (
-                    <span 
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border ${
-                        isMorning 
-                          ? theme === 'dark' ? 'bg-sky-500/10 text-sky-300 border-sky-500/30' : 'bg-sky-50 text-sky-700 border-sky-300'
-                          : theme === 'dark' ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-300'
-                      }`}
-                      title={isMorning ? "Status: Ciclo Hoje — Aguardando acompanhamento no turno do dia" : "Status: Ciclo Seguinte — Agendado para acompanhamento no ciclo seguinte"}
-                    >
-                      {isMorning ? <Sun size={10} /> : <Moon size={10} />}
-                      {isMorning ? 'Ciclo Hoje' : 'Ciclo Seg.'}
-                    </span>
+                    <StatusBadge
+                      status={agreement.status}
+                      isOverdue={isOverdue}
+                      isCheckedToday={Boolean(isCheckedToday)}
+                      isPriorityOntem={Boolean(isPriorityOntem)}
+                      theme={theme}
+                    />
                   );
                 };
 

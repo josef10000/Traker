@@ -25,6 +25,8 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **⏱️ Jornada Hora a Hora** | Cockpit de acompanhamento de produção em tempo real com **Banco de Pausas Flexível de 72 min/dia**. |
 | **🚨 Risco em Vencimento no Dia** | Painel estritamente exclusivo para o cargo de **Supervisor** em carrossel horizontal navegável, ordenação por maior valor, operador destacado e cópia rápida em 1-clique (CPF, Nome e Mensagens). |
 | **📜 Prontuário 360° por CPF** | Histórico cronológico completo do cliente por CPF com registro de acordos passados, operadores e mural de anotações internas. |
+| **📑 Relatório Executivo em PDF** | Emissão em 1-clique de demonstrativo consolidado mensal com KPIs, taxas de liquidação, ticket médio e ranking operacional em layout A4 de alta fidelidade. |
+| **✨ Badges Semânticos & Shimmer Skeletons** | Badges dinâmicos com micro-animações de pulso esmeralda/âmbar e carregamento estruturado com efeito shimmer gradiente. |
 | **📁 Retenção R2 de Comprovantes** | Central de anexo de comprovantes bancários em nuvem R2 (retenção 24h na Sandbox e 1 ano em Produção). |
 | **🎨 Design Enterprise Pastel** | Interface minimalista em Dark Mode com **Glassmorphism**, reduzindo o cansaço visual e otimizando o espaço vertical. |
 | **🔔 Sino & Confirmação de Ciência** | Entrega de 100% das notificações exclusivamente pelo sino (0 modais na tela no login) e sistema de confirmação de leitura com ciente e tréplica para QA e Comunicados. |

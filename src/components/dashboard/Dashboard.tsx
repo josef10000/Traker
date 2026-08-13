@@ -5,6 +5,8 @@ import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { DimensionamentoSitesSection } from './DimensionamentoSitesSection';
 import { HourlyActivityTrackerSection } from './HourlyActivityTrackerSection';
 import { KnowledgeBaseSection } from './KnowledgeBaseSection';
+import { ExecutiveReportModal } from '../modals/ExecutiveReportModal';
+import { DashboardSkeleton } from './DashboardSkeleton';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -27,6 +29,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { markStatsStale } from '../../lib/statsCache';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { useDebounce } from '../../hooks/useDebounce';
 import { playDealSound } from '../../utils/audioSynth';
 import { 
   Agreement, 
@@ -247,6 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedAgreementForReceipt, setSelectedAgreementForReceipt] = useState<Agreement | null>(null);
   const [isMessageTemplatesOpen, setIsMessageTemplatesOpen] = useState<boolean>(false);
   const [selectedAgreementForTemplate, setSelectedAgreementForTemplate] = useState<Agreement | null>(null);
+  const [isExecutiveReportOpen, setIsExecutiveReportOpen] = useState<boolean>(false);
 
 
 
@@ -2564,6 +2568,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               managedTeamsData={managedTeamsData}
               isPresentMode={isPresentMode}
               onSettingsClick={onSettingsClick}
+              onOpenExecutiveReport={() => setIsExecutiveReportOpen(true)}
               setIsTeamSelectorOpen={setIsTeamSelectorOpen}
               setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
               setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
@@ -4514,6 +4519,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }}
         theme={theme}
         showToast={showToast}
+      />
+
+      {/* MODAL DE RELATÓRIO EXECUTIVO EM PDF */}
+      <ExecutiveReportModal
+        isOpen={isExecutiveReportOpen}
+        onClose={() => setIsExecutiveReportOpen(false)}
+        profile={profile}
+        agreements={monthAgreements}
+        collaborators={currentTeamMembers}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        organizationName={organizationName}
+        monthlyGoal={monthlyGoal}
+        theme={theme}
       />
     </div>
   );

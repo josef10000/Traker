@@ -156,7 +156,7 @@ const generateSimulatedAgreements = (month: number, year: number, orgId: string)
   return list;
 };
 
-export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
+const BiAnalyticsTabComponent: React.FC<BiAnalyticsTabProps> = ({
   profile,
   agreements,
   stats,
@@ -1834,3 +1834,6 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
     </div>
   );
 };
+
+export const BiAnalyticsTab = React.memo(BiAnalyticsTabComponent);
+

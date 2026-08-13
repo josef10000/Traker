@@ -22,7 +22,8 @@ import {
   WifiSlash,
   ChatCircleDots,
   Trophy,
-  Sliders
+  Sliders,
+  FileText
 } from '@phosphor-icons/react';
 import { UserProfile, Team, AppNotification } from '../../types';
 import { Avatar } from '../ui/Avatar';
@@ -41,7 +42,7 @@ interface DashboardHeaderProps {
   managedTeamsData: Team[];
   isPresentMode: boolean;
   onSettingsClick: (tab?: string) => void;
-  onOpenWidgetManager?: () => void;
+  onOpenExecutiveReport?: () => void;
   setIsTeamSelectorOpen: (open: boolean) => void;
   setIsConfirmLogoutOpen: (open: boolean) => void;
   setIsWebhookSettingsOpen: (open: boolean) => void;
@@ -371,6 +372,22 @@ export const DashboardHeader = ({
               className={`transition-colors ${isRefreshing ? 'text-primary' : ''}`}
             />
           </button>
+
+          {/* Botão de Relatório Executivo A4 / PDF */}
+          {onOpenExecutiveReport && (
+            <button
+              type="button"
+              onClick={onOpenExecutiveReport}
+              className={`transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                theme === 'dark'
+                  ? 'w-10 h-10 rounded-xl border-white/5 bg-white/5 text-slate-300 hover:text-sky-400 hover:bg-sky-500/10 hover:border-sky-500/20'
+                  : 'w-10 h-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-sky-500 bg-white shadow-xs'
+              }`}
+              title="Gerar Relatório Executivo Consolidado (PDF / Impressão A4)"
+            >
+              <FileText size={18} weight="bold" />
+            </button>
+          )}
 
           {/* Sino de Notificações */}
           <div className="relative shrink-0" ref={notificationsMenuRef}>
