@@ -5,6 +5,7 @@ import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { DimensionamentoSitesSection } from './DimensionamentoSitesSection';
 import { HourlyActivityTrackerSection } from './HourlyActivityTrackerSection';
 import { KnowledgeBaseSection } from './KnowledgeBaseSection';
+import { DashboardWidgetManagerModal } from './DashboardWidgetManagerModal';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -40,7 +41,8 @@ import {
   Reconciliation,
   CollaborationNote,
   QaEvaluation,
-  CalendarEvent
+  CalendarEvent,
+  DashboardWidgetConfig
 } from '../../types';
 import { removeTeamMember, getTeamMembers } from '../../lib/teams';
 import { formatCurrency, maskCPF } from '../../utils/masks';
@@ -245,6 +247,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedAgreementForReceipt, setSelectedAgreementForReceipt] = useState<Agreement | null>(null);
   const [isMessageTemplatesOpen, setIsMessageTemplatesOpen] = useState<boolean>(false);
   const [selectedAgreementForTemplate, setSelectedAgreementForTemplate] = useState<Agreement | null>(null);
+
+  const [isWidgetManagerOpen, setIsWidgetManagerOpen] = useState(false);
+
+  const handleSaveWidgets = async (widgets: DashboardWidgetConfig[]) => {
+    setProfile(prev => ({ ...prev, dashboardWidgets: widgets }));
+    try {
+      localStorage.setItem(`tracker_widgets_${profile.uid}`, JSON.stringify(widgets));
+      if (profile.organizationId !== 'sandbox-test') {
+        const userRef = doc(db, 'users', profile.uid);
+        await updateDoc(userRef, { dashboardWidgets: widgets });
+      }
+    } catch (err) {
+      console.error('Erro ao salvar widgets no Firestore:', err);
+    }
+  };
 
   // Listener global para abrirem modais disparados de subcomponentes/Perfil
   useEffect(() => {
@@ -2560,6 +2577,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               managedTeamsData={managedTeamsData}
               isPresentMode={isPresentMode}
               onSettingsClick={onSettingsClick}
+              onOpenWidgetManager={() => setIsWidgetManagerOpen(true)}
               setIsTeamSelectorOpen={setIsTeamSelectorOpen}
               setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
               setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
@@ -4566,6 +4584,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           setDashboardTab('financial');
         }}
         theme={theme}
+        showToast={showToast}
+      />
+
+      {/* MODAL DE GERENCIAMENTO DE WIDGETS DO DASHBOARD */}
+      <DashboardWidgetManagerModal
+        isOpen={isWidgetManagerOpen}
+        onClose={() => setIsWidgetManagerOpen(false)}
+        profile={profile}
+        onSaveWidgets={handleSaveWidgets}
         showToast={showToast}
       />
     </div>

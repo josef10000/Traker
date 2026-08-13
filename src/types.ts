@@ -148,10 +148,29 @@ export interface UserProfile {
   soundEnabled?: boolean;
   soundVolume?: number; // 0 a 100
   dealSoundEffect?: 'coin' | 'laser' | 'marimba' | 'silent';
-  // Metas Pessoais Motivacionais do Colaborador
+  // Metas Pessoais Motivacionais do Colaborador & Preferências de Widgets
   personalMonthlyGoal?: number;
   personalDailyGoal?: number;
   personalGoalType?: 'value' | 'count';
+  showPersonalGoal?: boolean;
+  dashboardWidgets?: DashboardWidgetConfig[];
+}
+
+export type WidgetId = 
+  | 'personal_goal'
+  | 'hourly_cockpit'
+  | 'risk_carousel'
+  | 'crm_callbacks'
+  | 'quick_actions'
+  | 'mini_bi'
+  | 'wiki_announcements'
+  | 'qa_radar';
+
+export interface DashboardWidgetConfig {
+  id: WidgetId;
+  label: string;
+  enabled: boolean;
+  order: number;
 }
 
 export interface WebAuthnCredential {

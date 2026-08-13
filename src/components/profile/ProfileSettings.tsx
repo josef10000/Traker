@@ -105,6 +105,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [personalMonthlyGoal, setPersonalMonthlyGoal] = useState<number>(profile.personalMonthlyGoal || 0);
   const [personalDailyGoal, setPersonalDailyGoal] = useState<number>(profile.personalDailyGoal || 0);
   const [personalGoalType, setPersonalGoalType] = useState<'value' | 'count'>(profile.personalGoalType || 'value');
+  const [showPersonalGoal, setShowPersonalGoal] = useState<boolean>(profile.showPersonalGoal ?? true);
   const [isSavingPersonalGoals, setIsSavingPersonalGoals] = useState<boolean>(false);
   const [saveGoalsProgress, setSaveGoalsProgress] = useState<number>(0);
   const [saveGoalsSuccess, setSaveGoalsSuccess] = useState<boolean>(false);
@@ -2186,6 +2187,32 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               </div>
 
               <div className="border border-white/10 bg-slate-900/40 rounded-3xl p-5 space-y-5">
+                {/* Toggle Ativar/Desativar Meta Pessoal no Dashboard */}
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950/60 border border-white/10">
+                  <div className="space-y-0.5">
+                    <label className="text-xs font-bold text-slate-200 block">Exibir Meta Pessoal no Dashboard</label>
+                    <p className="text-[10px] text-slate-400">Ative ou desative a visualização do card de meta pessoal para enxugar a tela principal</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const nextState = !showPersonalGoal;
+                      setShowPersonalGoal(nextState);
+                      await saveProfileFields({ showPersonalGoal: nextState });
+                      if (showToast) {
+                        showToast(nextState ? '🟢 Card de Meta Pessoal ativado no Dashboard!' : '⚪ Card de Meta Pessoal ocultado do Dashboard!', 'info');
+                      }
+                    }}
+                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      showPersonalGoal ? 'bg-emerald-500' : 'bg-slate-700'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all ${
+                      showPersonalGoal ? 'left-7' : 'left-1'
+                    }`} />
+                  </button>
+                </div>
+
                 {/* Tipo de Meta */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-200">Tipo de Meta Preferida</label>
@@ -2301,7 +2328,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                         await saveProfileFields({
                           personalMonthlyGoal,
                           personalDailyGoal,
-                          personalGoalType
+                          personalGoalType,
+                          showPersonalGoal
                         });
 
                         setSaveGoalsProgress(100);

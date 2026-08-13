@@ -21,7 +21,8 @@ import {
   Bell,
   WifiSlash,
   ChatCircleDots,
-  Trophy
+  Trophy,
+  Sliders
 } from '@phosphor-icons/react';
 import { UserProfile, Team, AppNotification } from '../../types';
 import { Avatar } from '../ui/Avatar';
@@ -40,6 +41,7 @@ interface DashboardHeaderProps {
   managedTeamsData: Team[];
   isPresentMode: boolean;
   onSettingsClick: (tab?: string) => void;
+  onOpenWidgetManager?: () => void;
   setIsTeamSelectorOpen: (open: boolean) => void;
   setIsConfirmLogoutOpen: (open: boolean) => void;
   setIsWebhookSettingsOpen: (open: boolean) => void;
@@ -76,6 +78,7 @@ export const DashboardHeader = ({
   managedTeamsData,
   isPresentMode,
   onSettingsClick,
+  onOpenWidgetManager,
   setIsTeamSelectorOpen,
   setIsConfirmLogoutOpen,
   setIsWebhookSettingsOpen,
@@ -273,12 +276,12 @@ export const DashboardHeader = ({
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-          {/* Micro-Card Meta Pessoal Motivacional */}
-          {Boolean(profile.personalMonthlyGoal && profile.personalMonthlyGoal > 0) && (
+          {/* Micro-Card Meta Pessoal Motivacional (Exibido apenas quando ativado nas configurações) */}
+          {Boolean(profile.showPersonalGoal !== false && profile.personalMonthlyGoal && profile.personalMonthlyGoal > 0) && (
             <div
               onClick={() => onSettingsClick('personal_goals')}
               className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-all shrink-0"
-              title="Clique para gerenciar suas Metas Pessoais"
+              title="Clique para gerenciar ou desativar suas Metas Pessoais"
             >
               <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-300">
                 <Trophy size={14} />
@@ -368,6 +371,22 @@ export const DashboardHeader = ({
               className={`transition-colors ${isRefreshing ? 'text-primary' : ''}`}
             />
           </button>
+
+          {/* Botão Personalizar Widgets do Dashboard */}
+          {onOpenWidgetManager && (
+            <button
+              type="button"
+              onClick={onOpenWidgetManager}
+              className={`transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center justify-center relative ${
+                theme === 'dark'
+                  ? 'w-10 h-10 rounded-xl border-white/5 bg-white/5 text-slate-300 hover:text-sky-400 hover:bg-sky-500/10 hover:border-sky-500/20'
+                  : 'w-10 h-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-sky-500 bg-white shadow-xs'
+              }`}
+              title="Personalizar Widgets do Dashboard"
+            >
+              <Sliders size={18} weight="bold" />
+            </button>
+          )}
 
 
 
