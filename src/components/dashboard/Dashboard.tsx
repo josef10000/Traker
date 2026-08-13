@@ -251,7 +251,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isWidgetManagerOpen, setIsWidgetManagerOpen] = useState(false);
 
   const handleSaveWidgets = async (widgets: DashboardWidgetConfig[]) => {
-    setProfile(prev => ({ ...prev, dashboardWidgets: widgets }));
     try {
       localStorage.setItem(`tracker_widgets_${profile.uid}`, JSON.stringify(widgets));
       if (profile.organizationId !== 'sandbox-test') {
