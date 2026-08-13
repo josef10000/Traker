@@ -121,17 +121,30 @@ export function AppContent() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         setUser(u);
-        if (profile) {
-          setLoading(false);
+
+        // Define o perfil otimista imediatamente para nao travar a tela de login
+        let userProfile: UserProfile | null = null;
+        try {
+          const cached = localStorage.getItem('tracker_cached_profile');
+          if (cached) userProfile = JSON.parse(cached);
+        } catch {}
+
+        if (!userProfile) {
+          const isMaster = isMasterAdminEmail(u.email);
+          userProfile = {
+            uid: u.uid,
+            email: u.email || '',
+            displayName: u.displayName || u.email?.split('@')[0] || (isMaster ? 'Super Admin Master' : 'Usuário'),
+            role: isMaster ? 'super_admin' : 'manager',
+            organizationId: isMaster ? undefined : 'org-master',
+            createdAt: new Date().toISOString()
+          };
         }
 
-        try {
-          let userProfile: UserProfile | null = null;
-          try {
-            const cached = localStorage.getItem('tracker_cached_profile');
-            if (cached) userProfile = JSON.parse(cached);
-          } catch {}
+        setProfile(userProfile);
+        setLoading(false);
 
+        try {
           const freshProfile = await getUserProfile(u.uid);
           if (freshProfile) {
             userProfile = freshProfile;
