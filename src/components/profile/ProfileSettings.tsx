@@ -32,6 +32,7 @@ import {
   Camera,
   UploadSimple,
   CircleNotch,
+  CircleNotch as Loader2,
   Pencil,
   Fingerprint,
   Envelope,
@@ -104,6 +105,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [personalMonthlyGoal, setPersonalMonthlyGoal] = useState<number>(profile.personalMonthlyGoal || 0);
   const [personalDailyGoal, setPersonalDailyGoal] = useState<number>(profile.personalDailyGoal || 0);
   const [personalGoalType, setPersonalGoalType] = useState<'value' | 'count'>(profile.personalGoalType || 'value');
+  const [isSavingPersonalGoals, setIsSavingPersonalGoals] = useState<boolean>(false);
+  const [saveGoalsProgress, setSaveGoalsProgress] = useState<number>(0);
+  const [saveGoalsSuccess, setSaveGoalsSuccess] = useState<boolean>(false);
 
   type ProfileTab = 'profile' | 'closing_pj' | 'schedule' | 'appearance' | 'sound' | 'personal_goals' | 'reconciliation' | 'lgpd' | 'simulation' | 'sandbox';
   const [activeTab, setActiveTab] = useState<ProfileTab>((initialTab as ProfileTab) || 'profile');
@@ -2247,21 +2251,104 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <p className="text-[10px] text-slate-400">Seu objetivo diário individual</p>
                 </div>
 
+                {/* Barra de Progresso Animada ao Salvar */}
+                {isSavingPersonalGoals && (
+                  <div className="space-y-1.5 pt-1 animate-fadeIn">
+                    <div className="flex justify-between text-[10px] font-bold font-mono">
+                      <span className="text-emerald-400 flex items-center gap-1">
+                        <Loader2 size={12} className="animate-spin text-emerald-400" />
+                        Salvando metas e aplicando configurações...
+                      </span>
+                      <span className="text-emerald-300 font-black">{saveGoalsProgress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-emerald-500/30">
+                      <div
+                        className="bg-gradient-to-r from-emerald-500 to-teal-300 h-full transition-all duration-200"
+                        style={{ width: `${saveGoalsProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Banner de Sucesso */}
+                {saveGoalsSuccess && !isSavingPersonalGoals && (
+                  <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fadeIn">
+                    <CheckCircle size={18} className="text-emerald-400 shrink-0" />
+                    <span>Metas salvas com sucesso! Seu progresso no Dashboard já foi sincronizado.</span>
+                  </div>
+                )}
+
                 <div className="pt-2">
                   <button
                     type="button"
+                    disabled={isSavingPersonalGoals}
                     onClick={async () => {
-                      await saveProfileFields({
-                        personalMonthlyGoal,
-                        personalDailyGoal,
-                        personalGoalType
-                      });
-                      if (showToast) showToast('Metas pessoais atualizadas com sucesso!', 'success');
+                      setIsSavingPersonalGoals(true);
+                      setSaveGoalsSuccess(false);
+                      setSaveGoalsProgress(20);
+
+                      const interval = setInterval(() => {
+                        setSaveGoalsProgress((prev) => {
+                          if (prev >= 90) {
+                            clearInterval(interval);
+                            return 90;
+                          }
+                          return prev + 25;
+                        });
+                      }, 100);
+
+                      try {
+                        await saveProfileFields({
+                          personalMonthlyGoal,
+                          personalDailyGoal,
+                          personalGoalType
+                        });
+
+                        setSaveGoalsProgress(100);
+                        clearInterval(interval);
+
+                        if (soundEnabled) {
+                          playDealSound(dealSoundEffect || 'coin', soundVolume ?? 80);
+                        }
+
+                        if (showToast) {
+                          showToast('🎯 Metas pessoais salvas e atualizadas com sucesso!', 'success');
+                        }
+
+                        setTimeout(() => {
+                          setIsSavingPersonalGoals(false);
+                          setSaveGoalsSuccess(true);
+                        }, 300);
+                      } catch (err) {
+                        clearInterval(interval);
+                        setIsSavingPersonalGoals(false);
+                        if (showToast) showToast('Erro ao salvar metas pessoais.', 'error');
+                      }
                     }}
-                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                    className={`w-full py-3.5 text-xs font-black rounded-xl transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2 relative overflow-hidden ${
+                      saveGoalsSuccess 
+                        ? 'bg-emerald-400 text-slate-950 shadow-emerald-500/30' 
+                        : isSavingPersonalGoals 
+                          ? 'bg-emerald-600/80 text-slate-900 cursor-not-allowed' 
+                          : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20 active:scale-[0.99]'
+                    }`}
                   >
-                    <Save size={16} />
-                    Salvar Minhas Metas Pessoais
+                    {isSavingPersonalGoals ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin text-slate-950" />
+                        <span>Salvando no Servidor ({saveGoalsProgress}%)...</span>
+                      </>
+                    ) : saveGoalsSuccess ? (
+                      <>
+                        <CheckCircle size={16} className="text-slate-950" />
+                        <span>Metas Atualizadas com Sucesso!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        <span>Salvar Minhas Metas Pessoais</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

@@ -24,6 +24,82 @@ export const AdvancedInsights = ({
         </div>
       </div>
 
+      {/* 🟢 CARD DE DESTAQUE DE INTELIGÊNCIA: ÍNDICE DE RESGATE DE QUEBRAS & ROI POR CANAL */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Card 1: Resgate de Acordos Quebrados */}
+        <div className="glass-card p-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Índice de Resgate de Quebras</span>
+            <span className="text-xs font-mono font-bold text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+              {(stats.insights?.breakRecoveryStats?.recoveryRate || 0).toFixed(1)}% recuperados
+            </span>
+          </div>
+
+          <div className="flex items-baseline justify-between pt-1">
+            <div>
+              <span className="text-2xl font-black text-white">
+                {formatCurrency(stats.insights?.breakRecoveryStats?.recoveredVolume || 0)}
+              </span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {stats.insights?.breakRecoveryStats?.recoveredCount || 0} acordos salvos pós-quebra
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-bold text-emerald-400 block">Tempo Médio</span>
+              <span className="text-sm font-black text-slate-200 font-mono">
+                {stats.insights?.breakRecoveryStats?.avgRecoveryDays || 0} dias
+              </span>
+            </div>
+          </div>
+
+          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-emerald-400 transition-all duration-500"
+              style={{ width: `${Math.min(100, stats.insights?.breakRecoveryStats?.recoveryRate || 0)}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Card 2: Canal Mais Rentável (ROI por Canal) */}
+        <div className="glass-card p-6 rounded-3xl border border-sky-500/20 bg-sky-500/5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest">Canal de Maior Rentabilidade</span>
+            <span className="text-xs font-mono font-bold text-sky-300 bg-sky-500/20 px-2.5 py-1 rounded-lg border border-sky-500/30">
+              ROI & Retorno por Canal
+            </span>
+          </div>
+
+          {(() => {
+            const roiEntries = Object.entries(stats.insights?.roiByOrigin || {});
+            if (roiEntries.length === 0) {
+              return (
+                <p className="text-xs text-slate-500 italic py-2">
+                  Aguardando movimentação de canais no período selecionado.
+                </p>
+              );
+            }
+            roiEntries.sort((a, b) => b[1].paidValue - a[1].paidValue);
+            const best = roiEntries[0];
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-black text-white uppercase">{best[0]}</span>
+                  <span className="text-sm font-black text-emerald-400">{formatCurrency(best[1].paidValue)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-bold">Conversão de Atendimentos:</span>
+                  <span className="text-sky-300 font-black">{best[1].conversionRate.toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-bold">% com Desconto Concedido:</span>
+                  <span className="text-pink-400 font-bold">{best[1].discountRate.toFixed(1)}%</span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Risco por Categoria (Cruzamento de Clientes) */}
         <div className="glass-card p-6 rounded-3xl border border-white/5">
