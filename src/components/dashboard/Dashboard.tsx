@@ -1788,7 +1788,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     if (isDemo) {
       refreshAgreements();
-      showToast('Comprovante salvo na Sandbox R2 (retenção de 24h)!', 'success');
+      showToast('Comprovante salvo na nuvem Sandbox (retenção de 24h)!', 'success');
       return;
     }
 
@@ -1796,7 +1796,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const agreementRef = doc(db, 'agreements', agreementId);
       await updateDoc(agreementRef, updatedFields);
       refreshAgreements();
-      showToast('Comprovante salvo no Cloudflare R2 (retenção de 1 ano)!', 'success');
+      showToast('Comprovante salvo na nuvem segura (retenção de 1 ano)!', 'success');
       logAudit('ATTACH_RECEIPT', { agreementId, ...receiptData }, profile.name, profile.organizationId);
     } catch (err) {
       console.error('Erro ao salvar comprovante:', err);

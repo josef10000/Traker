@@ -43,7 +43,7 @@ export const ReceiptAttachmentModal: React.FC<ReceiptAttachmentModalProps> = ({
   const retentionPrefix = isDemoMode ? 'sandbox-24h/' : 'receipts-1year/';
   const retentionPeriodText = isDemoMode 
     ? '⚠️ Modo Demonstração (Sandbox): Armazenamento temporário com expiração em 24 horas.' 
-    : '🛡️ Modo Produção: Retenção legal em nuvem privada R2 garantida por 1 ano.';
+    : '🛡️ Modo Produção: Retenção legal em nuvem privada garantida por 1 ano.';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -102,7 +102,7 @@ export const ReceiptAttachmentModal: React.FC<ReceiptAttachmentModalProps> = ({
                 <Paperclip size={24} weight="duotone" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-white">Central de Comprovantes R2</h3>
+                <h3 className="text-lg font-black text-white">Central de Comprovantes</h3>
                 <p className="text-xs text-slate-400 font-medium">
                   {agreement.clientName} — <span className="font-mono">{formatCPF(agreement.clientCpf)}</span>
                 </p>
@@ -215,7 +215,7 @@ export const ReceiptAttachmentModal: React.FC<ReceiptAttachmentModalProps> = ({
                 ) : (
                   <>
                     <UploadSimple size={16} weight="bold" />
-                    <span>{isUploading ? 'Enviando...' : 'Salvar no R2'}</span>
+                    <span>{isUploading ? 'Enviando...' : 'Salvar Comprovante'}</span>
                   </>
                 )}
               </button>

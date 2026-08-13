@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { uploadImage } from '../../lib/imageUpload';
 import { secureRandomId } from '../../utils/crypto';
 import { 
@@ -101,6 +102,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [avatarType, setAvatarType] = useState<'custom' | 'api'>(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
   const [coverPhotoURL, setCoverPhotoURL] = useState<string>(profile.coverPhotoURL || '');
   const [isUploadingCover, setIsUploadingCover] = useState<boolean>(false);
+  const [showCoverPicker, setShowCoverPicker] = useState<boolean>(false);
   const [currentTheme, setCurrentTheme] = useState<string>(profile.theme || 'dark');
   const [currentCursor, setCurrentCursor] = useState<string>(profile.customCursorStyle || 'default');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -1524,178 +1526,207 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               </div>
 
               <form onSubmit={handleSave} className="space-y-3.5">
-                {/* 📸 CAPA DE PERFIL PANORÂMICA (ESTILO FACEBOOK / LINKEDIN) */}
-                <div className="relative rounded-2xl overflow-hidden border border-white/10 mb-4 bg-slate-900 group">
-                  <div className="h-32 sm:h-36 w-full relative bg-slate-950 flex items-center justify-center overflow-hidden">
+                {/* 📸 CABEÇALHO UNIFICADO DO PERFIL (CAPA + AVATAR INTEGRADO COM LÁPIS DE EDIÇÃO) */}
+                <div className="relative rounded-3xl overflow-hidden border border-white/10 mb-6 bg-slate-900 shadow-xl group">
+                  {/* CAPA DE FUNDO (BANNER) */}
+                  <div className="h-36 sm:h-44 w-full relative bg-slate-950 overflow-hidden">
                     {coverPhotoURL ? (
                       <img
                         src={coverPhotoURL}
                         alt="Capa de Perfil"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-r from-slate-900 via-sky-950/40 to-slate-900 flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-r from-slate-950 via-sky-950/40 to-slate-950 flex items-center justify-center">
                         <span className="text-[10px] uppercase font-mono font-bold text-slate-500 tracking-widest">
                           Sem imagem de capa (Gradiente Padrão)
                         </span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-black/20 to-transparent pointer-events-none" />
 
-                    {/* Botão de Envio/Troca de Capa no R2 (Canto Superior Direito) */}
-                    <div className="absolute top-2.5 right-2.5 flex items-center gap-2 z-10">
-                      <label className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-white text-[10px] font-bold flex items-center gap-1.5 cursor-pointer shadow-lg backdrop-blur-md transition-all active:scale-95">
-                        <Camera size={13} className="text-sky-400" />
-                        <span>{isUploadingCover ? 'Enviando ao R2...' : 'Enviar Capa (R2)'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setIsUploadingCover(true);
-                              try {
-                                const url = await uploadImage(file, { folder: 'profile_covers' });
-                                setCoverPhotoURL(url);
-                                await saveProfileFields({ coverPhotoURL: url });
-                                if (showToast) showToast('Foto de capa salva no R2 com sucesso!', 'success');
-                              } catch (err) {
-                                console.error(err);
-                                if (showToast) showToast('Erro ao enviar foto de capa.', 'error');
-                              } finally {
-                                setIsUploadingCover(false);
-                              }
-                            }
-                          }}
-                        />
-                      </label>
-                      {coverPhotoURL && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            setCoverPhotoURL('');
-                            await saveProfileFields({ coverPhotoURL: '' });
-                            if (showToast) showToast('Capa removida!', 'success');
-                          }}
-                          className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[10px] font-bold transition-all cursor-pointer"
-                          title="Remover Capa"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                    {/* BOTÃO LÁPIS DISCRETO PARA EXPANDIR/ESCONDER MENU DE CAPA (CANTO SUPERIOR DIREITO) */}
+                    <div className="absolute top-3 right-3 z-20">
+                      <button
+                        type="button"
+                        onClick={() => setShowCoverPicker(prev => !prev)}
+                        className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-sky-400 hover:text-white shadow-lg backdrop-blur-md transition-all cursor-pointer flex items-center gap-1.5 text-[11px] font-bold"
+                        title="Personalizar Capa de Perfil"
+                      >
+                        <Pencil size={14} />
+                        <span className="hidden sm:inline">Editar Capa</span>
+                      </button>
+
+                      {/* POPUP SELETOR DE CAPA (OCULTO POR PADRÃO, APARECE APENAS NO CLIQUE DO LÁPIS) */}
+                      <AnimatePresence>
+                        {showCoverPicker && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                            className="absolute right-0 top-11 w-72 p-3.5 bg-slate-900/95 border border-white/15 rounded-2xl shadow-2xl backdrop-blur-xl z-30 space-y-3"
+                          >
+                            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                              <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                <Camera size={13} className="text-sky-400" />
+                                <span>Personalizar Capa</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setShowCoverPicker(false)}
+                                className="text-slate-400 hover:text-white text-xs p-1"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* Ação 1: Enviar Imagem do Computador */}
+                            <label className="w-full py-2 px-3 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 text-xs font-bold flex items-center justify-between cursor-pointer transition-all">
+                              <span className="flex items-center gap-2">
+                                <Camera size={14} />
+                                <span>{isUploadingCover ? 'Enviando...' : 'Enviar Foto do Computador'}</span>
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    setIsUploadingCover(true);
+                                    try {
+                                      const url = await uploadImage(file, { folder: 'profile_covers' });
+                                      setCoverPhotoURL(url);
+                                      await saveProfileFields({ coverPhotoURL: url });
+                                      if (showToast) showToast('Foto de capa atualizada com sucesso!', 'success');
+                                      setShowCoverPicker(false);
+                                    } catch (err) {
+                                      console.error(err);
+                                      if (showToast) showToast('Erro ao enviar foto de capa.', 'error');
+                                    } finally {
+                                      setIsUploadingCover(false);
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
+
+                            {/* Ação 2: Capas Estáticas ("Stills") */}
+                            <div className="space-y-1.5">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                🖼️ Galeria de Capas ("Stills")
+                              </span>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {COVER_STILLS.map(still => (
+                                  <button
+                                    key={still.id}
+                                    type="button"
+                                    onClick={async () => {
+                                      setCoverPhotoURL(still.url);
+                                      await saveProfileFields({ coverPhotoURL: still.url });
+                                      if (showToast) showToast(`Capa '${still.label}' ativada!`, 'success');
+                                      setShowCoverPicker(false);
+                                    }}
+                                    className={`h-10 rounded-lg overflow-hidden border relative group/still transition-all cursor-pointer ${
+                                      coverPhotoURL === still.url
+                                        ? 'border-sky-400 ring-2 ring-sky-400/40'
+                                        : 'border-white/10 hover:border-white/30'
+                                    }`}
+                                    title={still.label}
+                                  >
+                                    <img src={still.url} alt={still.label} className="w-full h-full object-cover group-hover/still:scale-110 transition-transform" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Ação 3: Remover Capa */}
+                            {coverPhotoURL && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  setCoverPhotoURL('');
+                                  await saveProfileFields({ coverPhotoURL: '' });
+                                  if (showToast) showToast('Modo sem capa ativado!', 'info');
+                                  setShowCoverPicker(false);
+                                }}
+                                className="w-full py-1.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                              >
+                                <Trash2 size={13} />
+                                <span>Usar Sem Capa</span>
+                              </button>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
-                </div>
 
-                {/* GALERIA DE CAPAS ESTÁTICAS ("STILLS") */}
-                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2 mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                      🖼️ Galeria de Capas Estáticas ("Stills")
-                    </span>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setCoverPhotoURL('');
-                        await saveProfileFields({ coverPhotoURL: '' });
-                        if (showToast) showToast('Modo sem capa ativado', 'info');
-                      }}
-                      className="text-[9px] text-sky-400 hover:text-sky-300 underline font-mono cursor-pointer"
-                    >
-                      Remover Capa (Sem Capa)
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {COVER_STILLS.map(still => (
-                      <button
-                        key={still.id}
-                        type="button"
-                        onClick={async () => {
-                          setCoverPhotoURL(still.url);
-                          await saveProfileFields({ coverPhotoURL: still.url });
-                          if (showToast) showToast(`Capa '${still.label}' ativada!`, 'success');
-                        }}
-                        className={`h-12 rounded-xl overflow-hidden border relative group/still transition-all cursor-pointer ${
-                          coverPhotoURL === still.url
-                            ? 'border-sky-400 ring-2 ring-sky-400/40'
-                            : 'border-white/10 hover:border-white/30'
-                        }`}
-                        title={still.label}
-                      >
-                        <img src={still.url} alt={still.label} className="w-full h-full object-cover group-hover/still:scale-110 transition-transform" />
-                        <div className="absolute inset-0 bg-black/40 group-hover/still:bg-black/10 transition-colors flex items-center justify-center">
-                          <span className="text-[8px] font-black text-white px-1 py-0.5 rounded bg-black/60 truncate max-w-[90%]">
-                            {still.label}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Pré-visualização do Avatar / Foto Grande com Ações Sobrepostas */}
-                <div className="flex flex-col items-center justify-center space-y-1.5 pb-1">
-                  <div className="relative group">
-                    <Avatar
-                      displayName={displayName}
-                      email={profile.email}
-                      avatarStyle={avatarStyle}
-                      avatarSeed={avatarSeed}
-                      photoURL={photoURL}
-                      avatarType={avatarType}
-                      theme={profile.theme}
-                      size="xl"
-                      className="shadow-lg shadow-sky-500/10 border-2 border-sky-500/30 w-20 h-20"
-                    />
-
-                    {/* Botão Canto Inferior Direito: Sorteia Avatar (se modo API) ou Envia/Troca Foto (se modo Foto) */}
-                    {avatarType === 'api' ? (
-                      <button
-                        type="button"
-                        onClick={() => setAvatarSeed(secureRandomId('avatar'))}
-                        className="absolute -bottom-1 -right-1 p-1.5 bg-primary hover:bg-primary/80 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
-                        title="Gerar Novo Avatar Aleatório"
-                      >
-                        <Palette size={13} />
-                      </button>
-                    ) : (
-                      <label 
-                        className={`absolute -bottom-1 -right-1 p-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10 ${
-                          isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''
-                        }`}
-                        title={photoURL ? "Trocar Foto de Perfil" : "Enviar Foto de Perfil"}
-                      >
-                        {isUploadingPhoto ? <CircleNotch size={13} className="animate-spin" /> : <Pencil size={13} />}
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleProfilePhotoUpload(file);
-                          }}
+                  {/* AVATAR SOBREPOSTO NA CAPA (ESTILO FACEBOOK) */}
+                  <div className="px-6 pb-4 flex flex-col sm:flex-row items-center sm:items-end justify-between -mt-12 sm:-mt-14 relative z-10 gap-3">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
+                      <div className="relative group shrink-0">
+                        <Avatar
+                          displayName={displayName}
+                          email={profile.email}
+                          avatarStyle={avatarStyle}
+                          avatarSeed={avatarSeed}
+                          photoURL={photoURL}
+                          avatarType={avatarType}
+                          theme={profile.theme}
+                          size="xl"
+                          className="shadow-2xl shadow-black/80 border-4 border-slate-900 w-24 h-24 sm:w-28 sm:h-28 rounded-full"
                         />
-                      </label>
-                    )}
 
-                    {/* Botão Canto Superior Direito: Excluir Foto (quando em modo foto e com foto ativa) */}
-                    {avatarType === 'custom' && !!photoURL && (
-                      <button
-                        type="button"
-                        onClick={handleDeleteProfilePhoto}
-                        className="absolute -top-1 -right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/10"
-                        title="Excluir foto de perfil e voltar ao avatar"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    )}
+                        {/* Botão Canto Inferior Direito: Lápis/Paleta para trocar foto de perfil */}
+                        {avatarType === 'api' ? (
+                          <button
+                            type="button"
+                            onClick={() => setAvatarSeed(secureRandomId('avatar'))}
+                            className="absolute bottom-0 right-0 p-2 bg-sky-500 hover:bg-sky-400 text-white rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer border-2 border-slate-900"
+                            title="Gerar Novo Avatar Aleatório"
+                          >
+                            <Palette size={13} />
+                          </button>
+                        ) : (
+                          <label 
+                            className={`absolute bottom-0 right-0 p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer border-2 border-slate-900 ${
+                              isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''
+                            }`}
+                            title={photoURL ? "Trocar Foto de Perfil" : "Enviar Foto de Perfil"}
+                          >
+                            {isUploadingPhoto ? <CircleNotch size={13} className="animate-spin" /> : <Pencil size={13} />}
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleProfilePhotoUpload(file);
+                              }}
+                            />
+                          </label>
+                        )}
+
+                        {/* Botão Canto Superior Direito: Excluir Foto de Perfil */}
+                        {avatarType === 'custom' && !!photoURL && (
+                          <button
+                            type="button"
+                            onClick={handleDeleteProfilePhoto}
+                            className="absolute top-0 right-0 p-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border-2 border-slate-900"
+                            title="Excluir foto de perfil"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="pb-1">
+                        <h4 className="text-xl font-black text-white">{displayName || profile.email}</h4>
+                        <p className="text-xs text-slate-400 font-medium capitalize">{profile.role}</p>
+                      </div>
+                    </div>
                   </div>
-
-                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">
-                    {avatarType === 'custom' ? (photoURL ? 'Foto de Perfil Personalizada' : 'Nenhuma Foto Enviada (Clique no lápis)') : 'Avatar Dinâmico'}
-                  </span>
                 </div>
 
                 {/* Alternância de Modo: Usar Avatar vs Usar Foto */}
