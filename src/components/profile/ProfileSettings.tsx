@@ -35,8 +35,12 @@ import {
   Pencil,
   Fingerprint,
   Envelope,
-  CheckCircle
+  CheckCircle,
+  SpeakerHigh,
+  SpeakerSlash,
+  Trophy
 } from '@phosphor-icons/react';
+import { playDealSound } from '../../utils/audioSynth';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest, CollaborationNote, CalendarEvent } from '../../types';
@@ -90,7 +94,18 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
-  type ProfileTab = 'profile' | 'closing_pj' | 'schedule' | 'appearance' | 'reconciliation' | 'lgpd' | 'simulation' | 'sandbox' | 'teams';
+
+  // Estados de Sons & Efeitos Sonoros (Sintetizador Web Audio API)
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(profile.soundEnabled ?? true);
+  const [soundVolume, setSoundVolume] = useState<number>(profile.soundVolume ?? 80);
+  const [dealSoundEffect, setDealSoundEffect] = useState<'coin' | 'laser' | 'marimba' | 'silent'>(profile.dealSoundEffect || 'coin');
+
+  // Estados de Metas Pessoais Motivacionais
+  const [personalMonthlyGoal, setPersonalMonthlyGoal] = useState<number>(profile.personalMonthlyGoal || 0);
+  const [personalDailyGoal, setPersonalDailyGoal] = useState<number>(profile.personalDailyGoal || 0);
+  const [personalGoalType, setPersonalGoalType] = useState<'value' | 'count'>(profile.personalGoalType || 'value');
+
+  type ProfileTab = 'profile' | 'closing_pj' | 'schedule' | 'appearance' | 'sound' | 'personal_goals' | 'reconciliation' | 'lgpd' | 'simulation' | 'sandbox';
   const [activeTab, setActiveTab] = useState<ProfileTab>((initialTab as ProfileTab) || 'profile');
 
   const saveProfileFields = async (fields: Partial<UserProfile>) => {
@@ -1082,6 +1097,32 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   <CursorClick size={16} className="text-purple-400" />
                   <span>Estilo do Cursor</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('sound'); setSelectedTeamForMembers(null); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                    activeTab === 'sound'
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/25 shadow-sm'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                  }`}
+                >
+                  <SpeakerHigh size={16} className="text-amber-400" />
+                  <span>Sons de Alerta</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('personal_goals'); setSelectedTeamForMembers(null); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                    activeTab === 'personal_goals'
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 shadow-sm'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
+                  }`}
+                >
+                  <Trophy size={16} className="text-emerald-400" />
+                  <span>Minhas Metas Pessoais</span>
+                </button>
               </div>
 
               {/* Grupo 3: Ferramentas Operacionais */}
@@ -1952,6 +1993,275 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   >
                     <Calculator size={16} />
                     <span>Abrir Painel de Conciliação</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ABA: SONS DE ALERTA & EFEITOS SONOROS */}
+          {activeTab === 'sound' && (
+            <div className="space-y-6 max-w-2xl animate-fadeIn">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <SpeakerHigh size={22} className="text-amber-400" />
+                  Sons de Alerta & Efeitos Sonoros
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Personalize os alertas áudios sintetizados disparados nas liquidações de acordos e conquistas.
+                </p>
+              </div>
+
+              <div className="border border-white/10 bg-slate-900/40 rounded-3xl p-5 space-y-5">
+                {/* Ativar/Desativar Som */}
+                <div className="flex items-center justify-between p-4 bg-slate-950/60 rounded-2xl border border-white/5">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-white flex items-center gap-2">
+                      {soundEnabled ? <SpeakerHigh size={16} className="text-amber-400" /> : <SpeakerSlash size={16} className="text-slate-500" />}
+                      <span>Efeitos Sonoros do Sistema</span>
+                    </p>
+                    <p className="text-[10px] text-slate-400">Ativar efeitos de áudio em tempo real na plataforma</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const next = !soundEnabled;
+                      setSoundEnabled(next);
+                      await saveProfileFields({ soundEnabled: next });
+                      if (showToast) showToast(next ? 'Efeitos sonoros ativados' : 'Sons do sistema silenciados', 'info');
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      soundEnabled
+                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                        : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {soundEnabled ? 'Ativado' : 'Silenciado'}
+                  </button>
+                </div>
+
+                {/* Volume de Áudio */}
+                {soundEnabled && (
+                  <div className="space-y-2 p-4 bg-slate-950/60 rounded-2xl border border-white/5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-200">Volume dos Efeitos ({soundVolume}%)</span>
+                      <span className="text-[10px] text-amber-400 font-mono">{soundVolume}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={soundVolume}
+                      onChange={async (e) => {
+                        const val = parseInt(e.target.value, 10);
+                        setSoundVolume(val);
+                        await saveProfileFields({ soundVolume: val });
+                      }}
+                      className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    />
+                  </div>
+                )}
+
+                {/* Escolha do Som do Acordo */}
+                {soundEnabled && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                      Som para Acordo Pago / Meta Batida
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Opção 1: Moeda de Ouro */}
+                      <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${
+                        dealSoundEffect === 'coin' ? 'bg-amber-500/10 border-amber-500/40 text-white' : 'bg-slate-950/60 border-white/10 text-slate-400'
+                      }`}>
+                        <div>
+                          <p className="text-xs font-bold text-amber-400">🪙 Moeda de Ouro (Chime)</p>
+                          <p className="text-[10px] text-slate-400">Som brilhante de conquista financeira</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => playDealSound('coin', soundVolume)}
+                            className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            ▶ Testar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setDealSoundEffect('coin');
+                              await saveProfileFields({ dealSoundEffect: 'coin' });
+                              playDealSound('coin', soundVolume);
+                              if (showToast) showToast('Efeito Moeda selecionado', 'success');
+                            }}
+                            className={`p-1.5 rounded-lg border ${dealSoundEffect === 'coin' ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-900 border-white/10 text-slate-400'}`}
+                          >
+                            <CheckCircle size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Opção 2: Laser Sci-Fi */}
+                      <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${
+                        dealSoundEffect === 'laser' ? 'bg-cyan-500/10 border-cyan-500/40 text-white' : 'bg-slate-950/60 border-white/10 text-slate-400'
+                      }`}>
+                        <div>
+                          <p className="text-xs font-bold text-cyan-400">⚡ Laser Sci-Fi</p>
+                          <p className="text-[10px] text-slate-400">Efeito eletrônico dinâmico High-Tech</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => playDealSound('laser', soundVolume)}
+                            className="px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            ▶ Testar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setDealSoundEffect('laser');
+                              await saveProfileFields({ dealSoundEffect: 'laser' });
+                              playDealSound('laser', soundVolume);
+                              if (showToast) showToast('Efeito Laser selecionado', 'success');
+                            }}
+                            className={`p-1.5 rounded-lg border ${dealSoundEffect === 'laser' ? 'bg-cyan-500 text-slate-950 border-cyan-400' : 'bg-slate-900 border-white/10 text-slate-400'}`}
+                          >
+                            <CheckCircle size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Opção 3: Marimba Suave */}
+                      <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${
+                        dealSoundEffect === 'marimba' ? 'bg-emerald-500/10 border-emerald-500/40 text-white' : 'bg-slate-950/60 border-white/10 text-slate-400'
+                      }`}>
+                        <div>
+                          <p className="text-xs font-bold text-emerald-400">🎹 Marimba Suave</p>
+                          <p className="text-[10px] text-slate-400">Acorde harmônico orgânico relaxante</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => playDealSound('marimba', soundVolume)}
+                            className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            ▶ Testar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setDealSoundEffect('marimba');
+                              await saveProfileFields({ dealSoundEffect: 'marimba' });
+                              playDealSound('marimba', soundVolume);
+                              if (showToast) showToast('Efeito Marimba selecionado', 'success');
+                            }}
+                            className={`p-1.5 rounded-lg border ${dealSoundEffect === 'marimba' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 border-white/10 text-slate-400'}`}
+                          >
+                            <CheckCircle size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ABA: MINHAS METAS PESSOAIS */}
+          {activeTab === 'personal_goals' && (
+            <div className="space-y-6 max-w-2xl animate-fadeIn">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Trophy size={22} className="text-emerald-400" />
+                  Minhas Metas Pessoais Motivacionais
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Defina os seus próprios alvos individuais do mês e do dia para impulsionar seus resultados.
+                </p>
+              </div>
+
+              <div className="border border-white/10 bg-slate-900/40 rounded-3xl p-5 space-y-5">
+                {/* Tipo de Meta */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-200">Tipo de Meta Preferida</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setPersonalGoalType('value');
+                        await saveProfileFields({ personalGoalType: 'value' });
+                      }}
+                      className={`p-3 rounded-xl border text-xs font-bold text-left transition-all cursor-pointer ${
+                        personalGoalType === 'value'
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                          : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      💵 Valor Recuperado (R$)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setPersonalGoalType('count');
+                        await saveProfileFields({ personalGoalType: 'count' });
+                      }}
+                      className={`p-3 rounded-xl border text-xs font-bold text-left transition-all cursor-pointer ${
+                        personalGoalType === 'count'
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                          : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      🔢 Quantidade de Acordos
+                    </button>
+                  </div>
+                </div>
+
+                {/* Meta Mensal */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-200">
+                    {personalGoalType === 'value' ? 'Meta Pessoal Mensal (R$)' : 'Meta Pessoal Mensal (Nº de Acordos)'}
+                  </label>
+                  <input
+                    type="number"
+                    value={personalMonthlyGoal || ''}
+                    onChange={(e) => setPersonalMonthlyGoal(Number(e.target.value))}
+                    placeholder={personalGoalType === 'value' ? 'Ex: 50000' : 'Ex: 25'}
+                    className="w-full bg-slate-950 border border-white/10 focus:border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+                  />
+                  <p className="text-[10px] text-slate-400">Defina o valor alvo que você deseja atingir no mês</p>
+                </div>
+
+                {/* Meta Diária */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-200">
+                    {personalGoalType === 'value' ? 'Meta Pessoal Diária (R$)' : 'Meta Pessoal Diária (Nº de Acordos)'}
+                  </label>
+                  <input
+                    type="number"
+                    value={personalDailyGoal || ''}
+                    onChange={(e) => setPersonalDailyGoal(Number(e.target.value))}
+                    placeholder={personalGoalType === 'value' ? 'Ex: 2500' : 'Ex: 3'}
+                    className="w-full bg-slate-950 border border-white/10 focus:border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+                  />
+                  <p className="text-[10px] text-slate-400">Seu objetivo diário individual</p>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await saveProfileFields({
+                        personalMonthlyGoal,
+                        personalDailyGoal,
+                        personalGoalType
+                      });
+                      if (showToast) showToast('Metas pessoais atualizadas com sucesso!', 'success');
+                    }}
+                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                  >
+                    <Save size={16} />
+                    Salvar Minhas Metas Pessoais
                   </button>
                 </div>
               </div>

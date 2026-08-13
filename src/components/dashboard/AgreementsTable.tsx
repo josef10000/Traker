@@ -401,6 +401,11 @@ export const AgreementsTable: React.FC<AgreementsTableProps> = ({
                             Sem Desconto
                           </span>
                         )}
+                        {(agreement.status === AgreementStatus.PAID || agreement.status === AgreementStatus.RECOVERED) && (agreement.notesHistory?.some(n => n.content.toLowerCase().includes('quebr') || n.category === 'warning')) && (
+                          <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30 w-fit mt-1 flex items-center gap-1" title="Acordo recuperado pós-quebra">
+                            🟢 Resgatado Pós-Quebra
+                          </span>
+                        )}
                       </div>
                     </td>
 

@@ -637,6 +637,8 @@ export const calculateDashboardStats = (
       primeTimeDistribution,
       heatmap31Days,
       discountStats,
+      roiByOrigin: calculateRoiByOrigin(realTargetAgreements),
+      breakRecoveryStats: calculateBreakRecoveryStats(realTargetAgreements),
       forecastStats: calculateForecastStats(realTargetAgreements)
     },
     projection: (() => {
@@ -654,3 +656,89 @@ export const calculateDashboardStats = (
     }, {} as Record<number, number>)
   };
 };
+
+/**
+ * Calcula o ROI e Eficiência Financeira agrupados por Canal de Origem
+ */
+export const calculateRoiByOrigin = (agreements: Agreement[]) => {
+  const real = filterRealAgreements(agreements);
+  const result: Record<string, {
+    totalValue: number;
+    paidValue: number;
+    totalCount: number;
+    paidCount: number;
+    conversionRate: number;
+    discountRate: number;
+    avgDiscountPercentage: number;
+  }> = {};
+
+  real.forEach(a => {
+    const origin = a.origin || 'outros';
+    if (!result[origin]) {
+      result[origin] = {
+        totalValue: 0,
+        paidValue: 0,
+        totalCount: 0,
+        paidCount: 0,
+        conversionRate: 0,
+        discountRate: 0,
+        avgDiscountPercentage: 0
+      };
+    }
+    result[origin].totalValue += a.value;
+    result[origin].totalCount += 1;
+
+    if (a.status === AgreementStatus.PAID) {
+      result[origin].paidValue += a.value;
+      result[origin].paidCount += 1;
+    }
+  });
+
+  Object.keys(result).forEach(origin => {
+    const item = result[origin];
+    item.conversionRate = item.totalCount > 0 ? (item.paidCount / item.totalCount) * 100 : 0;
+    const originAgreements = real.filter(a => (a.origin || 'outros') === origin);
+    const withDiscount = originAgreements.filter(a => a.discountApplied);
+    item.discountRate = item.totalCount > 0 ? (withDiscount.length / item.totalCount) * 100 : 0;
+  });
+
+  return result;
+};
+
+/**
+ * Calcula o Índice de Resgate de Acordos Quebrados (% de acordos salvos e tempo médio em dias)
+ */
+export const calculateBreakRecoveryStats = (agreements: Agreement[]) => {
+  const real = filterRealAgreements(agreements);
+  const brokenHistory = real.filter(a => {
+    const hasBrokenNote = a.notesHistory?.some(n => n.content.toLowerCase().includes('quebr') || n.category === 'warning');
+    const isRecovered = a.status === AgreementStatus.PAID || a.status === AgreementStatus.RECOVERED;
+    return (a.status === AgreementStatus.BROKEN || hasBrokenNote || a.notesHistory?.length) && isRecovered;
+  });
+
+  const totalBrokenEver = real.filter(a => a.status === AgreementStatus.BROKEN || a.notesHistory?.some(n => n.content.toLowerCase().includes('quebr'))).length;
+  const recoveredCount = brokenHistory.length;
+  const recoveredVolume = brokenHistory.reduce((acc, curr) => acc + curr.value, 0);
+  const recoveryRate = totalBrokenEver > 0 ? (recoveredCount / totalBrokenEver) * 100 : (recoveredCount > 0 ? 100 : 0);
+
+  let totalDays = 0;
+  let countDays = 0;
+  brokenHistory.forEach(a => {
+    const created = new Date(a.createdAt).getTime();
+    const paid = a.paidAt ? new Date(a.paidAt).getTime() : new Date().getTime();
+    const days = Math.max(1, Math.round((paid - created) / (1000 * 60 * 60 * 24)));
+    totalDays += days;
+    countDays += 1;
+  });
+
+  const avgRecoveryDays = countDays > 0 ? Math.round(totalDays / countDays) : 0;
+
+  return {
+    totalBroken: totalBrokenEver,
+    recoveredCount,
+    recoveredVolume,
+    recoveryRate,
+    avgRecoveryDays
+  };
+};
+

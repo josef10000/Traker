@@ -20,7 +20,8 @@ import {
   Sun,
   Bell,
   WifiSlash,
-  ChatCircleDots
+  ChatCircleDots,
+  Trophy
 } from '@phosphor-icons/react';
 import { UserProfile, Team, AppNotification } from '../../types';
 import { Avatar } from '../ui/Avatar';
@@ -270,7 +271,29 @@ export const DashboardHeader = ({
             </div>
           </div>
         </div>
+
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+          {/* Micro-Card Meta Pessoal Motivacional */}
+          {Boolean(profile.personalMonthlyGoal && profile.personalMonthlyGoal > 0) && (
+            <div
+              onClick={() => onSettingsClick('personal_goals')}
+              className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-all shrink-0"
+              title="Clique para gerenciar suas Metas Pessoais"
+            >
+              <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-300">
+                <Trophy size={14} />
+              </div>
+              <div className="text-[10px] space-y-0.5">
+                <div className="flex items-center gap-1 font-bold text-slate-200">
+                  <span>Meta Pessoal</span>
+                  <span className="text-emerald-400 font-mono font-black">
+                    {profile.personalGoalType === 'count' ? `${profile.personalMonthlyGoal} acordos` : `R$ ${profile.personalMonthlyGoal.toLocaleString('pt-BR')}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Badge de Conexão Offline */}
           {isOnline === false && (
             <div 

@@ -144,6 +144,14 @@ export interface UserProfile {
   isWebAuthnEnabled?: boolean;
   webAuthnCredentials?: WebAuthnCredential[];
   backupCodes?: string[];
+  // Preferências de Áudio e Efeitos Sonoros (Sintetizador Web Audio API)
+  soundEnabled?: boolean;
+  soundVolume?: number; // 0 a 100
+  dealSoundEffect?: 'coin' | 'laser' | 'marimba' | 'silent';
+  // Metas Pessoais Motivacionais do Colaborador
+  personalMonthlyGoal?: number;
+  personalDailyGoal?: number;
+  personalGoalType?: 'value' | 'count';
 }
 
 export interface WebAuthnCredential {
@@ -238,6 +246,22 @@ export interface DashboardStats {
   projection: number;
   projectedMrr: number; // MRR futuro (colchão projetado)
   insights?: {
+    roiByOrigin?: Record<string, {
+      totalValue: number;
+      paidValue: number;
+      totalCount: number;
+      paidCount: number;
+      conversionRate: number;
+      discountRate: number;
+      avgDiscountPercentage: number;
+    }>;
+    breakRecoveryStats?: {
+      totalBroken: number;
+      recoveredCount: number;
+      recoveredVolume: number;
+      recoveryRate: number;
+      avgRecoveryDays: number;
+    };
     avgTimeToPay: number;
     projection7d: number;
     performanceByOrigin: Record<string, { total: number; paid: number }>;

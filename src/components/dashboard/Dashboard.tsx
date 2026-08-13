@@ -27,6 +27,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { markStatsStale } from '../../lib/statsCache';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { playDealSound } from '../../utils/audioSynth';
 import { 
   Agreement, 
   AgreementNote,
@@ -1599,6 +1600,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleEfetivar = async (id: string) => {
+    if (profile.soundEnabled !== false) {
+      playDealSound(profile.dealSoundEffect || 'coin', profile.soundVolume ?? 80);
+    }
+
     if (profile.organizationId === 'sandbox-test') {
       const now = new Date().toISOString();
       sandboxService.updateAgreement(id, { 

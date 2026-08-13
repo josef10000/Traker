@@ -1138,6 +1138,61 @@ export const BiAnalyticsTab: React.FC<BiAnalyticsTabProps> = ({
                 </div>
               ))}
             </div>
+
+            {/* 📊 TABELA DE ROI E EFICIÊNCIA FINANCEIRA POR ORIGEM DO CANAL */}
+            <div className="p-6 rounded-2xl bg-slate-800/40 border border-white/10 space-y-4 mt-6">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <h4 className="text-sm font-black uppercase tracking-wider text-slate-100 flex items-center gap-2">
+                  <CurrencyDollar size={18} className="text-emerald-400" />
+                  <span>ROI & Retorno Financeiro por Canal de Origem</span>
+                </h4>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                  Métrica Dinâmica de Inteligência
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="text-slate-400 border-b border-white/5 uppercase text-[10px] font-black tracking-wider">
+                      <th className="py-2.5 px-3">Canal de Origem</th>
+                      <th className="py-2.5 px-3">Volume Gerado</th>
+                      <th className="py-2.5 px-3">Volume Liquidado</th>
+                      <th className="py-2.5 px-3">Conversão (%)</th>
+                      <th className="py-2.5 px-3">% Com Desconto</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 font-mono">
+                    {Object.entries(effectiveStats?.insights?.roiByOrigin || {}).length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-6 text-slate-500 italic text-xs">
+                          Nenhum dado registrado para o escopo selecionado.
+                        </td>
+                      </tr>
+                    ) : (
+                      Object.entries(effectiveStats?.insights?.roiByOrigin || {}).map(([origKey, item]) => (
+                        <tr key={origKey} className="hover:bg-white/5 transition-colors">
+                          <td className="py-3 px-3 font-sans font-bold text-slate-200 uppercase flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            {origKey}
+                          </td>
+                          <td className="py-3 px-3 text-slate-300 font-bold">{formatCurrency(item.totalValue)}</td>
+                          <td className="py-3 px-3 text-emerald-400 font-black">{formatCurrency(item.paidValue)}</td>
+                          <td className="py-3 px-3">
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-bold border border-emerald-500/20">
+                              {item.conversionRate.toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-pink-400 font-bold">
+                            {item.discountRate.toFixed(1)}%
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       )}
