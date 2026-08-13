@@ -9,22 +9,24 @@ import {
   Check, 
   PencilSimple, 
   Trash, 
-  Tag, 
   Megaphone, 
   FileText, 
   Question, 
-  ChatTeardropText, 
   Sparkle, 
   X,
   CaretLeft,
   CaretRight,
-  Image as ImageIcon,
-  UploadSimple,
   Eye,
   CheckCircle,
   Star,
-  TextT,
-  Clock
+  Clock,
+  ArrowLeft,
+  BookmarkSimple,
+  SlidersHorizontal,
+  UploadSimple,
+  Stack,
+  FileCode,
+  ShieldCheck
 } from '@phosphor-icons/react';
 import { KnowledgeArticle, KnowledgeCategory, UserProfile } from '../../types';
 import { 
@@ -35,7 +37,6 @@ import {
 } from '../../lib/knowledgeBaseService';
 import { uploadImage } from '../../lib/imageUpload';
 import { notifyAnnouncementPublished } from '../../lib/notifications';
-import { auth } from '../../lib/firebase';
 
 interface KnowledgeBaseSectionProps {
   profile: UserProfile;
@@ -59,7 +60,10 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Sistema de Favoritos salvos por operador
+  // Artigo selecionado para leitura imersiva (Estilo Wiki Article Reader)
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+
+  // Favoritos salvos por operador
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(`tracker_favorites_${profile.uid}`);
@@ -69,8 +73,8 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     }
   });
 
-  const toggleFavorite = (articleId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleFavorite = (articleId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setFavorites(prev => {
       const next = prev.includes(articleId) 
         ? prev.filter(id => id !== articleId) 
@@ -84,24 +88,14 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     });
   };
 
-  // Estado do Modo Teleprompter Lateral Flutuante
+  // Teleprompter Flutuante Lateral
   const [teleprompterArticle, setTeleprompterArticle] = useState<KnowledgeArticle | null>(null);
   const [teleprompterFontSize, setTeleprompterFontSize] = useState<number>(16);
 
-  // Extração de Tags Únicas de todos os artigos para a Nuvem de Tags
-  const availableTags = useMemo(() => {
-    const set = new Set<string>();
-    articles.forEach(art => {
-      if (art.tags && Array.isArray(art.tags)) {
-        art.tags.forEach(t => set.add(t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`));
-      }
-    });
-    return Array.from(set).slice(0, 12);
-  }, [articles]);
+  // Banner de Comunicados no Topo (Slider Index)
+  const [announcementIndex, setAnnouncementIndex] = useState(0);
 
-  // Paginação: 6 por página
-  const ITEMS_PER_PAGE = 6;
-  const [currentPage, setCurrentPage] = useState(1);
+  // Modal Image Preview
   const [previewModalImage, setPreviewModalImage] = useState<string | null>(null);
 
   // Formulário Modal de Criação / Edição
@@ -119,16 +113,6 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   const [formRequireAck, setFormRequireAck] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleAcknowledgeArticle = async (articleId: string) => {
-    try {
-      await acknowledgeKnowledgeArticle(profile.organizationId || 'sandbox-test', articleId, profile.uid);
-      if (showToast) showToast('Confirmação de leitura e ciência registrada!', 'success');
-    } catch (err) {
-      console.error('Erro ao confirmar ciente do comunicado:', err);
-      if (showToast) showToast('Erro ao registrar ciência.', 'error');
-    }
-  };
-
   // Escuta os artigos da organização em tempo real
   useEffect(() => {
     if (!profile.organizationId) return;
@@ -138,12 +122,30 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     return () => unsub();
   }, [profile.organizationId]);
 
-  // Reset da página atual ao filtrar por categoria ou termo de busca
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCategory, searchQuery, selectedTag]);
+  // Artigos de Comunicados & Avisos para o Banner Superior
+  const urgentAnnouncements = useMemo(() => {
+    return articles.filter(art => art.category === 'announcement' || art.isUrgent || art.requireAcknowledgement);
+  }, [articles]);
 
-  // Filtragem inteligente por categoria, tag e palavra-chave
+  // Reset do índice do banner se houver mudanças nos comunicados
+  useEffect(() => {
+    if (announcementIndex >= urgentAnnouncements.length) {
+      setAnnouncementIndex(0);
+    }
+  }, [urgentAnnouncements, announcementIndex]);
+
+  // Tags populares extraídas
+  const availableTags = useMemo(() => {
+    const set = new Set<string>();
+    articles.forEach(art => {
+      if (art.tags && Array.isArray(art.tags)) {
+        art.tags.forEach(t => set.add(t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`));
+      }
+    });
+    return Array.from(set).slice(0, 10);
+  }, [articles]);
+
+  // Filtragem inteligente de artigos
   const filteredArticles = useMemo(() => {
     return articles.filter(art => {
       let matchesCat = true;
@@ -171,44 +173,34 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     });
   }, [articles, selectedCategory, searchQuery, selectedTag, favorites]);
 
-  // Cálculo da contagem por categoria
+  // Contagem de categorias para a Sidebar
   const categoryCounts = useMemo(() => {
     return {
       all: articles.length,
       favorites: favorites.length,
-      script: articles.filter(a => a.category === 'script').length,
       announcement: articles.filter(a => a.category === 'announcement').length,
+      script: articles.filter(a => a.category === 'script').length,
       policy: articles.filter(a => a.category === 'policy').length,
       faq: articles.filter(a => a.category === 'faq').length,
+      general: articles.filter(a => a.category === 'general').length,
     };
   }, [articles, favorites]);
 
-  // Helper para destacar variáveis dinâmicas no script ex: [NOME_DO_CLIENTE]
-  const renderHighlightedScript = (text: string) => {
-    if (!text) return null;
-    const parts = text.split(/(\[[^\]]+\])/g);
-    return parts.map((part, idx) => {
-      if (part.startsWith('[') && part.endsWith(']')) {
-        return (
-          <span 
-            key={idx} 
-            className="inline-block px-1.5 py-0.5 my-0.5 rounded-md text-[11px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
-          >
-            {part}
-          </span>
-        );
-      }
-      return part;
-    });
+  // Artigo atualmente aberto no Leitor
+  const activeArticle = useMemo(() => {
+    if (!selectedArticleId) return null;
+    return articles.find(a => a.id === selectedArticleId) || null;
+  }, [articles, selectedArticleId]);
+
+  const handleAcknowledgeArticle = async (articleId: string) => {
+    try {
+      await acknowledgeKnowledgeArticle(profile.organizationId || 'sandbox-test', articleId, profile.uid);
+      if (showToast) showToast('Confirmação de leitura e ciência registrada!', 'success');
+    } catch (err) {
+      console.error('Erro ao registrar ciência:', err);
+      if (showToast) showToast('Erro ao registrar ciência.', 'error');
+    }
   };
-
-  // Cálculo da Paginação (6 itens por página)
-  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE) || 1;
-
-  const paginatedArticles = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredArticles.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredArticles, currentPage]);
 
   const handleCopyScript = (art: KnowledgeArticle) => {
     const text = art.copyableScript || art.content;
@@ -246,7 +238,8 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     setIsFormOpen(true);
   };
 
-  const handleOpenEditForm = (art: KnowledgeArticle) => {
+  const handleOpenEditForm = (art: KnowledgeArticle, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setEditingArticleId(art.id);
     setFormTitle(art.title);
     setFormCategory(art.category);
@@ -311,10 +304,14 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     }
   };
 
-  const handleDeleteArticle = async (articleId: string) => {
+  const handleDeleteArticle = async (articleId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!window.confirm('Tem certeza que deseja excluir este artigo/script?')) return;
     try {
       await deleteKnowledgeArticle(profile.organizationId || 'sandbox-test', articleId);
+      if (selectedArticleId === articleId) {
+        setSelectedArticleId(null);
+      }
       if (showToast) showToast('Artigo excluído com sucesso.', 'info');
     } catch (e) {
       console.error('Erro ao excluir artigo:', e);
@@ -322,39 +319,147 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     }
   };
 
+  const renderHighlightedScript = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(\[[^\]]+\])/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('[') && part.endsWith(']')) {
+        return (
+          <span 
+            key={idx} 
+            className="inline-block px-2 py-0.5 my-0.5 rounded-md text-[11px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   const getCategoryBadge = (cat: KnowledgeCategory) => {
     switch (cat) {
       case 'script':
-        return <span className="px-2.5 py-0.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold text-[10px]">💬 Script</span>;
+        return <span className="px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 font-bold text-[10px] flex items-center gap-1"><FileCode size={12} /> Script</span>;
       case 'announcement':
-        return <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-[10px]">🚨 Comunicado</span>;
+        return <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold text-[10px] flex items-center gap-1"><Megaphone size={12} /> Comunicado</span>;
       case 'policy':
-        return <span className="px-2.5 py-0.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold text-[10px]">📜 Política</span>;
+        return <span className="px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 font-bold text-[10px] flex items-center gap-1"><ShieldCheck size={12} /> Política</span>;
       case 'faq':
-        return <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">❓ FAQ</span>;
+        return <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] flex items-center gap-1"><Question size={12} /> FAQ</span>;
       default:
-        return <span className="px-2.5 py-0.5 rounded-lg bg-slate-500/10 text-slate-400 border border-slate-500/20 font-bold text-[10px]">📋 Geral</span>;
+        return <span className="px-2.5 py-0.5 rounded-full bg-slate-500/15 text-slate-400 border border-slate-500/30 font-bold text-[10px] flex items-center gap-1"><FileText size={12} /> Geral</span>;
     }
   };
 
+  const currentAnnouncement = urgentAnnouncements[announcementIndex] || null;
+
   return (
-    <div className="space-y-6">
-      <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
-        isDark ? 'bg-slate-900/80 border-slate-800/80 backdrop-blur-md shadow-xl shadow-slate-950/40' : 'bg-white border-slate-200 shadow-sm'
+    <div className="space-y-5">
+      {/* BANNER SUPERIOR DE COMUNICADOS & AVISOS IMPORTANTES */}
+      {urgentAnnouncements.length > 0 && currentAnnouncement && (
+        <div className="relative rounded-2xl overflow-hidden border border-amber-500/30 bg-gradient-to-r from-amber-950/40 via-slate-900/90 to-slate-950 p-5 shadow-xl shadow-amber-500/5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5 flex-1">
+              <div className="p-3 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 mt-0.5">
+                <Megaphone size={24} weight="duotone" className="animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-extrabold text-[10px] uppercase tracking-wider border border-amber-500/30">
+                    🚨 Comunicado da Diretoria
+                  </span>
+                  {currentAnnouncement.requireAcknowledgement && !currentAnnouncement.acknowledgements?.[profile.uid] && (
+                    <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 font-extrabold text-[10px] animate-pulse border border-rose-500/30">
+                      Ciente Pendente
+                    </span>
+                  )}
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {new Date(currentAnnouncement.createdAt).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+
+                <h3 className="text-base font-black text-white tracking-tight">
+                  {currentAnnouncement.title}
+                </h3>
+                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed font-medium">
+                  {currentAnnouncement.content}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 self-end md:self-center pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
+              {currentAnnouncement.requireAcknowledgement && (
+                currentAnnouncement.acknowledgements?.[profile.uid] ? (
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30 flex items-center gap-1.5">
+                    <CheckCircle size={15} weight="bold" />
+                    <span>Ciente Confirmado</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleAcknowledgeArticle(currentAnnouncement.id)}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/25 transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle size={15} weight="bold" />
+                    <span>Confirmar Ciência</span>
+                  </button>
+                )
+              )}
+
+              <button
+                type="button"
+                onClick={() => setSelectedArticleId(currentAnnouncement.id)}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                Ler Artigo Completo
+              </button>
+
+              {urgentAnnouncements.length > 1 && (
+                <div className="flex items-center gap-1 pl-2 border-l border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setAnnouncementIndex(prev => (prev === 0 ? urgentAnnouncements.length - 1 : prev - 1))}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                    title="Comunicado Anterior"
+                  >
+                    <CaretLeft size={14} />
+                  </button>
+                  <span className="text-[10px] font-extrabold text-slate-400 px-1">
+                    {announcementIndex + 1}/{urgentAnnouncements.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAnnouncementIndex(prev => (prev === urgentAnnouncements.length - 1 ? 0 : prev + 1))}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                    title="Próximo Comunicado"
+                  >
+                    <CaretRight size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BARRA DE FERRAMENTAS SUPERIOR (BUSCA & AÇÕES WIKI) */}
+      <div className={`p-4 rounded-2xl border transition-all ${
+        isDark ? 'bg-slate-900/80 border-slate-800/80 backdrop-blur-md shadow-xl' : 'bg-white border-slate-200 shadow-sm'
       }`}>
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-inner shrink-0">
               <BookOpen size={22} weight="duotone" />
             </div>
             <div>
               <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5">
-                <span>Base de Conhecimento & Roteiros</span>
+                <span>Wiki Corporativa & Procedimentos</span>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-sky-500/20 text-sky-400 font-black border border-sky-500/30">
-                  {filteredArticles.length} {filteredArticles.length === 1 ? 'item' : 'itens'}
+                  {articles.length} {articles.length === 1 ? 'procedimento' : 'procedimentos'}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400 font-medium">Guias operacionais, roteiros de fala de alta conversão e comunicados.</p>
+              <p className="text-xs text-slate-400 font-medium">Acervo centralizado de roteiros, diretrizes operacionais e manuais.</p>
             </div>
           </div>
 
@@ -365,7 +470,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar por termo ou tag..."
+                placeholder="Buscar procedimentos na Wiki..."
                 className={`w-full pl-9 pr-8 py-2 rounded-xl text-xs font-semibold outline-none border transition-all ${
                   isDark 
                     ? 'bg-slate-950/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/40' 
@@ -390,7 +495,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-sky-500/25 transition-all shrink-0 cursor-pointer"
               >
                 <Plus size={15} weight="bold" />
-                <span className="hidden sm:inline">Novo Artigo / Script</span>
+                <span className="hidden sm:inline">Novo Conteúdo</span>
               </button>
             )}
 
@@ -399,7 +504,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                 type="button"
                 onClick={onClose}
                 className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
-                title="Fechar Base de Conhecimento"
+                title="Fechar Wiki"
               >
                 <X size={16} />
               </button>
@@ -407,38 +512,40 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 pt-3 border-t border-white/5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1 sm:pb-0 custom-scrollbar">
-              {[
-                { id: 'all', label: 'Todos', count: categoryCounts.all },
-                { id: 'favorites', label: '⭐ Favoritos', count: categoryCounts.favorites },
-                { id: 'script', label: '💬 Scripts', count: categoryCounts.script },
-                { id: 'announcement', label: '🚨 Comunicados', count: categoryCounts.announcement },
-                { id: 'policy', label: '📜 Políticas', count: categoryCounts.policy },
-                { id: 'faq', label: '❓ FAQ', count: categoryCounts.faq }
-              ].map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id as any)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    selectedCategory === cat.id
-                      ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25 ring-1 ring-sky-400/50'
-                      : isDark ? 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  <span>{cat.label}</span>
-                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                    selectedCategory === cat.id
-                      ? 'bg-white/20 text-white'
-                      : isDark ? 'bg-slate-800/80 text-slate-400' : 'bg-slate-200 text-slate-600'
-                  }`}>
-                    {cat.count}
-                  </span>
-                </button>
-              ))}
-            </div>
+        {/* Nuvem de Tags Clicáveis */}
+        {availableTags.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-3 mt-3 border-t border-white/5 text-xs">
+            <span className="text-[11px] font-bold text-slate-500 shrink-0">Tags:</span>
+            {availableTags.map(tag => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setSelectedTag(prev => prev === tag ? null : tag)}
+                className={`px-2.5 py-0.5 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
+                  selectedTag === tag
+                    ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
+                    : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/5'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
+      {/* CORPO DA WIKI (LAYOUT NOTION EN 2 COLUNAS: SIDEBAR + CONTEÚDO PRINCIPAL) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* SIDEBAR ESQUERDA (NAVEGAÇÃO POR CATEGORIAS & FILTROS DA WIKI) */}
+        <div className={`lg:col-span-3 rounded-2xl border p-4 space-y-4 ${
+          isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <div className="flex items-center justify-between px-2 pb-2 border-b border-white/5">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Stack size={14} className="text-sky-400" />
+              <span>Navegação Wiki</span>
+            </span>
             {(selectedCategory !== 'all' || searchQuery || selectedTag) && (
               <button
                 type="button"
@@ -447,224 +554,325 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                   setSearchQuery('');
                   setSelectedTag(null);
                 }}
-                className="text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors whitespace-nowrap shrink-0"
+                className="text-[10px] font-bold text-sky-400 hover:text-sky-300 transition-colors"
               >
-                Limpar Filtros
+                Limpar
               </button>
             )}
           </div>
 
-          {/* Nuvem de Tags Clicáveis */}
-          {availableTags.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-white/5 text-xs">
-              <span className="text-[11px] font-bold text-slate-500 shrink-0">Tags:</span>
-              {availableTags.map(tag => (
+          <nav className="space-y-1">
+            {[
+              { id: 'all', label: 'Todos os Artigos', icon: <BookOpen size={16} />, count: categoryCounts.all },
+              { id: 'favorites', label: 'Meus Favoritos', icon: <Star size={16} />, count: categoryCounts.favorites },
+              { id: 'announcement', label: 'Comunicados & Avisos', icon: <Megaphone size={16} />, count: categoryCounts.announcement },
+              { id: 'script', label: 'Scripts de Atendimento', icon: <FileCode size={16} />, count: categoryCounts.script },
+              { id: 'policy', label: 'Políticas & Normas', icon: <ShieldCheck size={16} />, count: categoryCounts.policy },
+              { id: 'faq', label: 'Perguntas Frequentes', icon: <Question size={16} />, count: categoryCounts.faq },
+              { id: 'general', label: 'Gerais & Manuais', icon: <FileText size={16} />, count: categoryCounts.general }
+            ].map(cat => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(cat.id as any);
+                  setSelectedArticleId(null);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedCategory === cat.id
+                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                    : isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className={selectedCategory === cat.id ? 'text-white' : 'text-slate-400'}>
+                    {cat.icon}
+                  </span>
+                  <span>{cat.label}</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
+                  selectedCategory === cat.id 
+                    ? 'bg-white/20 text-white' 
+                    : isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {cat.count}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* ÁREA PRINCIPAL DIREITA (LEITOR DE ARTIGO OU LISTA SUMÁRIO DE WIKI) */}
+        <div className="lg:col-span-9 space-y-4">
+          
+          {/* MODO A: LEITOR DE ARTIGO IMERSIVO SELECIONADO */}
+          {activeArticle ? (
+            <div className={`p-6 sm:p-8 rounded-3xl border space-y-6 ${
+              isDark ? 'bg-slate-900/90 border-slate-800 shadow-2xl' : 'bg-white border-slate-200 shadow-md'
+            }`}>
+              {/* Barra de Navegação de Retorno do Leitor */}
+              <div className="flex items-center justify-between pb-4 border-b border-white/10 gap-3">
                 <button
-                  key={tag}
                   type="button"
-                  onClick={() => setSelectedTag(prev => prev === tag ? null : tag)}
-                  className={`px-2.5 py-0.5 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
-                    selectedTag === tag
-                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
-                      : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/5'
-                  }`}
+                  onClick={() => setSelectedArticleId(null)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
                 >
-                  {tag}
+                  <ArrowLeft size={16} />
+                  <span>Voltar para o Sumário</span>
                 </button>
-              ))}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite(activeArticle.id)}
+                    className={`p-2 rounded-xl transition-all cursor-pointer ${
+                      favorites.includes(activeArticle.id) 
+                        ? 'text-amber-400 bg-amber-400/10 border border-amber-400/20' 
+                        : 'text-slate-400 hover:text-white bg-white/5 hover:bg-white/10'
+                    }`}
+                    title={favorites.includes(activeArticle.id) ? 'Remover dos Favoritos' : 'Favoritar Artigo'}
+                  >
+                    <Star size={18} weight={favorites.includes(activeArticle.id) ? 'fill' : 'regular'} />
+                  </button>
+
+                  {canManage && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditForm(activeArticle)}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-sky-400 transition-colors cursor-pointer"
+                        title="Editar Artigo"
+                      >
+                        <PencilSimple size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteArticle(activeArticle.id)}
+                        className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                        title="Excluir Artigo"
+                      >
+                        <Trash size={18} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Cabeçalho do Artigo */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {getCategoryBadge(activeArticle.category)}
+                  {activeArticle.isUrgent && <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 font-bold text-[10px] animate-pulse">🚨 Urgente</span>}
+                  {activeArticle.isPinned && <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 font-bold text-[10px]">📌 Fixado</span>}
+                  <span className="text-xs text-slate-400 font-medium flex items-center gap-1 ml-2">
+                    <Clock size={14} className="text-slate-500" />
+                    <span>{Math.max(1, Math.ceil((activeArticle.content.length + (activeArticle.copyableScript?.length || 0)) / 400))} min de leitura</span>
+                  </span>
+                </div>
+
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-snug">
+                  {activeArticle.title}
+                </h1>
+
+                <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-white/5">
+                  <span>Publicado por <strong className="text-slate-200">{activeArticle.createdByName}</strong> em {new Date(activeArticle.createdAt).toLocaleDateString('pt-BR')}</span>
+                  {activeArticle.tags && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {activeArticle.tags.map((t, idx) => (
+                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white/5 text-slate-400 text-[10px] font-semibold border border-white/5">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Imagem do Artigo */}
+              {activeArticle.imageUrl && (
+                <div 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setPreviewModalImage(activeArticle.imageUrl || null)}
+                  className="relative rounded-2xl overflow-hidden border border-white/10 bg-slate-950/50 cursor-pointer group"
+                >
+                  <img 
+                    src={activeArticle.imageUrl} 
+                    alt={activeArticle.title} 
+                    className="w-full max-h-96 object-cover group-hover:scale-102 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-bold text-xs">
+                    <Eye size={18} />
+                    <span>Clique para Ampliar Imagem</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Conteúdo Texto Principal */}
+              <div className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal whitespace-pre-wrap pt-2">
+                {activeArticle.content}
+              </div>
+
+              {/* BLOCO DE SCRIPT DE ATENDIMENTO DE CÓPIA EM 1-CLIQUE */}
+              {activeArticle.copyableScript && (
+                <div className="p-5 rounded-2xl border border-sky-500/30 bg-sky-950/20 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-sky-500/20 pb-3">
+                    <span className="text-xs font-black text-sky-400 flex items-center gap-2">
+                      <FileCode size={16} />
+                      <span>Roteiro de Atendimento / Script Copiável</span>
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTeleprompterArticle(activeArticle)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <PushPin size={14} />
+                        <span>Abrir Teleprompter</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyScript(activeArticle)}
+                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                          copiedId === activeArticle.id 
+                            ? 'bg-emerald-500 text-white' 
+                            : 'bg-sky-500 hover:bg-sky-400 text-white shadow-md shadow-sky-500/20'
+                        }`}
+                      >
+                        {copiedId === activeArticle.id ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar Script</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="font-sans text-xs sm:text-sm leading-relaxed whitespace-pre-wrap select-all font-medium text-slate-200 bg-slate-950/80 p-4 rounded-xl border border-white/10">
+                    {renderHighlightedScript(activeArticle.copyableScript)}
+                  </div>
+                </div>
+              )}
+
+              {/* BLOCO DE CONFIRMAÇÃO DE LEITURA & CIÊNCIA */}
+              {activeArticle.requireAcknowledgement && (
+                <div className="p-4 rounded-2xl bg-slate-950/70 border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 font-bold text-slate-200">
+                      <CheckCircle size={18} className={activeArticle.acknowledgements?.[profile.uid] ? 'text-emerald-400' : 'text-amber-400'} />
+                      <span>Confirmação de Ciência & Leitura Obrigatória</span>
+                    </div>
+
+                    {activeArticle.acknowledgements?.[profile.uid] ? (
+                      <span className="text-[11px] font-black px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        🟢 Ciência Registrada em {new Date(activeArticle.acknowledgements[profile.uid]).toLocaleDateString('pt-BR')}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleAcknowledgeArticle(activeArticle.id)}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <CheckCircle size={16} weight="bold" />
+                        <span>Confirmar Minha Ciência</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {canManage && activeArticle.acknowledgements && (
+                    <p className="text-xs text-slate-400 font-semibold pt-2 border-t border-white/5">
+                      📊 <strong>Relatório de Adesão:</strong> {Object.keys(activeArticle.acknowledgements).length} membro(s) da equipe confirmaram leitura deste documento.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+
+            /* MODO B: LISTA SUMÁRIO DE ARTIGOS WIKI (WIKI HUB ROW VIEW) */
+            <div className="space-y-3">
+              {filteredArticles.length === 0 ? (
+                <div className="py-20 text-center text-slate-500 space-y-3 bg-slate-900/30 rounded-3xl border border-white/5">
+                  <BookOpen size={48} className="mx-auto opacity-20" />
+                  <p className="text-xs font-semibold">Nenhum procedimento encontrado para o filtro selecionado.</p>
+                </div>
+              ) : (
+                filteredArticles.map(art => {
+                  const readingTimeMin = Math.max(1, Math.ceil(((art.content?.length || 0) + (art.copyableScript?.length || 0)) / 400));
+                  const isUnreadUrgent = art.requireAcknowledgement && !art.acknowledgements?.[profile.uid];
+
+                  return (
+                    <div
+                      key={art.id}
+                      onClick={() => setSelectedArticleId(art.id)}
+                      className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${
+                        art.isUrgent
+                          ? 'bg-rose-950/20 border-rose-500/30 hover:border-rose-500/50'
+                          : art.isPinned
+                          ? 'bg-sky-950/20 border-sky-500/30 hover:border-sky-500/50'
+                          : isDark ? 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900' : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                      }`}
+                    >
+                      <div className="space-y-1.5 flex-1 pr-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isUnreadUrgent && <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px] animate-pulse">🟢 Novo</span>}
+                          {art.isPinned && <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-400 font-bold text-[10px]">📌 Fixado</span>}
+                          {getCategoryBadge(art.category)}
+                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 ml-1">
+                            <Clock size={12} className="text-slate-500" />
+                            <span>{readingTimeMin} min</span>
+                          </span>
+                        </div>
+
+                        <h3 className="text-sm sm:text-base font-black text-white group-hover:text-sky-400 transition-colors">
+                          {art.title}
+                        </h3>
+
+                        <p className="text-xs text-slate-400 line-clamp-1 font-medium">
+                          {art.content}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                        <span className="text-[11px] text-slate-500 font-medium hidden md:inline">
+                          {new Date(art.createdAt).toLocaleDateString('pt-BR')}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={(e) => toggleFavorite(art.id, e)}
+                          className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                            favorites.includes(art.id) 
+                              ? 'text-amber-400 bg-amber-400/10' 
+                              : 'text-slate-500 hover:text-slate-300 hover:bg-white/10'
+                          }`}
+                          title={favorites.includes(art.id) ? 'Remover dos Favoritos' : 'Marcar como Favorito'}
+                        >
+                          <Star size={16} weight={favorites.includes(art.id) ? 'fill' : 'regular'} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedArticleId(art.id);
+                          }}
+                          className="px-3.5 py-1.5 rounded-xl bg-white/5 group-hover:bg-sky-500 text-slate-300 group-hover:text-white text-xs font-bold transition-all"
+                        >
+                          Ler Artigo
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredArticles.length === 0 ? (
-          <div className="md:col-span-2 py-20 text-center text-slate-500 space-y-4 bg-slate-900/30 rounded-3xl border border-white/5">
-            <BookOpen size={56} className="mx-auto opacity-20" />
-            <p className="text-sm font-semibold">Nenhum script ou artigo encontrado para os filtros selecionados.</p>
-          </div>
-        ) : (
-          paginatedArticles.map(art => {
-            const readingTimeMin = Math.max(1, Math.ceil(((art.content?.length || 0) + (art.copyableScript?.length || 0)) / 400));
-            const isUnreadUrgent = art.requireAcknowledgement && !art.acknowledgements?.[profile.uid];
-
-            return (
-              <div
-                key={art.id}
-                className={`p-6 rounded-3xl border transition-all flex flex-col justify-between relative group ${
-                  art.isUrgent
-                    ? 'bg-rose-950/20 border-rose-500/40 shadow-xl shadow-rose-500/5'
-                    : art.isPinned
-                    ? 'bg-sky-950/20 border-sky-500/30 shadow-xl shadow-sky-500/5'
-                    : isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {isUnreadUrgent && <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px] animate-pulse">🟢 Novo</span>}
-                      {art.isPinned && <span className="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 font-bold text-[10px]">📌 Fixado</span>}
-                      {art.isUrgent && <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 font-bold text-[10px] animate-pulse">🚨 Urgente</span>}
-                      {getCategoryBadge(art.category)}
-                      <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold ml-1">
-                        <Clock size={12} className="text-slate-500" />
-                        <span>{readingTimeMin} min</span>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={(e) => toggleFavorite(art.id, e)}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                          favorites.includes(art.id) 
-                            ? 'text-amber-400 bg-amber-400/10 hover:bg-amber-400/20' 
-                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/10'
-                        }`}
-                        title={favorites.includes(art.id) ? 'Remover dos Favoritos' : 'Marcar como Favorito'}
-                      >
-                        <Star size={16} weight={favorites.includes(art.id) ? 'fill' : 'regular'} />
-                      </button>
-
-                      {canManage && (
-                        <>
-                          <button type="button" onClick={() => handleOpenEditForm(art)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-sky-400 transition-colors cursor-pointer"><PencilSimple size={15} /></button>
-                          <button type="button" onClick={() => handleDeleteArticle(art.id)} className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"><Trash size={15} /></button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <h3 className="text-base font-black tracking-tight text-white mb-2">{art.title}</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed font-medium mb-4 whitespace-pre-wrap">{art.content}</p>
-
-                  {art.imageUrl && (
-                    <div 
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setPreviewModalImage(art.imageUrl || null)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPreviewModalImage(art.imageUrl || null); } }}
-                      className="mb-4 relative rounded-2xl overflow-hidden border border-white/10 group/img cursor-pointer bg-slate-950/50 outline-none focus:ring-2 focus:ring-sky-500"
-                    >
-                      <img 
-                        src={art.imageUrl} 
-                        alt={art.title} 
-                        className="w-full max-h-64 object-cover group-hover/img:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-bold text-xs">
-                        <Eye size={18} />
-                        <span>Clique para Ampliar</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {art.copyableScript && (
-                    <div className={`p-4 rounded-2xl border mb-4 space-y-2.5 transition-colors ${
-                      isDark ? 'bg-slate-950/70 border-white/10 text-slate-200 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-800 shadow-sm'
-                    }`}>
-                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                        <span className="text-xs font-bold tracking-tight text-sky-400 flex items-center gap-1.5">
-                          💬 Roteiro de Atendimento
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setTeleprompterArticle(art)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-                            title="Abrir Gaveta Lateral do Teleprompter"
-                          >
-                            <PushPin size={13} />
-                            <span>Teleprompter</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleCopyScript(art)}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              copiedId === art.id ? 'bg-emerald-500 text-white' : 'bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white'
-                            }`}
-                          >
-                            {copiedId === art.id ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar</>}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="font-sans text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap select-all font-medium opacity-95">
-                        {renderHighlightedScript(art.copyableScript)}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* BLOCO DE CONFIRMAÇÃO DE LEITURA DO ARTIGO/COMUNICADO */}
-                  {art.requireAcknowledgement && (
-                    <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 mb-4 space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                          <CheckCircle size={15} className={art.acknowledgements?.[profile.uid] ? 'text-emerald-400' : 'text-amber-400'} />
-                          <span>Ciência do Comunicado</span>
-                        </span>
-
-                        {art.acknowledgements?.[profile.uid] ? (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            🟢 Ciente em {new Date(art.acknowledgements[profile.uid]).toLocaleDateString('pt-BR')}
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleAcknowledgeArticle(art.id)}
-                            className="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1"
-                          >
-                            <CheckCircle size={14} weight="bold" />
-                            <span>Confirmar Ciência</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {canManage && art.acknowledgements && (
-                        <p className="text-[10px] text-slate-400 font-semibold pt-1 border-t border-white/5">
-                          📊 <strong>Adesão da Equipe:</strong> {Object.keys(art.acknowledgements).length} colaborador(es) confirmaram ciência.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {art.tags?.map((tag, idx) => <span key={idx} className="px-2 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/5">#{tag}</span>)}
-                  </div>
-                  <span>Por <strong className="text-slate-300">{art.createdByName}</strong> • {new Date(art.createdAt).toLocaleDateString('pt-BR')}</span>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/10">
-          <span className="text-xs text-slate-400 font-semibold">
-            Exibindo <strong className="text-slate-200">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> a <strong className="text-slate-200">{Math.min(currentPage * ITEMS_PER_PAGE, filteredArticles.length)}</strong> de <strong className="text-slate-200">{filteredArticles.length}</strong> artigos
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} className="p-2 rounded-xl bg-slate-900 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
-              <CaretLeft size={16} />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <button key={page} type="button" onClick={() => setCurrentPage(page)} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${currentPage === page ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}>
-                {page}
-              </button>
-            ))}
-            <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} className="p-2 rounded-xl bg-slate-900 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
-              <CaretRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* MODAL IMAGE PREVIEW */}
       {previewModalImage && (
         <div 
           role="dialog"
           aria-modal="true"
-          aria-label="Visualização expandida de imagem"
           tabIndex={0}
           className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 outline-none" 
           onClick={() => setPreviewModalImage(null)}
@@ -673,12 +881,10 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
           <div 
             className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 shadow-2xl" 
             onClick={e => e.stopPropagation()}
-            onKeyDown={e => e.stopPropagation()}
           >
             <img src={previewModalImage} alt="Visualização expandida" className="max-w-full max-h-[85vh] object-contain rounded-2xl" />
             <button 
               type="button"
-              aria-label="Fechar imagem"
               onClick={() => setPreviewModalImage(null)} 
               className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/80 text-white hover:bg-rose-500 transition-colors cursor-pointer"
             >
@@ -688,6 +894,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
         </div>
       )}
 
+      {/* FORMULÁRIO MODAL DE CRIAÇÃO / EDIÇÃO DE ARTIGOS DA WIKI */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className={`w-full max-w-2xl rounded-3xl border shadow-2xl overflow-hidden p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar ${
@@ -696,7 +903,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-base font-black flex items-center gap-2">
                 <Sparkle size={20} className="text-sky-400" />
-                <span>{editingArticleId ? 'Editar Artigo' : 'Publicar Novo Artigo'}</span>
+                <span>{editingArticleId ? 'Editar Conteúdo Wiki' : 'Publicar Novo Conteúdo Wiki'}</span>
               </h3>
               <button type="button" onClick={() => setIsFormOpen(false)} className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"><X size={18} /></button>
             </div>
@@ -704,7 +911,7 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
             <form onSubmit={handleSaveArticle} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Título</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Título do Artigo</label>
                   <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold outline-none text-white" required />
                 </div>
                 <div>
@@ -720,8 +927,8 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Descrição / Instruções</label>
-                <textarea rows={3} value={formContent} onChange={(e) => setFormContent(e.target.value)} className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-medium outline-none text-white custom-scrollbar" required />
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Conteúdo / Descrição do Procedimento</label>
+                <textarea rows={4} value={formContent} onChange={(e) => setFormContent(e.target.value)} className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-medium outline-none text-white custom-scrollbar" required />
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/10 space-y-3">
@@ -746,15 +953,15 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
               <div className="pt-2 border-t border-white/5 space-y-3">
                 <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-emerald-400 hover:text-emerald-300">
                   <input type="checkbox" checked={formRequireAck} onChange={(e) => setFormRequireAck(e.target.checked)} className="w-4 h-4 rounded accent-emerald-500" />
-                  <span>🟢 Exigir Confirmação de Leitura e Ciência dos Colaboradores</span>
+                  <span>🟢 Exigir Confirmação de Leitura e Ciência da Equipe</span>
                 </label>
 
                 <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-sky-400 hover:text-sky-300">
                   <input type="checkbox" checked={enableCopyableScript} onChange={(e) => { setEnableCopyableScript(e.target.checked); if (!e.target.checked) setFormCopyableScript(''); }} className="w-4 h-4 rounded accent-sky-500" />
-                  <span>💬 Incluir Bloco de Roteiro de Atendimento</span>
+                  <span>💬 Incluir Bloco de Roteiro de Atendimento (Script Copiável)</span>
                 </label>
                 {enableCopyableScript && (
-                  <textarea rows={3} value={formCopyableScript} onChange={(e) => setFormCopyableScript(e.target.value)} placeholder="Roteiro..." className="w-full p-3.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-sans text-slate-200 outline-none leading-relaxed custom-scrollbar" />
+                  <textarea rows={3} value={formCopyableScript} onChange={(e) => setFormCopyableScript(e.target.value)} placeholder="Roteiro com variáveis ex: [NOME_DO_CLIENTE]..." className="w-full p-3.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-sans text-slate-200 outline-none leading-relaxed custom-scrollbar" />
                 )}
               </div>
 
