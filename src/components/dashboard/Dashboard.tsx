@@ -5,7 +5,9 @@ import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { DimensionamentoSitesSection } from './DimensionamentoSitesSection';
 import { HourlyActivityTrackerSection } from './HourlyActivityTrackerSection';
 import { KnowledgeBaseSection } from './KnowledgeBaseSection';
-import { DashboardWidgetManagerModal } from './DashboardWidgetManagerModal';
+import { DashboardWidgetManagerModal, isWidgetAllowedForRole, DEFAULT_DASHBOARD_WIDGETS } from './DashboardWidgetManagerModal';
+import { QaRadarWidgetCard } from './qa/QaRadarWidgetCard';
+import { WikiAnnouncementsWidgetCard } from './WikiAnnouncementsWidgetCard';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -42,7 +44,8 @@ import {
   CollaborationNote,
   QaEvaluation,
   CalendarEvent,
-  DashboardWidgetConfig
+  DashboardWidgetConfig,
+  WidgetId
 } from '../../types';
 import { removeTeamMember, getTeamMembers } from '../../lib/teams';
 import { formatCurrency, maskCPF } from '../../utils/masks';
@@ -249,6 +252,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedAgreementForTemplate, setSelectedAgreementForTemplate] = useState<Agreement | null>(null);
 
   const [isWidgetManagerOpen, setIsWidgetManagerOpen] = useState(false);
+
+  const isWidgetActive = (id: WidgetId): boolean => {
+    if (!isWidgetAllowedForRole(id, profile.role)) return false;
+    const widgetList = profile.dashboardWidgets && profile.dashboardWidgets.length > 0
+      ? profile.dashboardWidgets
+      : DEFAULT_DASHBOARD_WIDGETS;
+    const widget = widgetList.find(w => w.id === id);
+    return widget ? widget.enabled : true;
+  };
 
   const handleSaveWidgets = async (widgets: DashboardWidgetConfig[]) => {
     try {
@@ -2884,8 +2896,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </button>
                     </div>
                   )}
-                  {/* Agenda do Dia */}
-                  {!localHiddenCards.includes('agendaDoDia') && profile.role === 'member' && (
+                  {/* Agenda do Dia (CRM Callbacks) */}
+                  {isWidgetActive('crm_callbacks') && (
                     <DailyAgendaSection
                       scheduledAgreements={filteredScheduledAgreements}
                       isLoading={isLoadingScheduled}
@@ -2935,6 +2947,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         }
                       }}
                       showToast={showToast}
+                      theme={theme}
+                    />
+                  )}
+
+                  {/* Widget: Comunicados da Wiki Corporativa */}
+                  {isWidgetActive('wiki_announcements') && (
+                    <WikiAnnouncementsWidgetCard
+                      profile={profile}
+                      onOpenWiki={() => setDashboardTab('knowledge_base')}
+                      theme={theme}
+                    />
+                  )}
+
+                  {/* Widget: Radar de Monitoria QA */}
+                  {isWidgetActive('qa_radar') && (
+                    <QaRadarWidgetCard
+                      evaluations={qaEvaluations}
+                      profile={profile}
+                      onOpenQaTab={() => setDashboardTab('qa')}
                       theme={theme}
                     />
                   )}
@@ -3320,7 +3351,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {(dashboardTab === 'backoffice' || dashboardTab === 'carga_acordos') && (
                 <div className="space-y-8">
                   {/* Agenda do Dia para o Back Office */}
-                  {!localHiddenCards.includes('agendaDoDia') && profile.role === 'member' && (
+                  {isWidgetActive('crm_callbacks') && (
                     <DailyAgendaSection
                       scheduledAgreements={filteredScheduledAgreements}
                       isLoading={isLoadingScheduled}
@@ -3370,6 +3401,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         }
                       }}
                       showToast={showToast}
+                      theme={theme}
+                    />
+                  )}
+
+                  {/* Comunicados da Wiki Corporativa no Back Office */}
+                  {isWidgetActive('wiki_announcements') && (
+                    <WikiAnnouncementsWidgetCard
+                      profile={profile}
+                      onOpenWiki={() => setDashboardTab('knowledge_base')}
+                      theme={theme}
+                    />
+                  )}
+
+                  {/* Radar de Monitoria QA no Back Office (se ativado pelo usuário e permitido) */}
+                  {isWidgetActive('qa_radar') && (
+                    <QaRadarWidgetCard
+                      evaluations={qaEvaluations}
+                      profile={profile}
+                      onOpenQaTab={() => setDashboardTab('qa')}
                       theme={theme}
                     />
                   )}

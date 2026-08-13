@@ -20,27 +20,28 @@ import { DashboardWidgetConfig, WidgetId, UserProfile, UserRole } from '../../ty
 export const isWidgetAllowedForRole = (id: WidgetId, role: UserRole): boolean => {
   switch (id) {
     case 'personal_goal':
-      // Metas financeiras/acordos (operadores, supervisores e gestão)
-      return ['member', 'supervisor', 'coordinator', 'manager', 'super_admin'].includes(role);
+      // Metas pessoais de arrecadação (apenas operadores e supervisores diretos)
+      // Coordenadores e gerência acompanham apenas metas consolidadas nos painéis executivos
+      return ['member', 'supervisor'].includes(role);
 
     case 'hourly_cockpit':
-      // Cockpit Hora a Hora e Controle de Pausas (exclusivo para gestão/coordenação/supervisão)
+      // Cockpit Hora a Hora e Controle de Pausas da Operação (supervisores, coordenadores e gerência)
       return ['coordinator', 'manager', 'supervisor', 'super_admin'].includes(role);
 
     case 'risk_carousel':
-      // CPFs em risco de vencimento (operação de cobrança)
-      return ['member', 'supervisor', 'coordinator', 'manager', 'super_admin'].includes(role);
+      // CPFs em risco de vencimento (apenas operadores e supervisores que atendem a carteira)
+      return ['member', 'supervisor'].includes(role);
 
     case 'crm_callbacks':
-      // Agenda CRM de retornos (operadores, supervisores, gestão e backoffice)
-      return ['member', 'supervisor', 'coordinator', 'manager', 'backoffice', 'super_admin'].includes(role);
+      // Agenda CRM de retornos telefônicos (operadores, supervisores e backoffice)
+      return ['member', 'supervisor', 'backoffice'].includes(role);
 
     case 'quick_actions':
-      // Atalhos rápidos
+      // Atalhos rápidos gerais da plataforma (todos os cargos)
       return true;
 
     case 'mini_bi':
-      // Mini BI de Conversão & Arrecadação (gestão, coordenação e supervisão)
+      // Mini BI de Conversão & Arrecadação (supervisores, coordenadores e gerência)
       return ['supervisor', 'coordinator', 'manager', 'super_admin'].includes(role);
 
     case 'wiki_announcements':
@@ -48,8 +49,8 @@ export const isWidgetAllowedForRole = (id: WidgetId, role: UserRole): boolean =>
       return true;
 
     case 'qa_radar':
-      // Radar de Qualidade e Monitoria (operadores, monitores, supervisores e gestão)
-      return ['member', 'monitor', 'supervisor', 'coordinator', 'manager', 'super_admin'].includes(role);
+      // Radar de Qualidade e Monitoria QA (operadores, monitores e supervisores)
+      return ['member', 'monitor', 'supervisor'].includes(role);
 
     default:
       return true;
