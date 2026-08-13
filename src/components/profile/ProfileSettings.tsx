@@ -70,6 +70,15 @@ import {
 import { ToastType } from '../ui/Toast';
 
 
+const COVER_STILLS = [
+  { id: 'cyberpunk_city', label: 'Cyberpunk City', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80' },
+  { id: 'neon_aurora', label: 'Neon Aurora', url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80' },
+  { id: 'dark_geometric', label: 'Dark Geometric', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80' },
+  { id: 'quantum_grid', label: 'Quantum Grid', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80' },
+  { id: 'emerald_forest', label: 'Emerald Forest', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80' },
+  { id: 'abyssal_wave', label: 'Abyssal Wave', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80' }
+];
+
 interface ProfileSettingsProps {
   isOpen: boolean;
   onClose: () => void;
@@ -90,6 +99,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [avatarSeed, setAvatarSeed] = useState(profile.avatarSeed || '');
   const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
   const [avatarType, setAvatarType] = useState<'custom' | 'api'>(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
+  const [coverPhotoURL, setCoverPhotoURL] = useState<string>(profile.coverPhotoURL || '');
+  const [isUploadingCover, setIsUploadingCover] = useState<boolean>(false);
   const [currentTheme, setCurrentTheme] = useState<string>(profile.theme || 'dark');
   const [currentCursor, setCurrentCursor] = useState<string>(profile.customCursorStyle || 'default');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -1513,6 +1524,117 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               </div>
 
               <form onSubmit={handleSave} className="space-y-3.5">
+                {/* 📸 CAPA DE PERFIL PANORÂMICA (ESTILO FACEBOOK / LINKEDIN) */}
+                <div className="relative rounded-2xl overflow-hidden border border-white/10 mb-4 bg-slate-900 group">
+                  <div className="h-32 sm:h-36 w-full relative bg-slate-950 flex items-center justify-center overflow-hidden">
+                    {coverPhotoURL ? (
+                      <img
+                        src={coverPhotoURL}
+                        alt="Capa de Perfil"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-slate-900 via-sky-950/40 to-slate-900 flex items-center justify-center">
+                        <span className="text-[10px] uppercase font-mono font-bold text-slate-500 tracking-widest">
+                          Sem imagem de capa (Gradiente Padrão)
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30 pointer-events-none" />
+
+                    {/* Botão de Envio/Troca de Capa no R2 (Canto Superior Direito) */}
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-2 z-10">
+                      <label className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-white text-[10px] font-bold flex items-center gap-1.5 cursor-pointer shadow-lg backdrop-blur-md transition-all active:scale-95">
+                        <Camera size={13} className="text-sky-400" />
+                        <span>{isUploadingCover ? 'Enviando ao R2...' : 'Enviar Capa (R2)'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setIsUploadingCover(true);
+                              try {
+                                const url = await uploadImage(file, { folder: 'profile_covers' });
+                                setCoverPhotoURL(url);
+                                await saveProfileFields({ coverPhotoURL: url });
+                                if (showToast) showToast('Foto de capa salva no R2 com sucesso!', 'success');
+                              } catch (err) {
+                                console.error(err);
+                                if (showToast) showToast('Erro ao enviar foto de capa.', 'error');
+                              } finally {
+                                setIsUploadingCover(false);
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                      {coverPhotoURL && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setCoverPhotoURL('');
+                            await saveProfileFields({ coverPhotoURL: '' });
+                            if (showToast) showToast('Capa removida!', 'success');
+                          }}
+                          className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[10px] font-bold transition-all cursor-pointer"
+                          title="Remover Capa"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* GALERIA DE CAPAS ESTÁTICAS ("STILLS") */}
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2 mb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                      🖼️ Galeria de Capas Estáticas ("Stills")
+                    </span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setCoverPhotoURL('');
+                        await saveProfileFields({ coverPhotoURL: '' });
+                        if (showToast) showToast('Modo sem capa ativado', 'info');
+                      }}
+                      className="text-[9px] text-sky-400 hover:text-sky-300 underline font-mono cursor-pointer"
+                    >
+                      Remover Capa (Sem Capa)
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {COVER_STILLS.map(still => (
+                      <button
+                        key={still.id}
+                        type="button"
+                        onClick={async () => {
+                          setCoverPhotoURL(still.url);
+                          await saveProfileFields({ coverPhotoURL: still.url });
+                          if (showToast) showToast(`Capa '${still.label}' ativada!`, 'success');
+                        }}
+                        className={`h-12 rounded-xl overflow-hidden border relative group/still transition-all cursor-pointer ${
+                          coverPhotoURL === still.url
+                            ? 'border-sky-400 ring-2 ring-sky-400/40'
+                            : 'border-white/10 hover:border-white/30'
+                        }`}
+                        title={still.label}
+                      >
+                        <img src={still.url} alt={still.label} className="w-full h-full object-cover group-hover/still:scale-110 transition-transform" />
+                        <div className="absolute inset-0 bg-black/40 group-hover/still:bg-black/10 transition-colors flex items-center justify-center">
+                          <span className="text-[8px] font-black text-white px-1 py-0.5 rounded bg-black/60 truncate max-w-[90%]">
+                            {still.label}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Pré-visualização do Avatar / Foto Grande com Ações Sobrepostas */}
                 <div className="flex flex-col items-center justify-center space-y-1.5 pb-1">
                   <div className="relative group">
@@ -1951,6 +2073,87 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     </div>
                     {currentCursor === 'diamond_crystal' && (
                       <CheckCircle size={16} className="text-sky-300 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 10: Plasma Fire (Cyberpunk) */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentCursor('plasma_fire');
+                      document.documentElement.setAttribute('data-cursor', 'plasma_fire');
+                      document.body?.setAttribute('data-cursor', 'plasma_fire');
+                      await saveProfileFields({ customCursorStyle: 'plasma_fire' as any });
+                      if (showToast) showToast('Cursor Plasma Fire Cyberpunk ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentCursor === 'plasma_fire'
+                        ? 'bg-rose-500/10 border-rose-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-rose-400">
+                        <span>🔥 Plasma Fire (Cyberpunk)</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Vetor vermelho neon com auréola de plasma</p>
+                    </div>
+                    {currentCursor === 'plasma_fire' && (
+                      <CheckCircle size={16} className="text-rose-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 11: Quantum Laser (Mira Quântica) */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentCursor('quantum_laser');
+                      document.documentElement.setAttribute('data-cursor', 'quantum_laser');
+                      document.body?.setAttribute('data-cursor', 'quantum_laser');
+                      await saveProfileFields({ customCursorStyle: 'quantum_laser' as any });
+                      if (showToast) showToast('Cursor Mira Quântica ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentCursor === 'quantum_laser'
+                        ? 'bg-cyan-500/10 border-cyan-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-cyan-400">
+                        <span>⚡ Mira Quântica (Cyan)</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Retícula tática laser com indicador circular</p>
+                    </div>
+                    {currentCursor === 'quantum_laser' && (
+                      <CheckCircle size={16} className="text-cyan-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Opção 12: Galaxy Void (Vórtice Cósmico) */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCurrentCursor('galaxy_void');
+                      document.documentElement.setAttribute('data-cursor', 'galaxy_void');
+                      document.body?.setAttribute('data-cursor', 'galaxy_void');
+                      await saveProfileFields({ customCursorStyle: 'galaxy_void' as any });
+                      if (showToast) showToast('Cursor Vórtice Cósmico ativado', 'success');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      currentCursor === 'galaxy_void'
+                        ? 'bg-purple-500/10 border-purple-500/40 text-white'
+                        : 'bg-slate-950/60 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold flex items-center gap-1.5 text-purple-400">
+                        <span>🌌 Vórtice Cósmico (Starlight)</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400">Estrela cósmica roxa com brilho galáctico</p>
+                    </div>
+                    {currentCursor === 'galaxy_void' && (
+                      <CheckCircle size={16} className="text-purple-400 shrink-0" />
                     )}
                   </button>
                 </div>
