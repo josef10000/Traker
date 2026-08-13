@@ -103,6 +103,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [coverPhotoURL, setCoverPhotoURL] = useState<string>(profile.coverPhotoURL || '');
   const [isUploadingCover, setIsUploadingCover] = useState<boolean>(false);
   const [showCoverPicker, setShowCoverPicker] = useState<boolean>(false);
+  const [isEditingInfo, setIsEditingInfo] = useState<boolean>(false);
   const [currentTheme, setCurrentTheme] = useState<string>(profile.theme || 'dark');
   const [currentCursor, setCurrentCursor] = useState<string>(profile.customCursorStyle || 'default');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -1708,7 +1709,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                     setCoverPhotoURL(still.url);
                                     await saveProfileFields({ coverPhotoURL: still.url });
                                     if (showToast) showToast(`Capa '${still.label}' ativada!`, 'success');
-                                    setShowCoverPicker(false);
+                                    // Mantém o painel aberto para o usuário testar outras capas livremente
                                   }}
                                   className={`h-12 rounded-xl overflow-hidden border relative group/still transition-all cursor-pointer ${
                                     coverPhotoURL === still.url
@@ -1733,110 +1734,184 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                   </AnimatePresence>
                 </div>
 
-                {/* Alternância de Modo: Usar Avatar vs Usar Foto */}
-                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block ml-0.5">
-                    Modo de Exibição
-                  </label>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handleSwitchAvatarType('api')}
-                      className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                        avatarType === 'api'
-                          ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-md shadow-sky-500/10'
-                          : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <Palette size={15} />
-                      <span>Usar Avatar</span>
-                    </button>
+                {/* MODO VISUALIZAÇÃO LIMPA (READ-ONLY) OU MODO EDIÇÃO SOB DEMANDA */}
+                {!isEditingInfo ? (
+                  /* CARD DE RESUMO LIMPO E ELEGANTE */
+                  <div className="p-5 rounded-3xl bg-white/5 border border-white/10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                        <UserIcon size={16} className="text-sky-400" />
+                        <span>Informações Cadastrais</span>
+                      </span>
 
-                    <button
-                      type="button"
-                      onClick={() => handleSwitchAvatarType('custom')}
-                      className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                        avatarType === 'custom'
-                          ? 'bg-purple-500/20 border-purple-500 text-purple-300 shadow-md shadow-purple-500/10'
-                          : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <Camera size={15} />
-                      <span>Usar Foto</span>
-                    </button>
-                  </div>
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingInfo(true)}
+                        className="px-3.5 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md"
+                      >
+                        <Pencil size={14} />
+                        <span>Editar Informações</span>
+                      </button>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Nome Completo</label>
-                    <div className="relative group">
-                      <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={18} />
-                      <input
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-3.5 text-xs text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
-                        placeholder="Seu nome"
-                        required
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-0.5">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Nome Completo</span>
+                        <p className="text-sm font-bold text-white truncate">{displayName || 'Não informado'}</p>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-0.5">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cargo / Função</span>
+                        <p className="text-sm font-bold text-white truncate">{jobTitle || 'Não informado'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-white/5">
+                      <span>Modo de Exibição: <strong className="text-sky-300 font-bold">{avatarType === 'custom' ? 'Foto Personalizada' : 'Avatar Dinâmico'}</strong></span>
+                      <span>Estilo Avatar: <strong className="text-purple-300 font-bold capitalize">{avatarStyle}</strong></span>
                     </div>
                   </div>
+                ) : (
+                  /* FORMULÁRIO DE EDIÇÃO EXPANDIDO (SOB DEMANDA) */
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="p-5 rounded-3xl bg-slate-950/80 border border-sky-500/30 space-y-4 shadow-2xl backdrop-blur-md"
+                  >
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <span className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                        <Pencil size={15} />
+                        <span>Editar Dados Cadastrais</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingInfo(false)}
+                        className="text-slate-400 hover:text-white text-xs p-1 cursor-pointer font-bold"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Cargo / Função</label>
-                    <div className="relative group">
-                      <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={18} />
-                      <input
-                        type="text"
-                        value={jobTitle}
-                        onChange={(e) => setJobTitle(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-3.5 text-xs text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
-                        placeholder="Ex: Gerente de Receptivo"
+                    {/* Alternância de Modo: Usar Avatar vs Usar Foto */}
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block ml-0.5">
+                        Modo de Exibição do Avatar
+                      </label>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchAvatarType('api')}
+                          className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            avatarType === 'api'
+                              ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-md shadow-sky-500/10'
+                              : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          <Palette size={15} />
+                          <span>Usar Avatar</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchAvatarType('custom')}
+                          className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            avatarType === 'custom'
+                              ? 'bg-purple-500/20 border-purple-500 text-purple-300 shadow-md shadow-purple-500/10'
+                              : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          <Camera size={15} />
+                          <span>Usar Foto</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Nome Completo</label>
+                        <div className="relative group">
+                          <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={18} />
+                          <input
+                            type="text"
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-3.5 text-xs text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
+                            placeholder="Seu nome"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Cargo / Função</label>
+                        <div className="relative group">
+                          <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={18} />
+                          <input
+                            type="text"
+                            value={jobTitle}
+                            onChange={(e) => setJobTitle(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-3.5 text-xs text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
+                            placeholder="Ex: Gerente de Receptivo"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Seletor de Estilo de Avatar */}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Estilo do Avatar (DiceBear)</label>
+                      <CustomSelect
+                        value={avatarStyle}
+                        onChange={(val) => setAvatarStyle(val)}
+                        placeholder="Selecione o estilo do avatar..."
+                        options={[
+                          { value: 'initials', label: 'Iniciais (Profissional)' },
+                          { value: 'bottts', label: 'Robôs (Moderno)' },
+                          { value: 'adventurer', label: 'Aventureiros (Amigável)' },
+                          { value: 'lorelei', label: 'Rostos Minimalistas (Limpo)' },
+                          { value: 'fun-emoji', label: 'Emojis Divertidos (Descontraído)' },
+                          { value: 'pixel-art', label: 'Pixel Art (Retrô)' }
+                        ]}
                       />
                     </div>
-                  </div>
-                </div>
 
-                {/* Seletor de Estilo de Avatar */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Estilo do Avatar (DiceBear)</label>
-                  <CustomSelect
-                    value={avatarStyle}
-                    onChange={(val) => setAvatarStyle(val)}
-                    placeholder="Selecione o estilo do avatar..."
-                    options={[
-                      { value: 'initials', label: 'Iniciais (Profissional)' },
-                      { value: 'bottts', label: 'Robôs (Moderno)' },
-                      { value: 'adventurer', label: 'Aventureiros (Amigável)' },
-                      { value: 'lorelei', label: 'Rostos Minimalistas (Limpo)' },
-                      { value: 'fun-emoji', label: 'Emojis Divertidos (Descontraído)' },
-                      { value: 'pixel-art', label: 'Pixel Art (Retrô)' }
-                    ]}
-                  />
-                </div>
+                    <div className="flex items-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingInfo(false)}
+                        className="w-1/3 py-2.5 text-xs font-bold rounded-xl border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
 
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className={`w-full flex items-center justify-center font-bold py-3 text-xs rounded-xl transition-all shadow-lg active:scale-[0.98] cursor-pointer ${
-                    isSaveSuccess
-                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
-                      : 'bg-primary hover:bg-primary/80 disabled:bg-primary/50 text-white shadow-primary/20'
-                  }`}
-                >
-                  {isSaveSuccess ? (
-                    <>
-                      <Check size={18} className="mr-1.5" />
-                      Alterações Salvas!
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18} className="mr-1.5" />
-                      {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-                    </>
-                  )}
-                </button>
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        onClick={() => {
+                          setTimeout(() => setIsEditingInfo(false), 800);
+                        }}
+                        className={`w-2/3 flex items-center justify-center font-bold py-2.5 text-xs rounded-xl transition-all shadow-lg active:scale-[0.98] cursor-pointer ${
+                          isSaveSuccess
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                            : 'bg-primary hover:bg-primary/80 disabled:bg-primary/50 text-white shadow-primary/20'
+                        }`}
+                      >
+                        {isSaveSuccess ? (
+                          <>
+                            <Check size={18} className="mr-1.5" />
+                            Alterações Salvas!
+                          </>
+                        ) : (
+                          <>
+                            <Save size={18} className="mr-1.5" />
+                            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
               </form>
 
             </div>
