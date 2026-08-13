@@ -55,7 +55,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
   const brokenCount = brokenAgreements.length;
   const brokenValue = brokenAgreements.reduce((acc, a) => acc + (a.value || 0), 0);
 
-  const pendingAgreements = agreements.filter(a => a.status === AgreementStatus.PENDING);
+  const pendingAgreements = agreements.filter(a => a.status === AgreementStatus.WAITING);
   const pendingCount = pendingAgreements.length;
   const pendingValue = pendingAgreements.reduce((acc, a) => acc + (a.value || 0), 0);
 

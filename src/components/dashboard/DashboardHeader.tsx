@@ -22,8 +22,7 @@ import {
   WifiSlash,
   ChatCircleDots,
   Trophy,
-  Sliders,
-  FileText
+  Sliders
 } from '@phosphor-icons/react';
 import { UserProfile, Team, AppNotification } from '../../types';
 import { Avatar } from '../ui/Avatar';
@@ -79,7 +78,7 @@ export const DashboardHeader = ({
   managedTeamsData,
   isPresentMode,
   onSettingsClick,
-  onOpenWidgetManager,
+  onOpenExecutiveReport,
   setIsTeamSelectorOpen,
   setIsConfirmLogoutOpen,
   setIsWebhookSettingsOpen,

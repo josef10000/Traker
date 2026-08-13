@@ -72,7 +72,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       resolvedVariant = 'today';
       resolvedLabel = resolvedLabel || 'Vence Hoje';
       tooltip = 'Vencimento programado para o dia de hoje';
-    } else if (status === AgreementStatus.CANCELLED || status === 'CANCELLED') {
+    } else if (status === 'CANCELLED' || status === 'cancelled') {
       resolvedVariant = 'cancelled';
       resolvedLabel = resolvedLabel || 'Cancelado';
       tooltip = 'Acordo cancelado pelo operador ou supervisor';

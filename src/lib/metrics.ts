@@ -479,7 +479,7 @@ export const calculateDashboardStats = (
   selectedYear: number,
   today: Date = new Date()
 ): DashboardStats => {
-  const cacheKey = `${selectedMonth}_${selectedYear}_${monthlyGoal}_${monthAgreements.length}_${filteredAgreements.length}_${monthAgreements[0]?.id || ''}_${monthAgreements[monthAgreements.length - 1]?.id || ''}_${monthAgreements[0]?.updatedAt || ''}`;
+  const cacheKey = `${selectedMonth}_${selectedYear}_${monthlyGoal}_${monthAgreements.length}_${filteredAgreements.length}_${monthAgreements[0]?.id || ''}_${monthAgreements[monthAgreements.length - 1]?.id || ''}_${monthAgreements[0]?.createdAt || ''}`;
   const cached = statsCacheMap.get(cacheKey);
   if (cached && (Date.now() - cached.time) < 15000) {
     return cached.data;
