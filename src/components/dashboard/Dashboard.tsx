@@ -5,9 +5,6 @@ import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { DimensionamentoSitesSection } from './DimensionamentoSitesSection';
 import { HourlyActivityTrackerSection } from './HourlyActivityTrackerSection';
 import { KnowledgeBaseSection } from './KnowledgeBaseSection';
-import { DashboardWidgetManagerModal, isWidgetAllowedForRole, DEFAULT_DASHBOARD_WIDGETS } from './DashboardWidgetManagerModal';
-import { QaRadarWidgetCard } from './qa/QaRadarWidgetCard';
-import { WikiAnnouncementsWidgetCard } from './WikiAnnouncementsWidgetCard';
 import { logAudit } from '../../lib/audit';
 import { signOut, User } from 'firebase/auth';
 import { 
@@ -251,28 +248,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isMessageTemplatesOpen, setIsMessageTemplatesOpen] = useState<boolean>(false);
   const [selectedAgreementForTemplate, setSelectedAgreementForTemplate] = useState<Agreement | null>(null);
 
-  const [isWidgetManagerOpen, setIsWidgetManagerOpen] = useState(false);
 
-  const isWidgetActive = (id: WidgetId): boolean => {
-    if (!isWidgetAllowedForRole(id, profile.role)) return false;
-    const widgetList = profile.dashboardWidgets && profile.dashboardWidgets.length > 0
-      ? profile.dashboardWidgets
-      : DEFAULT_DASHBOARD_WIDGETS;
-    const widget = widgetList.find(w => w.id === id);
-    return widget ? widget.enabled : true;
-  };
-
-  const handleSaveWidgets = async (widgets: DashboardWidgetConfig[]) => {
-    try {
-      localStorage.setItem(`tracker_widgets_${profile.uid}`, JSON.stringify(widgets));
-      if (profile.organizationId !== 'sandbox-test') {
-        const userRef = doc(db, 'users', profile.uid);
-        await updateDoc(userRef, { dashboardWidgets: widgets });
-      }
-    } catch (err) {
-      console.error('Erro ao salvar widgets no Firestore:', err);
-    }
-  };
 
   // Listener global para abrirem modais disparados de subcomponentes/Perfil
   useEffect(() => {
@@ -2588,7 +2564,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               managedTeamsData={managedTeamsData}
               isPresentMode={isPresentMode}
               onSettingsClick={onSettingsClick}
-              onOpenWidgetManager={() => setIsWidgetManagerOpen(true)}
               setIsTeamSelectorOpen={setIsTeamSelectorOpen}
               setIsConfirmLogoutOpen={setIsConfirmLogoutOpen}
               setIsWebhookSettingsOpen={setIsWebhookSettingsOpen}
@@ -2896,8 +2871,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </button>
                     </div>
                   )}
-                  {/* Agenda do Dia (CRM Callbacks) */}
-                  {isWidgetActive('crm_callbacks') && (
+                  {/* Agenda do Dia */}
+                  {!localHiddenCards.includes('agendaDoDia') && profile.role === 'member' && (
                     <DailyAgendaSection
                       scheduledAgreements={filteredScheduledAgreements}
                       isLoading={isLoadingScheduled}
@@ -2947,25 +2922,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         }
                       }}
                       showToast={showToast}
-                      theme={theme}
-                    />
-                  )}
-
-                  {/* Widget: Comunicados da Wiki Corporativa */}
-                  {isWidgetActive('wiki_announcements') && (
-                    <WikiAnnouncementsWidgetCard
-                      profile={profile}
-                      onOpenWiki={() => setDashboardTab('knowledge_base')}
-                      theme={theme}
-                    />
-                  )}
-
-                  {/* Widget: Radar de Monitoria QA */}
-                  {isWidgetActive('qa_radar') && (
-                    <QaRadarWidgetCard
-                      evaluations={qaEvaluations}
-                      profile={profile}
-                      onOpenQaTab={() => setDashboardTab('qa')}
                       theme={theme}
                     />
                   )}
@@ -3349,88 +3305,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* CONTEÚDO DA ABA DE BACK OFFICE / CARGA DE ACORDOS */}
               {(dashboardTab === 'backoffice' || dashboardTab === 'carga_acordos') && (
-                <div className="space-y-8">
-                  {/* Agenda do Dia para o Back Office */}
-                  {isWidgetActive('crm_callbacks') && (
-                    <DailyAgendaSection
-                      scheduledAgreements={filteredScheduledAgreements}
-                      isLoading={isLoadingScheduled}
-                      profile={profile}
-                      currentTeamMembers={filteredTeamMembers}
-                      selectedMemberId={selectedMemberId}
-                      setSelectedMemberId={setSelectedMemberId}
-                      viewMode={viewMode}
-                      onAttend={(agreement) => {
-                        setEditingAgreement(agreement);
-                        setIsModalOpen(true);
-                      }}
-                      onConfirmContact={async (ag) => {
-                        if (profile.organizationId === 'sandbox-test') {
-                          sandboxService.updateAgreement(ag.id, {
-                            notes: `${ag.notes ? ag.notes + ' | ' : ''}[Contato efetuado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}]`
-                          });
-                          showToast('Contato efetuado confirmado com sucesso!', 'success');
-                          return;
-                        }
-                        try {
-                          await updateDoc(doc(db, 'agreements', ag.id), {
-                            notes: `${ag.notes ? ag.notes + ' | ' : ''}[Contato efetuado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}]`
-                          });
-                          showToast('Contato efetuado confirmado com sucesso!', 'success');
-                        } catch (e) {
-                          console.error(e);
-                          showToast('Erro ao confirmar contato.', 'error');
-                        }
-                      }}
-                      onDeleteFromAgenda={async (ag) => {
-                        if (profile.organizationId === 'sandbox-test') {
-                          sandboxService.updateAgreement(ag.id, {
-                            scheduledAt: undefined
-                          });
-                          showToast('Compromisso removido da agenda do dia.', 'info');
-                          return;
-                        }
-                        try {
-                          await updateDoc(doc(db, 'agreements', ag.id), {
-                            scheduledAt: null
-                          });
-                          showToast('Compromisso removido da agenda do dia.', 'info');
-                        } catch (e) {
-                          console.error(e);
-                          showToast('Erro ao remover da agenda.', 'error');
-                        }
-                      }}
-                      showToast={showToast}
-                      theme={theme}
-                    />
-                  )}
-
-                  {/* Comunicados da Wiki Corporativa no Back Office */}
-                  {isWidgetActive('wiki_announcements') && (
-                    <WikiAnnouncementsWidgetCard
-                      profile={profile}
-                      onOpenWiki={() => setDashboardTab('knowledge_base')}
-                      theme={theme}
-                    />
-                  )}
-
-                  {/* Radar de Monitoria QA no Back Office (se ativado pelo usuário e permitido) */}
-                  {isWidgetActive('qa_radar') && (
-                    <QaRadarWidgetCard
-                      evaluations={qaEvaluations}
-                      profile={profile}
-                      onOpenQaTab={() => setDashboardTab('qa')}
-                      theme={theme}
-                    />
-                  )}
-
-                  <BackOfficeTab 
-                    profile={profile}
-                    showToast={showToast}
-                    theme={theme}
-                    selectedTeamId={selectedTeamId}
-                  />
-                </div>
+                <BackOfficeTab 
+                  profile={profile}
+                  showToast={showToast}
+                  theme={theme}
+                  selectedTeamId={selectedTeamId}
+                />
               )}
 
               {/* CONTEÚDO DA ABA DE METAS E CARTEIRAS */}
@@ -4633,15 +4513,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           setDashboardTab('financial');
         }}
         theme={theme}
-        showToast={showToast}
-      />
-
-      {/* MODAL DE GERENCIAMENTO DE WIDGETS DO DASHBOARD */}
-      <DashboardWidgetManagerModal
-        isOpen={isWidgetManagerOpen}
-        onClose={() => setIsWidgetManagerOpen(false)}
-        profile={profile}
-        onSaveWidgets={handleSaveWidgets}
         showToast={showToast}
       />
     </div>
