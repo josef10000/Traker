@@ -173,6 +173,22 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     });
   }, [articles, selectedCategory, searchQuery, selectedTag, favorites]);
 
+  // Paginação dos artigos (máximo 7 por página)
+  const ITEMS_PER_PAGE = 7;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset da página atual ao alterar os filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchQuery, selectedTag]);
+
+  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE) || 1;
+
+  const paginatedArticles = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredArticles.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredArticles, currentPage]);
+
   // Contagem de categorias para a Sidebar
   const categoryCounts = useMemo(() => {
     return {
@@ -537,8 +553,8 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
       {/* CORPO DA WIKI (LAYOUT NOTION EN 2 COLUNAS: SIDEBAR + CONTEÚDO PRINCIPAL) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* SIDEBAR ESQUERDA (NAVEGAÇÃO POR CATEGORIAS & FILTROS DA WIKI) */}
-        <div className={`lg:col-span-3 rounded-2xl border p-4 space-y-4 ${
+        {/* SIDEBAR ESQUERDA (NAVEGAÇÃO POR CATEGORIAS & FILTROS DA WIKI - FIXA NA TELA) */}
+        <div className={`lg:col-span-3 lg:sticky lg:top-4 self-start rounded-2xl border p-4 space-y-4 ${
           isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
         }`}>
           <div className="flex items-center justify-between px-2 pb-2 border-b border-white/5">
@@ -786,82 +802,132 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
             </div>
           ) : (
 
-            /* MODO B: LISTA SUMÁRIO DE ARTIGOS WIKI (WIKI HUB ROW VIEW) */
-            <div className="space-y-3">
+            /* MODO B: LISTA SUMÁRIO DE ARTIGOS WIKI (WIKI HUB ROW VIEW COM PAGINAÇÃO DE MÁXIMO 7 ITENS) */
+            <div className="space-y-4">
               {filteredArticles.length === 0 ? (
                 <div className="py-20 text-center text-slate-500 space-y-3 bg-slate-900/30 rounded-3xl border border-white/5">
                   <BookOpen size={48} className="mx-auto opacity-20" />
                   <p className="text-xs font-semibold">Nenhum procedimento encontrado para o filtro selecionado.</p>
                 </div>
               ) : (
-                filteredArticles.map(art => {
-                  const readingTimeMin = Math.max(1, Math.ceil(((art.content?.length || 0) + (art.copyableScript?.length || 0)) / 400));
-                  const isUnreadUrgent = art.requireAcknowledgement && !art.acknowledgements?.[profile.uid];
+                <>
+                  <div className="space-y-3">
+                    {paginatedArticles.map(art => {
+                      const readingTimeMin = Math.max(1, Math.ceil(((art.content?.length || 0) + (art.copyableScript?.length || 0)) / 400));
+                      const isUnreadUrgent = art.requireAcknowledgement && !art.acknowledgements?.[profile.uid];
 
-                  return (
-                    <div
-                      key={art.id}
-                      onClick={() => setSelectedArticleId(art.id)}
-                      className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${
-                        art.isUrgent
-                          ? 'bg-rose-950/20 border-rose-500/30 hover:border-rose-500/50'
-                          : art.isPinned
-                          ? 'bg-sky-950/20 border-sky-500/30 hover:border-sky-500/50'
-                          : isDark ? 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900' : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
-                      }`}
-                    >
-                      <div className="space-y-1.5 flex-1 pr-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {isUnreadUrgent && <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px] animate-pulse">🟢 Novo</span>}
-                          {art.isPinned && <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-400 font-bold text-[10px]">📌 Fixado</span>}
-                          {getCategoryBadge(art.category)}
-                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 ml-1">
-                            <Clock size={12} className="text-slate-500" />
-                            <span>{readingTimeMin} min</span>
-                          </span>
+                      return (
+                        <div
+                          key={art.id}
+                          onClick={() => setSelectedArticleId(art.id)}
+                          className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${
+                            art.isUrgent
+                              ? 'bg-rose-950/20 border-rose-500/30 hover:border-rose-500/50'
+                              : art.isPinned
+                              ? 'bg-sky-950/20 border-sky-500/30 hover:border-sky-500/50'
+                              : isDark ? 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900' : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                          }`}
+                        >
+                          <div className="space-y-1.5 flex-1 pr-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {isUnreadUrgent && <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px] animate-pulse">🟢 Novo</span>}
+                              {art.isPinned && <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-400 font-bold text-[10px]">📌 Fixado</span>}
+                              {getCategoryBadge(art.category)}
+                              <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 ml-1">
+                                <Clock size={12} className="text-slate-500" />
+                                <span>{readingTimeMin} min</span>
+                              </span>
+                            </div>
+
+                            <h3 className="text-sm sm:text-base font-black text-white group-hover:text-sky-400 transition-colors">
+                              {art.title}
+                            </h3>
+
+                            <p className="text-xs text-slate-400 line-clamp-1 font-medium">
+                              {art.content}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                            <span className="text-[11px] text-slate-500 font-medium hidden md:inline">
+                              {new Date(art.createdAt).toLocaleDateString('pt-BR')}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={(e) => toggleFavorite(art.id, e)}
+                              className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                                favorites.includes(art.id) 
+                                  ? 'text-amber-400 bg-amber-400/10' 
+                                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/10'
+                              }`}
+                              title={favorites.includes(art.id) ? 'Remover dos Favoritos' : 'Marcar como Favorito'}
+                            >
+                              <Star size={16} weight={favorites.includes(art.id) ? 'fill' : 'regular'} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedArticleId(art.id);
+                              }}
+                              className="px-3.5 py-1.5 rounded-xl bg-white/5 group-hover:bg-sky-500 text-slate-300 group-hover:text-white text-xs font-bold transition-all"
+                            >
+                              Ler Artigo
+                            </button>
+                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        <h3 className="text-sm sm:text-base font-black text-white group-hover:text-sky-400 transition-colors">
-                          {art.title}
-                        </h3>
+                  {/* CONTROLES DE PAGINAÇÃO DAS WIKIS (MÁXIMO DE 7 ITENS POR PÁGINA) */}
+                  {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
+                      <span className="text-xs text-slate-400 font-semibold">
+                        Exibindo <strong className="text-slate-200">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> a <strong className="text-slate-200">{Math.min(currentPage * ITEMS_PER_PAGE, filteredArticles.length)}</strong> de <strong className="text-slate-200">{filteredArticles.length}</strong> procedimentos
+                      </span>
 
-                        <p className="text-xs text-slate-400 line-clamp-1 font-medium">
-                          {art.content}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
-                        <span className="text-[11px] text-slate-500 font-medium hidden md:inline">
-                          {new Date(art.createdAt).toLocaleDateString('pt-BR')}
-                        </span>
-
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={(e) => toggleFavorite(art.id, e)}
-                          className={`p-2 rounded-xl transition-colors cursor-pointer ${
-                            favorites.includes(art.id) 
-                              ? 'text-amber-400 bg-amber-400/10' 
-                              : 'text-slate-500 hover:text-slate-300 hover:bg-white/10'
-                          }`}
-                          title={favorites.includes(art.id) ? 'Remover dos Favoritos' : 'Marcar como Favorito'}
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          className="p-2 rounded-xl bg-slate-900 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                          title="Página Anterior"
                         >
-                          <Star size={16} weight={favorites.includes(art.id) ? 'fill' : 'regular'} />
+                          <CaretLeft size={16} />
                         </button>
 
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            type="button"
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              currentPage === page
+                                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                                : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedArticleId(art.id);
-                          }}
-                          className="px-3.5 py-1.5 rounded-xl bg-white/5 group-hover:bg-sky-500 text-slate-300 group-hover:text-white text-xs font-bold transition-all"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          className="p-2 rounded-xl bg-slate-900 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                          title="Próxima Página"
                         >
-                          Ler Artigo
+                          <CaretRight size={16} />
                         </button>
                       </div>
                     </div>
-                  );
-                })
+                  )}
+                </>
               )}
             </div>
           )}
