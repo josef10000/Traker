@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { WarningCircle, CircleNotch, IconContext } from '@phosphor-icons/react';
+import { CircleNotch, IconContext } from '@phosphor-icons/react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { useDesignMode } from './hooks/useDesignMode';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
+import { useSpotlightShortcut } from './hooks/useSpotlightShortcut';
 import { auth, db } from './lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LoginPage } from './components/auth/LoginPage';
@@ -16,10 +17,13 @@ import { getUserProfile } from './lib/teams';
 import { UserProfile, UserRole } from './types';
 import { sandboxService } from './lib/sandboxService';
 import { Toast, ToastType } from './components/ui/Toast';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
 import { StatusPage } from './components/StatusPage';
 import { SpotlightSearchModal } from './components/dashboard/SpotlightSearchModal';
+import { AppLoadingScreen } from './components/app/AppLoadingScreen';
+import { OrgSuspendedScreen } from './components/app/OrgSuspendedScreen';
+import { DemoSimulationBanner } from './components/app/DemoSimulationBanner';
 
 const isMasterAdminEmail = (email?: string | null): boolean => {
   if (!email) return false;
@@ -28,7 +32,7 @@ const isMasterAdminEmail = (email?: string | null): boolean => {
 };
 
 export function AppContent() {
-  const [designMode, setDesignMode] = useDesignMode();
+  const [, setDesignMode] = useDesignMode();
 
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [profile, setProfile] = useState<UserProfile | null>(() => {
@@ -44,16 +48,8 @@ export function AppContent() {
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsSpotlightOpen(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  // Atalho de teclado Ctrl+K / Cmd+K via hook isolado
+  useSpotlightShortcut(() => setIsSpotlightOpen(prev => !prev));
 
   // Aplica dinamicamente a preferência de tema de cores e cursor customizado
   useEffect(() => {
@@ -62,6 +58,7 @@ export function AppContent() {
     document.documentElement.setAttribute('data-cursor', cursorStyle);
     document.documentElement.setAttribute('data-theme', themeStyle);
   }, [profile?.customCursorStyle, profile?.theme]);
+
   const [simulation, setSimulation] = useState<{ active: boolean; role: UserRole; isDemoMode?: boolean; demoRestrictedRole?: UserRole } | null>(() => {
     try {
       const saved = sessionStorage.getItem('tracker_demo_simulation');
@@ -124,7 +121,6 @@ export function AppContent() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         setUser(u);
-        // Se já houver perfil no estado (via localStorage), desbloqueia a tela na hora
         if (profile) {
           setLoading(false);
         }
@@ -306,42 +302,7 @@ export function AppContent() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center relative overflow-hidden selection:bg-sky-500/30">
-        <DynamicBackground theme="dark" />
-        <div className="absolute w-[300px] h-[300px] bg-sky-500/10 rounded-full blur-[80px] -z-10 animate-pulse"></div>
-
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }} 
-          animate={{ opacity: 1, scale: 1 }} 
-          transition={{ duration: 0.5 }}
-          className="flex flex-col items-center gap-6"
-        >
-          <motion.div
-            animate={{ 
-              scale: [1, 1.05, 1],
-              filter: ["drop-shadow(0 0 10px rgba(14, 165, 233, 0.2))", "drop-shadow(0 0 20px rgba(14, 165, 233, 0.4))", "drop-shadow(0 0 10px rgba(14, 165, 233, 0.2))"]
-            }}
-            transition={{ 
-              duration: 3, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }}
-            className="relative"
-          >
-            <img src="/logo.png" alt="Tracker Logo" className="w-[432px] h-[432px] object-contain" />
-          </motion.div>
-
-          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-black text-white tracking-tighter italic">TRACKER</h2>
-            <div className="h-1 w-12 bg-sky-500 mx-auto rounded-full"></div>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2 animate-pulse">
-              Carregando Ambiente...
-            </p>
-          </div>
-        </motion.div>
-      </div>
-    );
+    return <AppLoadingScreen />;
   }
 
   const isPublicRoute = window.location.pathname.startsWith('/public/');
@@ -459,43 +420,27 @@ export function AppContent() {
           )}
         </AnimatePresence>
 
-        <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-purple-950/95 to-indigo-950/95 backdrop-blur-md border-b border-purple-500/30 px-6 py-3 flex justify-between items-center no-print shadow-lg">
-          <div className="flex items-center gap-3">
-            <span className="flex h-3.5 w-3.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-purple-500"></span>
-            </span>
-            <p className="text-xs font-bold text-purple-200">
-              MODO DEMONSTRAÇÃO — Simulando <span className="uppercase text-white font-black">{simulatedProfile.displayName}</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={async () => {
-                const restrictedRole = simulation?.demoRestrictedRole;
-                sessionStorage.removeItem('tracker_demo_simulation');
-                sandboxService.resetSandbox();
-                const wasDemo = simulation?.isDemoMode;
-                setSimulation(null);
-                if (wasDemo) {
-                  const targetUrl = restrictedRole ? `/demo?role=${restrictedRole}` : '/demo';
-                  window.history.replaceState({}, '', targetUrl);
-                  navigate(targetUrl);
-                } else if (profile?.role !== 'super_admin') {
-                  await signOut(auth);
-                  navigate('/login');
-                  showToast('Sessão encerrada.', 'info');
-                } else {
-                  showToast('Simulação encerrada.', 'info');
-                }
-              }}
-              className="px-4 py-1.5 bg-purple-600 text-white text-xs font-bold uppercase rounded-lg hover:bg-purple-500 transition-colors shadow-md shadow-purple-500/20 active:scale-95 cursor-pointer"
-            >
-              Encerrar Demonstração
-            </button>
-          </div>
-        </div>
+        <DemoSimulationBanner 
+          displayName={simulatedProfile.displayName} 
+          onEndDemo={async () => {
+            const restrictedRole = simulation?.demoRestrictedRole;
+            sessionStorage.removeItem('tracker_demo_simulation');
+            sandboxService.resetSandbox();
+            const wasDemo = simulation?.isDemoMode;
+            setSimulation(null);
+            if (wasDemo) {
+              const targetUrl = restrictedRole ? `/demo?role=${restrictedRole}` : '/demo';
+              window.history.replaceState({}, '', targetUrl);
+              navigate(targetUrl);
+            } else if (profile?.role !== 'super_admin') {
+              await signOut(auth);
+              navigate('/login');
+              showToast('Sessão encerrada.', 'info');
+            } else {
+              showToast('Simulação encerrada.', 'info');
+            }
+          }}
+        />
 
         <div className="pt-12">
           <DynamicBackground theme={simulatedProfile.theme} />
@@ -573,27 +518,15 @@ export function AppContent() {
 
   if (!isOrgActive) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-center">
-        <div className="glass-card max-w-md p-8 rounded-3xl border border-white/5 bg-slate-900/20 space-y-6">
-          <WarningCircle className="text-rose-500 mx-auto animate-pulse" size={48} />
-          <h2 className="text-2xl font-bold text-white">Acesso Suspenso</h2>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            O acesso para a organização vinculada à sua conta foi temporariamente suspenso.
-          </p>
-          <button 
-            onClick={async () => {
-              await signOut(auth);
-              setUser(null);
-              setProfile(null);
-              setIsOrgActive(true);
-              navigate('/login');
-            }} 
-            className="w-full py-4 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 transition-all active:scale-[0.98]"
-          >
-            Voltar ao Login
-          </button>
-        </div>
-      </div>
+      <OrgSuspendedScreen 
+        onReturnToLogin={async () => {
+          await signOut(auth);
+          setUser(null);
+          setProfile(null);
+          setIsOrgActive(true);
+          navigate('/login');
+        }}
+      />
     );
   }
 
