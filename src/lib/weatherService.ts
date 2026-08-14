@@ -14,7 +14,7 @@ export interface WeatherData {
 }
 
 const WEATHER_CACHE_KEY = 'traker_weather_data_cache';
-const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 horas de cache para economia absoluta de rede
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutos de cache (ideal para alta precisão e equipes de 100+ operadores)
 
 const WEATHER_DESCRIPTIONS: Record<number, { text: string; icon: string }> = {
   0: { text: 'Céu Limpo', icon: '☀️' },
