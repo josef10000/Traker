@@ -38,6 +38,7 @@ export const sendInviteEmail = async ({
   });
 
   const resendApiKey = 
+    (typeof window !== 'undefined' && localStorage.getItem('custom_resend_api_key')) ||
     (typeof process !== 'undefined' && process.env?.RESEND_API_KEY) ||
     (typeof process !== 'undefined' && process.env?.VITE_RESEND_API_KEY) ||
     (import.meta as any).env?.VITE_RESEND_API_KEY ||

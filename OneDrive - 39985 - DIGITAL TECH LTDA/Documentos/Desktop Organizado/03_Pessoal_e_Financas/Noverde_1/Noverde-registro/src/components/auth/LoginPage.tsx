@@ -147,6 +147,12 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
     e.preventDefault();
     setError(null);
 
+    const targetEmail = (inviteData?.email || email).trim().toLowerCase();
+    if (!targetEmail || !targetEmail.includes('@')) {
+      setError('Por favor, informe um e-mail corporativo válido.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('As senhas digitadas não coincidem. Verifique e tente novamente.');
       return;
@@ -159,9 +165,9 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
 
     setLoading(true);
     try {
-      const authResult = await createUserWithEmailAndPassword(auth, inviteData.email, password);
+      const authResult = await createUserWithEmailAndPassword(auth, targetEmail, password);
       const uid = authResult.user.uid;
-      const savedDisplayName = displayName.trim() || inviteData.email.split('@')[0];
+      const savedDisplayName = displayName.trim() || targetEmail.split('@')[0];
       
       await updateProfile(authResult.user, {
         displayName: savedDisplayName
@@ -170,11 +176,11 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
       // Salva perfil do usuário no Firestore diretamente (agora autenticado)
       const userProfile: UserProfile = {
         uid,
-        email: inviteData.email,
+        email: targetEmail,
         displayName: savedDisplayName,
-        role: inviteData.role || 'member',
-        organizationId: inviteData.organizationId || 'org-master',
-        teamId: inviteData.teamId || undefined,
+        role: inviteData?.role || 'member',
+        organizationId: inviteData?.organizationId || 'org-master',
+        teamId: inviteData?.teamId || undefined,
         createdAt: new Date().toISOString()
       };
 
@@ -416,6 +422,23 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
 
               {/* FORMULÁRIO DE DEFINIÇÃO DE SENHA */}
               <form onSubmit={handleActivateInviteAccount} autoComplete="off" className="space-y-4 text-xs">
+                {!inviteData.email && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Seu E-mail Corporativo</label>
+                    <div className="relative flex items-center">
+                      <Envelope className="absolute left-4 text-slate-500" size={18} />
+                      <input 
+                        type="email" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="seuemail@empresa.com.br"
+                        required
+                        className="w-full bg-slate-950/80 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white text-sm focus:outline-none focus:border-purple-500 transition-all placeholder:text-slate-600 font-medium"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Seu Nome Completo</label>
                   <div className="relative flex items-center">

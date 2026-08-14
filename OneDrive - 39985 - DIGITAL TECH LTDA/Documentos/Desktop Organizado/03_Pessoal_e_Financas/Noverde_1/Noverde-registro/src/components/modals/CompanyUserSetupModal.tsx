@@ -15,7 +15,8 @@ import {
   Info,
   ListChecks,
   EnvelopeSimple,
-  PaperPlaneRight
+  PaperPlaneRight,
+  WhatsappLogo
 } from '@phosphor-icons/react';
 import { UserRole } from '../../types';
 import { db } from '../../lib/firebase';
@@ -215,6 +216,15 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     } else {
       showToast(`Falha ao reenviar e-mail: ${emailRes.error}`, 'error');
     }
+  };
+
+  // Compartilhar link individual via WhatsApp
+  const handleShareWhatsApp = (inv: PendingInvite) => {
+    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
+    const roleLabel = getRoleLabel(inv.role);
+    const message = `🚀 Olá! Segue seu link de acesso corporativo à plataforma Tracker (*${orgName}*):\n\n👤 *Cargo*: ${roleLabel}\n📧 *E-mail*: ${inv.email}\n🔗 *Ativar Minha Conta*: ${inviteUrl}\n\nBasta clicar no link acima e definir sua senha de acesso!`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
   };
 
   // Copiar link individual
@@ -438,6 +448,16 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleShareWhatsApp(inv)}
+                        className="px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Enviar convite direto pelo WhatsApp"
+                      >
+                        <WhatsappLogo size={15} weight="fill" />
+                        WhatsApp
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleResendEmail(inv)}
