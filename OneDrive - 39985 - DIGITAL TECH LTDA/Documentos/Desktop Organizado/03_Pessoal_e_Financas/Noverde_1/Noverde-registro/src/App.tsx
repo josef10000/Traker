@@ -55,6 +55,7 @@ export function AppContent() {
       return false;
     }
   });
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // Atualiza a validação de 2FA para a sessão ativa do usuário
   useEffect(() => {
