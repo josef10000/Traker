@@ -71,23 +71,28 @@ export const logAudit = async (
     }
 
     if (!user) return;
-    // organizationId é obrigatório para satisfazer a Firestore Rule de audit_logs
-    if (!organizationId) {
-      console.warn('[Audit] logAudit chamado sem organizationId — log não gravado.');
-      return;
-    }
 
-    // Buscar o último log global no banco para encadear os hashes
+    // Super admin pode não ter organizationId vinculado — usar fallback 'system'
+    const resolvedOrgId = organizationId || 'system';
+
+    // Buscar o último hash com timeout de 3s para não travar a UI
     let previousHash = 'genesis-block';
-    const auditLogsRef = collection(db, 'audit_logs');
-    const q = query(auditLogsRef, orderBy('timestamp', 'desc'), limit(1));
-    const snapshot = await getDocs(q);
-    
-    if (!snapshot.empty) {
-      const lastLog = snapshot.docs[0].data() as AuditLog;
-      if (lastLog.hash) {
-        previousHash = lastLog.hash;
+    try {
+      const auditLogsRef = collection(db, 'audit_logs');
+      const q = query(auditLogsRef, orderBy('timestamp', 'desc'), limit(1));
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 3000)
+      );
+      const snapshot = await Promise.race([getDocs(q), timeoutPromise]);
+      
+      if (!snapshot.empty) {
+        const lastLog = snapshot.docs[0].data() as AuditLog;
+        if (lastLog.hash) {
+          previousHash = lastLog.hash;
+        }
       }
+    } catch {
+      // Se timeout ou erro, continua com genesis-block
     }
     
     // Monta o payload de dados do bloco para assinar com o hash
@@ -98,7 +103,7 @@ export const logAudit = async (
       userId: user.uid,
       userEmail: user.email,
       userName: userName,
-      organizationId,
+      organizationId: resolvedOrgId,
       action,
       details,
       timestamp,

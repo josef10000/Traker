@@ -49,17 +49,32 @@ service cloud.firestore {
     function isValidAuditAction() {
       let validActions = [
         'REVEAL_CPF',
+        'COPY_CPF',
         'ANONIMIZE_CLIENT',
         'EXPORT_CSV_COMPLETE',
+        'EXPORT_CSV_MASKED',
+        'EXPORT_CSV',
         'AGREEMENT_CREATED',
         'AGREEMENT_UPDATED',
         'AGREEMENT_DELETED',
+        'CREATE_AGREEMENT',
+        'UPDATE_AGREEMENT',
+        'DELETE_AGREEMENT',
+        'EFETIVAR_PAGAMENTO',
+        'CHECK_AGREEMENT',
         'INVITE_SENT',
         'USER_ROLE_CHANGED',
         'USER_REMOVED',
         'LOGIN',
         'LOGOUT',
-        'SETTINGS_UPDATED'
+        'SETTINGS_UPDATED',
+        'CREATE_ORGANIZATION',
+        'DELETE_ORGANIZATION',
+        'UPDATE_ORGANIZATION_LIMITS',
+        'ACCEPT_TERMS',
+        'FORCE_COLLISION',
+        'ATTACH_RECEIPT',
+        'ADD_CPF_NOTE'
       ];
       return request.resource.data.action in validActions;
     }
@@ -138,15 +153,22 @@ service cloud.firestore {
     }
     
     // Coleção de logs de auditoria (audit_logs)
-    // CORRIGIDO: Obrigatório ter userId E organizationId corretos na criação.
+    // Super admin pode criar audit_logs livremente (não possui organizationId próprio).
+    // Demais usuários precisam ter userId e organizationId corretos.
     match /audit_logs/{logId} {
       allow create: if request.auth != null 
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.organizationId == getUserOrganizationId()
         && request.resource.data.action is string
-        && isValidAuditAction();
+        && (
+          isSuperAdmin()
+          || (
+            request.resource.data.organizationId == getUserOrganizationId()
+            && isValidAuditAction()
+          )
+        );
       allow read: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == resource.data.organizationId));
-      allow update, delete: if false; // Logs são imutáveis e perenes
+      allow delete: if request.auth != null && isSuperAdmin();
+      allow update: if false; // Logs são imutáveis
     }
 
     // Coleção de estatísticas mensais (monthlyStats)

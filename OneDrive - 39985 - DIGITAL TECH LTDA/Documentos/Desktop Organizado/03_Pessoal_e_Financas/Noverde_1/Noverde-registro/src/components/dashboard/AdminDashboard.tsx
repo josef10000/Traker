@@ -398,20 +398,21 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       }
 
       await updateDoc(orgRef, updateData);
+
+      showToast('Empresa atualizada com sucesso!', 'success');
+      setSelectedOrg(null);
+      setIsSaving(false);
       
-      await logAudit('ACCEPT_TERMS', { 
+      // Log de auditoria fire-and-forget (não bloqueia a UI)
+      logAudit('ACCEPT_TERMS', { 
         action: 'UPDATE_ORG_PLAN', 
         targetOrgId: selectedOrg.id,
         plan: editPlan,
         status: editStatus
-      }, profile.displayName, profile.organizationId);
-
-      showToast('Empresa atualizada com sucesso!', 'success');
-      setSelectedOrg(null);
+      }, profile.displayName, profile.organizationId).catch(() => {});
     } catch (error) {
       console.error(error);
       showToast('Erro ao atualizar empresa.', 'error');
-    } finally {
       setIsSaving(false);
     }
   };
@@ -445,12 +446,14 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       const managerToken = `MGR-${generateSecureToken(6).toUpperCase()}`;
       const supervisorToken = `SUP-${generateSecureToken(6).toUpperCase()}`;
       const now = new Date().toISOString();
+      const savedName = newOrgName.trim();
+      const savedPlan = newOrgPlan;
 
       const newOrg: Organization = {
         id: orgId,
-        name: newOrgName.trim(),
+        name: savedName,
         status: 'pending',
-        plan: newOrgPlan,
+        plan: savedPlan,
         maxUsers: Number(newOrgMaxUsers),
         maxTeams: Number(newOrgMaxTeams),
         managerInviteToken: managerToken,
@@ -463,25 +466,26 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       }
 
       await setDoc(doc(db, 'organizations', orgId), newOrg);
-      
-      await logAudit('CREATE_ORGANIZATION', {
-        orgId,
-        name: newOrgName,
-        plan: newOrgPlan
-      }, profile.displayName, profile.organizationId);
 
+      // Fechar modal e limpar estado imediatamente após sucesso do Firestore
       showToast('Empresa criada com sucesso!', 'success');
-      
       setNewOrgName('');
       setNewOrgCnpj('');
       setNewOrgPlan('free');
       setNewOrgMaxUsers(5);
       setNewOrgMaxTeams(1);
       setIsCreateOrgOpen(false);
+      setIsSaving(false);
+      
+      // Log de auditoria fire-and-forget (não bloqueia a UI)
+      logAudit('CREATE_ORGANIZATION', {
+        orgId,
+        name: savedName,
+        plan: savedPlan
+      }, profile.displayName, profile.organizationId).catch(() => {});
     } catch (error) {
       console.error(error);
       showToast('Erro ao criar empresa.', 'error');
-    } finally {
       setIsSaving(false);
     }
   };
@@ -500,13 +504,23 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const handleDeleteOrganization = async (orgId: string, orgName: string) => {
     setIsDeleting(orgId);
     try {
-      const deleteInBatches = async (collectionName: string, progressMessage: string) => {
-        setDeletingProgress(progressMessage);
-        const ref = collection(db, collectionName);
-        const q = query(ref, where('organizationId', '==', orgId));
-        const snap = await getDocs(q);
-        
-        if (snap.empty) return;
+      // Fase 1: Buscar todas as coleções em paralelo para máxima velocidade
+      setDeletingProgress('Localizando dados da empresa...');
+      const collectionsToDelete = ['agreements', 'teams', 'reconciliations', 'settings', 'audit_logs', 'users', 'invites'];
+      const snapshots = await Promise.all(
+        collectionsToDelete.map(colName => {
+          const ref = collection(db, colName);
+          const q = query(ref, where('organizationId', '==', orgId));
+          return getDocs(q).then(snap => ({ colName, snap }));
+        })
+      );
+
+      // Fase 2: Deletar os documentos encontrados em batches
+      const totalDocs = snapshots.reduce((sum, s) => sum + s.snap.size, 0);
+      let deletedDocs = 0;
+
+      for (const { colName, snap } of snapshots) {
+        if (snap.empty) continue;
         
         const docs = snap.docs;
         const chunkSize = 400;
@@ -515,16 +529,12 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           const batch = writeBatch(db);
           chunk.forEach(d => batch.delete(d.ref));
           await batch.commit();
+          deletedDocs += chunk.length;
+          setDeletingProgress(`Excluindo dados (${deletedDocs}/${totalDocs})...`);
         }
-      };
+      }
 
-      await deleteInBatches('agreements', 'Apagando acordos da empresa...');
-      await deleteInBatches('teams', 'Apagando equipes...');
-      await deleteInBatches('reconciliations', 'Apagando conciliações...');
-      await deleteInBatches('settings', 'Apagando configurações...');
-      await deleteInBatches('audit_logs', 'Apagando logs de auditoria...');
-      await deleteInBatches('users', 'Apagando perfis de usuários...');
-
+      // Fase 3: Excluir o documento da organização
       setDeletingProgress('Finalizando exclusão da empresa...');
       await deleteDoc(doc(db, 'organizations', orgId));
 
