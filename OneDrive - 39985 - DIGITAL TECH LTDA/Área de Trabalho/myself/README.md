@@ -1,74 +1,40 @@
-# MindVault - Seu Segundo Cérebro & Sistema Operacional de Vida
+# MindVault Cosmos - Universo Pessoal de Conhecimento & Clareza
 
-**MindVault** é uma plataforma de clareza mental e desenvolvimento pessoal que une o melhor do **Notion** (bancos de dados relacionais, tabelas de livros, fichas de treinos, rastreadores de hábitos e projetos) com o melhor do **Obsidian** (grafo neural de conhecimento, links bidirecionais `[[nota]]`, suporte a Markdown e velocidade).
+[![GitHub Repository](https://img.shields.io/badge/GitHub-josef10000%2Fmindvault-amber?logo=github)](https://github.com/josef10000/mindvault)
 
----
-
-## 🌟 Recursos Principais (Versão Alfa)
-
-1. **Página de Login Interativo com Showcase da Ferramenta**:
-   - Apresentação visual e explicativa dos 4 pilares do sistema integrada diretamente na tela de acesso.
-2. **Painel de Clareza de Vida (Life OS)**:
-   - Medidores de equilíbrio para as 5 áreas vitais (Saúde, Conhecimento, Carreira, Finanças e Desenvolvimento Pessoal).
-   - Gerenciador de Metas do Ano com barra de progresso visual.
-3. **Vault de Conhecimento com Grafo Neural (Estilo Obsidian)**:
-   - Editor em Markdown fluido.
-   - Reconhecimento automático de links bidirecionais `[[Nota Conectada]]`.
-   - Visualização interativa em Grafo Tridimensional conectando nós de ideias.
-4. **Bancos de Dados Relacionais (Estilo Notion)**:
-   - **Livros & Biblioteca**: Status de leitura, páginas, avaliações em estrelas e fichamento.
-   - **Treinos & Exercícios**: Fichas de hipertrofia/força (A/B/C) com data de execução.
-   - **Rastreador de Hábitos**: Check-in diário e contador de sequência (*streak*).
-5. **Modo Foco & Diário de Clareza**:
-   - Timer Pomodoro integrado (25min Foco / 5min Descanso).
-   - Diário de reflexão e descarrego mental (*Brain Dump*).
-6. **Ecossistema Extensível de Plugins (MindVault Market)**:
-   - Arquitetura preparada para o desenvolvimento de extensões customizadas e plugins da comunidade.
+**MindVault Cosmos** é uma plataforma de organização de vida e acervo de conhecimento estruturada através do conceito de **Sistemas Celestes, Estrelas Pulsantes e Planetas Orbitando**.
 
 ---
 
-## 🛠️ Stack Tecnológica & Arquitetura
+## 🌌 Módulos Fundamentais
+
+1. **Nexo Cósmico (Sistemas, Estrelas Pulsantes & Planetas Orbitando)**:
+   - **Sistemas Celestes**: Áreas mestre de vida (Vitalidade, Conhecimento, Carreira e Finanças).
+   - **Estrelas Pulsantes**: Tópicos principais com auras de luz (Dourado, Roxo Névoa, Cyan e Esmeralda).
+   - **Planetas Orbitando**: Notas e estudos que giram ao redor de cada Estrela Mestre com marcadores `#Associação`.
+2. **Registros Orbitais**:
+   - **Acervo Cósmico de Leituras**: Livros registrados, status, avaliações em estrelas e progresso de páginas.
+   - **Fichas de Gravidade Física**: Fichas de treino e exercícios físicos.
+   - **Frequência Orbital de Hábitos**: Check-in diário com contador de "voltas orbitais" (dias seguidos).
+3. **Câmara de Imersão Espacial (Deep Space Chamber)**:
+   - Timer de foco digital e diário de clareza mental (*Brain Dump*).
+
+---
+
+## 🛠️ Stack Tecnológica
 
 - **Frontend**: Next.js 15+ (App Router), React 19, TypeScript.
-- **Estilização**: TailwindCSS + Efeitos de Glassmorphism & Dark Theme com Lucide Icons.
+- **Estilização**: TailwindCSS (Cosmic Dark Theme + Starlight Glows) + Lucide Icons.
 - **Backend & Cloud Services**: Firebase (Auth, Cloud Firestore NoSQL, Firebase Storage).
 - **Hospedagem & CI/CD**: Vercel + GitHub Actions.
 
 ---
 
-## 🚀 Como Rodar o Projeto Localmente
+## 🚀 Execução Local
 
-### Pré-requisitos
-- Node.js (v26.3.0+)
-- npm (v11.16.0+)
-
-### Passos:
-1. Instale as dependências:
-   ```bash
-   npm install
-   ```
-2. Execute o servidor de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
-3. Abra `http://localhost:3000` no seu navegador.
-
----
-
-## 🔒 Variáveis de Ambiente (.env.local)
-
-Para integrar com seu projeto Firebase no console:
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=sua-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=seu-projeto.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=seu-projeto-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=seu-projeto.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=seu-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=seu-app-id
+```bash
+npm install
+npm run dev
 ```
 
----
-
-## 📜 Licença
-
-Desenvolvido para máxima clareza mental e evolução pessoal.
+Acesse `http://localhost:3000` no seu navegador.

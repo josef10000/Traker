@@ -6,7 +6,7 @@ export interface MindVaultPlugin {
   description: string;
   icon: string;
   enabled: boolean;
-  category: "productivity" | "knowledge" | "tracking" | "integration" | "ai";
+  category: "matriz" | "nexo" | "registros" | "integracao" | "ia";
   hooks?: {
     onNoteCreate?: (noteId: string, content: string) => void;
     onHabitCompleted?: (habitId: string) => void;
@@ -16,53 +16,53 @@ export interface MindVaultPlugin {
 
 export const INITIAL_PLUGINS: MindVaultPlugin[] = [
   {
-    id: "obsidian-graph-viewer",
-    name: "Grafo 2.0 (Estilo Obsidian)",
-    version: "1.2.0",
-    author: "Comunidade MindVault",
-    description: "Renderiza um gráfico de rede tridimensional e interativo conectando notas e ideias por semelhança e hashtags.",
-    icon: "Network",
-    enabled: true,
-    category: "knowledge"
-  },
-  {
-    id: "notion-database-views",
-    name: "Visão Tabela & Kanban Relacional",
-    version: "2.0.1",
+    id: "nexo-constelacao",
+    name: "Nexo por Radar & Constelação",
+    version: "2.0.0",
     author: "MindVault Core",
-    description: "Cria tabelas dinâmicas com campos personalizados, barra de progresso de projetos e visão de quadros estilo Kanban.",
-    icon: "Kanban",
+    description: "Mapeia pensamentos e projetos em um radar monocromático de órbitas de conhecimento e fios de associação.",
+    icon: "Compass",
     enabled: true,
-    category: "productivity"
+    category: "nexo"
   },
   {
-    id: "lofi-focus-audio",
-    name: "Sons de Foco & Binaural Beat",
-    version: "0.9.4",
-    author: "FocoStudio",
-    description: "Gerador de ruído marrom, chuva e música Lo-Fi sintonizada para estado de Flow durante suas anotações.",
-    icon: "Headphones",
+    id: "matriz-comando",
+    name: "Visão Matriz de Clareza 360°",
+    version: "2.1.0",
+    author: "MindVault Core",
+    description: "Unifica seu estado mental, treinos, leituras e progresso diário em um centro de comando minimalista.",
+    icon: "Layout",
     enabled: true,
-    category: "productivity"
+    category: "matriz"
+  },
+  {
+    id: "camara-audio-silence",
+    name: "Câmara de Som Silencioso & Foco",
+    version: "1.0.0",
+    author: "MindVault Sound",
+    description: "Sons marrons e frequências binaurais para indução instantânea ao estado de flow.",
+    icon: "Volume2",
+    enabled: true,
+    category: "matriz"
   },
   {
     id: "github-sync-backup",
-    name: "Sincronização com GitHub / Vault local",
-    version: "1.1.0",
+    name: "Sincronizador Pessoal GitHub Vault",
+    version: "1.5.0",
     author: "DevTools",
-    description: "Exporta automaticamente suas notas no formato .md para o seu repositório pessoal do GitHub.",
+    description: "Exporta automaticamente seu acervo de ideias para um repositório privado no GitHub.",
     icon: "GitBranch",
     enabled: false,
-    category: "integration"
+    category: "integracao"
   },
   {
-    id: "ai-clarity-copilot",
-    name: "MindVault AI Assistant",
-    version: "1.0.0-beta",
+    id: "copilot-clareza-ai",
+    name: "Copilot de Clareza Mental",
+    version: "2.0.0-beta",
     author: "MindVault AI",
-    description: "Analisa suas anotações do dia e gera um resumo executivo com próximos passos para a sua clareza de vida.",
+    description: "Sintetiza os destaques do seu dia em recomendações acionáveis para o seu desenvolvimento.",
     icon: "Sparkles",
     enabled: true,
-    category: "ai"
+    category: "ia"
   }
 ];

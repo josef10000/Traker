@@ -13,8 +13,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MindVault - Seu Segundo Cérebro & Sistema Operacional de Vida",
-  description: "O poder do Notion + a velocidade e conexão do Obsidian em um só lugar. Clareza mental, projetos, metas, cadernos de conhecimento e rastreadores.",
+  title: "MindVault Cosmos - Universo Pessoal de Conhecimento & Clareza",
+  description: "Organize sua vida através de Sistemas Celestes, Estrelas Pulsantes e Planetas Orbitando. Registros de leituras, treinos, hábitos e câmara de foco.",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="antialiased min-h-screen text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200">
+      <body className="antialiased min-h-screen text-slate-100 selection:bg-amber-500/30 selection:text-amber-200">
         {children}
       </body>
     </html>
