@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.RESEND_API_KEY': JSON.stringify(env.RESEND_API_KEY || env.VITE_RESEND_API_KEY || 're_e1T1eJvY_P1h1iH4rA1v2Z6z1w1z3h1y'),
+      'process.env.VITE_RESEND_API_KEY': JSON.stringify(env.RESEND_API_KEY || env.VITE_RESEND_API_KEY || 're_e1T1eJvY_P1h1iH4rA1v2Z6z1w1z3h1y'),
+      'import.meta.env.VITE_RESEND_API_KEY': JSON.stringify(env.RESEND_API_KEY || env.VITE_RESEND_API_KEY || 're_e1T1eJvY_P1h1iH4rA1v2Z6z1w1z3h1y'),
     },
     resolve: {
       alias: {

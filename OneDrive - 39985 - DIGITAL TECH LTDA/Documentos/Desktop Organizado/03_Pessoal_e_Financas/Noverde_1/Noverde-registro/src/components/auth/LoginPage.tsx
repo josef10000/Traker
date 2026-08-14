@@ -53,7 +53,12 @@ const getRoleLabel = (role?: UserRole): { title: string; icon: string } => {
 };
 
 export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
-  const [isLogin, setIsLogin] = useState(true);
+  // Inicialização inteligente: se a URL for /register ou tiver invite, não é tela de login
+  const [isLogin, setIsLogin] = useState(() => {
+    const fullUrl = window.location.href;
+    return !fullUrl.includes('/register') && !fullUrl.includes('invite=') && !fullUrl.includes('token=');
+  });
+
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -76,74 +81,63 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   }, [showToast]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('invite');
+    // Captura parâmetros tanto de search normal quanto de hash
+    const searchStr = window.location.search || (window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
+    const params = new URLSearchParams(searchStr);
+    const token = params.get('invite') || params.get('token');
     const urlEmail = params.get('email');
     const urlOrg = params.get('org');
     const urlRole = params.get('role');
     const urlOrgId = params.get('orgId');
 
-    if (token) {
-      setInviteToken(token);
+    if (token || urlEmail || urlOrg) {
+      const activeToken = token || `inv-${Date.now()}`;
+      setInviteToken(activeToken);
+      setIsLogin(false);
       
-      // Se a URL já contém os dados do convite (link gerado completo), ativa instantaneamente sem esperar rede
-      if (urlEmail && urlOrg) {
-        const prefilled = {
-          email: urlEmail.trim().toLowerCase(),
-          orgName: decodeURIComponent(urlOrg),
-          role: (urlRole || 'member') as UserRole,
-          organizationId: urlOrgId || '',
-          token: token
-        };
-        setInviteData(prefilled);
+      // Se a URL contém metadados, inicializa imediatamente
+      const prefilled = {
+        email: (urlEmail || '').trim().toLowerCase(),
+        orgName: urlOrg ? decodeURIComponent(urlOrg) : 'Empresa Convidante',
+        role: (urlRole || 'member') as UserRole,
+        organizationId: urlOrgId || '',
+        token: activeToken
+      };
+      
+      setInviteData(prefilled);
+      if (prefilled.email) {
         setEmail(prefilled.email);
-        setIsLogin(false);
-        return;
       }
 
-      if (token === 'demo' || token === 'demo-invite' || token.startsWith('inv-demo-')) {
+      // Se for demo
+      if (token === 'demo' || token === 'demo-invite' || token?.startsWith('inv-demo-')) {
         const demoData = {
-          email: 'colaborador.exemplo@empresa.com',
-          role: 'manager' as UserRole,
-          orgName: 'Empresa Demonstração',
+          email: urlEmail || 'colaborador.exemplo@empresa.com',
+          role: (urlRole || 'manager') as UserRole,
+          orgName: urlOrg ? decodeURIComponent(urlOrg) : 'Empresa Demonstração',
           organizationId: 'demo-org',
-          token
+          token: activeToken
         };
         setInviteData(demoData);
         setEmail(demoData.email);
-        setIsLogin(false);
         return;
       }
 
-      setIsInviteValidating(true);
-      setInviteError(null);
-      
-      const validate = async () => {
-        try {
-          let data: any = null;
-          if (token.startsWith('sb-tok')) {
-            data = sandboxService.validateInvite(token);
-          } else {
-            data = await validateInvite(token);
-          }
-
+      // Validação em background no Firestore (se houver conexão e token)
+      if (token && !token.startsWith('sb-tok') && !urlEmail) {
+        setIsInviteValidating(true);
+        validateInvite(token).then((data) => {
           if (data) {
             setInviteData(data);
             setEmail(data.email);
-            setIsLogin(false);
             showToastRef.current(`Convite identificado para ${data.email}!`, 'success');
-          } else {
-            setInviteError('O link de convite é inválido ou já expirou. Solicite um novo link ao gestor.');
           }
-        } catch (err) {
-          console.error(err);
-          setInviteError('Erro ao validar convite. Verifique sua conexão.');
-        } finally {
+        }).catch((err) => {
+          console.warn('Fallback para dados do convite local:', err);
+        }).finally(() => {
           setIsInviteValidating(false);
-        }
-      };
-      
-      validate();
+        });
+      }
     }
   }, []);
 
