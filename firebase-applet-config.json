@@ -1,0 +1,10 @@
+{
+  "projectId": "traker-app",
+  "appId": "1:126680340430:web:581f865c4e22623416bd9f",
+  "apiKey": "YOUR_FIREBASE_API_KEY",
+  "authDomain": "traker-app.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-764c464a-6ef4-407d-8079-cfe6869a3634",
+  "storageBucket": "traker-app.firebasestorage.app",
+  "messagingSenderId": "126680340430",
+  "measurementId": ""
+}
