@@ -16,10 +16,7 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    optimizeDeps: {
-      noDiscovery: true,
-      include: ['react', 'react-dom', 'firebase/app', 'firebase/auth', 'firebase/firestore'],
-    },
+
     build: {
       target: 'esnext',
       rollupOptions: {
