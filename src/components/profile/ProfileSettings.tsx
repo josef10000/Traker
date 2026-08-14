@@ -181,6 +181,35 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     setTempOffsetY(origData.y);
   };
 
+  const [recentCovers, setRecentCovers] = useState<string[]>(profile.recentCovers || []);
+  const [customStatus, setCustomStatus] = useState<{ emoji: string; text: string; state?: 'available' | 'busy' | 'focus' | 'break' | 'meeting' }>(
+    profile.customStatus || { emoji: '🟢', text: 'Em Atendimento', state: 'available' }
+  );
+
+  const addRecentCover = (url: string) => {
+    if (!url) return;
+    setRecentCovers(prev => {
+      const filtered = prev.filter(c => c !== url);
+      const updated = [url, ...filtered].slice(0, 4);
+      saveProfileFields({ recentCovers: updated });
+      return updated;
+    });
+  };
+
+  const applyCoverPreset = (preset: 'center' | 'top' | 'bottom' | 'reset') => {
+    if (preset === 'center' || preset === 'reset') {
+      setTempOffsetX(0);
+      setTempOffsetY(0);
+      setTempScale(1);
+    } else if (preset === 'top') {
+      setTempOffsetX(0);
+      setTempOffsetY(-50);
+    } else if (preset === 'bottom') {
+      setTempOffsetX(0);
+      setTempOffsetY(50);
+    }
+  };
+
   const getCoverImageStyle = () => {
     if (isRepositioning) {
       return {
@@ -1661,8 +1690,36 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                           <span>Clique e arraste em 360° | Rodinha do mouse ajusta o Zoom</span>
                         </span>
 
-                        {/* BARRA DE CONTROLE DE ZOOM & AÇÕES */}
-                        <div className="flex flex-wrap items-center justify-center gap-3 pointer-events-auto bg-slate-900/90 p-2 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md">
+                        {/* BARRA DE CONTROLE DE ZOOM, PRESETS & AÇÕES */}
+                        <div className="flex flex-wrap items-center justify-center gap-2.5 pointer-events-auto bg-slate-900/90 p-2 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md">
+                          {/* PRESETS RÁPIDOS DE ENQUADRAMENTO */}
+                          <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/5 text-[10px]">
+                            <button
+                              type="button"
+                              onClick={() => applyCoverPreset('center')}
+                              className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 text-slate-300 font-bold transition-all cursor-pointer"
+                              title="Centralizar Enquadramento"
+                            >
+                              🎯 Centro
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyCoverPreset('top')}
+                              className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 text-slate-300 font-bold transition-all cursor-pointer"
+                              title="Foco no Topo"
+                            >
+                              ⬆️ Topo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyCoverPreset('bottom')}
+                              className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/15 text-slate-300 font-bold transition-all cursor-pointer"
+                              title="Foco na Base"
+                            >
+                              ⬇️ Base
+                            </button>
+                          </div>
+
                           {/* CONTROLE DE ZOOM (SLIDER + BOTÕES) */}
                           <div className="flex items-center gap-2 px-2 py-1 bg-black/40 rounded-xl border border-white/5">
                             <button
@@ -1681,7 +1738,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                               step="0.05"
                               value={tempScale}
                               onChange={(e) => setTempScale(parseFloat(e.target.value))}
-                              className="w-24 sm:w-28 accent-sky-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                              className="w-20 sm:w-28 accent-sky-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
                               title="Ajustar Nível de Zoom"
                             />
 
@@ -1694,7 +1751,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                               <MagnifyingGlassPlus size={15} />
                             </button>
 
-                            <span className="text-[10px] font-bold text-sky-300 w-9 text-right">
+                            <span className="text-[10px] font-bold text-sky-300 w-8 text-right">
                               {Math.round(tempScale * 100)}%
                             </span>
                           </div>
@@ -1796,8 +1853,15 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                         )}
                       </div>
 
-                      <div className="pb-1">
-                        <h4 className="text-xl font-black text-white">{displayName || profile.email}</h4>
+                      <div className="pb-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-xl font-black text-white">{displayName || profile.email}</h4>
+                          {/* SELO DE STATUS DINÂMICO DE TRABALHO */}
+                          <span className="px-2.5 py-0.5 rounded-full bg-slate-950/80 border border-white/10 text-[10px] font-extrabold text-emerald-400 shadow-md flex items-center gap-1 backdrop-blur-sm">
+                            <span>{customStatus.emoji}</span>
+                            <span>{customStatus.text}</span>
+                          </span>
+                        </div>
                         <p className="text-xs text-slate-400 font-medium capitalize">{profile.role}</p>
                       </div>
                     </div>
@@ -1843,6 +1907,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                     try {
                                       const url = await uploadImage(file, { folder: 'profile_covers' });
                                       setCoverPhotoURL(url);
+                                      addRecentCover(url);
                                       await saveProfileFields({ coverPhotoURL: url });
                                       if (showToast) showToast('Foto de capa atualizada com sucesso!', 'success');
                                       setIsRepositioning(true);
@@ -1892,6 +1957,35 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                               <span>Usar Sem Capa (Gradiente Limpo)</span>
                             </button>
                           </div>
+
+                          {/* SEÇÃO: CAPAS RECENTES UTILIZADAS */}
+                          {recentCovers.length > 0 && (
+                            <div className="space-y-1.5 pt-1">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                🕐 Capas Recentes Utilizadas
+                              </span>
+                              <div className="grid grid-cols-4 gap-2">
+                                {recentCovers.map((url, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={async () => {
+                                      setCoverPhotoURL(url);
+                                      await saveProfileFields({ coverPhotoURL: url });
+                                      if (showToast) showToast('Capa recente ativada!', 'success');
+                                    }}
+                                    className={`h-12 rounded-xl overflow-hidden border relative group/recent transition-all cursor-pointer ${
+                                      coverPhotoURL === url
+                                        ? 'border-emerald-400 ring-2 ring-emerald-400/40 scale-105 z-10'
+                                        : 'border-white/10 hover:border-white/30'
+                                    }`}
+                                  >
+                                    <img src={url} alt="Capa Recente" className="w-full h-full object-cover group-hover/recent:scale-110 transition-transform" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           {/* Ação 3: Capas Estáticas ("Stills") 100% Clicáveis e Visíveis */}
                           <div className="space-y-1.5 pt-1">

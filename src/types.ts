@@ -150,6 +150,12 @@ export interface UserProfile {
   dealSoundEffect?: 'coin' | 'laser' | 'marimba' | 'silent';
   coverPhotoURL?: string;
   coverPosition?: string;
+  recentCovers?: string[];
+  customStatus?: {
+    emoji: string;
+    text: string;
+    state?: 'available' | 'busy' | 'focus' | 'break' | 'meeting';
+  };
   // Metas Pessoais Motivacionais do Colaborador & Preferências de Widgets
   personalMonthlyGoal?: number;
   personalDailyGoal?: number;
