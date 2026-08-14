@@ -46,7 +46,6 @@ export const generateBackupCodes = (count: number = 5): string[] => {
   if (typeof window !== 'undefined' && window.crypto) {
     window.crypto.getRandomValues(values);
   } else {
-    // Fallback mínimo para SSR/testes
     for (let i = 0; i < values.length; i++) {
       values[i] = Math.floor(Math.random() * 65536);
     }
@@ -61,6 +60,8 @@ export const generateBackupCodes = (count: number = 5): string[] => {
 
 /**
  * Registra uma nova credencial do Windows Hello (Biometria / PIN)
+ * Em modo real, solicita o Windows Hello ao sistema operacional e retorna a chave pública gerada.
+ * Se o usuário cancelar ou falhar, lança exceção explícita (sem salvar mocks falsos).
  */
 export const registerWindowsHello = async (
   userId: string,
@@ -69,16 +70,22 @@ export const registerWindowsHello = async (
   isSandbox: boolean = false
 ): Promise<WebAuthnCredential> => {
   const now = new Date().toISOString();
-  const deviceName = `${navigator.platform || 'Windows'} PC (${new Date().toLocaleDateString('pt-BR')})`;
+  const platformName = typeof navigator !== 'undefined' ? (navigator.platform || 'Windows') : 'Windows';
+  const deviceName = `${platformName} PC (${new Date().toLocaleDateString('pt-BR')})`;
 
-  if (isSandbox || !isWebAuthnSupported()) {
+  // 1. Tratamento para ambiente de testes / Sandbox simulado
+  if (isSandbox) {
     return {
       id: `cred-sandbox-${secureRandomId('win')}`,
-      publicKey: `pubkey-${Date.now()}`,
+      publicKey: `pubkey-sandbox-${Date.now()}`,
       deviceName: `Windows Hello - ${deviceName}`,
       createdAt: now,
       counter: 1
     };
+  }
+
+  if (!isWebAuthnSupported()) {
+    throw new Error('Seu navegador ou sistema operacional não possui suporte à API WebAuthn / Windows Hello.');
   }
 
   try {
@@ -93,7 +100,7 @@ export const registerWindowsHello = async (
     const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
       challenge: challenge.buffer as ArrayBuffer,
       rp: {
-        name: 'Tracker SaaS',
+        name: 'Tracker Platform',
         ...(isIpOrLocalhost ? {} : { id: hostname })
       },
       user: {
@@ -102,31 +109,23 @@ export const registerWindowsHello = async (
         displayName: displayName || userEmail
       },
       pubKeyCredParams: [
-        { alg: -7, type: 'public-key' },  // ES256
-        { alg: -257, type: 'public-key' } // RS256
+        { alg: -7, type: 'public-key' },  // ES256 (Padrão FIDO2 / Windows Hello)
+        { alg: -257, type: 'public-key' } // RS256 (Fallback Windows Hello PIN)
       ],
       authenticatorSelection: {
-        userVerification: 'preferred'
+        authenticatorAttachment: 'platform', // Força o leitor biométrico nativo / PIN da máquina
+        userVerification: 'required'         // Exige biometria ou PIN
       },
-      timeout: 10000,
+      timeout: 30000,
       attestation: 'none'
     };
 
-    const credential = await Promise.race([
-      navigator.credentials.create({
-        publicKey: publicKeyCredentialCreationOptions
-      }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000))
-    ]) as PublicKeyCredential | null;
+    const credential = await navigator.credentials.create({
+      publicKey: publicKeyCredentialCreationOptions
+    }) as PublicKeyCredential | null;
 
     if (!credential) {
-      return {
-        id: `cred-native-${secureRandomId('win')}`,
-        publicKey: `pubkey-${Date.now()}`,
-        deviceName: `Windows Hello (${deviceName})`,
-        createdAt: now,
-        counter: 1
-      };
+      throw new Error('O registro do Windows Hello não foi concluído pelo sistema operacional.');
     }
 
     const rawId = bufferToBase64(credential.rawId);
@@ -139,14 +138,12 @@ export const registerWindowsHello = async (
       counter: 1
     };
   } catch (err: any) {
-    console.warn('Erro ao chamar WebAuthn nativo, fallback ativado:', err);
-    return {
-      id: `cred-local-${secureRandomId('win')}`,
-      publicKey: `pubkey-local-${Date.now()}`,
-      deviceName: `Windows Hello (Ativado)`,
-      createdAt: now,
-      counter: 1
-    };
+    if (err.name === 'NotAllowedError') {
+      throw new Error('A solicitação do Windows Hello foi cancelada ou a janela de biometria foi fechada.');
+    } else if (err.name === 'InvalidStateError') {
+      throw new Error('Este dispositivo já possui uma credencial do Windows Hello registrada.');
+    }
+    throw new Error(err.message || 'Falha ao registrar a biometria/PIN no Windows Hello.');
   }
 };
 
@@ -157,13 +154,23 @@ export const verifyWindowsHello = async (
   credentials: WebAuthnCredential[],
   isSandbox: boolean = false
 ): Promise<boolean> => {
-  if (isSandbox || !isWebAuthnSupported() || !credentials || credentials.length === 0) {
+  if (isSandbox) {
     return true;
   }
 
-  const validBase64Creds = credentials.filter(c => c.id && !c.id.startsWith('cred-'));
+  if (!isWebAuthnSupported()) {
+    console.warn('[WebAuthn] API WebAuthn não disponível no navegador.');
+    return false;
+  }
+
+  if (!credentials || credentials.length === 0) {
+    console.warn('[WebAuthn] Nenhuma credencial registrada para validação.');
+    return false;
+  }
+
+  const validBase64Creds = credentials.filter(c => c.id && !c.id.startsWith('cred-sandbox-'));
   if (validBase64Creds.length === 0) {
-    return true;
+    return false;
   }
 
   try {
@@ -183,24 +190,21 @@ export const verifyWindowsHello = async (
       .filter(Boolean) as PublicKeyCredentialDescriptor[];
 
     if (allowCredentials.length === 0) {
-      return true;
+      return false;
     }
 
     const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
       challenge: challenge.buffer as ArrayBuffer,
       allowCredentials,
-      userVerification: 'preferred',
-      timeout: 10000
+      userVerification: 'required',
+      timeout: 30000
     };
 
-    const assertion = await Promise.race([
-      navigator.credentials.get({
-        publicKey: publicKeyCredentialRequestOptions
-      }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000))
-    ]) as PublicKeyCredential | null;
+    const assertion = await navigator.credentials.get({
+      publicKey: publicKeyCredentialRequestOptions
+    }) as PublicKeyCredential | null;
 
-    return Boolean(assertion);
+    return Boolean(assertion && assertion.id);
   } catch (err: any) {
     console.warn('Falha na validação do Windows Hello nativo:', err);
     return false;

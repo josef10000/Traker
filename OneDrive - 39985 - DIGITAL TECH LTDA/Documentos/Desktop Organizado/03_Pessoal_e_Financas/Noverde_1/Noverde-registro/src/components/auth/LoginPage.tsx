@@ -7,12 +7,10 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
-import { validateInvite, acceptInvite, getUserProfile } from '../../lib/teams';
+import { validateInvite, acceptInvite } from '../../lib/teams';
 import { sandboxService } from '../../lib/sandboxService';
 import { ToastType } from '../ui/Toast';
 import { PasswordStrengthBar } from '../ui/PasswordStrengthBar';
-import { WindowsHello2FaModal } from './WindowsHello2FaModal';
-import { UserProfile } from '../../types';
 
 interface LoginPageProps {
   onAuthSuccess: () => void;
@@ -27,7 +25,6 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [pending2FaUser, setPending2FaUser] = useState<UserProfile | null>(null);
 
   // Estados do Onboarding por Convite
   const [inviteToken, setInviteToken] = useState<string | null>(null);

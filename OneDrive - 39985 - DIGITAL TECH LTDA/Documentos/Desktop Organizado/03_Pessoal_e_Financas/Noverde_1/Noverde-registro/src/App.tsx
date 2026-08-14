@@ -17,6 +17,7 @@ import { getUserProfile } from './lib/teams';
 import { UserProfile, UserRole } from './types';
 import { sandboxService } from './lib/sandboxService';
 import { Toast, ToastType } from './components/ui/Toast';
+import { WindowsHello2FaModal } from './components/auth/WindowsHello2FaModal';
 import { AnimatePresence } from 'motion/react';
 import { DynamicBackground } from './components/ui/DynamicBackground';
 import { StatusPage } from './components/StatusPage';
@@ -45,8 +46,25 @@ export function AppContent() {
   });
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState<boolean>(() => auth.currentUser !== null);
-  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+  const [is2FaVerified, setIs2FaVerified] = useState<boolean>(() => {
+    try {
+      const currentUid = auth.currentUser?.uid;
+      return currentUid ? sessionStorage.getItem(`tracker_2fa_verified_${currentUid}`) === 'true' : false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Atualiza a validação de 2FA para a sessão ativa do usuário
+  useEffect(() => {
+    if (user?.uid) {
+      const verified = sessionStorage.getItem(`tracker_2fa_verified_${user.uid}`) === 'true';
+      setIs2FaVerified(verified);
+    } else {
+      setIs2FaVerified(false);
+    }
+  }, [user?.uid]);
 
   // Atalho de teclado Ctrl+K / Cmd+K via hook isolado
   useSpotlightShortcut(() => setIsSpotlightOpen(prev => !prev));
@@ -540,6 +558,54 @@ export function AppContent() {
           navigate('/login');
         }}
       />
+    );
+  }
+
+  // 🔐 BLOQUEIO DE SESSÃO COM 2FA WINDOWS HELLO PENDENTE
+  if (user && profile && profile.isWebAuthnEnabled && !is2FaVerified && !simulation?.active) {
+    return (
+      <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+        <DynamicBackground theme={profile?.theme} />
+        <AnimatePresence>
+          {toast && (
+            <Toast 
+              message={toast.message} 
+              type={toast.type} 
+              onClose={() => setToast(null)} 
+            />
+          )}
+        </AnimatePresence>
+
+        <WindowsHello2FaModal
+          user={profile}
+          isOpen={true}
+          onSuccess={async (usedBackupCode) => {
+            if (usedBackupCode) {
+              const currentCodes = profile.backupCodes || [];
+              const updatedCodes = currentCodes.filter(c => c !== usedBackupCode && c.replace('-', '') !== usedBackupCode.replace('-', ''));
+              try {
+                await setDoc(doc(db, 'users', user.uid), { backupCodes: updatedCodes }, { merge: true });
+                const updatedProfile = { ...profile, backupCodes: updatedCodes };
+                setProfile(updatedProfile);
+                localStorage.setItem('tracker_cached_profile', JSON.stringify(updatedProfile));
+              } catch (e) {
+                console.warn('Erro ao atualizar códigos de contingência pós-login:', e);
+              }
+            }
+            sessionStorage.setItem(`tracker_2fa_verified_${user.uid}`, 'true');
+            setIs2FaVerified(true);
+            showToast('Autenticação Windows Hello confirmada!', 'success');
+          }}
+          onCancel={async () => {
+            sessionStorage.removeItem(`tracker_2fa_verified_${user.uid}`);
+            await signOut(auth);
+            setUser(null);
+            setProfile(null);
+            setIs2FaVerified(false);
+            showToast('Autenticação cancelada. Faça login novamente.', 'info');
+          }}
+        />
+      </div>
     );
   }
 
