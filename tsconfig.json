@@ -17,16 +17,23 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
+  "include": [
+    "src/**/*",
+    "vite.config.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",
-    "*.timestamp-*.mjs",
-    "**/*.timestamp-*.mjs"
+    "OneDrive*",
+    "**/*.timestamp-*.mjs",
+    "**/*.test.tsx",
+    "**/*.test.ts",
+    "src/__tests__/**/*"
   ]
 }
