@@ -16,7 +16,10 @@ import {
   ListChecks,
   EnvelopeSimple,
   PaperPlaneRight,
-  WhatsappLogo
+  WhatsappLogo,
+  CircleNotch,
+  CheckCircle,
+  Warning
 } from '@phosphor-icons/react';
 import { UserRole } from '../../types';
 import { db } from '../../lib/firebase';
@@ -75,6 +78,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
   const [copiedBatch, setCopiedBatch] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+  const [resendingTokens, setResendingTokens] = useState<{ [token: string]: 'loading' | 'success' | 'error' }>({});
 
   // Linhas de cadastro de convite no Setup
   const [setupRows, setSetupRows] = useState<Array<{
@@ -215,21 +219,38 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
     const roleLabel = getRoleLabel(inv.role);
 
-    showToast(`Reenviando e-mail para ${inv.email}...`, 'success');
-    const emailRes = await sendInviteEmail({
-      recipientEmail: inv.email,
-      orgName: orgName,
-      roleName: roleLabel,
-      inviteUrl: inviteUrl
-    });
+    setResendingTokens(prev => ({ ...prev, [inv.token]: 'loading' }));
 
-    if (emailRes.success) {
-      await updateDoc(doc(db, 'invites', inv.token), { emailSent: true, emailError: null }).catch(() => {});
-      showToast(`E-mail enviado com sucesso para ${inv.email}!`, 'success');
-    } else {
-      const errorMsg = emailRes.error || 'Verifique as credenciais do Resend.';
-      await updateDoc(doc(db, 'invites', inv.token), { emailSent: false, emailError: errorMsg }).catch(() => {});
-      showToast(`Aviso de envio: ${errorMsg}`, 'error');
+    try {
+      const emailRes = await sendInviteEmail({
+        recipientEmail: inv.email,
+        orgName: orgName,
+        roleName: roleLabel,
+        inviteUrl: inviteUrl
+      });
+
+      if (emailRes.success) {
+        await updateDoc(doc(db, 'invites', inv.token), { emailSent: true, emailError: null }).catch(() => {});
+        setResendingTokens(prev => ({ ...prev, [inv.token]: 'success' }));
+        showToast(`E-mail reenviado com sucesso para ${inv.email}!`, 'success');
+      } else {
+        const errorMsg = emailRes.error || 'Verifique as credenciais do Resend na Vercel.';
+        await updateDoc(doc(db, 'invites', inv.token), { emailSent: false, emailError: errorMsg }).catch(() => {});
+        setResendingTokens(prev => ({ ...prev, [inv.token]: 'error' }));
+        showToast(`Aviso de envio: ${errorMsg}`, 'error');
+      }
+    } catch (err: any) {
+      console.error('Erro ao reenviar e-mail:', err);
+      setResendingTokens(prev => ({ ...prev, [inv.token]: 'error' }));
+      showToast('Falha ao processar o reenvio de e-mail.', 'error');
+    } finally {
+      setTimeout(() => {
+        setResendingTokens(prev => {
+          const updated = { ...prev };
+          delete updated[inv.token];
+          return updated;
+        });
+      }, 3500);
     }
   };
 
@@ -480,12 +501,40 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
                       <button
                         type="button"
+                        disabled={resendingTokens[inv.token] === 'loading'}
                         onClick={() => handleResendEmail(inv)}
-                        className="px-3 py-1.5 rounded-xl font-bold text-xs bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border ${
+                          resendingTokens[inv.token] === 'loading'
+                            ? 'bg-sky-600/40 text-sky-200 border-sky-500/40 cursor-wait opacity-80'
+                            : resendingTokens[inv.token] === 'success'
+                            ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/50'
+                            : resendingTokens[inv.token] === 'error'
+                            ? 'bg-rose-600/30 text-rose-300 border-rose-500/50'
+                            : 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-sky-500/30'
+                        }`}
                         title="Reenviar e-mail de convite via Resend"
                       >
-                        <PaperPlaneRight size={14} />
-                        Reenviar E-mail
+                        {resendingTokens[inv.token] === 'loading' ? (
+                          <>
+                            <CircleNotch size={14} className="animate-spin text-sky-400" />
+                            <span>Enviando...</span>
+                          </>
+                        ) : resendingTokens[inv.token] === 'success' ? (
+                          <>
+                            <CheckCircle size={14} className="text-emerald-400" />
+                            <span>E-mail Enviado!</span>
+                          </>
+                        ) : resendingTokens[inv.token] === 'error' ? (
+                          <>
+                            <Warning size={14} className="text-rose-400" />
+                            <span>Erro no Envio</span>
+                          </>
+                        ) : (
+                          <>
+                            <PaperPlaneRight size={14} />
+                            <span>Reenviar E-mail</span>
+                          </>
+                        )}
                       </button>
 
                       <button
