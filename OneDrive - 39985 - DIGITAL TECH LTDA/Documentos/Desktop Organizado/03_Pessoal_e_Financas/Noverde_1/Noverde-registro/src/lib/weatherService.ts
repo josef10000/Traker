@@ -15,8 +15,16 @@ export interface WeatherData {
   longitude?: number;
 }
 
-const WEATHER_CACHE_KEY = 'traker_weather_data_cache';
+const WEATHER_CACHE_KEY = 'traker_weather_data_cache_v3';
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutos de cache
+
+// Limpeza preventiva de caches anteriores
+try {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('traker_weather_data_cache');
+    localStorage.removeItem('traker_weather_data_cache_v2');
+  }
+} catch (e) {}
 
 const WEATHER_DESCRIPTIONS: Record<number, { text: string; icon: string }> = {
   0: { text: 'Céu Limpo', icon: '☀️' },

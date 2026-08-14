@@ -234,7 +234,7 @@ export const DashboardHeader = ({
     <header className={`sticky top-0 z-50 px-6 py-4 no-print !overflow-visible transition-all duration-300 ${
       theme === 'dark' ? 'bg-[#0f172a] border-b border-white/5 shadow-sm' : 'bg-transparent border-none shadow-none'
     }`} style={{ overflow: 'visible' }}>
-      <div className={`max-w-[1750px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4 transition-all duration-300 ${
+      <div className={`w-full mx-auto flex flex-col md:flex-row justify-between items-center gap-4 transition-all duration-300 ${
         theme === 'dark' 
           ? '' 
           : 'bg-white border border-slate-100 rounded-2xl p-4 shadow-sm'

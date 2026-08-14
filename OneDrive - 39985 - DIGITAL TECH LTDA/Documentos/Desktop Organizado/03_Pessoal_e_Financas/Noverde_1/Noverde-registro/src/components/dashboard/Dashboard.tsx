@@ -2583,7 +2583,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             />
           )}
 
-          <main className="max-w-[1750px] w-full mx-auto px-4 sm:px-8 py-8 space-y-8 no-print">
+          <main className="w-full px-6 sm:px-10 py-8 space-y-8 no-print">
             {profile.organizationId === 'sandbox-test' && (
               <DemoFeatureBanner 
                 activeTab={dashboardTab}
