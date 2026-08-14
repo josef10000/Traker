@@ -125,6 +125,18 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     });
   };
 
+  // Helper para construir a URL completa do convite com metadados
+  const buildInviteUrl = (token: string, email: string, role: UserRole) => {
+    const base = `${window.location.origin}/register`;
+    const params = new URLSearchParams();
+    params.set('invite', token);
+    params.set('email', email.trim().toLowerCase());
+    params.set('org', orgName.trim());
+    params.set('role', role);
+    params.set('orgId', orgId);
+    return `${base}?${params.toString()}`;
+  };
+
   // Criar e Gerar Links de Convite
   const handleCreateInvites = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +153,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
       for (const row of validRows) {
         const token = `inv-${generateSecureToken(8).toLowerCase()}`;
-        const inviteUrl = `${window.location.origin}/register?invite=${token}`;
+        const inviteUrl = buildInviteUrl(token, row.email, row.role);
         const roleLabel = getRoleLabel(row.role);
 
         // Disparo automático via Resend
@@ -187,7 +199,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
   // Reenviar E-mail de Convite Individual via Resend
   const handleResendEmail = async (inv: PendingInvite) => {
-    const inviteUrl = `${window.location.origin}/register?invite=${inv.token}`;
+    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
     const roleLabel = getRoleLabel(inv.role);
 
     showToast(`Reenviando e-mail para ${inv.email}...`, 'success');
@@ -206,10 +218,10 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
   };
 
   // Copiar link individual
-  const handleCopySingleLink = (token: string) => {
-    const inviteUrl = `${window.location.origin}/register?invite=${token}`;
+  const handleCopySingleLink = (inv: PendingInvite) => {
+    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
     navigator.clipboard.writeText(inviteUrl);
-    setCopiedToken(token);
+    setCopiedToken(inv.token);
     showToast('Link de convite copiado para a área de transferência!', 'success');
     setTimeout(() => setCopiedToken(null), 3000);
   };
@@ -221,7 +233,8 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     let text = `🚀 *Links de Acesso e Setup — ${orgName}*\n\n`;
     pendingInvites.forEach(inv => {
       const roleLabel = getRoleLabel(inv.role);
-      text += `👤 *${inv.email}* (${roleLabel}):\n🔗 ${window.location.origin}/register?invite=${inv.token}\n\n`;
+      const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
+      text += `👤 *${inv.email}* (${roleLabel}):\n🔗 ${inviteUrl}\n\n`;
     });
 
     navigator.clipboard.writeText(text.trim());
@@ -437,7 +450,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
                       <button
                         type="button"
-                        onClick={() => handleCopySingleLink(inv.token)}
+                        onClick={() => handleCopySingleLink(inv)}
                         className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border ${
                           isCopied
                             ? 'bg-emerald-600 text-white border-emerald-400'

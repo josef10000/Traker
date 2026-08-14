@@ -237,27 +237,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 </html>
     `.trim();
 
-    // Chamada oficial à API do Resend no servidor Vercel
-    const resendResponse = await fetch('https://api.resend.com/emails', {
+    // Tentativa 1: Envio com remetente oficial
+    let senderAddress = `${fromName} <notificacoes@hubsymples.com.br>`;
+    
+    let resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `${fromName} <notificacoes@hubsymples.com.br>`,
+        from: senderAddress,
         to: [recipientEmail],
         subject: `🚀 Convite de Acesso Corporativo — ${orgName} (Tracker Platform)`,
         html: htmlContent
       })
     });
 
-    const resText = await resendResponse.text();
+    let resText = await resendResponse.text();
     let data: any = {};
     try {
       data = JSON.parse(resText);
     } catch {
       data = { message: resText };
+    }
+
+    // Se falhar devido a domínio não verificado, faz fallback para o remetente oficial do Resend onboarding@resend.dev
+    if (!resendResponse.ok && (resText.includes('domain') || resText.includes('verify') || resendResponse.status === 403 || resendResponse.status === 422)) {
+      console.warn('[Vercel Serverless Resend Warning]: Domínio customizado recusado pelo Resend. Tentando remetente onboarding@resend.dev...');
+      
+      senderAddress = `Tracker Platform <onboarding@resend.dev>`;
+      resendResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: senderAddress,
+          to: [recipientEmail],
+          subject: `🚀 Convite de Acesso Corporativo — ${orgName} (Tracker Platform)`,
+          html: htmlContent
+        })
+      });
+
+      resText = await resendResponse.text();
+      try {
+        data = JSON.parse(resText);
+      } catch {
+        data = { message: resText };
+      }
     }
 
     if (!resendResponse.ok) {

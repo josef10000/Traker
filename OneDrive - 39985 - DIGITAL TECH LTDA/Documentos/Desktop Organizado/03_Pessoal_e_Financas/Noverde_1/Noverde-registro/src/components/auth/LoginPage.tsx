@@ -78,15 +78,36 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('invite');
+    const urlEmail = params.get('email');
+    const urlOrg = params.get('org');
+    const urlRole = params.get('role');
+    const urlOrgId = params.get('orgId');
+
     if (token) {
       setInviteToken(token);
       
+      // Se a URL já contém os dados do convite (link gerado completo), ativa instantaneamente sem esperar rede
+      if (urlEmail && urlOrg) {
+        const prefilled = {
+          email: urlEmail.trim().toLowerCase(),
+          orgName: decodeURIComponent(urlOrg),
+          role: (urlRole || 'member') as UserRole,
+          organizationId: urlOrgId || '',
+          token: token
+        };
+        setInviteData(prefilled);
+        setEmail(prefilled.email);
+        setIsLogin(false);
+        return;
+      }
+
       if (token === 'demo' || token === 'demo-invite' || token.startsWith('inv-demo-')) {
         const demoData = {
           email: 'colaborador.exemplo@empresa.com',
           role: 'manager' as UserRole,
           orgName: 'Empresa Demonstração',
-          organizationId: 'demo-org'
+          organizationId: 'demo-org',
+          token
         };
         setInviteData(demoData);
         setEmail(demoData.email);
@@ -144,20 +165,31 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
     setLoading(true);
     try {
       const authResult = await createUserWithEmailAndPassword(auth, inviteData.email, password);
+      const uid = authResult.user.uid;
+      const savedDisplayName = displayName.trim() || inviteData.email.split('@')[0];
       
-      if (displayName.trim()) {
-        await updateProfile(authResult.user, {
-          displayName: displayName.trim()
-        }).catch(() => {});
-      }
+      await updateProfile(authResult.user, {
+        displayName: savedDisplayName
+      }).catch(() => {});
+
+      // Salva perfil do usuário no Firestore diretamente (agora autenticado)
+      const userProfile: UserProfile = {
+        uid,
+        email: inviteData.email,
+        displayName: savedDisplayName,
+        role: inviteData.role || 'member',
+        organizationId: inviteData.organizationId || 'org-master',
+        teamId: inviteData.teamId || undefined,
+        createdAt: new Date().toISOString()
+      };
+
+      await setDoc(doc(db, 'users', uid), userProfile);
 
       if (inviteToken) {
         if (inviteToken.startsWith('sb-tok')) {
-          sandboxService.acceptInvite(authResult.user.uid, inviteToken);
-        } else if (inviteToken === 'demo' || inviteToken === 'demo-invite' || inviteToken.startsWith('inv-demo-')) {
-          // Apenas simula
-        } else {
-          await acceptInvite(authResult.user.uid, inviteToken, displayName.trim());
+          sandboxService.acceptInvite(uid, inviteToken);
+        } else if (inviteToken !== 'demo' && !inviteToken.startsWith('inv-demo-')) {
+          await acceptInvite(uid, inviteToken, savedDisplayName).catch(() => {});
         }
       }
 

@@ -36,16 +36,10 @@ def deploy_rules_to_named_db():
             "Content-Type": "application/json"
         }
 
-        rules_content = """rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}"""
+        with open('firestore.rules', 'r', encoding='utf-8') as rf:
+            rules_content = rf.read()
 
-        logger.info("Criando novo ruleset...")
+        logger.info("Criando novo ruleset a partir de firestore.rules...")
         ruleset_payload = {
             "source": {
                 "files": [{"name": "firestore.rules", "content": rules_content}]
@@ -66,28 +60,38 @@ service cloud.firestore {
         ruleset_name = ruleset_res.json().get('name')
         logger.info("Ruleset criado: %s", ruleset_name)
 
-        release_name = f"cloud.firestore/{database_id}"
-        release_url = f"{RULES_BASE_URL}/projects/{project_id}/releases/{release_name}"
-        
-        logger.info("Atualizando release %s...", release_name)
-        release_payload = {
-            "release": {
+        # Aplicar para banco nomeado e banco default
+        targets = [f"cloud.firestore/{database_id}", "cloud.firestore"]
+        for release_name in targets:
+            release_url = f"{RULES_BASE_URL}/projects/{project_id}/releases/{release_name}"
+            logger.info("Atualizando release %s...", release_name)
+            
+            # Tentar primeiro PATCH direto com rulesetName
+            payload = {
                 "name": f"projects/{project_id}/releases/{release_name}",
                 "rulesetName": ruleset_name
             }
-        }
-        
-        res = requests.patch(
-            f"{release_url}?updateMask=rulesetName",
-            json=release_payload["release"],
-            headers=headers,
-            timeout=TIMEOUT_SECONDS
-        )
+            
+            res = requests.patch(
+                f"{release_url}?updateMask=rulesetName",
+                json=payload,
+                headers=headers,
+                timeout=TIMEOUT_SECONDS
+            )
 
-        if res.status_code == 200:
-            logger.info("--- REGRAS APLICADAS COM SUCESSO NO BANCO NOMEADO! ---")
-        else:
-            logger.error("Erro ao atualizar release: %s", res.text)
+            if res.status_code != 200:
+                # Tentar POST caso o release ainda não exista
+                res = requests.post(
+                    f"{RULES_BASE_URL}/projects/{project_id}/releases",
+                    json=payload,
+                    headers=headers,
+                    timeout=TIMEOUT_SECONDS
+                )
+
+            if res.status_code == 200:
+                logger.info("--- REGRAS APLICADAS COM SUCESSO EM %s! ---", release_name)
+            else:
+                logger.error("Erro ao atualizar release %s: %s", release_name, res.text)
             
     except (OSError, json.JSONDecodeError, requests.RequestException) as err:
         logger.error("Erro no deploy de regras: %s", err)
