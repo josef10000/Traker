@@ -1221,7 +1221,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     }`}
                   >
                     <Calendar size={16} />
-                    <span>Minha Escala & Ponto</span>
+                    <span>Minha Escala</span>
                   </button>
                 )}
               </div>

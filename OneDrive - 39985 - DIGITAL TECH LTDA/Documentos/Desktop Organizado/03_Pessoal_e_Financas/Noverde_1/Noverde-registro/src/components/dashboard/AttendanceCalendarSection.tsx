@@ -97,7 +97,7 @@ export const AttendanceCalendarSection: React.FC<AttendanceCalendarSectionProps>
             <div className={`p-2 rounded-xl ${theme === 'dark' ? 'bg-sky-500/10 text-sky-400' : 'bg-sky-50 text-sky-600'}`}>
               <Calendar size={20} />
             </div>
-            <h2 className="text-lg font-black tracking-tight">Calendário Geral de Ponto e Escala</h2>
+            <h2 className="text-lg font-black tracking-tight">Calendário Geral de Escala e Atividades</h2>
           </div>
           <p className="text-xs text-slate-400">
             Acompanhe presenças, faltas, Day Off, férias e avisos de presencialidade por dia.
