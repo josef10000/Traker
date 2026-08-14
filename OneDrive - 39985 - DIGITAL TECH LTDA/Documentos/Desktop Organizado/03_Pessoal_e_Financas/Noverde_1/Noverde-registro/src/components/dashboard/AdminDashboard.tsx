@@ -382,11 +382,21 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         status: editStatus,
         maxUsers: Number(editMaxUsers),
         maxTeams: Number(editMaxTeams),
-        planExpiresAt: editExpiresAt || undefined,
-        crmOrgId: editCrmOrgId.trim() || undefined,
-        crmClientId: editCrmClientId.trim() || undefined,
-        crmPublicToken: editCrmPublicToken.trim() || undefined
       };
+
+      if (editExpiresAt) {
+        updateData.planExpiresAt = editExpiresAt;
+      }
+      if (editCrmOrgId.trim()) {
+        updateData.crmOrgId = editCrmOrgId.trim();
+      }
+      if (editCrmClientId.trim()) {
+        updateData.crmClientId = editCrmClientId.trim();
+      }
+      if (editCrmPublicToken.trim()) {
+        updateData.crmPublicToken = editCrmPublicToken.trim();
+      }
+
       await updateDoc(orgRef, updateData);
       
       await logAudit('ACCEPT_TERMS', { 
@@ -439,7 +449,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       const newOrg: Organization = {
         id: orgId,
         name: newOrgName.trim(),
-        cnpj: newOrgCnpj.trim() || undefined,
         status: 'pending',
         plan: newOrgPlan,
         maxUsers: Number(newOrgMaxUsers),
@@ -448,6 +457,10 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         supervisorInviteToken: supervisorToken,
         createdAt: now
       };
+
+      if (newOrgCnpj.trim()) {
+        newOrg.cnpj = newOrgCnpj.trim();
+      }
 
       await setDoc(doc(db, 'organizations', orgId), newOrg);
       
@@ -1031,11 +1044,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrganization} className="space-y-4 text-xs">
+            <form onSubmit={handleCreateOrganization} autoComplete="off" className="space-y-4 text-xs">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nome da Empresa</label>
                 <input 
                   type="text" 
+                  name="orgName"
+                  autoComplete="off"
                   value={newOrgName}
                   onChange={(e) => setNewOrgName(e.target.value)}
                   placeholder="Ex: Empresa Exemplo Ltda"
@@ -1048,6 +1063,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CNPJ (Opcional)</label>
                 <input 
                   type="text" 
+                  name="orgCnpj"
+                  autoComplete="off"
                   value={newOrgCnpj}
                   onChange={(e) => setNewOrgCnpj(e.target.value)}
                   placeholder="Ex: 00.000.000/0001-00"
@@ -1059,6 +1076,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Plano</label>
                   <select 
+                    name="orgPlan"
                     value={newOrgPlan}
                     onChange={(e) => handlePlanChange(e.target.value as Organization['plan'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1074,6 +1092,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Usuários</label>
                   <input 
                     type="number" 
+                    name="orgMaxUsers"
+                    autoComplete="off"
                     value={newOrgMaxUsers}
                     onChange={(e) => setNewOrgMaxUsers(Number(e.target.value))}
                     min={1}
@@ -1086,6 +1106,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Equipes</label>
                   <input 
                     type="number" 
+                    name="orgMaxTeams"
+                    autoComplete="off"
                     value={newOrgMaxTeams}
                     onChange={(e) => setNewOrgMaxTeams(Number(e.target.value))}
                     min={1}
@@ -1139,11 +1161,12 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               </button>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveLimits(); }} className="space-y-4 text-xs">
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveLimits(); }} autoComplete="off" className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Plano</label>
                   <select 
+                    name="editOrgPlan"
                     value={editPlan}
                     onChange={(e) => setEditPlan(e.target.value as Organization['plan'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1158,6 +1181,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Status</label>
                   <select 
+                    name="editOrgStatus"
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as Organization['status'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1174,6 +1198,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Usuários</label>
                   <input 
                     type="number" 
+                    name="editOrgMaxUsers"
+                    autoComplete="off"
                     value={editMaxUsers}
                     onChange={(e) => setEditMaxUsers(Number(e.target.value))}
                     min={1}
@@ -1186,6 +1212,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Equipes</label>
                   <input 
                     type="number" 
+                    name="editOrgMaxTeams"
+                    autoComplete="off"
                     value={editMaxTeams}
                     onChange={(e) => setEditMaxTeams(Number(e.target.value))}
                     min={1}
@@ -1199,6 +1227,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Expiração do Plano</label>
                 <input 
                   type="date" 
+                  name="editOrgExpiresAt"
+                  autoComplete="off"
                   value={editExpiresAt ? editExpiresAt.split('T')[0] : ''}
                   onChange={(e) => setEditExpiresAt(e.target.value ? new Date(e.target.value).toISOString() : '')}
                   className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1214,6 +1244,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Org ID</label>
                   <input 
                     type="text" 
+                    name="editOrgCrmOrgId"
+                    autoComplete="off"
                     value={editCrmOrgId}
                     onChange={(e) => setEditCrmOrgId(e.target.value)}
                     placeholder="Ex: 00D8a0000021xyz"
@@ -1226,6 +1258,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Client ID</label>
                     <input 
                       type="text" 
+                      name="editOrgCrmClientId"
+                      autoComplete="off"
                       value={editCrmClientId}
                       onChange={(e) => setEditCrmClientId(e.target.value)}
                       placeholder="Identificador do cliente"
@@ -1237,6 +1271,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Public Token</label>
                     <input 
                       type="password" 
+                      name="editOrgCrmPublicToken"
+                      autoComplete="off"
                       value={editCrmPublicToken}
                       onChange={(e) => setEditCrmPublicToken(e.target.value)}
                       placeholder="Token de acesso público"

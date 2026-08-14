@@ -163,8 +163,12 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
           emailSent: emailRes.success
         };
 
-        if (row.monthlyServiceValue && row.monthlyServiceValue > 0) {
+        if (row.monthlyServiceValue && Number(row.monthlyServiceValue) > 0) {
           inviteDoc.monthlyServiceValue = Number(row.monthlyServiceValue);
+        }
+
+        if (row.teamId && row.teamId.trim()) {
+          inviteDoc.teamId = row.teamId.trim();
         }
 
         await setDoc(doc(db, 'invites', token), inviteDoc);
@@ -288,7 +292,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
         </div>
 
         {/* FORMULÁRIO DE GERAÇÃO DE CONVITES EM LOTE */}
-        <form onSubmit={handleCreateInvites} className="space-y-4">
+        <form onSubmit={handleCreateInvites} autoComplete="off" className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
               <ListChecks size={16} className="text-purple-400" />
