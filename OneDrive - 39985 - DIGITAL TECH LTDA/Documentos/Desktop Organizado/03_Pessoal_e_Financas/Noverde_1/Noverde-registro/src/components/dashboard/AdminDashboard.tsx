@@ -380,8 +380,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       const updateData: Partial<Organization> = {
         plan: editPlan,
         status: editStatus,
-        maxUsers: Number(editMaxUsers),
-        maxTeams: Number(editMaxTeams),
+        maxUsers: Number(editMaxUsers) || 1,
+        maxTeams: Number(editMaxTeams) || 1,
       };
 
       if (editExpiresAt) {
@@ -401,7 +401,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
       showToast('Empresa atualizada com sucesso!', 'success');
       setSelectedOrg(null);
-      setIsSaving(false);
       
       // Log de auditoria fire-and-forget (não bloqueia a UI)
       logAudit('ACCEPT_TERMS', { 
@@ -413,6 +412,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     } catch (error) {
       console.error(error);
       showToast('Erro ao atualizar empresa.', 'error');
+    } finally {
       setIsSaving(false);
     }
   };
@@ -454,8 +454,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         name: savedName,
         status: 'pending',
         plan: savedPlan,
-        maxUsers: Number(newOrgMaxUsers),
-        maxTeams: Number(newOrgMaxTeams),
+        maxUsers: Number(newOrgMaxUsers) || 5,
+        maxTeams: Number(newOrgMaxTeams) || 1,
         managerInviteToken: managerToken,
         supervisorInviteToken: supervisorToken,
         createdAt: now
@@ -475,7 +475,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       setNewOrgMaxUsers(5);
       setNewOrgMaxTeams(1);
       setIsCreateOrgOpen(false);
-      setIsSaving(false);
       
       // Log de auditoria fire-and-forget (não bloqueia a UI)
       logAudit('CREATE_ORGANIZATION', {
@@ -486,6 +485,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     } catch (error) {
       console.error(error);
       showToast('Erro ao criar empresa.', 'error');
+    } finally {
       setIsSaving(false);
     }
   };
@@ -1054,13 +1054,23 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrganization} autoComplete="off" className="space-y-4 text-xs">
+            <form 
+              onSubmit={handleCreateOrganization} 
+              autoComplete="off" 
+              data-1p-ignore="true" 
+              data-lpignore="true" 
+              data-bwignore="true" 
+              className="space-y-4 text-xs"
+            >
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nome da Empresa</label>
                 <input 
                   type="text" 
-                  name="orgName"
+                  name="org_company_name"
                   autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
                   value={newOrgName}
                   onChange={(e) => setNewOrgName(e.target.value)}
                   placeholder="Ex: Empresa Exemplo Ltda"
@@ -1073,8 +1083,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CNPJ (Opcional)</label>
                 <input 
                   type="text" 
-                  name="orgCnpj"
+                  name="org_tax_id"
                   autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
                   value={newOrgCnpj}
                   onChange={(e) => setNewOrgCnpj(e.target.value)}
                   placeholder="Ex: 00.000.000/0001-00"
@@ -1086,7 +1099,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Plano</label>
                   <select 
-                    name="orgPlan"
+                    name="org_plan_selection"
                     value={newOrgPlan}
                     onChange={(e) => handlePlanChange(e.target.value as Organization['plan'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1102,10 +1115,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Usuários</label>
                   <input 
                     type="number" 
-                    name="orgMaxUsers"
+                    name="org_max_user_count"
                     autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={newOrgMaxUsers}
-                    onChange={(e) => setNewOrgMaxUsers(Number(e.target.value))}
+                    onChange={(e) => setNewOrgMaxUsers(e.target.value === '' ? '' : Number(e.target.value))}
                     min={1}
                     required
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1116,10 +1132,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Equipes</label>
                   <input 
                     type="number" 
-                    name="orgMaxTeams"
+                    name="org_max_team_count"
                     autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={newOrgMaxTeams}
-                    onChange={(e) => setNewOrgMaxTeams(Number(e.target.value))}
+                    onChange={(e) => setNewOrgMaxTeams(e.target.value === '' ? '' : Number(e.target.value))}
                     min={1}
                     required
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1171,12 +1190,19 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               </button>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveLimits(); }} autoComplete="off" className="space-y-4 text-xs">
+            <form 
+              onSubmit={(e) => { e.preventDefault(); handleSaveLimits(); }} 
+              autoComplete="off" 
+              data-1p-ignore="true" 
+              data-lpignore="true" 
+              data-bwignore="true" 
+              className="space-y-4 text-xs"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Plano</label>
                   <select 
-                    name="editOrgPlan"
+                    name="edit_org_plan_selection"
                     value={editPlan}
                     onChange={(e) => setEditPlan(e.target.value as Organization['plan'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1191,7 +1217,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Status</label>
                   <select 
-                    name="editOrgStatus"
+                    name="edit_org_status_selection"
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as Organization['status'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1208,10 +1234,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Usuários</label>
                   <input 
                     type="number" 
-                    name="editOrgMaxUsers"
+                    name="edit_org_max_users_count"
                     autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={editMaxUsers}
-                    onChange={(e) => setEditMaxUsers(Number(e.target.value))}
+                    onChange={(e) => setEditMaxUsers(e.target.value === '' ? '' : Number(e.target.value))}
                     min={1}
                     required
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1222,10 +1251,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Equipes</label>
                   <input 
                     type="number" 
-                    name="editOrgMaxTeams"
+                    name="edit_org_max_teams_count"
                     autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={editMaxTeams}
-                    onChange={(e) => setEditMaxTeams(Number(e.target.value))}
+                    onChange={(e) => setEditMaxTeams(e.target.value === '' ? '' : Number(e.target.value))}
                     min={1}
                     required
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
