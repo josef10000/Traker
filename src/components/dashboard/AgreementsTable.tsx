@@ -1,0 +1,521 @@
+import React from 'react';
+import { motion } from 'motion/react';
+import { 
+  Eye, EyeClosed as EyeOff, ClockCounterClockwise as History, Sun, Moon, Check, Lightning as Zap, 
+  Warning as AlertTriangle, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Clock, Pencil as Edit3, Trash as Trash2, MagnifyingGlass as Search, CircleNotch as Loader2, ChatText as MessageSquare, Paperclip
+} from '@phosphor-icons/react';
+import { Agreement, AgreementStatus, UserProfile } from '../../types';
+import { formatCurrency, maskCPF } from '../../utils/masks';
+import { parseLocalDate } from '../../utils/date';
+import { StatusBadge } from '../ui/StatusBadge';
+import { Skeleton } from '../ui/Skeleton';
+import { OriginBadge } from './OriginBadge';
+import { logAudit } from '../../lib/audit';
+
+interface AgreementsTableProps {
+  paginatedAgreements: Agreement[];
+  isLoading: boolean;
+  revealedCpfs: Record<string, boolean>;
+  toggleRevealCpf: (id: string, cpf: string) => void;
+  handleClientClick: (cpf: string) => void;
+  handleEfetivar: (id: string) => void;
+  handleToggleChecked: (id: string, lastCheckedAt?: string) => void;
+  setEditingAgreement: (a: Agreement | null) => void;
+  setIsModalOpen: (open: boolean) => void;
+  handleDelete: (id: string) => void;
+  profile: UserProfile;
+  currentPage: number;
+  totalPages: number;
+  nextPage: () => void;
+  prevPage: () => void;
+  showToast: (message: string, type: 'success' | 'error') => void;
+  theme?: 'light' | 'dark';
+  onCopyCpf?: (id: string, cpf: string) => void;
+  onOpenNotes?: (agreement: Agreement) => void;
+  onOpenReceiptModal?: (agreement: Agreement) => void;
+  onOpenMessageTemplate?: (agreement: Agreement) => void;
+}
+
+export const AgreementsTable: React.FC<AgreementsTableProps> = ({
+  paginatedAgreements,
+  isLoading,
+  revealedCpfs,
+  toggleRevealCpf,
+  handleClientClick,
+  handleEfetivar,
+  handleToggleChecked,
+  setEditingAgreement,
+  setIsModalOpen,
+  handleDelete,
+  profile,
+  currentPage,
+  totalPages,
+  nextPage,
+  prevPage,
+  showToast,
+  theme = 'dark',
+  onCopyCpf,
+  onOpenNotes,
+  onOpenReceiptModal,
+  onOpenMessageTemplate
+}) => {
+  return (
+    <section className={`rounded-2xl overflow-hidden border ${
+      theme === 'dark' ? 'bg-slate-900/10 border-white/5 shadow-none' : 'bg-white border-slate-200 shadow-sm'
+    }`}>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className={`border-b ${
+              theme === 'dark' ? 'bg-white/5 border-white/10 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-500 font-bold'
+            }`}>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Cliente</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Origem</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Tipo</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Vencimento</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Valor</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Status</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right no-print">Ações</th>
+            </tr>
+          </thead>
+          <motion.tbody
+            className={`divide-y ${theme === 'dark' ? 'divide-white/5' : 'divide-slate-100'}`}
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.035, delayChildren: 0.05 } },
+              hidden: {},
+            }}
+          >
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} className="p-6">
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex items-center gap-4 py-2">
+                        <Skeleton className="h-10 w-48 rounded-xl" />
+                        <Skeleton className="h-8 w-24 rounded-xl" />
+                        <Skeleton className="h-8 w-24 rounded-xl" />
+                        <Skeleton className="h-8 w-28 rounded-xl" />
+                        <Skeleton className="h-8 w-24 rounded-xl" />
+                        <Skeleton className="h-8 w-28 rounded-xl" />
+                        <Skeleton className="h-8 w-24 rounded-xl ml-auto" />
+                      </div>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedAgreements.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">
+                  Nenhum acordo encontrado.
+                </td>
+              </tr>
+            ) : (
+              paginatedAgreements.map((agreement) => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isOverdue = agreement.status === AgreementStatus.WAITING && parseLocalDate(agreement.dueDate) < today;
+                const isBroken = agreement.status === AgreementStatus.BROKEN || isOverdue;
+                // Lógica de Ciclo (Manhã até 12:00, Tarde após 12:00)
+                const regDate = agreement.createdAt ? new Date(agreement.createdAt) : null;
+                const isMorning = regDate ? regDate.getHours() < 12 : true;
+                const isCheckedToday = agreement.lastCheckedAt && 
+                  new Date(agreement.lastCheckedAt).toLocaleDateString() === new Date().toLocaleDateString();
+                // Lógica de Prioridade (Qualquer acordo criado antes de hoje que ainda esteja aguardando)
+                const isPriorityOntem = regDate && regDate < today && agreement.status === AgreementStatus.WAITING;
+                
+                const getRowBgClass = () => {
+                  if (agreement.status === AgreementStatus.PAID) {
+                    return theme === 'dark' ? 'bg-emerald-500/5 border-l-emerald-500/50' : 'bg-emerald-50/50 border-l-emerald-500';
+                  }
+                  if (isBroken) {
+                    return theme === 'dark' ? 'bg-rose-500/5 border-l-rose-500/50' : 'bg-rose-50/50 border-l-rose-500';
+                  }
+                  if (isCheckedToday) {
+                    return theme === 'dark' ? 'bg-sky-500/5 border-l-sky-500/50' : 'bg-sky-50/50 border-l-sky-500';
+                  }
+                  if (isMorning) {
+                    return theme === 'dark' 
+                      ? 'hover:bg-primary/5 border-l-primary/40 bg-slate-900/20' 
+                      : 'hover:bg-slate-50 border-l-primary/40 bg-slate-50/30';
+                  }
+                  return theme === 'dark' 
+                    ? 'hover:bg-amber-500/5 border-l-amber-500/30 bg-slate-900/40' 
+                    : 'hover:bg-slate-50 border-l-amber-500/30 bg-slate-50/60';
+                };
+
+                // Badge de Status Unificado Animado
+                const renderStatusBadge = () => {
+                  return (
+                    <StatusBadge
+                      status={agreement.status}
+                      isOverdue={isOverdue}
+                      isCheckedToday={Boolean(isCheckedToday)}
+                      isPriorityOntem={Boolean(isPriorityOntem)}
+                      theme={theme}
+                    />
+                  );
+                };
+
+                return (
+                  <motion.tr 
+                    key={agreement.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 8 },
+                      visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 30 } },
+                    }}
+                    className={`group transition-colors relative border-l-4 ${getRowBgClass()}`}
+                  >
+                    {/* Cliente & CPF */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col text-left">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-black text-sm ${
+                            isBroken ? 'text-slate-500' : theme === 'dark' ? 'text-white' : 'text-slate-900'
+                          }`}>
+                            {agreement.clientName}
+                          </span>
+                          {agreement.notes && (
+                            <MessageSquare 
+                              size={14} 
+                              className="text-sky-400 cursor-help shrink-0" 
+                              title={`Observação do cliente: ${agreement.notes}`}
+                            />
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 mt-1">
+                          {/* Clique no CPF para Copiar */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cleanCpf = agreement.clientCpf.replace(/\D/g, '');
+                              navigator.clipboard.writeText(cleanCpf);
+                              showToast('CPF copiado!', 'success');
+                              logAudit('COPY_CPF', {
+                                cpf: cleanCpf,
+                                clientName: agreement.clientName,
+                                agreementId: agreement.id
+                              }, profile?.name || 'Operador', profile?.organizationId);
+                              if (onCopyCpf) onCopyCpf(agreement.id, agreement.clientCpf);
+                            }}
+                            className={`text-xs font-mono font-medium tracking-wider px-1 py-0.5 rounded-md transition-all cursor-pointer ${
+                              theme === 'dark' 
+                                ? 'text-slate-300 hover:text-indigo-400' 
+                                : 'text-slate-700 hover:text-indigo-600'
+                            }`}
+                            title="Clique para copiar o CPF limpo (somente números)"
+                          >
+                            {revealedCpfs[agreement.id] ? agreement.clientCpf : maskCPF(agreement.clientCpf)}
+                          </button>
+
+                          {/* Revelar / Ocultar CPF */}
+                          <button 
+                            onClick={() => toggleRevealCpf(agreement.id, agreement.clientCpf)}
+                            className={`p-1 rounded-md transition-all cursor-pointer ${
+                              theme === 'dark' 
+                                ? 'text-slate-400 hover:text-white hover:bg-slate-800' 
+                                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                            }`}
+                            title={revealedCpfs[agreement.id] ? "Ocultar CPF completo" : "Revelar CPF completo"}
+                          >
+                            {revealedCpfs[agreement.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+
+                          {/* Ver Histórico */}
+                          <button 
+                            onClick={() => handleClientClick(agreement.clientCpf)}
+                            className={`p-1 rounded-md transition-all cursor-pointer ${
+                              theme === 'dark' 
+                                ? 'text-slate-400 hover:text-white hover:bg-slate-800' 
+                                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                            }`}
+                            title="Ver Histórico de Negociações do Cliente"
+                          >
+                            <History size={13} />
+                          </button>
+
+                          {/* Notas de Transição do Lead */}
+                          {onOpenNotes && (
+                            <button 
+                              onClick={() => onOpenNotes(agreement)}
+                              className={`p-1 rounded-md transition-all cursor-pointer relative ${
+                                (agreement.notesHistory && agreement.notesHistory.length > 0)
+                                  ? 'text-indigo-400 bg-indigo-500/15 border border-indigo-500/30'
+                                  : theme === 'dark' 
+                                    ? 'text-slate-400 hover:text-white hover:bg-slate-800' 
+                                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                              }`}
+                              title={`Notas de Transição do Lead (${agreement.notesHistory?.length || 0})`}
+                            >
+                              <MessageSquare size={13} />
+                              {agreement.notesHistory && agreement.notesHistory.length > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                </span>
+                              )}
+                            </button>
+                          )}
+
+                          {/* Anexo de Comprovante */}
+                          {onOpenReceiptModal && (
+                            agreement.receiptUrl ? (
+                              <button
+                                onClick={() => onOpenReceiptModal(agreement)}
+                                className="flex items-center gap-1 p-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer"
+                                title="Ver Comprovante Anexo"
+                              >
+                                <img
+                                  src={agreement.receiptUrl}
+                                  alt="Comprovante"
+                                  className="w-5 h-5 object-cover rounded"
+                                />
+                                <Paperclip size={12} className="text-emerald-400" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => onOpenReceiptModal(agreement)}
+                                className={`p-1 rounded-md transition-all cursor-pointer ${
+                                  theme === 'dark'
+                                    ? 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                                }`}
+                                title="Anexar Comprovante"
+                              >
+                                <Paperclip size={13} />
+                              </button>
+                            )
+                          )}
+                        </div>
+
+                        {/* Data em que o acordo foi feito */}
+                        {regDate && (
+                          <span 
+                            className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5"
+                            title="Data e hora em que este acordo foi registrado pelo operador"
+                          >
+                            Feito em {regDate.toLocaleDateString('pt-BR')} às {regDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Origem */}
+                    <td className="px-6 py-4">
+                      <OriginBadge origin={agreement.origin} />
+                    </td>
+
+                    {/* Tipo com Alto Contraste */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span 
+                          className={`text-xs font-black px-3 py-1 rounded-full border w-fit shadow-xs ${
+                            theme === 'dark' 
+                              ? 'text-sky-300 bg-sky-500/15 border-sky-500/30' 
+                              : 'text-slate-900 bg-slate-100 border-slate-300'
+                          }`}
+                          title={`Tipo de Negociação: ${
+                            agreement.type === 'quitacao' ? 'Quitação' : 
+                            agreement.type === 'parcelamento' ? 'Parcelamento' :
+                            agreement.type === 'parcela_atrasada' ? 'Parcela Atrasada' : 
+                            agreement.type === 'antecipacao' ? 'Antecipação' : agreement.type
+                          }`}
+                        >
+                          {agreement.type === 'quitacao' ? 'Quitação' : 
+                           agreement.type === 'parcelamento' ? 'Parcelamento' :
+                           agreement.type === 'parcela_atrasada' ? 'Pcl Atrasada' : 
+                           agreement.type === 'antecipacao' ? 'Antecipação' : agreement.type}
+                        </span>
+                        {agreement.currentInstallment && (
+                          <span className="text-[10px] text-sky-400 font-black mt-1 ml-1 uppercase tracking-wider">
+                            Parcela: {agreement.currentInstallment}
+                          </span>
+                        )}
+                        {agreement.discountApplied === true && (
+                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 w-fit mt-1 flex items-center gap-1" title={`Motivo: ${agreement.discountReason || 'Concedido'}`}>
+                            🏷️ Com Desconto
+                          </span>
+                        )}
+                        {agreement.discountApplied === false && (
+                          <span className="text-[9px] font-medium text-slate-500 bg-slate-800/40 px-1.5 py-0.5 rounded border border-white/5 w-fit mt-1">
+                            Sem Desconto
+                          </span>
+                        )}
+                        {(agreement.status === AgreementStatus.PAID || agreement.status === AgreementStatus.RECOVERED) && (agreement.notesHistory?.some(n => n.content.toLowerCase().includes('quebr') || n.category === 'warning')) && (
+                          <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30 w-fit mt-1 flex items-center gap-1" title="Acordo recuperado pós-quebra">
+                            🟢 Resgatado Pós-Quebra
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Vencimento com Alto Contraste (idêntico ao Valor) */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span 
+                          className={`text-sm font-black tabular-nums ${
+                            isOverdue && agreement.status !== AgreementStatus.PAID
+                              ? theme === 'dark' ? 'text-rose-400' : 'text-rose-600' 
+                              : theme === 'dark' ? 'text-white' : 'text-slate-900'
+                          }`}
+                          title="Data de Vencimento do Acordo"
+                        >
+                          {(agreement.dueDate || '').split('-').reverse().join('/')}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Valor com Alto Contraste (Verde se Pago) */}
+                    <td 
+                      className={`px-6 py-4 text-sm font-black tabular-nums ${
+                        agreement.status === AgreementStatus.PAID
+                          ? theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
+                          : theme === 'dark' ? 'text-white' : 'text-slate-900'
+                      }`}
+                      title={agreement.status === AgreementStatus.PAID ? "Valor Pago e Confirmado no Sistema" : "Valor do Acordo registrado"}
+                    >
+                      {formatCurrency(agreement.value)}
+                    </td>
+
+                    {/* Status Unificado */}
+                    <td className="px-6 py-4 text-center">
+                      {renderStatusBadge()}
+                    </td>
+
+                    {/* Régua de Ações (Opção A - 4 Slots Idênticos e Sempre Visíveis) */}
+                    <td className="px-6 py-4 text-right no-print">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {(() => {
+                          const canAct = (profile.role === 'member' || profile.role === 'supervisor') && (agreement.operatorId === profile.uid || profile.role === 'supervisor');
+                          if (!canAct) {
+                            return (
+                              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                {agreement.status === AgreementStatus.PAID ? 'Concluído' : isBroken ? 'Quebrado' : 'Aguardando'}
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <>
+                              {/* Slot 1: Efetivar Pagamento */}
+                              {agreement.status !== AgreementStatus.PAID && (
+                                <button 
+                                  onClick={() => handleEfetivar(agreement.id)}
+                                  className="p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-500/20 active:scale-95 cursor-pointer"
+                                  title="Efetivar Pagamento (Marcar acordo como pago)"
+                                >
+                                  <Check size={14} weight="bold" />
+                                </button>
+                              )}
+                              
+                              {/* Slot 2: Conferir Hoje */}
+                              {agreement.status !== AgreementStatus.PAID && (
+                                <button 
+                                  onClick={() => handleToggleChecked(agreement.id, agreement.lastCheckedAt)}
+                                  className={`p-1.5 rounded-lg transition-all border active:scale-95 cursor-pointer ${
+                                    isCheckedToday 
+                                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs' 
+                                      : theme === 'dark' 
+                                        ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700' 
+                                        : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                                  }`}
+                                  title={isCheckedToday ? 'Remover marcação de conferido hoje' : 'Conferir Acordo (Marcar como checado no turno de hoje)'}
+                                >
+                                  <Search size={14} weight="bold" />
+                                </button>
+                              )}
+
+                              {/* Slot: Copiar Script de Fala / Roteiro de Atendimento */}
+                              {onOpenMessageTemplate && (
+                                <button
+                                  onClick={() => onOpenMessageTemplate(agreement)}
+                                  className="p-1.5 bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white rounded-lg transition-all border border-sky-500/20 active:scale-95 cursor-pointer"
+                                  title="Script de Fala (Copiar modelo de mensagem interpolado com dados do acordo)"
+                                >
+                                  <MessageSquare size={14} weight="bold" />
+                                </button>
+                              )}
+
+                              {/* Slot 3: Editar Acordo */}
+                              <button 
+                                onClick={() => {
+                                  setEditingAgreement(agreement);
+                                  setIsModalOpen(true);
+                                }}
+                                className={`p-1.5 rounded-lg transition-all border active:scale-95 cursor-pointer ${
+                                  theme === 'dark' 
+                                    ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700' 
+                                    : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                                }`}
+                                title="Editar Acordo (Alterar dados, valores ou observações)"
+                              >
+                                <Edit3 size={14} weight="bold" />
+                              </button>
+
+                              {/* Slot 4: Excluir Acordo */}
+                              <button 
+                                onClick={() => handleDelete(agreement.id)}
+                                className={`p-1.5 rounded-lg transition-all border active:scale-95 cursor-pointer ${
+                                  theme === 'dark' 
+                                    ? 'bg-transparent border-transparent text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20' 
+                                    : 'bg-transparent border-transparent text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200'
+                                }`}
+                                title="Excluir Acordo (Remover registro permanentemente)"
+                              >
+                                <Trash2 size={14} weight="bold" />
+                              </button>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </td>
+                  </motion.tr>
+                );
+              })
+            )}
+          </motion.tbody>
+        </table>
+      </div>
+
+      {totalPages > 0 && (
+        <div className={`px-6 py-4 border-t flex items-center justify-between no-print ${
+          theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-200 bg-slate-50/50'
+        }`}>
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${
+            theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+          }`}>
+            Página {currentPage} de {totalPages || 1} — Exibindo {paginatedAgreements.length} registro(s) nesta página
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={prevPage}
+              disabled={currentPage <= 1}
+              className={`p-2 rounded-lg border text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+                theme === 'dark' 
+                  ? 'bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10' 
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+              title="Ir para a página anterior"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={nextPage}
+              disabled={currentPage >= totalPages}
+              className={`p-2 rounded-lg border text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+                theme === 'dark' 
+                  ? 'bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10' 
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+              title="Ir para a próxima página"
+            >
+              Próximo
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};

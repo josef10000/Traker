@@ -1,0 +1,366 @@
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import { X, Users, Globe, CaretDown, CaretRight } from '@phosphor-icons/react';
+import { Team, UserProfile } from '../../types';
+
+interface TeamSelectorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  teams: Team[];
+  selectedTeamId: string;
+  onSelectTeam: (teamId: string) => void;
+  supervisors?: UserProfile[];
+  profileRole?: string;
+  managers?: UserProfile[];
+}
+
+export const TeamSelectorModal = ({
+  isOpen,
+  onClose,
+  teams = [],
+  selectedTeamId,
+  onSelectTeam,
+  supervisors = [],
+  profileRole,
+  managers = []
+}: TeamSelectorModalProps) => {
+  const [expandedManagers, setExpandedManagers] = useState<Record<string, boolean>>({});
+  const [expandedSupervisors, setExpandedSupervisors] = useState<Record<string, boolean>>({});
+
+  if (!isOpen) return null;
+
+  const toggleManager = (uid: string) => {
+    setExpandedManagers(prev => ({ ...prev, [uid]: !prev[uid] }));
+  };
+
+  const toggleSupervisor = (uid: string) => {
+    setExpandedSupervisors(prev => ({ ...prev, [uid]: !prev[uid] }));
+  };
+
+  const getInitial = (name?: string, fallback: string = 'U') => {
+    if (typeof name === 'string' && name.trim().length > 0) {
+      return name.trim()[0].toUpperCase();
+    }
+    return fallback;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        role="button"
+        tabIndex={0}
+        aria-label="Fechar modal de seleção de equipe"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+            onClose();
+          }
+        }}
+        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md cursor-pointer"
+      />
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900 border border-white/10 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-white"
+      >
+        <div className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl">
+          <div>
+            <h2 className="text-lg font-bold text-white">Selecionar Equipe</h2>
+            <p className="text-[10px] text-slate-400">Escolha a equipe operacional ou a visão consolidada</p>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar modal"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 max-h-[60vh] overflow-y-auto space-y-4 custom-scrollbar">
+          {/* Opção Visão Macro */}
+          <button
+            type="button"
+            onClick={() => {
+              onSelectTeam('all');
+              onClose();
+            }}
+            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left group cursor-pointer ${
+              selectedTeamId === 'all'
+                ? 'bg-sky-500/10 border-sky-500 text-sky-400'
+                : 'bg-white/5 border-white/5 text-slate-300 hover:bg-white/10 hover:border-white/10'
+            }`}
+          >
+            <div className="flex items-center gap-3.5">
+              <div className={`p-2.5 rounded-xl transition-colors ${
+                selectedTeamId === 'all' ? 'bg-sky-500/20 text-sky-400' : 'bg-white/5 text-slate-400 group-hover:text-white'
+              }`}>
+                <Globe size={20} weight="duotone" />
+              </div>
+              <div>
+                <span className="font-bold text-sm block">Visão Macro (Todas)</span>
+                <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors">Performance consolidada de todas as carteiras</span>
+              </div>
+            </div>
+            {selectedTeamId === 'all' && (
+              <span className="text-[10px] bg-sky-500 text-white font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md shadow-sky-500/20">
+                Ativo
+              </span>
+            )}
+          </button>
+
+          {/* Listagem de 3 Níveis para Coordenadores */}
+          {profileRole === 'coordinator' ? (
+            <div className="space-y-4 pt-2">
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Estrutura de Gerentes</h3>
+              {managers.filter(Boolean).map((manager, idx) => {
+                const managerUid = manager?.uid || `manager-idx-${idx}`;
+                const isManagerActive = selectedTeamId === `manager-${managerUid}`;
+                const isExpanded = !!expandedManagers[managerUid];
+                const managerSupervisors = supervisors.filter(s => s && s.managerId === managerUid);
+
+                return (
+                  <div key={managerUid} className="space-y-2 p-3 bg-white/5 border border-white/5 rounded-3xl">
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleManager(managerUid)}
+                        className="flex items-center gap-2 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-1 text-left"
+                      >
+                        {isExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-purple-400 font-bold text-xs">
+                          {getInitial(manager?.displayName, 'G')}
+                        </div>
+                        <div>
+                          <span className="font-bold text-sm block leading-tight text-white">{manager?.displayName || (manager?.email ? manager.email.split('@')[0] : 'Gerente')}</span>
+                          <span className="text-[9px] text-slate-500">Gerente</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectTeam(`manager-${managerUid}`);
+                          onClose();
+                        }}
+                        className={`px-3 py-1.5 rounded-xl border text-[9px] uppercase tracking-wider font-extrabold transition-all cursor-pointer ${
+                          isManagerActive
+                            ? 'bg-purple-500 text-white border-purple-500 shadow-md shadow-purple-500/20'
+                            : 'bg-slate-900/40 border-transparent text-slate-400 hover:bg-slate-900/60 hover:text-white'
+                        }`}
+                      >
+                        Filtrar
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="pl-4 border-l border-white/5 space-y-3 pt-2">
+                        {managerSupervisors.filter(Boolean).map((sup, sIdx) => {
+                          const supUid = sup?.uid || `sup-idx-${sIdx}`;
+                          const isSupActive = selectedTeamId === `supervisor-${supUid}`;
+                          const isSupExpanded = !!expandedSupervisors[supUid];
+                          const supervisorTeams = teams.filter(t => t && t.supervisorId === supUid);
+
+                          return (
+                            <div key={supUid} className="space-y-2 p-2 bg-slate-950/40 rounded-2xl">
+                              <div className="flex items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSupervisor(supUid)}
+                                  className="flex items-center gap-2 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex-1 text-left"
+                                >
+                                  {isSupExpanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                                  <div className="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center text-sky-400 font-bold text-xs">
+                                    {getInitial(sup?.displayName, 'S')}
+                                  </div>
+                                  <div>
+                                    <span className="font-bold text-xs block leading-tight text-slate-200">{sup?.displayName || (sup?.email ? sup.email.split('@')[0] : 'Supervisor')}</span>
+                                    <span className="text-[8px] text-slate-500">Supervisor</span>
+                                  </div>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onSelectTeam(`supervisor-${supUid}`);
+                                    onClose();
+                                  }}
+                                  className={`px-2 py-1 rounded-lg border text-[8px] uppercase tracking-wider font-extrabold transition-all cursor-pointer ${
+                                    isSupActive
+                                      ? 'bg-sky-500 text-white border-sky-500 shadow-md shadow-sky-500/20'
+                                      : 'bg-slate-950/60 border-transparent text-slate-500 hover:bg-slate-950 hover:text-slate-300'
+                                  }`}
+                                >
+                                  Filtrar
+                                </button>
+                              </div>
+
+                              {isSupExpanded && (
+                                <div className="pl-3 border-l border-white/5 space-y-1 pt-1">
+                                  {supervisorTeams.filter(Boolean).map((team, tIdx) => {
+                                    const teamId = team?.id || `sup-team-${tIdx}`;
+                                    const isTeamActive = selectedTeamId === teamId;
+                                    return (
+                                      <button
+                                        type="button"
+                                        key={teamId}
+                                        onClick={() => {
+                                          onSelectTeam(teamId);
+                                          onClose();
+                                        }}
+                                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all text-left cursor-pointer ${
+                                          isTeamActive
+                                            ? 'bg-sky-500/10 border-sky-500/40 text-sky-400'
+                                            : 'bg-transparent border-transparent text-slate-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                      >
+                                        <span className="text-xs font-medium">{team?.name || 'Equipe'}</span>
+                                        {isTeamActive && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
+                                      </button>
+                                    );
+                                  })}
+                                  {supervisorTeams.length === 0 && (
+                                    <span className="text-[8px] text-slate-600 italic pl-2">Nenhuma equipe vinculada</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {managerSupervisors.length === 0 && (
+                          <span className="text-[9px] text-slate-600 italic pl-2">Nenhum supervisor vinculado</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : profileRole === 'manager' && supervisors.length > 0 ? (
+            /* Listagem de Equipes por Supervisor (se for Gerente) */
+            <div className="space-y-4 pt-2">
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Filtrar por Supervisor</h3>
+              {supervisors.filter(Boolean).map((sup, supIdx) => {
+                const supUid = sup?.uid || `sup-mgr-idx-${supIdx}`;
+                const isSupActive = selectedTeamId === `supervisor-${supUid}`;
+                const supervisorTeams = teams.filter(t => t && t.supervisorId === supUid);
+                
+                return (
+                  <div key={supUid} className="space-y-2 p-3 bg-white/5 border border-white/5 rounded-3xl">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectTeam(`supervisor-${supUid}`);
+                        onClose();
+                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left group cursor-pointer ${
+                        isSupActive
+                          ? 'bg-sky-500/15 border-sky-500 text-sky-400'
+                          : 'bg-slate-900/40 border-transparent text-slate-300 hover:bg-slate-900/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sky-400 font-bold text-xs">
+                          {getInitial(sup?.displayName, 'S')}
+                        </div>
+                        <div>
+                          <span className="font-bold text-sm block leading-tight text-white">{sup?.displayName || (sup?.email ? sup.email.split('@')[0] : 'Supervisor')}</span>
+                          <span className="text-[9px] text-slate-500">Ver todas as equipes sob sua supervisão</span>
+                        </div>
+                      </div>
+                      {isSupActive && (
+                        <span className="text-[9px] bg-sky-500 text-white font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          Ativo
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Equipes individuais deste supervisor */}
+                    <div className="grid grid-cols-1 gap-1.5 pl-2 pr-1">
+                      {supervisorTeams.filter(Boolean).map((team, tIdx) => {
+                        const teamId = team?.id || `team-idx-${tIdx}`;
+                        const isTeamActive = selectedTeamId === teamId;
+                        return (
+                          <button
+                            type="button"
+                            key={teamId}
+                            onClick={() => {
+                              onSelectTeam(teamId);
+                              onClose();
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left cursor-pointer ${
+                              isTeamActive
+                                ? 'bg-sky-500/10 border-sky-500/40 text-sky-400'
+                                : 'bg-transparent border-transparent text-slate-400 hover:bg-white/5 hover:text-white'
+                            }`}
+                          >
+                            <span className="text-xs font-bold">{team?.name || 'Equipe'}</span>
+                            {isTeamActive && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
+                          </button>
+                        );
+                      })}
+                      {supervisorTeams.length === 0 && (
+                        <span className="text-[9px] text-slate-500 italic pl-2">Nenhuma equipe vinculada</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Listagem Simples (Supervisor ou Operador) */
+            <div className="space-y-2.5">
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Minhas Equipes</h3>
+              {teams.filter(Boolean).map((team, tIdx) => {
+                const teamId = team?.id || `my-team-${tIdx}`;
+                const isActive = selectedTeamId === teamId;
+                return (
+                  <button
+                    type="button"
+                    key={teamId}
+                    onClick={() => {
+                      onSelectTeam(teamId);
+                      onClose();
+                    }}
+                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left group cursor-pointer ${
+                      isActive
+                        ? 'bg-sky-500/10 border-sky-500 text-sky-400'
+                        : 'bg-white/5 border-white/5 text-slate-300 hover:bg-white/10 hover:border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className={`p-2.5 rounded-xl transition-colors ${
+                        isActive ? 'bg-sky-500/20 text-sky-400' : 'bg-white/5 text-slate-400 group-hover:text-white'
+                      }`}>
+                        <Users size={20} weight="duotone" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-sm block">{team?.name || 'Equipe'}</span>
+                        {Boolean(team?.monthlyGoal) && (
+                          <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors">
+                            Meta: R$ {team.monthlyGoal?.toLocaleString('pt-BR')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {isActive && (
+                      <span className="text-[10px] bg-sky-500 text-white font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                        Ativo
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
