@@ -15,7 +15,7 @@ export interface WeatherData {
   longitude?: number;
 }
 
-const WEATHER_CACHE_KEY = 'traker_weather_data_cache_v3';
+const WEATHER_CACHE_KEY = 'traker_weather_data_cache_v4';
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutos de cache
 
 // Limpeza preventiva de caches anteriores
@@ -23,6 +23,7 @@ try {
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem('traker_weather_data_cache');
     localStorage.removeItem('traker_weather_data_cache_v2');
+    localStorage.removeItem('traker_weather_data_cache_v3');
   }
 } catch (e) {}
 
@@ -68,7 +69,8 @@ async function fetchCityName(lat: number, lon: number): Promise<string> {
 
     if (res.ok) {
       const data = await res.json();
-      const city = data.city || data.locality || data.principalSubdivision;
+      // Priorizar locality (ex: Carapicuíba) sobre city (ex: Região Metropolitana de SP)
+      const city = data.locality || data.city || data.principalSubdivision;
       if (city) {
         return city;
       }
