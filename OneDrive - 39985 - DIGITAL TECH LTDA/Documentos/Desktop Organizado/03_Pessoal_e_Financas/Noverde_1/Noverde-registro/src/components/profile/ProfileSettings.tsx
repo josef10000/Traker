@@ -4214,6 +4214,8 @@ Windows Hello (biometria ou PIN).
             </div>
           </div>
         </div>
+      )}
+
       {/* MODAL DE CÓDIGOS DE CONTINGÊNCIA (2FA) */}
       {showBackupCodesModal && currentBackupCodes.length > 0 && (
         <div className="fixed inset-0 z-[120] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
