@@ -20,6 +20,8 @@ import {
   Globe,
   Target,
   MagnifyingGlass,
+  MagnifyingGlassPlus,
+  MagnifyingGlassMinus,
   CaretRight,
   CaretDown,
   Folder,
@@ -102,36 +104,43 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
   const [avatarType, setAvatarType] = useState<'custom' | 'api'>(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
   const [coverPhotoURL, setCoverPhotoURL] = useState<string>(profile.coverPhotoURL || '');
-  const parseCoverPos = (posStr?: string) => {
-    if (!posStr) return { x: 50, y: 50 };
-    const cleanStr = posStr.replace('center', '').trim();
-    const matches = cleanStr.match(/(\d+)%/g);
-    if (matches && matches.length >= 2) {
-      return { x: parseInt(matches[0], 10), y: parseInt(matches[1], 10) };
-    } else if (matches && matches.length === 1) {
-      return { x: 50, y: parseInt(matches[0], 10) };
+  const parseCoverTransform = (posStr?: string) => {
+    if (!posStr) return { scale: 1, x: 0, y: 0 };
+    if (posStr.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(posStr);
+        return {
+          scale: typeof parsed.scale === 'number' ? parsed.scale : 1,
+          x: typeof parsed.x === 'number' ? parsed.x : 0,
+          y: typeof parsed.y === 'number' ? parsed.y : 0
+        };
+      } catch (err) {
+        console.error(err);
+      }
     }
-    return { x: 50, y: 50 };
+    return { scale: 1, x: 0, y: 0 };
   };
 
-  const initialPosObj = parseCoverPos(profile.coverPosition);
-  const [coverPosition, setCoverPosition] = useState<string>(profile.coverPosition || '50% 50%');
+  const initialCoverData = parseCoverTransform(profile.coverPosition);
+  const [coverPosition, setCoverPosition] = useState<string>(profile.coverPosition || '');
+  const [tempScale, setTempScale] = useState<number>(initialCoverData.scale);
+  const [tempOffsetX, setTempOffsetX] = useState<number>(initialCoverData.x);
+  const [tempOffsetY, setTempOffsetY] = useState<number>(initialCoverData.y);
+
   const [isRepositioning, setIsRepositioning] = useState<boolean>(false);
   const [isDraggingCover, setIsDraggingCover] = useState<boolean>(false);
   const dragStartXRef = useRef<number>(0);
   const dragStartYRef = useRef<number>(0);
-  const initialPercentXRef = useRef<number>(initialPosObj.x);
-  const initialPercentYRef = useRef<number>(initialPosObj.y);
-  const [tempPosX, setTempPosX] = useState<number>(initialPosObj.x);
-  const [tempPosY, setTempPosY] = useState<number>(initialPosObj.y);
+  const initialOffsetXRef = useRef<number>(initialCoverData.x);
+  const initialOffsetYRef = useRef<number>(initialCoverData.y);
 
   const handleCoverDragStart = (clientX: number, clientY: number) => {
     if (!isRepositioning) return;
     setIsDraggingCover(true);
     dragStartXRef.current = clientX;
     dragStartYRef.current = clientY;
-    initialPercentXRef.current = tempPosX;
-    initialPercentYRef.current = tempPosY;
+    initialOffsetXRef.current = tempOffsetX;
+    initialOffsetYRef.current = tempOffsetY;
   };
 
   const handleCoverDragMove = (clientX: number, clientY: number) => {
@@ -139,38 +148,55 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     const deltaX = clientX - dragStartXRef.current;
     const deltaY = clientY - dragStartYRef.current;
 
-    let newX = initialPercentXRef.current - Math.round(deltaX * 0.35);
-    let newY = initialPercentYRef.current - Math.round(deltaY * 0.35);
-
-    if (newX < 0) newX = 0;
-    if (newX > 100) newX = 100;
-    if (newY < 0) newY = 0;
-    if (newY > 100) newY = 100;
-
-    setTempPosX(newX);
-    setTempPosY(newY);
-    setCoverPosition(`${newX}% ${newY}%`);
+    setTempOffsetX(initialOffsetXRef.current + deltaX);
+    setTempOffsetY(initialOffsetYRef.current + deltaY);
   };
 
   const handleCoverDragEnd = () => {
     setIsDraggingCover(false);
   };
 
+  const handleCoverWheel = (e: React.WheelEvent) => {
+    if (!isRepositioning) return;
+    const delta = e.deltaY < 0 ? 0.08 : -0.08;
+    setTempScale(prev => {
+      const next = Math.min(Math.max(prev + delta, 1), 3);
+      return parseFloat(next.toFixed(2));
+    });
+  };
+
   const handleSaveCoverPosition = async () => {
-    const finalPos = `${tempPosX}% ${tempPosY}%`;
-    setCoverPosition(finalPos);
+    const finalData = JSON.stringify({ scale: tempScale, x: tempOffsetX, y: tempOffsetY });
+    setCoverPosition(finalData);
     setIsRepositioning(false);
-    await saveProfileFields({ coverPosition: finalPos });
-    if (showToast) showToast('Posição livre 2D da foto de capa salva!', 'success');
+    await saveProfileFields({ coverPosition: finalData });
+    if (showToast) showToast('Enquadramento e Zoom da capa salvos com sucesso!', 'success');
   };
 
   const handleCancelCoverPosition = () => {
     setIsRepositioning(false);
-    const origPos = profile.coverPosition || '50% 50%';
-    setCoverPosition(origPos);
-    const parsed = parseCoverPos(origPos);
-    setTempPosX(parsed.x);
-    setTempPosY(parsed.y);
+    const origData = parseCoverTransform(profile.coverPosition);
+    setTempScale(origData.scale);
+    setTempOffsetX(origData.x);
+    setTempOffsetY(origData.y);
+  };
+
+  const getCoverImageStyle = () => {
+    if (isRepositioning) {
+      return {
+        transform: `translate(${tempOffsetX}px, ${tempOffsetY}px) scale(${tempScale})`,
+        transformOrigin: 'center center',
+        transition: isDraggingCover ? 'none' : 'transform 0.1s ease-out'
+      };
+    }
+    const data = parseCoverTransform(coverPosition);
+    if (data.scale !== 1 || data.x !== 0 || data.y !== 0) {
+      return {
+        transform: `translate(${data.x}px, ${data.y}px) scale(${data.scale})`,
+        transformOrigin: 'center center'
+      };
+    }
+    return { objectPosition: coverPosition || 'center center' };
   };
 
   const [isUploadingCover, setIsUploadingCover] = useState<boolean>(false);
@@ -1601,7 +1627,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               <form onSubmit={handleSave} className="space-y-3.5">
                 {/* 📸 CABEÇALHO UNIFICADO DO PERFIL (CAPA + AVATAR INTEGRADO COM LÁPIS DE EDIÇÃO) */}
                 <div className="relative rounded-3xl border border-white/10 mb-6 bg-slate-900 shadow-xl">
-                  {/* CAPA DE FUNDO (BANNER) COM SUPORTE A REPOSICIONAMENTO POR ARRASTE */}
+                  {/* CAPA DE FUNDO (BANNER) COM SUPORTE A REPOSICIONAMENTO 360° E ZOOM */}
                   <div
                     className={`h-36 sm:h-44 w-full relative bg-slate-950 overflow-hidden rounded-t-3xl ${
                       isRepositioning ? 'cursor-grab active:cursor-grabbing select-none' : ''
@@ -1613,13 +1639,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     onTouchStart={(e) => handleCoverDragStart(e.touches[0].clientX, e.touches[0].clientY)}
                     onTouchMove={(e) => handleCoverDragMove(e.touches[0].clientX, e.touches[0].clientY)}
                     onTouchEnd={handleCoverDragEnd}
+                    onWheel={handleCoverWheel}
                   >
                     {coverPhotoURL ? (
                       <img
                         src={coverPhotoURL}
                         alt="Capa de Perfil"
-                        className="w-full h-full object-cover pointer-events-none transition-all duration-75"
-                        style={{ objectPosition: coverPosition }}
+                        className="w-full h-full object-cover pointer-events-none"
+                        style={getCoverImageStyle()}
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-r from-slate-950 via-sky-950/40 to-slate-950" />
@@ -1628,30 +1655,69 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
 
                     {/* OVERLAY DE MODO DE REPOSICIONAMENTO (QUANDO ATIVO) */}
                     {isRepositioning && (
-                      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] flex flex-col items-center justify-between p-3 z-30 pointer-events-none">
-                        <span className="px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-sky-400/50 text-sky-300 text-[10px] font-bold shadow-lg flex items-center gap-1.5 animate-pulse">
+                      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex flex-col items-center justify-between p-3 z-30 pointer-events-none">
+                        <span className="px-3 py-1 rounded-full bg-slate-900/90 border border-sky-400/50 text-sky-300 text-[10px] font-bold shadow-lg flex items-center gap-1.5 animate-pulse">
                           <ArrowsVertical size={13} />
-                          <span>Clique e arraste livremente em 360° (lados, cima, baixo ou diagonal)</span>
+                          <span>Clique e arraste em 360° | Rodinha do mouse ajusta o Zoom</span>
                         </span>
 
-                        <div className="flex items-center gap-2 pointer-events-auto">
-                          <button
-                            type="button"
-                            onClick={handleSaveCoverPosition}
-                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
-                          >
-                            <Check size={14} />
-                            <span>Salvar Posição</span>
-                          </button>
+                        {/* BARRA DE CONTROLE DE ZOOM & AÇÕES */}
+                        <div className="flex flex-wrap items-center justify-center gap-3 pointer-events-auto bg-slate-900/90 p-2 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md">
+                          {/* CONTROLE DE ZOOM (SLIDER + BOTÕES) */}
+                          <div className="flex items-center gap-2 px-2 py-1 bg-black/40 rounded-xl border border-white/5">
+                            <button
+                              type="button"
+                              onClick={() => setTempScale(prev => Math.max(1, parseFloat((prev - 0.1).toFixed(2))))}
+                              className="text-slate-400 hover:text-white p-1 transition-colors cursor-pointer"
+                              title="Diminuir Zoom"
+                            >
+                              <MagnifyingGlassMinus size={15} />
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={handleCancelCoverPosition}
-                            className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-slate-300 hover:text-white text-xs font-bold shadow-lg flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                          >
-                            <X size={14} />
-                            <span>Cancelar</span>
-                          </button>
+                            <input
+                              type="range"
+                              min="1"
+                              max="3"
+                              step="0.05"
+                              value={tempScale}
+                              onChange={(e) => setTempScale(parseFloat(e.target.value))}
+                              className="w-24 sm:w-28 accent-sky-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                              title="Ajustar Nível de Zoom"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => setTempScale(prev => Math.min(3, parseFloat((prev + 0.1).toFixed(2))))}
+                              className="text-slate-400 hover:text-white p-1 transition-colors cursor-pointer"
+                              title="Aumentar Zoom"
+                            >
+                              <MagnifyingGlassPlus size={15} />
+                            </button>
+
+                            <span className="text-[10px] font-bold text-sky-300 w-9 text-right">
+                              {Math.round(tempScale * 100)}%
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleSaveCoverPosition}
+                              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                            >
+                              <Check size={14} />
+                              <span>Salvar Capa</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handleCancelCoverPosition}
+                              className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-slate-300 hover:text-white text-xs font-bold shadow-lg flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                            >
+                              <X size={14} />
+                              <span>Cancelar</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
