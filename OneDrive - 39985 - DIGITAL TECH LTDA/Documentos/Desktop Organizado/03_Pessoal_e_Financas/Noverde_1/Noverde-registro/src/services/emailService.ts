@@ -1,4 +1,6 @@
 import { generateInviteEmailHtml } from '../templates/inviteEmailTemplate';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export interface SendInviteEmailParams {
   recipientEmail: string;
@@ -15,9 +17,9 @@ export interface SendEmailResult {
 }
 
 /**
- * Envia e-mail de convite exclusivamente via endpoint serverless /api/send-email (Vercel).
- * SEGURANCA: A chave Resend NUNCA e exposta no bundle do browser.
- * Ela reside apenas na variavel de ambiente privada RESEND_API_KEY do servidor Vercel.
+ * Envia e-mail de convite com fallback duplo:
+ * 1. Tenta endpoint serverless /api/send-email (Vercel Resend)
+ * 2. Fallback redundante para Firestore Trigger Email (coleção 'mail')
  */
 export const sendInviteEmail = async ({
   recipientEmail,
@@ -26,36 +28,74 @@ export const sendInviteEmail = async ({
   inviteUrl,
   fromName = 'Tracker System'
 }: SendInviteEmailParams): Promise<SendEmailResult> => {
+  const cleanEmail = recipientEmail.trim().toLowerCase();
+  const htmlContent = generateInviteEmailHtml({
+    recipientEmail: cleanEmail,
+    orgName,
+    roleName,
+    inviteUrl
+  });
+
+  // Tentativa 1: Endpoint serverless /api/send-email
   try {
     const response = await fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipientEmail, orgName, roleName, inviteUrl, fromName })
+      body: JSON.stringify({ 
+        recipientEmail: cleanEmail, 
+        orgName, 
+        roleName, 
+        inviteUrl, 
+        fromName 
+      })
     });
 
-    const responseText = await response.text();
-    let data: Record<string, unknown> = {};
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      data = { error: responseText || `Servidor respondeu com status ${response.status}` };
+    if (response.ok) {
+      const responseText = await response.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { success: true };
+      }
+
+      if (data.success || data.id) {
+        return {
+          success: true,
+          messageId: typeof data.id === 'string' ? data.id : undefined
+        };
+      }
     }
+  } catch (err) {
+    console.warn('[sendInviteEmail] Falha na rota /api/send-email, acionando fallback do Firestore:', err);
+  }
 
-    if (response.ok && data.success) {
-      return {
-        success: true,
-        messageId: typeof data.id === 'string' ? data.id : undefined
-      };
-    }
+  // Tentativa 2: Gravação na coleção 'mail' do Firebase Trigger Email
+  try {
+    const mailDoc = await addDoc(collection(db, 'mail'), {
+      to: [cleanEmail],
+      message: {
+        subject: `🚀 Convite de Acesso Corporativo — ${orgName} (Tracker Platform)`,
+        html: htmlContent
+      },
+      createdAt: new Date().toISOString(),
+      metadata: {
+        orgName,
+        roleName,
+        inviteUrl
+      }
+    });
 
-    const errorMsg = typeof data.error === 'string'
-      ? data.error
-      : `Falha ao enviar e-mail (HTTP ${response.status}).`;
-
-    return { success: false, error: errorMsg };
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Erro ao comunicar com a API de e-mails.';
-    return { success: false, error: msg };
+    return {
+      success: true,
+      messageId: `firestore-mail-${mailDoc.id}`
+    };
+  } catch (firestoreError: any) {
+    console.error('[sendInviteEmail] Erro ao gravar na coleção mail:', firestoreError);
+    return {
+      success: false,
+      error: firestoreError?.message || 'Não foi possível disparar o e-mail pelo servidor ou fila.'
+    };
   }
 };
 

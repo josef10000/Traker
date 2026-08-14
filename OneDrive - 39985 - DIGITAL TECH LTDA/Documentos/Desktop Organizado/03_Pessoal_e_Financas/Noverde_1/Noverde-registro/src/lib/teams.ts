@@ -537,48 +537,99 @@ export const revokeInvite = async (inviteId: string): Promise<void> => {
 };
 
 export const validateInvite = async (token: string): Promise<Invite | null> => {
-  const invitesRef = collection(db, 'invites');
-  const q = query(
-    invitesRef, 
-    where('token', '==', token), 
-    where('status', '==', 'pending')
-  );
-  const snap = await getDocs(q);
+  if (!token) return null;
+  const cleanToken = token.trim();
 
-  if (snap.empty) return null;
+  try {
+    let inviteData: Invite | null = null;
+    let inviteRefDoc: any = null;
 
-  const data = snap.docs[0].data() as Invite;
-  
-  if (data.expiresAt && new Date().getTime() > new Date(data.expiresAt).getTime()) {
-    await updateDoc(snap.docs[0].ref, { status: 'expired' });
+    // Tentativa 1: busca direta por ID do documento
+    const directDocRef = doc(db, 'invites', cleanToken);
+    const directSnap = await getDoc(directDocRef);
+    if (directSnap.exists()) {
+      inviteData = { id: directSnap.id, ...directSnap.data() } as Invite;
+      inviteRefDoc = directDocRef;
+    } else {
+      // Tentativa 2: query pelo campo 'token'
+      const invitesRef = collection(db, 'invites');
+      const q = query(invitesRef, where('token', '==', cleanToken));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        inviteData = { id: snap.docs[0].id, ...snap.docs[0].data() } as Invite;
+        inviteRefDoc = snap.docs[0].ref;
+      }
+    }
+
+    if (!inviteData) return null;
+
+    // Se já foi aceito ou expirado
+    if (inviteData.status !== 'pending') {
+      return null;
+    }
+
+    if (inviteData.expiresAt && new Date().getTime() > new Date(inviteData.expiresAt).getTime()) {
+      if (inviteRefDoc) {
+        await updateDoc(inviteRefDoc, { status: 'expired' }).catch(() => {});
+      }
+      return null;
+    }
+
+    // Se orgName não estiver salvo no convite, busca da organização
+    if (!inviteData.orgName && inviteData.organizationId) {
+      try {
+        const orgSnap = await getDoc(doc(db, 'organizations', inviteData.organizationId));
+        if (orgSnap.exists()) {
+          inviteData.orgName = orgSnap.data().name;
+        }
+      } catch {}
+    }
+
+    return inviteData;
+  } catch (error) {
+    console.error('Erro ao validar convite:', error);
     return null;
   }
-
-  return data;
 };
 
-export const acceptInvite = async (uid: string, token: string): Promise<void> => {
-  const invitesRef = collection(db, 'invites');
-  const q = query(invitesRef, where('token', '==', token));
-  const snap = await getDocs(q);
+export const acceptInvite = async (uid: string, token: string, customDisplayName?: string): Promise<void> => {
+  if (!token) throw new Error('Token de convite obrigatório.');
+  const cleanToken = token.trim();
 
-  if (snap.empty) {
-    throw new Error('Convite não encontrado.');
+  let inviteData: Invite | null = null;
+  let inviteDocRef: any = null;
+
+  // Busca o convite por ID direto ou por token
+  const directDocRef = doc(db, 'invites', cleanToken);
+  const directSnap = await getDoc(directDocRef);
+  if (directSnap.exists()) {
+    inviteData = directSnap.data() as Invite;
+    inviteDocRef = directDocRef;
+  } else {
+    const invitesRef = collection(db, 'invites');
+    const q = query(invitesRef, where('token', '==', cleanToken));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      inviteData = snap.docs[0].data() as Invite;
+      inviteDocRef = snap.docs[0].ref;
+    }
   }
 
-  const inviteDoc = snap.docs[0];
-  const inviteData = inviteDoc.data() as Invite;
+  if (!inviteData) {
+    throw new Error('Convite não encontrado.');
+  }
 
   if (inviteData.status !== 'pending') {
     throw new Error('Este convite já foi aceito ou está expirado.');
   }
 
   const now = new Date().toISOString();
+  const nameToSave = customDisplayName?.trim() || inviteData.email.split('@')[0];
 
   const userProfile: UserProfile = {
     uid,
     email: inviteData.email,
-    displayName: inviteData.email.split('@')[0],
+    displayName: nameToSave,
     role: inviteData.role,
     teamId: inviteData.teamId || undefined,
     organizationId: inviteData.organizationId,
@@ -593,10 +644,12 @@ export const acceptInvite = async (uid: string, token: string): Promise<void> =>
   if (inviteData.role === 'supervisor' && inviteData.teamId) {
     await updateDoc(doc(db, 'teams', inviteData.teamId), {
       supervisorId: uid
-    });
+    }).catch(() => {});
   }
 
-  await updateDoc(inviteDoc.ref, { status: 'accepted' });
+  if (inviteDocRef) {
+    await updateDoc(inviteDocRef, { status: 'accepted' }).catch(() => {});
+  }
 };
 
 export const assignUserToTeam = async (uid: string, teamId: string | null): Promise<void> => {

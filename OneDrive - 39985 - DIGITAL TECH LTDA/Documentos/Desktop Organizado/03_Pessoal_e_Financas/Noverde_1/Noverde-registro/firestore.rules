@@ -84,6 +84,17 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
 
+    // Coleção de convites (invites)
+    // Leitura: pública para validação do token ao abrir link de convite (inclusive deslogado)
+    // Criação e exclusão: SuperAdmin ou Manager da empresa
+    // Atualização: autenticado (para marcar convite como 'accepted' ao registrar)
+    match /invites/{inviteId} {
+      allow read: if true;
+      allow create: if request.auth != null && (isSuperAdmin() || isManager());
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null && (isSuperAdmin() || isManager());
+    }
+
     // Coleção de organizações (organizations)
     match /organizations/{orgId} {
       allow create: if request.auth != null;
