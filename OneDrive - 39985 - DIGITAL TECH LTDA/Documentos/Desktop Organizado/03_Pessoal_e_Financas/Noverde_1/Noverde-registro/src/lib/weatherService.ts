@@ -1,6 +1,6 @@
 /**
  * Serviço de Clima e Temperatura ao Vivo (Open-Meteo API)
- * Totalmente gratuito, ilimitado e sem necessidade de chave de API.
+ * Totalmente gratuito, sem custos e otimizado com Cache em LocalStorage para máxima economia de dados.
  */
 
 export interface WeatherData {
@@ -10,7 +10,11 @@ export interface WeatherData {
   icon: string;
   cityName?: string;
   isDay: boolean;
+  cachedAt?: number;
 }
+
+const WEATHER_CACHE_KEY = 'traker_weather_data_cache';
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutos de cache (ideal para alta precisão e equipes de 100+ operadores)
 
 const WEATHER_DESCRIPTIONS: Record<number, { text: string; icon: string }> = {
   0: { text: 'Céu Limpo', icon: '☀️' },
@@ -32,9 +36,24 @@ const WEATHER_DESCRIPTIONS: Record<number, { text: string; icon: string }> = {
 };
 
 /**
- * Busca a temperatura e o clima atual
+ * Busca a temperatura e o clima atual com verificação rigorosa de cache
  */
 export async function getCurrentWeather(lat = -23.5505, lon = -46.6333, cityName = 'São Paulo'): Promise<WeatherData | null> {
+  // 1. Tentar ler do Cache Local primeiro
+  try {
+    const cached = localStorage.getItem(WEATHER_CACHE_KEY);
+    if (cached) {
+      const parsed: WeatherData = JSON.parse(cached);
+      const isFresh = parsed.cachedAt && (Date.now() - parsed.cachedAt < CACHE_TTL_MS);
+      if (isFresh) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao ler cache meteorológico:', e);
+  }
+
+  // 2. Se o cache expirou ou não existe, faz a consulta única
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=America%2FSao_Paulo`;
     const response = await fetch(url);
@@ -45,14 +64,23 @@ export async function getCurrentWeather(lat = -23.5505, lon = -46.6333, cityName
       const code = data.current_weather.weathercode ?? 0;
       const weatherInfo = WEATHER_DESCRIPTIONS[code] || { text: 'Tempo Estável', icon: '🌡️' };
       
-      return {
+      const weatherResult: WeatherData = {
         temperature: Math.round(data.current_weather.temperature),
         weatherCode: code,
         description: weatherInfo.text,
         icon: weatherInfo.icon,
         cityName,
-        isDay: Boolean(data.current_weather.is_day)
+        isDay: Boolean(data.current_weather.is_day),
+        cachedAt: Date.now()
       };
+
+      try {
+        localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(weatherResult));
+      } catch (e) {
+        console.warn('Erro ao salvar cache meteorológico:', e);
+      }
+
+      return weatherResult;
     }
     return null;
   } catch (error) {

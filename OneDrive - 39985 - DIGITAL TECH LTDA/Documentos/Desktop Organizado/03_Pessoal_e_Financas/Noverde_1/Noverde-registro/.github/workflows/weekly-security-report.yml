@@ -1,0 +1,53 @@
+name: 📊 Relatório Semanal de Segurança
+
+on:
+  schedule:
+    # Toda segunda-feira às 8h (horário de Brasília = 11h UTC)
+    - cron: '0 11 * * 1'
+  workflow_dispatch: # Permite execução manual
+
+jobs:
+  weekly-report:
+    name: Gerar e Enviar Relatório
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar auditoria de segurança
+        id: audit
+        run: |
+          AUDIT_OUTPUT=$(npm audit --audit-level=high 2>&1 || true)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$AUDIT_OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Enviar relatório por e-mail via API
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_RECIPIENT: ${{ secrets.ADMIN_EMAIL }}
+        run: |
+          SEMANA=$(date '+%d/%m/%Y')
+          AUDIT_RESULT="${{ steps.audit.outputs.result }}"
+          
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"from\": \"Tracker Platform <notificacoes@hubsymples.com.br>\",
+              \"to\": [\"$REPORT_RECIPIENT\"],
+              \"subject\": \"📊 Relatório Semanal de Segurança — Semana de $SEMANA\",
+              \"html\": \"<h2>Relatório Semanal de Segurança</h2><p><strong>Semana de:</strong> $SEMANA</p><h3>NPM Audit</h3><pre>$AUDIT_RESULT</pre><p>Este relatório é gerado automaticamente pelo GitHub Actions toda segunda-feira às 8h.</p>\"
+            }"
+
+      - name: Verificar vulnerabilidades críticas
+        run: npm audit --audit-level=high

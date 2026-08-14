@@ -1,0 +1,7 @@
+# Ignorar scripts auxiliares de manutenção e workflows de CI da análise automática do SonarCloud
+*.py
+**/*.py
+.github/**
+**/.github/**
+*.json
+**/*.json

@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import React from 'react';
 
 // Teste de integridade do ambiente e módulos de UI
 describe('Dashboard Module Sanity Tests', () => {
   it('deve ter o ambiente de renderização React configurado corretamente', () => {
     const TestComponent = () => <div data-testid="dashboard-sanity">Dashboard Active</div>;
-    render(<TestComponent />);
+    const { getByTestId } = render(<TestComponent />);
     
-    const element = screen.getByTestId('dashboard-sanity');
+    const element = getByTestId('dashboard-sanity');
     expect(element).toBeDefined();
     expect(element.textContent).toBe('Dashboard Active');
   });

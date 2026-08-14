@@ -1,0 +1,251 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funções auxiliares de segurança otimizadas (Custom Claims com fallback transparente para Firestore Profile)
+    function getProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function getUserTeamId() {
+      return request.auth.token.teamId != null ? request.auth.token.teamId : getProfile().teamId;
+    }
+
+    function getUserOrganizationId() {
+      return request.auth.token.organizationId != null ? request.auth.token.organizationId : getProfile().organizationId;
+    }
+    
+    function getUserRole() {
+      return request.auth.token.role != null ? request.auth.token.role : getProfile().role;
+    }
+
+    function isSupervisor() {
+      return getUserRole() == 'supervisor';
+    }
+
+    function isManager() {
+      return getUserRole() == 'manager';
+    }
+
+    function isSuperAdmin() {
+      return getUserRole() == 'super_admin';
+    }
+
+    // Validação de schema para acordos (agreements)
+    function isValidAgreement() {
+      let d = request.resource.data;
+      return d.clientName is string
+        && d.clientName.size() > 0
+        && d.clientName.size() <= 500
+        && d.value is number
+        && d.value >= 0
+        && d.dueDate is string
+        && d.dueDate.size() > 0
+        && d.operatorId is string
+        && d.organizationId is string;
+    }
+
+    // Conjunto de ações permitidas nos logs de auditoria
+    function isValidAuditAction() {
+      let validActions = [
+        'REVEAL_CPF',
+        'ANONIMIZE_CLIENT',
+        'EXPORT_CSV_COMPLETE',
+        'AGREEMENT_CREATED',
+        'AGREEMENT_UPDATED',
+        'AGREEMENT_DELETED',
+        'INVITE_SENT',
+        'USER_ROLE_CHANGED',
+        'USER_REMOVED',
+        'LOGIN',
+        'LOGOUT',
+        'SETTINGS_UPDATED'
+      ];
+      return request.resource.data.action in validActions;
+    }
+    
+    // Coleção de e-mails (mail) - Firebase Trigger Email Extension
+    match /mail/{mailId} {
+      allow create: if request.auth != null;
+    }
+
+    // Coleção de organizações (organizations)
+    match /organizations/{orgId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == orgId));
+    }
+
+    // Coleção de usuários (users)
+    // SEGURANÇA: Usuários podem criar/atualizar seu perfil, mas NÃO podem alterar o próprio role.
+    match /users/{userId} {
+      allow read: if request.auth != null && (isSuperAdmin() || getUserOrganizationId() == resource.data.organizationId);
+      allow create: if request.auth != null && (isSuperAdmin() || request.auth.uid == userId);
+      allow update: if request.auth != null && (
+        isSuperAdmin() 
+        || (isManager() && getUserOrganizationId() == request.resource.data.organizationId)
+        || (request.auth.uid == userId && request.resource.data.role == resource.data.role)
+      );
+      allow delete: if request.auth != null && isSuperAdmin();
+    }
+    
+    // Coleção de times (teams)
+    match /teams/{teamId} {
+      allow read: if request.auth != null && (isSuperAdmin() || getUserOrganizationId() == resource.data.organizationId);
+      allow write: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == request.resource.data.organizationId) || (isSupervisor() && getUserOrganizationId() == request.resource.data.organizationId));
+    }
+    
+    // Coleção de configurações (settings)
+    match /settings/{teamId} {
+      allow read: if request.auth != null && (isSuperAdmin() || (getUserOrganizationId() == resource.data.organizationId && getUserTeamId() == teamId));
+      allow write: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == request.resource.data.organizationId) || (isSupervisor() && getUserOrganizationId() == request.resource.data.organizationId && getUserTeamId() == teamId));
+    }
+    
+    // Coleção de acordos (agreements)
+    // SEGURANÇA: Apenas o operador dono pode editar/excluir seu acordo.
+    // Supervisor e Manager têm acesso de LEITURA mas NÃO podem alterar acordos de outros.
+    match /agreements/{agreementId} {
+      allow read: if request.auth != null 
+        && (isSuperAdmin() || (resource == null || getUserOrganizationId() == resource.data.organizationId));
+        
+      allow create: if request.auth != null 
+        && (isSuperAdmin() || (
+          getUserOrganizationId() == request.resource.data.organizationId
+          && (isSupervisor() || isManager() || request.resource.data.operatorId == request.auth.uid)
+          && isValidAgreement()
+        ));
+        
+      // CORRIGIDO: Apenas o dono do acordo (operatorId) ou super_admin podem editar/excluir.
+      // Supervisor e Manager NÃO têm mais permissão de alterar acordos de outros operadores.
+      allow update: if request.auth != null 
+        && (
+          isSuperAdmin() 
+          || (resource.data.operatorId == request.auth.uid && isValidAgreement())
+        );
+
+      allow delete: if request.auth != null 
+        && (
+          isSuperAdmin() 
+          || resource.data.operatorId == request.auth.uid
+        );
+    }
+    
+    // Coleção de conciliações (reconciliations)
+    match /reconciliations/{reconId} {
+      allow read: if request.auth != null 
+        && (isSuperAdmin() || (resource == null || getUserOrganizationId() == resource.data.organizationId));
+      allow write: if request.auth != null 
+        && (isSuperAdmin() || ((isSupervisor() || isManager()) && getUserOrganizationId() == request.resource.data.organizationId));
+    }
+    
+    // Coleção de logs de auditoria (audit_logs)
+    // CORRIGIDO: Obrigatório ter userId E organizationId corretos na criação.
+    match /audit_logs/{logId} {
+      allow create: if request.auth != null 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.organizationId == getUserOrganizationId()
+        && request.resource.data.action is string
+        && isValidAuditAction();
+      allow read: if request.auth != null && (isSuperAdmin() || (isManager() && getUserOrganizationId() == resource.data.organizationId));
+      allow update, delete: if false; // Logs são imutáveis e perenes
+    }
+
+    // Coleção de estatísticas mensais (monthlyStats)
+    // CORRIGIDO: Isolamento por organização — cada org só acessa suas próprias stats.
+    match /monthlyStats/{statsId} {
+      allow read: if request.auth != null 
+        && (isSuperAdmin() || (resource == null || getUserOrganizationId() == resource.data.organizationId));
+      allow write: if request.auth != null 
+        && (isSuperAdmin() || getUserOrganizationId() == request.resource.data.organizationId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // CHAT INTERNO — Regras de Segurança (Correção Crítica)
+    // ANTES: Sem regras = qualquer usuário autenticado lia TUDO.
+    // AGORA: Isolamento por organização + apenas participantes.
+    // ═══════════════════════════════════════════════════════════════
+
+    // Coleção de mensagens internas (internal_messages)
+    // SEGURANÇA: Leitura restrita a participantes (senderId ou receiverId).
+    // Criação validada: senderId DEVE ser o próprio usuário autenticado.
+    // Atualização: remetente pode editar texto; destinatário pode marcar como lido.
+    // Exclusão: apenas soft delete (campo deletedAt) pelo remetente ou super_admin.
+    match /internal_messages/{messageId} {
+      // Leitura: apenas participantes da conversa na mesma organização
+      allow read: if request.auth != null 
+        && (
+          isSuperAdmin() 
+          || (
+            getUserOrganizationId() == resource.data.organizationId
+            && (
+              resource.data.senderId == request.auth.uid 
+              || resource.data.receiverId == request.auth.uid
+            )
+          )
+        );
+      
+      // Criação: usuário autenticado, da mesma organização, com senderId === auth.uid
+      allow create: if request.auth != null 
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.organizationId == getUserOrganizationId()
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 4000
+        && request.resource.data.receiverId is string;
+      
+      // Atualização: remetente pode editar (janela de tempo); destinatário pode marcar lido
+      allow update: if request.auth != null 
+        && (
+          isSuperAdmin()
+          || (
+            getUserOrganizationId() == resource.data.organizationId
+            && (
+              // Remetente: pode editar texto ou soft delete
+              (resource.data.senderId == request.auth.uid)
+              // Destinatário: pode apenas marcar como lido (read: true)
+              || (
+                resource.data.receiverId == request.auth.uid 
+                && request.resource.data.read == true
+                && request.resource.data.text == resource.data.text
+                && request.resource.data.senderId == resource.data.senderId
+                && request.resource.data.receiverId == resource.data.receiverId
+              )
+            )
+          )
+        );
+      
+      // Exclusão física: apenas super_admin (operadores usam soft delete via update)
+      allow delete: if request.auth != null && isSuperAdmin();
+    }
+
+    // Coleção de canais de chat (chat_channels) — preparação para Fase 2
+    match /chat_channels/{channelId} {
+      allow read: if request.auth != null 
+        && (
+          isSuperAdmin() 
+          || (
+            resource == null 
+            || (
+              getUserOrganizationId() == resource.data.organizationId 
+              && request.auth.uid in resource.data.memberIds
+            )
+          )
+        );
+      allow create: if request.auth != null 
+        && request.resource.data.organizationId == getUserOrganizationId()
+        && (isSupervisor() || isManager() || isSuperAdmin());
+      allow update: if request.auth != null 
+        && getUserOrganizationId() == resource.data.organizationId
+        && (isSupervisor() || isManager() || isSuperAdmin());
+      allow delete: if request.auth != null && (isManager() || isSuperAdmin());
+    }
+
+    // Coleção de indicadores de digitação (chat_typing) — documentos TTL efêmeros
+    // CORRIGIDO: delete agora também exige isolamento por organização
+    match /chat_typing/{typingId} {
+      allow read, write: if request.auth != null 
+        && getUserOrganizationId() == request.resource.data.organizationId;
+      allow delete: if request.auth != null
+        && getUserOrganizationId() == resource.data.organizationId;
+    }
+  }
+}

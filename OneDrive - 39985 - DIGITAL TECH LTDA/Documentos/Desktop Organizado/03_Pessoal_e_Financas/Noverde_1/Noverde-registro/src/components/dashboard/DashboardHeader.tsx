@@ -251,11 +251,23 @@ export const DashboardHeader = ({
             />
           </div>
           <div className="flex-1">
-            <h1 className={`text-xl font-bold tracking-wide leading-none italic uppercase ${
-              theme === 'dark' ? 'text-white' : 'text-slate-800'
-            }`}>
-              {organizationName || 'Tracker'}
-            </h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className={`text-xl font-bold tracking-wide leading-none italic uppercase ${
+                theme === 'dark' ? 'text-white' : 'text-slate-800'
+              }`}>
+                {organizationName || 'Tracker'}
+              </h1>
+              
+              {/* Widget de Clima e Temperatura ao Vivo (Open-Meteo) */}
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-bold shrink-0 shadow-sm backdrop-blur-sm hover:bg-sky-500/20 transition-all cursor-default"
+                title={weather ? `${weather.cityName}: ${weather.description} (${weather.temperature}°C)` : 'Carregando dados meteorológicos...'}
+              >
+                <span className="text-sm">{weather ? weather.icon : '🌡️'}</span>
+                <span>{weather ? `${weather.temperature}°C` : '--°C'}</span>
+                <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">{weather?.cityName || 'SP'}</span>
+              </div>
+            </div>
             
             <div className="flex items-center gap-2 mt-1.5">
               {(profile.role === 'manager' || profile.role === 'coordinator' || (profile.managedTeams && profile.managedTeams.length > 1)) ? (
@@ -284,18 +296,6 @@ export const DashboardHeader = ({
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-          {/* Pill de Clima ao Vivo (Open-Meteo API) */}
-          {weather && (
-            <div
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-bold shrink-0 shadow-sm backdrop-blur-sm"
-              title={`${weather.cityName}: ${weather.description}`}
-            >
-              <span className="text-sm">{weather.icon}</span>
-              <span>{weather.temperature}°C</span>
-              <span className="text-[10px] text-slate-400 font-medium hidden xl:inline">{weather.cityName}</span>
-            </div>
-          )}
-
           {/* Micro-Card Meta Pessoal Motivacional (Exibido apenas quando ativado nas configurações) */}
           {Boolean(profile.showPersonalGoal !== false && profile.personalMonthlyGoal && profile.personalMonthlyGoal > 0) && (
             <div

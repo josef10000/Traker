@@ -38,12 +38,22 @@ export const isWebAuthnSupported = (): boolean => {
 
 /**
  * Gera 5 códigos de backup de emergência no formato 8492-1029
+ * SEGURANÇA: Usa crypto.getRandomValues() para entropia criptográfica
  */
 export const generateBackupCodes = (count: number = 5): string[] => {
   const codes: string[] = [];
+  const values = new Uint16Array(count * 2);
+  if (typeof window !== 'undefined' && window.crypto) {
+    window.crypto.getRandomValues(values);
+  } else {
+    // Fallback mínimo para SSR/testes
+    for (let i = 0; i < values.length; i++) {
+      values[i] = Math.floor(Math.random() * 65536);
+    }
+  }
   for (let i = 0; i < count; i++) {
-    const part1 = Math.floor(1000 + Math.random() * 9000);
-    const part2 = Math.floor(1000 + Math.random() * 9000);
+    const part1 = 1000 + (values[i * 2] % 9000);
+    const part2 = 1000 + (values[i * 2 + 1] % 9000);
     codes.push(`${part1}-${part2}`);
   }
   return codes;
