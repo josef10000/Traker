@@ -20,12 +20,13 @@ import {
   sendPasswordResetEmail,
   updateProfile
 } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
+import { setDoc, doc } from 'firebase/firestore';
+import { auth, db } from '../../lib/firebase';
 import { validateInvite, acceptInvite } from '../../lib/teams';
 import { sandboxService } from '../../lib/sandboxService';
 import { ToastType } from '../ui/Toast';
 import { PasswordStrengthBar } from '../ui/PasswordStrengthBar';
-import { UserRole } from '../../types';
+import { UserRole, UserProfile } from '../../types';
 
 interface LoginPageProps {
   onAuthSuccess: () => void;
