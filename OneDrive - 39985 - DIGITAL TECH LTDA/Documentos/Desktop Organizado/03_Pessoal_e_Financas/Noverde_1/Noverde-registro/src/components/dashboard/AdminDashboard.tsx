@@ -866,15 +866,17 @@ Windows Hello (biometria ou PIN).
 
             {/* BOTÃO WINDOWS HELLO 2FA DO SUPERADMIN */}
             <button
+              type="button"
               onClick={() => setIsSecurityModalOpen(true)}
               className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-2 border ${
-                adminProfile.isWebAuthnEnabled
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 shadow-sm shadow-emerald-500/10'
-                  : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                adminProfile?.isWebAuthnEnabled
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 shadow-lg shadow-emerald-500/10'
+                  : 'bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white border-sky-400/30 shadow-lg shadow-sky-500/20'
               }`}
+              title="Configurar biometria e PIN da máquina (2FA)"
             >
-              <Fingerprint size={16} weight="bold" className={adminProfile.isWebAuthnEnabled ? 'text-emerald-400' : 'text-slate-400'} />
-              <span>{adminProfile.isWebAuthnEnabled ? '2FA Windows Hello (Ativo)' : 'Ativar 2FA Windows Hello'}</span>
+              <Fingerprint size={18} weight="bold" className={adminProfile?.isWebAuthnEnabled ? 'text-emerald-400' : 'text-sky-200'} />
+              <span>{adminProfile?.isWebAuthnEnabled ? '2FA Windows Hello (Ativo)' : 'Ativar 2FA Windows Hello'}</span>
             </button>
 
 
