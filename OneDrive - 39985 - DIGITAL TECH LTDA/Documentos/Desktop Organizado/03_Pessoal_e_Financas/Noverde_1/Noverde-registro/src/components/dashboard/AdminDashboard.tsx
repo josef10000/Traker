@@ -31,20 +31,15 @@ import {
   ShieldCheck,
   ChartLineUp,
   CaretDown,
-  Fingerprint,
   CheckCircle,
   Envelope,
-  EnvelopeSimple,
-  DownloadSimple,
-  WarningCircle
+  EnvelopeSimple
 } from '@phosphor-icons/react';
 import { useDesignMode } from '../../hooks/useDesignMode';
 import { useTheme } from '../../hooks/useTheme';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
 import { regenerateManagerInviteToken, generateSecureToken } from '../../lib/teams';
-import { registerWindowsHello, generateBackupCodes } from '../../lib/webAuthnService';
-import { sendBackupCodesEmail, EmailPayload } from '../../lib/emailService';
 import { sandboxService } from '../../lib/sandboxService';
 import { 
   collection, 
@@ -132,134 +127,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
   // Modal de Teste de E-mail do Resend (SuperAdmin)
   const [isEmailTesterOpen, setIsEmailTesterOpen] = useState(false);
-
-  // Estados para 2FA com Windows Hello (SuperAdmin)
-  const [adminProfile, setAdminProfile] = useState<UserProfile>(profile);
-  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
-  const [isEnrollingHello, setIsEnrollingHello] = useState(false);
-  const [sandboxEmailPreview, setSandboxEmailPreview] = useState<EmailPayload | null>(null);
-  const [showAdminBackupCodesModal, setShowAdminBackupCodesModal] = useState(false);
-  const [currentAdminBackupCodes, setCurrentAdminBackupCodes] = useState<string[]>([]);
-  const [copiedAdminCodes, setCopiedAdminCodes] = useState(false);
-
-  useEffect(() => {
-    setAdminProfile(profile);
-  }, [profile]);
-
-  const handleDownloadAdminBackupCodes = (codes: string[]) => {
-    const content = `TRACKER PLATFORM — KIT DE CONTINGÊNCIA 2FA (SUPERADMIN)
-Data de Emissão: ${new Date().toLocaleString('pt-BR')}
-Conta: ${adminProfile.email} (${adminProfile.displayName || 'SuperAdmin'})
-
-============================================================
-CÓDIGOS DE EMERGÊNCIA (USO ÚNICO):
-============================================================
-${codes.map((c, i) => `${i + 1}. ${c}`).join('\n')}
-
-IMPORTANTE: Guarde estes códigos em local seguro. Cada código
-pode ser usado uma única vez caso você não consiga usar o
-Windows Hello (biometria ou PIN).
-`;
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tracker-2fa-superadmin-${(adminProfile.email || 'admin').split('@')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleEnableWindowsHello = async () => {
-    setIsEnrollingHello(true);
-    try {
-      const isSandbox = adminProfile.organizationId === 'sandbox-test';
-      const cred = await registerWindowsHello(adminProfile.uid, adminProfile.email, adminProfile.displayName || adminProfile.email, isSandbox);
-      const backupCodes = generateBackupCodes(5);
-
-      const emailResult = await sendBackupCodesEmail(adminProfile.email, adminProfile.displayName || adminProfile.email, backupCodes, isSandbox);
-
-      const existingCreds = adminProfile.webAuthnCredentials || [];
-      const updatedCreds = [...existingCreds.filter(c => c.id !== cred.id), cred];
-
-      const patchData = {
-        isWebAuthnEnabled: true,
-        webAuthnCredentials: updatedCreds,
-        backupCodes
-      };
-
-      const targetUid = adminProfile.uid || auth.currentUser?.uid;
-      if (targetUid) {
-        if (isSandbox) {
-          sandboxService.setProfile({
-            ...adminProfile,
-            ...patchData
-          });
-        } else {
-          await setDoc(doc(db, 'users', targetUid), patchData, { merge: true });
-        }
-      }
-
-      const updated = { ...adminProfile, ...patchData };
-      setAdminProfile(updated);
-      onUpdateProfile?.(patchData);
-      try {
-        localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
-      } catch {}
-
-      setSandboxEmailPreview(emailResult);
-      setCurrentAdminBackupCodes(backupCodes);
-      setShowAdminBackupCodesModal(true);
-      showToast('Windows Hello 2FA ativado com sucesso! Códigos gerados e enviados por e-mail.', 'success');
-    } catch (err: any) {
-      console.error(err);
-      showToast(err.message || 'Erro ao ativar o Windows Hello.', 'error');
-    } finally {
-      setIsEnrollingHello(false);
-    }
-  };
-
-  const handleDisableWindowsHello = async () => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Desativar Windows Hello (2FA) do SuperAdmin?',
-      message: 'Sua conta de SuperAdmin deixará de exigir a biometria/PIN da máquina no login. Tem certeza?',
-      type: 'danger',
-      onConfirm: async () => {
-        try {
-          const patchData = {
-            isWebAuthnEnabled: false,
-            webAuthnCredentials: [],
-            backupCodes: []
-          };
-
-          if (adminProfile.uid) {
-            if (adminProfile.organizationId === 'sandbox-test') {
-              sandboxService.setProfile({
-                ...adminProfile,
-                ...patchData
-              });
-            } else {
-              await setDoc(doc(db, 'users', adminProfile.uid), patchData, { merge: true });
-            }
-          }
-
-          const updated = { ...adminProfile, ...patchData };
-          setAdminProfile(updated);
-          onUpdateProfile?.(patchData);
-          try {
-            localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
-          } catch {}
-
-          showToast('Windows Hello 2FA desativado.', 'info');
-        } catch (err) {
-          console.error(err);
-          showToast('Erro ao desativar 2FA.', 'error');
-        }
-      }
-    });
-  };
 
   const handleOpenUserSetup = (org: Organization) => {
     setSetupOrg({ id: org.id, name: org.name, maxUsers: org.maxUsers });
@@ -864,21 +731,6 @@ Windows Hello (biometria ou PIN).
               Testar E-mail Resend
             </button>
 
-            {/* BOTÃO WINDOWS HELLO 2FA DO SUPERADMIN */}
-            <button
-              type="button"
-              onClick={() => setIsSecurityModalOpen(true)}
-              className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-2 border ${
-                adminProfile?.isWebAuthnEnabled
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 shadow-lg shadow-emerald-500/10'
-                  : 'bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white border-sky-400/30 shadow-lg shadow-sky-500/20'
-              }`}
-              title="Configurar biometria e PIN da máquina (2FA)"
-            >
-              <Fingerprint size={18} weight="bold" className={adminProfile?.isWebAuthnEnabled ? 'text-emerald-400' : 'text-sky-200'} />
-              <span>{adminProfile?.isWebAuthnEnabled ? '2FA Windows Hello (Ativo)' : 'Ativar 2FA Windows Hello'}</span>
-            </button>
-
 
 
             {/* SAIR */}
@@ -1415,189 +1267,6 @@ Windows Hello (biometria ou PIN).
         </div>
       )}
 
-
-      {/* MODAL DE SEGURANÇA & 2FA WINDOWS HELLO DO SUPERADMIN */}
-      {isSecurityModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-          <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-white text-left relative overflow-hidden">
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex justify-between items-center pb-3 border-b border-white/10">
-              <span className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
-                <Fingerprint size={20} />
-                <span>Segurança Master • Windows Hello 2FA</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsSecurityModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-black text-white">Autenticação em Duas Etapas</h3>
-                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
-                  adminProfile.isWebAuthnEnabled
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : 'bg-slate-800 border border-white/10 text-slate-400'
-                }`}>
-                  <span className={`w-2 h-2 rounded-full ${adminProfile.isWebAuthnEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
-                  <span>{adminProfile.isWebAuthnEnabled ? '2FA Ativado' : '2FA Desativado'}</span>
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Ao ativar, todo login com a conta de SuperAdmin exigirá sua <strong>digital, rosto ou o PIN da máquina</strong> para liberar o acesso ao painel master.
-              </p>
-            </div>
-
-            {adminProfile.isWebAuthnEnabled ? (
-              <div className="space-y-3 pt-1">
-                {adminProfile.webAuthnCredentials && adminProfile.webAuthnCredentials.length > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 space-y-1 text-xs">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Dispositivo Registrado:</span>
-                    <div className="flex items-center justify-between text-slate-200 font-medium">
-                      <span>💻 {adminProfile.webAuthnCredentials[0].deviceName || 'Windows PC'}</span>
-                      <span className="text-[10px] text-slate-500">{new Date(adminProfile.webAuthnCredentials[0].createdAt).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-center gap-3 pt-2">
-                  {adminProfile.backupCodes && adminProfile.backupCodes.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCurrentAdminBackupCodes(adminProfile.backupCodes || []);
-                        setShowAdminBackupCodesModal(true);
-                      }}
-                      className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
-                    >
-                      <Key size={16} className="text-amber-400" />
-                      <span>Ver Códigos de Contingência</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleDisableWindowsHello}
-                    className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ml-auto"
-                  >
-                    <Trash2 size={16} />
-                    <span>Desativar 2FA</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  disabled={isEnrollingHello}
-                  onClick={handleEnableWindowsHello}
-                  className="w-full py-3.5 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
-                >
-                  {isEnrollingHello ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      <span>Aguardando Windows Hello...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Fingerprint size={20} />
-                      <span>Vincular Este Computador (Biometria / PIN)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE CÓDIGOS DE CONTINGÊNCIA DO SUPERADMIN */}
-      {showAdminBackupCodesModal && currentAdminBackupCodes.length > 0 && (
-        <div className="fixed inset-0 z-[120] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-          <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-white text-center relative overflow-hidden">
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex justify-between items-center pb-2 border-b border-white/5">
-              <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-400">
-                <Key size={18} />
-                <span>Kit de Contingência (SuperAdmin)</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAdminBackupCodesModal(false);
-                  setCopiedAdminCodes(false);
-                }}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-lg font-black text-white">Seus Códigos de Emergência</h3>
-              <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
-                Guarde estes códigos em local seguro. Cada código é de <strong>uso único</strong> para fazer login se você não estiver no seu computador habitual.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 bg-slate-950/70 p-4 rounded-2xl border border-white/5">
-              {currentAdminBackupCodes.map((code, idx) => (
-                <div key={idx} className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-900/90 border border-white/5 font-mono text-sm font-bold text-amber-300">
-                  <span className="text-slate-500 text-xs">#{idx + 1}</span>
-                  <span className="tracking-widest">{code}</span>
-                  <span className="text-[10px] text-slate-500 font-sans uppercase">Uso único</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-2.5 pt-2">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(currentAdminBackupCodes.join('\n'));
-                    setCopiedAdminCodes(true);
-                    setTimeout(() => setCopiedAdminCodes(false), 2000);
-                    showToast('Códigos copiados para a área de transferência!', 'info');
-                  }}
-                  className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  {copiedAdminCodes ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                  <span>{copiedAdminCodes ? 'Copiado!' : 'Copiar Tudo'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDownloadAdminBackupCodes(currentAdminBackupCodes)}
-                  className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <DownloadSimple size={16} className="text-sky-400" />
-                  <span>Baixar .TXT</span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAdminBackupCodesModal(false);
-                  setCopiedAdminCodes(false);
-                }}
-                className="w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-sky-500/25"
-              >
-                Concluir & Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* DIÁLOGO DE CONFIRMAÇÃO DE EXCLUSÃO DE EMPRESA */}
       <CustomConfirm

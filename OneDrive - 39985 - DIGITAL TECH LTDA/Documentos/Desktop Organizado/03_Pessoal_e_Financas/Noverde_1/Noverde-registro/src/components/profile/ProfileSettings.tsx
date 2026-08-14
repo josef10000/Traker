@@ -43,10 +43,7 @@ import {
   ArrowsVertical,
   SpeakerHigh,
   SpeakerSlash,
-  Trophy,
-  Key,
-  DownloadSimple,
-  WarningCircle
+  Trophy
 } from '@phosphor-icons/react';
 import { playDealSound } from '../../utils/audioSynth';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, getDoc, onSnapshot } from 'firebase/firestore';
@@ -55,8 +52,6 @@ import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest, Col
 import { sandboxService } from '../../lib/sandboxService';
 import { getCollaborationNotes } from '../../lib/notes';
 import { createNotification } from '../../lib/notifications';
-import { registerWindowsHello, generateBackupCodes } from '../../lib/webAuthnService';
-import { sendBackupCodesEmail, EmailPayload } from '../../lib/emailService';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 import { Avatar } from '../ui/Avatar';
@@ -323,90 +318,6 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const handleSwitchAvatarType = async (type: 'custom' | 'api') => {
     setAvatarType(type);
     await saveProfileFields({ avatarType: type });
-  };
-
-  const [isEnrollingHello, setIsEnrollingHello] = useState(false);
-  const [sandboxEmailPreview, setSandboxEmailPreview] = useState<EmailPayload | null>(null);
-  const [showBackupCodesModal, setShowBackupCodesModal] = useState(false);
-  const [currentBackupCodes, setCurrentBackupCodes] = useState<string[]>([]);
-  const [copiedCodes, setCopiedCodes] = useState(false);
-
-  const handleDownloadBackupCodes = (codes: string[]) => {
-    const content = `TRACKER PLATFORM — KIT DE CONTINGÊNCIA 2FA
-Data de Emissão: ${new Date().toLocaleString('pt-BR')}
-Conta: ${profile.email} (${profile.displayName || 'Usuário'})
-
-============================================================
-CÓDIGOS DE EMERGÊNCIA (USO ÚNICO):
-============================================================
-${codes.map((c, i) => `${i + 1}. ${c}`).join('\n')}
-
-IMPORTANTE: Guarde estes códigos em local seguro. Cada código
-pode ser usado uma única vez caso você não consiga usar o
-Windows Hello (biometria ou PIN).
-`;
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tracker-2fa-codigos-${(profile.email || 'usuario').split('@')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleEnableWindowsHello = async () => {
-    setIsEnrollingHello(true);
-    try {
-      const isSandbox = profile.organizationId === 'sandbox-test';
-      const cred = await registerWindowsHello(profile.uid, profile.email, profile.displayName || profile.email, isSandbox);
-      const backupCodes = generateBackupCodes(5);
-
-      const emailResult = await sendBackupCodesEmail(profile.email, profile.displayName || profile.email, backupCodes, isSandbox);
-
-      const existingCreds = profile.webAuthnCredentials || [];
-      const updatedCreds = [...existingCreds.filter(c => c.id !== cred.id), cred];
-
-      const patchData = {
-        isWebAuthnEnabled: true,
-        webAuthnCredentials: updatedCreds,
-        backupCodes
-      };
-
-      await saveProfileFields(patchData);
-      setSandboxEmailPreview(emailResult);
-      setCurrentBackupCodes(backupCodes);
-      setShowBackupCodesModal(true);
-      showToast('Windows Hello ativado com sucesso! Códigos de contingência gerados e enviados por e-mail.', 'success');
-    } catch (err: any) {
-      console.error(err);
-      showToast(err.message || 'Erro ao ativar o Windows Hello.', 'error');
-    } finally {
-      setIsEnrollingHello(false);
-    }
-  };
-
-  const handleDisableWindowsHello = async () => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Desativar Windows Hello (2FA)?',
-      message: 'Sua conta deixará de exigir a biometria/PIN da máquina no login. Tem certeza que deseja prosseguir?',
-      type: 'danger',
-      onConfirm: async () => {
-        try {
-          await saveProfileFields({
-            isWebAuthnEnabled: false,
-            webAuthnCredentials: [],
-            backupCodes: []
-          });
-          showToast('Windows Hello desativado da sua conta.', 'info');
-        } catch (err) {
-          console.error(err);
-          showToast('Erro ao desativar Windows Hello.', 'error');
-        }
-      }
-    });
   };
   
   useEffect(() => {
@@ -2275,102 +2186,6 @@ Windows Hello (biometria ou PIN).
                 )}
               </form>
 
-              {/* CARD DE SEGURANÇA & 2FA WINDOWS HELLO */}
-              <div className="border border-white/10 bg-slate-900/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-400">
-                        <Fingerprint size={20} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black text-white flex items-center gap-2">
-                          <span>Windows Hello (Biometria / PIN)</span>
-                        </h4>
-                        <p className="text-[11px] text-slate-400">
-                          Autenticação em 2 Etapas (2FA) nativa do seu computador
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Badge de Status */}
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 self-start sm:self-center ${
-                    profile.isWebAuthnEnabled
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10'
-                      : 'bg-slate-800 border border-white/10 text-slate-400'
-                  }`}>
-                    <span className={`w-2 h-2 rounded-full ${profile.isWebAuthnEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
-                    <span>{profile.isWebAuthnEnabled ? '2FA Ativado' : '2FA Desativado'}</span>
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Ao ativar o Windows Hello, toda vez que você entrar com seu e-mail e senha, o sistema solicitará sua <strong>impressão digital, reconhecimento facial ou o PIN do seu Windows</strong> para liberar o acesso.
-                </p>
-
-                {profile.isWebAuthnEnabled ? (
-                  <div className="space-y-3 pt-2">
-                    {/* Dispositivos Vinculados */}
-                    {profile.webAuthnCredentials && profile.webAuthnCredentials.length > 0 && (
-                      <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 space-y-1 text-xs">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Dispositivo Vinculado:</span>
-                        <div className="flex items-center justify-between text-slate-200 font-medium">
-                          <span>💻 {profile.webAuthnCredentials[0].deviceName || 'Windows PC'}</span>
-                          <span className="text-[10px] text-slate-500">{new Date(profile.webAuthnCredentials[0].createdAt).toLocaleDateString('pt-BR')}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-3 pt-1">
-                      {profile.backupCodes && profile.backupCodes.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCurrentBackupCodes(profile.backupCodes || []);
-                            setShowBackupCodesModal(true);
-                          }}
-                          className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
-                        >
-                          <Key size={16} className="text-amber-400" />
-                          <span>Ver Códigos de Contingência</span>
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={handleDisableWindowsHello}
-                        className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ml-auto"
-                      >
-                        <Trash2 size={16} />
-                        <span>Desativar Windows Hello</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      disabled={isEnrollingHello}
-                      onClick={handleEnableWindowsHello}
-                      className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
-                    >
-                      {isEnrollingHello ? (
-                        <>
-                          <Loader2 size={18} className="animate-spin" />
-                          <span>Aguardando Windows Hello...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Fingerprint size={20} />
-                          <span>Ativar Windows Hello (Biometria / PIN)</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-
             </div>
           )}
 
@@ -4172,133 +3987,7 @@ Windows Hello (biometria ou PIN).
             >
               Concluído
             </button>
-          </div>
-        </div>
-      )}
-      {/* Modal de Simulação de E-mail Enviado no Sandbox */}
-      {sandboxEmailPreview && (
-        <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 text-white text-left">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
-              <span className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
-                <Envelope size={18} />
-                <span>Simulador Sandbox: E-mail Enviado</span>
-              </span>
-              <button onClick={() => setSandboxEmailPreview(null)} className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="text-xs text-slate-300 space-y-1 bg-slate-950/80 p-3 rounded-xl border border-white/5">
-              <p><strong>Para:</strong> {sandboxEmailPreview.to}</p>
-              <p><strong>Assunto:</strong> {sandboxEmailPreview.subject}</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 text-center space-y-2 max-h-60 overflow-y-auto">
-              <p className="text-xs text-amber-400 font-bold">🔑 Códigos de Contingência (Emergência):</p>
-              <div className="grid grid-cols-1 gap-1.5 font-mono text-sm font-black text-emerald-400 tracking-wider">
-                {sandboxEmailPreview.backupCodes.map((code, idx) => (
-                  <div key={idx} className="p-2 rounded-lg bg-white/5 border border-white/5">{code}</div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSandboxEmailPreview(null)}
-                className="px-5 py-2.5 rounded-xl bg-sky-500 text-white font-bold text-xs cursor-pointer"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE CÓDIGOS DE CONTINGÊNCIA (2FA) */}
-      {showBackupCodesModal && currentBackupCodes.length > 0 && (
-        <div className="fixed inset-0 z-[120] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-          <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-white text-center relative overflow-hidden">
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex justify-between items-center pb-2 border-b border-white/5">
-              <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-400">
-                <Key size={18} />
-                <span>Kit de Contingência 2FA</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowBackupCodesModal(false);
-                  setCopiedCodes(false);
-                }}
-                className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-lg font-black text-white">Seus Códigos de Emergência</h3>
-              <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
-                Guarde estes códigos em local seguro. Cada código é de <strong>uso único</strong> para fazer login se você não estiver no seu computador habitual.
-              </p>
-            </div>
-
-            {/* Grid dos 5 Códigos */}
-            <div className="grid grid-cols-1 gap-2 bg-slate-950/70 p-4 rounded-2xl border border-white/5">
-              {currentBackupCodes.map((code, idx) => (
-                <div key={idx} className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-900/90 border border-white/5 font-mono text-sm font-bold text-amber-300">
-                  <span className="text-slate-500 text-xs">#{idx + 1}</span>
-                  <span className="tracking-widest">{code}</span>
-                  <span className="text-[10px] text-slate-500 font-sans uppercase">Uso único</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-2.5 pt-2">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(currentBackupCodes.join('\n'));
-                    setCopiedCodes(true);
-                    setTimeout(() => setCopiedCodes(false), 2000);
-                    showToast('Códigos copiados para a área de transferência!', 'info');
-                  }}
-                  className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  {copiedCodes ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                  <span>{copiedCodes ? 'Copiado!' : 'Copiar Tudo'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDownloadBackupCodes(currentBackupCodes)}
-                  className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <DownloadSimple size={16} className="text-sky-400" />
-                  <span>Baixar .TXT</span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowBackupCodesModal(false);
-                  setCopiedCodes(false);
-                }}
-                className="w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-sky-500/25"
-              >
-                Concluir & Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* DIÁLOGO DE CONFIRMAÇÃO */}
       <CustomConfirm 
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
