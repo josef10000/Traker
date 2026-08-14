@@ -368,6 +368,11 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
                     type="number"
                     min={0}
                     placeholder="Opcional"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
+                    autoComplete="off"
+                    name={`row_monthly_val_${idx}`}
                     value={row.monthlyServiceValue || ''}
                     onChange={(e) => handleRowChange(idx, 'monthlyServiceValue', e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono font-bold focus:border-purple-500 transition-all"
