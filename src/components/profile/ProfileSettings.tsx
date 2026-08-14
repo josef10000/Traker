@@ -1647,15 +1647,15 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
 
           {/* ABA: MEU PERFIL */}
           {activeTab === 'profile' && (
-            <div className="space-y-3.5 max-w-xl">
+            <div className="space-y-5 w-full animate-fadeIn">
               <div>
-                <h3 className="text-lg font-bold text-white">Meu Perfil</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Gerencie suas informações cadastrais básicas.</p>
+                <h3 className="text-xl font-bold text-white">Meu Perfil</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Gerencie suas informações cadastrais básicas.</p>
               </div>
 
-              <form onSubmit={handleSave} className="space-y-3.5">
+              <form onSubmit={handleSave} className="space-y-4 w-full">
                 {/* 📸 CABEÇALHO UNIFICADO DO PERFIL (CAPA + AVATAR INTEGRADO COM LÁPIS DE EDIÇÃO) */}
-                <div className="relative rounded-3xl border border-white/10 mb-6 bg-slate-900 shadow-xl">
+                <div className="relative rounded-3xl border border-white/10 mb-5 bg-slate-900/60 shadow-xl backdrop-blur-md">
                   {/* CAPA DE FUNDO (BANNER) COM SUPORTE A REPOSICIONAMENTO 360° E ZOOM */}
                   <div
                     className={`h-36 sm:h-44 w-full relative bg-slate-950 overflow-hidden rounded-t-3xl ${
@@ -2029,7 +2029,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                 {/* MODO VISUALIZAÇÃO LIMPA (READ-ONLY) OU MODO EDIÇÃO SOB DEMANDA */}
                 {!isEditingInfo ? (
                   /* CARD DE RESUMO LIMPO E ELEGANTE */
-                  <div className="p-5 rounded-3xl bg-white/5 border border-white/10 space-y-4">
+                  <div className="p-5 rounded-3xl bg-slate-900/40 border border-white/5 space-y-4 w-full backdrop-blur-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <UserIcon size={16} className="text-sky-400" />
