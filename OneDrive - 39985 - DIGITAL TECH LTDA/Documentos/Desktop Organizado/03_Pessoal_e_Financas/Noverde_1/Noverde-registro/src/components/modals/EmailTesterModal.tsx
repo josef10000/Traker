@@ -24,7 +24,7 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
 
   if (!isOpen) return null;
 
-  const previewInviteUrl = `${window.location.origin}/register?invite=inv-demo-123456`;
+  const previewInviteUrl = `${window.location.origin}/accept-invite?token=inv-demo-123456&email=colaborador@empresa.com&org=${encodeURIComponent(testOrgName)}&role=manager`;
   const previewHtml = generateInviteEmailHtml({
     recipientEmail: testEmail || 'colaborador@empresa.com',
     orgName: testOrgName,
@@ -97,13 +97,13 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black flex items-center gap-2">
-                <span>Testador de E-mails Resend (Nativo)</span>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  VITE_RESEND_API_KEY Configurada
+                <span>Testador de E-mails Resend</span>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                  Vercel Serverless Function (/api/send-email)
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Envie um e-mail de teste real nativo ou veja a pré-visualização do template HTML com a logo s-logo.
+                Dispare e-mails de teste reais pelo Resend e valide a entrega do convite corporativo.
               </p>
             </div>
           </div>

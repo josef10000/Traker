@@ -8,6 +8,7 @@ import { useSpotlightShortcut } from './hooks/useSpotlightShortcut';
 import { auth, db } from './lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LoginPage } from './components/auth/LoginPage';
+import { AcceptInvitePage } from './components/auth/AcceptInvitePage';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { ProfileSettings } from './components/profile/ProfileSettings';
@@ -517,6 +518,7 @@ export function AppContent() {
         <Routes>
           <Route path="/login" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
           <Route path="/register" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
+          <Route path="/accept-invite" element={<AcceptInvitePage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
           <Route path="/status" element={<StatusPage />} />
           <Route path="/demo" element={
             <DemoPage 

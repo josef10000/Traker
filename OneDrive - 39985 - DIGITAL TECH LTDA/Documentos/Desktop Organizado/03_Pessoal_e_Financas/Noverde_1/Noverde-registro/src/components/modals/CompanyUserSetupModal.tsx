@@ -126,11 +126,11 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     });
   };
 
-  // Helper para construir a URL completa do convite com metadados
+  // Helper para construir a URL completa do convite na rota dedicada /accept-invite
   const buildInviteUrl = (token: string, email: string, role: UserRole) => {
-    const base = `${window.location.origin}/register`;
+    const base = `${window.location.origin}/accept-invite`;
     const params = new URLSearchParams();
-    params.set('invite', token);
+    params.set('token', token);
     params.set('email', email.trim().toLowerCase());
     params.set('org', orgName.trim());
     params.set('role', role);
@@ -150,20 +150,13 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     setIsLoading(true);
     try {
       const now = new Date().toISOString();
+      const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
       const createdList: PendingInvite[] = [];
 
       for (const row of validRows) {
         const token = `inv-${generateSecureToken(8).toLowerCase()}`;
         const inviteUrl = buildInviteUrl(token, row.email, row.role);
         const roleLabel = getRoleLabel(row.role);
-
-        // Disparo automático via Resend
-        const emailRes = await sendInviteEmail({
-          recipientEmail: row.email.trim().toLowerCase(),
-          orgName: orgName,
-          roleName: roleLabel,
-          inviteUrl: inviteUrl
-        });
 
         const inviteDoc: any = {
           organizationId: orgId,
@@ -172,8 +165,9 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
           role: row.role,
           token,
           createdAt: now,
+          expiresAt: expiresAt,
           status: 'pending',
-          emailSent: emailRes.success
+          emailSent: false
         };
 
         if (row.monthlyServiceValue && Number(row.monthlyServiceValue) > 0) {
@@ -184,11 +178,29 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
           inviteDoc.teamId = row.teamId.trim();
         }
 
+        // 1. Salva no Firestore PRIMEIRO (garantia absoluta de existência do convite)
         await setDoc(doc(db, 'invites', token), inviteDoc);
+
+        // 2. Disparo de e-mail via Vercel Serverless / Resend
+        const emailRes = await sendInviteEmail({
+          recipientEmail: row.email.trim().toLowerCase(),
+          orgName: orgName,
+          roleName: roleLabel,
+          inviteUrl: inviteUrl
+        });
+
+        if (emailRes.success) {
+          inviteDoc.emailSent = true;
+          await updateDoc(doc(db, 'invites', token), { emailSent: true }).catch(() => {});
+        } else if (emailRes.error) {
+          inviteDoc.emailError = emailRes.error;
+          await updateDoc(doc(db, 'invites', token), { emailError: emailRes.error }).catch(() => {});
+        }
+
         createdList.push({ id: token, ...inviteDoc });
       }
 
-      showToast(`${createdList.length} convite(s) gerado(s) e enviado(s) por e-mail com sucesso!`, 'success');
+      showToast(`${createdList.length} convite(s) gerado(s) com sucesso! Compartilhe o link ou envie por WhatsApp.`, 'success');
       setSetupRows([{ email: '', role: 'supervisor', teamId: '', monthlyServiceValue: 0 }]);
     } catch (error) {
       console.error('Erro ao gerar convites de setup:', error);
@@ -212,9 +224,12 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     });
 
     if (emailRes.success) {
-      showToast(`E-mail reenviado com sucesso para ${inv.email}!`, 'success');
+      await updateDoc(doc(db, 'invites', inv.token), { emailSent: true, emailError: null }).catch(() => {});
+      showToast(`E-mail enviado com sucesso para ${inv.email}!`, 'success');
     } else {
-      showToast(`Falha ao reenviar e-mail: ${emailRes.error}`, 'error');
+      const errorMsg = emailRes.error || 'Verifique as credenciais do Resend.';
+      await updateDoc(doc(db, 'invites', inv.token), { emailSent: false, emailError: errorMsg }).catch(() => {});
+      showToast(`Aviso de envio: ${errorMsg}`, 'error');
     }
   };
 
