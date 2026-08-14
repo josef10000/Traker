@@ -102,32 +102,54 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
   const [avatarType, setAvatarType] = useState<'custom' | 'api'>(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
   const [coverPhotoURL, setCoverPhotoURL] = useState<string>(profile.coverPhotoURL || '');
-  const [coverPosition, setCoverPosition] = useState<string>(profile.coverPosition || 'center 50%');
+  const parseCoverPos = (posStr?: string) => {
+    if (!posStr) return { x: 50, y: 50 };
+    const cleanStr = posStr.replace('center', '').trim();
+    const matches = cleanStr.match(/(\d+)%/g);
+    if (matches && matches.length >= 2) {
+      return { x: parseInt(matches[0], 10), y: parseInt(matches[1], 10) };
+    } else if (matches && matches.length === 1) {
+      return { x: 50, y: parseInt(matches[0], 10) };
+    }
+    return { x: 50, y: 50 };
+  };
+
+  const initialPosObj = parseCoverPos(profile.coverPosition);
+  const [coverPosition, setCoverPosition] = useState<string>(profile.coverPosition || '50% 50%');
   const [isRepositioning, setIsRepositioning] = useState<boolean>(false);
   const [isDraggingCover, setIsDraggingCover] = useState<boolean>(false);
+  const dragStartXRef = useRef<number>(0);
   const dragStartYRef = useRef<number>(0);
-  const initialPercentYRef = useRef<number>(50);
-  const [tempPosY, setTempPosY] = useState<number>(() => {
-    const pos = profile.coverPosition || 'center 50%';
-    const match = pos.match(/(\d+)%/);
-    return match ? parseInt(match[1], 10) : 50;
-  });
+  const initialPercentXRef = useRef<number>(initialPosObj.x);
+  const initialPercentYRef = useRef<number>(initialPosObj.y);
+  const [tempPosX, setTempPosX] = useState<number>(initialPosObj.x);
+  const [tempPosY, setTempPosY] = useState<number>(initialPosObj.y);
 
-  const handleCoverDragStart = (clientY: number) => {
+  const handleCoverDragStart = (clientX: number, clientY: number) => {
     if (!isRepositioning) return;
     setIsDraggingCover(true);
+    dragStartXRef.current = clientX;
     dragStartYRef.current = clientY;
+    initialPercentXRef.current = tempPosX;
     initialPercentYRef.current = tempPosY;
   };
 
-  const handleCoverDragMove = (clientY: number) => {
+  const handleCoverDragMove = (clientX: number, clientY: number) => {
     if (!isDraggingCover || !isRepositioning) return;
+    const deltaX = clientX - dragStartXRef.current;
     const deltaY = clientY - dragStartYRef.current;
-    let newPercent = initialPercentYRef.current - Math.round(deltaY * 0.4);
-    if (newPercent < 0) newPercent = 0;
-    if (newPercent > 100) newPercent = 100;
-    setTempPosY(newPercent);
-    setCoverPosition(`center ${newPercent}%`);
+
+    let newX = initialPercentXRef.current - Math.round(deltaX * 0.35);
+    let newY = initialPercentYRef.current - Math.round(deltaY * 0.35);
+
+    if (newX < 0) newX = 0;
+    if (newX > 100) newX = 100;
+    if (newY < 0) newY = 0;
+    if (newY > 100) newY = 100;
+
+    setTempPosX(newX);
+    setTempPosY(newY);
+    setCoverPosition(`${newX}% ${newY}%`);
   };
 
   const handleCoverDragEnd = () => {
@@ -135,19 +157,20 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   };
 
   const handleSaveCoverPosition = async () => {
-    const finalPos = `center ${tempPosY}%`;
+    const finalPos = `${tempPosX}% ${tempPosY}%`;
     setCoverPosition(finalPos);
     setIsRepositioning(false);
     await saveProfileFields({ coverPosition: finalPos });
-    if (showToast) showToast('Posição da foto de capa salva!', 'success');
+    if (showToast) showToast('Posição livre 2D da foto de capa salva!', 'success');
   };
 
   const handleCancelCoverPosition = () => {
     setIsRepositioning(false);
-    const origPos = profile.coverPosition || 'center 50%';
+    const origPos = profile.coverPosition || '50% 50%';
     setCoverPosition(origPos);
-    const match = origPos.match(/(\d+)%/);
-    setTempPosY(match ? parseInt(match[1], 10) : 50);
+    const parsed = parseCoverPos(origPos);
+    setTempPosX(parsed.x);
+    setTempPosY(parsed.y);
   };
 
   const [isUploadingCover, setIsUploadingCover] = useState<boolean>(false);
@@ -1583,12 +1606,12 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     className={`h-36 sm:h-44 w-full relative bg-slate-950 overflow-hidden rounded-t-3xl ${
                       isRepositioning ? 'cursor-grab active:cursor-grabbing select-none' : ''
                     }`}
-                    onMouseDown={(e) => handleCoverDragStart(e.clientY)}
-                    onMouseMove={(e) => handleCoverDragMove(e.clientY)}
+                    onMouseDown={(e) => handleCoverDragStart(e.clientX, e.clientY)}
+                    onMouseMove={(e) => handleCoverDragMove(e.clientX, e.clientY)}
                     onMouseUp={handleCoverDragEnd}
                     onMouseLeave={handleCoverDragEnd}
-                    onTouchStart={(e) => handleCoverDragStart(e.touches[0].clientY)}
-                    onTouchMove={(e) => handleCoverDragMove(e.touches[0].clientY)}
+                    onTouchStart={(e) => handleCoverDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+                    onTouchMove={(e) => handleCoverDragMove(e.touches[0].clientX, e.touches[0].clientY)}
                     onTouchEnd={handleCoverDragEnd}
                   >
                     {coverPhotoURL ? (
@@ -1608,7 +1631,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] flex flex-col items-center justify-between p-3 z-30 pointer-events-none">
                         <span className="px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-sky-400/50 text-sky-300 text-[10px] font-bold shadow-lg flex items-center gap-1.5 animate-pulse">
                           <ArrowsVertical size={13} />
-                          <span>Clique e arraste verticalmente para ajustar o enquadramento</span>
+                          <span>Clique e arraste livremente em 360° (lados, cima, baixo ou diagonal)</span>
                         </span>
 
                         <div className="flex items-center gap-2 pointer-events-auto">
