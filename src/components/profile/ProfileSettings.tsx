@@ -38,6 +38,7 @@ import {
   Fingerprint,
   Envelope,
   CheckCircle,
+  ArrowsVertical,
   SpeakerHigh,
   SpeakerSlash,
   Trophy
@@ -101,6 +102,54 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
   const [avatarType, setAvatarType] = useState<'custom' | 'api'>(profile.avatarType || (profile.photoURL ? 'custom' : 'api'));
   const [coverPhotoURL, setCoverPhotoURL] = useState<string>(profile.coverPhotoURL || '');
+  const [coverPosition, setCoverPosition] = useState<string>(profile.coverPosition || 'center 50%');
+  const [isRepositioning, setIsRepositioning] = useState<boolean>(false);
+  const [isDraggingCover, setIsDraggingCover] = useState<boolean>(false);
+  const dragStartYRef = useRef<number>(0);
+  const initialPercentYRef = useRef<number>(50);
+  const [tempPosY, setTempPosY] = useState<number>(() => {
+    const pos = profile.coverPosition || 'center 50%';
+    const match = pos.match(/(\d+)%/);
+    return match ? parseInt(match[1], 10) : 50;
+  });
+
+  const handleCoverDragStart = (clientY: number) => {
+    if (!isRepositioning) return;
+    setIsDraggingCover(true);
+    dragStartYRef.current = clientY;
+    initialPercentYRef.current = tempPosY;
+  };
+
+  const handleCoverDragMove = (clientY: number) => {
+    if (!isDraggingCover || !isRepositioning) return;
+    const deltaY = clientY - dragStartYRef.current;
+    let newPercent = initialPercentYRef.current - Math.round(deltaY * 0.4);
+    if (newPercent < 0) newPercent = 0;
+    if (newPercent > 100) newPercent = 100;
+    setTempPosY(newPercent);
+    setCoverPosition(`center ${newPercent}%`);
+  };
+
+  const handleCoverDragEnd = () => {
+    setIsDraggingCover(false);
+  };
+
+  const handleSaveCoverPosition = async () => {
+    const finalPos = `center ${tempPosY}%`;
+    setCoverPosition(finalPos);
+    setIsRepositioning(false);
+    await saveProfileFields({ coverPosition: finalPos });
+    if (showToast) showToast('Posição da foto de capa salva!', 'success');
+  };
+
+  const handleCancelCoverPosition = () => {
+    setIsRepositioning(false);
+    const origPos = profile.coverPosition || 'center 50%';
+    setCoverPosition(origPos);
+    const match = origPos.match(/(\d+)%/);
+    setTempPosY(match ? parseInt(match[1], 10) : 50);
+  };
+
   const [isUploadingCover, setIsUploadingCover] = useState<boolean>(false);
   const [showCoverPicker, setShowCoverPicker] = useState<boolean>(false);
   const [isEditingInfo, setIsEditingInfo] = useState<boolean>(false);
@@ -1529,30 +1578,74 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
               <form onSubmit={handleSave} className="space-y-3.5">
                 {/* 📸 CABEÇALHO UNIFICADO DO PERFIL (CAPA + AVATAR INTEGRADO COM LÁPIS DE EDIÇÃO) */}
                 <div className="relative rounded-3xl border border-white/10 mb-6 bg-slate-900 shadow-xl">
-                  {/* CAPA DE FUNDO (BANNER) */}
-                  <div className="h-36 sm:h-44 w-full relative bg-slate-950 overflow-hidden rounded-t-3xl">
+                  {/* CAPA DE FUNDO (BANNER) COM SUPORTE A REPOSICIONAMENTO POR ARRASTE */}
+                  <div
+                    className={`h-36 sm:h-44 w-full relative bg-slate-950 overflow-hidden rounded-t-3xl ${
+                      isRepositioning ? 'cursor-grab active:cursor-grabbing select-none' : ''
+                    }`}
+                    onMouseDown={(e) => handleCoverDragStart(e.clientY)}
+                    onMouseMove={(e) => handleCoverDragMove(e.clientY)}
+                    onMouseUp={handleCoverDragEnd}
+                    onMouseLeave={handleCoverDragEnd}
+                    onTouchStart={(e) => handleCoverDragStart(e.touches[0].clientY)}
+                    onTouchMove={(e) => handleCoverDragMove(e.touches[0].clientY)}
+                    onTouchEnd={handleCoverDragEnd}
+                  >
                     {coverPhotoURL ? (
                       <img
                         src={coverPhotoURL}
                         alt="Capa de Perfil"
-                        className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                        className="w-full h-full object-cover pointer-events-none transition-all duration-75"
+                        style={{ objectPosition: coverPosition }}
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-r from-slate-950 via-sky-950/40 to-slate-950" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-black/20 to-transparent pointer-events-none" />
 
+                    {/* OVERLAY DE MODO DE REPOSICIONAMENTO (QUANDO ATIVO) */}
+                    {isRepositioning && (
+                      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] flex flex-col items-center justify-between p-3 z-30 pointer-events-none">
+                        <span className="px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-sky-400/50 text-sky-300 text-[10px] font-bold shadow-lg flex items-center gap-1.5 animate-pulse">
+                          <ArrowsVertical size={13} />
+                          <span>Clique e arraste verticalmente para ajustar o enquadramento</span>
+                        </span>
+
+                        <div className="flex items-center gap-2 pointer-events-auto">
+                          <button
+                            type="button"
+                            onClick={handleSaveCoverPosition}
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                          >
+                            <Check size={14} />
+                            <span>Salvar Posição</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleCancelCoverPosition}
+                            className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-slate-300 hover:text-white text-xs font-bold shadow-lg flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                          >
+                            <X size={14} />
+                            <span>Cancelar</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* APENAS O BOTÃO LÁPIS COM TOOLTIP AO PASSAR O MOUSE (CANTO SUPERIOR DIREITO) */}
-                    <div className="absolute top-3 right-3 z-20">
-                      <button
-                        type="button"
-                        onClick={() => setShowCoverPicker(prev => !prev)}
-                        className="p-2.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/20 text-sky-400 hover:text-white shadow-xl backdrop-blur-md transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center justify-center"
-                        title="Personalizar Foto de Capa"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                    </div>
+                    {!isRepositioning && (
+                      <div className="absolute top-3 right-3 z-20">
+                        <button
+                          type="button"
+                          onClick={() => setShowCoverPicker(prev => !prev)}
+                          className="p-2.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/20 text-sky-400 hover:text-white shadow-xl backdrop-blur-md transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center justify-center"
+                          title="Personalizar Foto de Capa"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* AVATAR SOBREPOSTO NA CAPA (ESTILO FACEBOOK) */}
@@ -1663,6 +1756,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                       setCoverPhotoURL(url);
                                       await saveProfileFields({ coverPhotoURL: url });
                                       if (showToast) showToast('Foto de capa atualizada com sucesso!', 'success');
+                                      setIsRepositioning(true);
                                       setShowCoverPicker(false);
                                     } catch (err) {
                                       console.error(err);
@@ -1675,7 +1769,22 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                               />
                             </label>
 
-                            {/* Ação 2: Remover Capa */}
+                            {/* Ação 2: Reposicionar Capa */}
+                            {coverPhotoURL && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsRepositioning(true);
+                                  setShowCoverPicker(false);
+                                }}
+                                className="py-2.5 px-3.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                              >
+                                <ArrowsVertical size={15} />
+                                <span>Reposicionar Enquadramento</span>
+                              </button>
+                            )}
+
+                            {/* Ação 3: Remover Capa */}
                             <button
                               type="button"
                               onClick={async () => {
@@ -1688,7 +1797,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                 !coverPhotoURL
                                   ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
                                   : 'bg-white/5 hover:bg-white/10 border-white/15 text-slate-300'
-                              }`}
+                              } ${coverPhotoURL ? 'sm:col-span-2' : ''}`}
                             >
                               <Trash2 size={15} />
                               <span>Usar Sem Capa (Gradiente Limpo)</span>

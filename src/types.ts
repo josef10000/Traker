@@ -149,6 +149,7 @@ export interface UserProfile {
   soundVolume?: number; // 0 a 100
   dealSoundEffect?: 'coin' | 'laser' | 'marimba' | 'silent';
   coverPhotoURL?: string;
+  coverPosition?: string;
   // Metas Pessoais Motivacionais do Colaborador & Preferências de Widgets
   personalMonthlyGoal?: number;
   personalDailyGoal?: number;
