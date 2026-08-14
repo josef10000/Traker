@@ -16,10 +16,6 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    optimizeDeps: {
-      noDiscovery: true,
-      include: [],
-    },
     build: {
       target: 'esnext',
       rollupOptions: {
