@@ -182,9 +182,6 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   };
 
   const [recentCovers, setRecentCovers] = useState<string[]>(profile.recentCovers || []);
-  const [customStatus, setCustomStatus] = useState<{ emoji: string; text: string; state?: 'available' | 'busy' | 'focus' | 'break' | 'meeting' }>(
-    profile.customStatus || { emoji: '🟢', text: 'Em Atendimento', state: 'available' }
-  );
 
   const addRecentCover = (url: string) => {
     if (!url) return;
@@ -1854,14 +1851,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </div>
 
                       <div className="pb-1 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-xl font-black text-white">{displayName || profile.email}</h4>
-                          {/* SELO DE STATUS DINÂMICO DE TRABALHO */}
-                          <span className="px-2.5 py-0.5 rounded-full bg-slate-950/80 border border-white/10 text-[10px] font-extrabold text-emerald-400 shadow-md flex items-center gap-1 backdrop-blur-sm">
-                            <span>{customStatus.emoji}</span>
-                            <span>{customStatus.text}</span>
-                          </span>
-                        </div>
+                        <h4 className="text-xl font-black text-white">{displayName || profile.email}</h4>
                         <p className="text-xs text-slate-400 font-medium capitalize">{profile.role}</p>
                       </div>
                     </div>
