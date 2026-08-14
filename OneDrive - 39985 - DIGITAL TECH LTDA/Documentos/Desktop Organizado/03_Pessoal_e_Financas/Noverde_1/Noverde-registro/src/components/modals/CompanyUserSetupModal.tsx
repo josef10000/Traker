@@ -20,7 +20,7 @@ import {
 } from '@phosphor-icons/react';
 import { UserRole } from '../../types';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { generateSecureToken } from '../../lib/teams';
 import { sendInviteEmail } from '../../services/emailService';
 
