@@ -3987,6 +3987,10 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
             >
               Concluído
             </button>
+          </div>
+        </div>
+      )}
+
       {/* DIÁLOGO DE CONFIRMAÇÃO */}
       <CustomConfirm 
         isOpen={confirmDialog.isOpen}
@@ -3998,4 +4002,4 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       />
     </div>
   );
-}
+};

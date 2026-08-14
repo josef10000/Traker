@@ -21,6 +21,7 @@ import {
   Bell,
   WifiSlash,
   ChatCircleDots,
+  Trophy,
   Sliders
 } from '@phosphor-icons/react';
 import { UserProfile, Team, AppNotification } from '../../types';
