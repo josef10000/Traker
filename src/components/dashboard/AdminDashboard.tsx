@@ -31,7 +31,6 @@ import {
   ShieldCheck,
   ChartLineUp,
   CaretDown,
-  Fingerprint,
   CheckCircle,
   Envelope,
   EnvelopeSimple
@@ -41,8 +40,6 @@ import { useTheme } from '../../hooks/useTheme';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
 import { regenerateManagerInviteToken, generateSecureToken } from '../../lib/teams';
-import { registerWindowsHello, generateBackupCodes } from '../../lib/webAuthnService';
-import { sendBackupCodesEmail, EmailPayload } from '../../lib/emailService';
 import { sandboxService } from '../../lib/sandboxService';
 import { 
   collection, 
@@ -130,96 +127,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
   // Modal de Teste de E-mail do Resend (SuperAdmin)
   const [isEmailTesterOpen, setIsEmailTesterOpen] = useState(false);
-
-  // Estados para 2FA com Windows Hello (SuperAdmin)
-  const [adminProfile, setAdminProfile] = useState<UserProfile>(profile);
-  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
-  const [isEnrollingHello, setIsEnrollingHello] = useState(false);
-  const [sandboxEmailPreview, setSandboxEmailPreview] = useState<EmailPayload | null>(null);
-
-  useEffect(() => {
-    setAdminProfile(profile);
-  }, [profile]);
-
-  const handleEnableWindowsHello = async () => {
-    setIsEnrollingHello(true);
-    try {
-      const isSandbox = adminProfile.organizationId === 'sandbox-test';
-      const cred = await registerWindowsHello(adminProfile.uid, adminProfile.email, adminProfile.displayName || adminProfile.email, isSandbox);
-      const backupCodes = generateBackupCodes(5);
-
-      const emailResult = await sendBackupCodesEmail(adminProfile.email, adminProfile.displayName || adminProfile.email, backupCodes, isSandbox);
-
-      const existingCreds = adminProfile.webAuthnCredentials || [];
-      const updatedCreds = [...existingCreds.filter(c => c.id !== cred.id), cred];
-
-      const patchData = {
-        isWebAuthnEnabled: true,
-        webAuthnCredentials: updatedCreds,
-        backupCodes
-      };
-
-      const targetUid = adminProfile.uid || auth.currentUser?.uid;
-      if (targetUid) {
-        if (isSandbox) {
-          sandboxService.setProfile({
-            ...adminProfile,
-            ...patchData
-          });
-        } else {
-          await setDoc(doc(db, 'users', targetUid), patchData, { merge: true });
-        }
-      }
-
-      const updated = { ...adminProfile, ...patchData };
-      setAdminProfile(updated);
-      onUpdateProfile?.(patchData);
-      try {
-        localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
-      } catch {}
-
-      setSandboxEmailPreview(emailResult);
-      showToast('Windows Hello 2FA ativado com sucesso! Códigos gerados e enviados por e-mail.', 'success');
-    } catch (err: any) {
-      console.error(err);
-      showToast(err.message || 'Erro ao ativar o Windows Hello.', 'error');
-    } finally {
-      setIsEnrollingHello(false);
-    }
-  };
-
-  const handleDisableWindowsHello = async () => {
-    try {
-      const patchData = {
-        isWebAuthnEnabled: false,
-        webAuthnCredentials: [],
-        backupCodes: []
-      };
-
-      if (adminProfile.uid) {
-        if (adminProfile.organizationId === 'sandbox-test') {
-          sandboxService.setProfile({
-            ...adminProfile,
-            ...patchData
-          });
-        } else {
-          await setDoc(doc(db, 'users', adminProfile.uid), patchData, { merge: true });
-        }
-      }
-
-      const updated = { ...adminProfile, ...patchData };
-      setAdminProfile(updated);
-      onUpdateProfile?.(patchData);
-      try {
-        localStorage.setItem('tracker_cached_profile', JSON.stringify(updated));
-      } catch {}
-
-      showToast('Windows Hello 2FA desativado.', 'info');
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao desativar 2FA.', 'error');
-    }
-  };
 
   const handleOpenUserSetup = (org: Organization) => {
     setSetupOrg({ id: org.id, name: org.name, maxUsers: org.maxUsers });
@@ -473,24 +380,35 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       const updateData: Partial<Organization> = {
         plan: editPlan,
         status: editStatus,
-        maxUsers: Number(editMaxUsers),
-        maxTeams: Number(editMaxTeams),
-        planExpiresAt: editExpiresAt || undefined,
-        crmOrgId: editCrmOrgId.trim() || undefined,
-        crmClientId: editCrmClientId.trim() || undefined,
-        crmPublicToken: editCrmPublicToken.trim() || undefined
+        maxUsers: Number(editMaxUsers) || 1,
+        maxTeams: Number(editMaxTeams) || 1,
       };
+
+      if (editExpiresAt) {
+        updateData.planExpiresAt = editExpiresAt;
+      }
+      if (editCrmOrgId.trim()) {
+        updateData.crmOrgId = editCrmOrgId.trim();
+      }
+      if (editCrmClientId.trim()) {
+        updateData.crmClientId = editCrmClientId.trim();
+      }
+      if (editCrmPublicToken.trim()) {
+        updateData.crmPublicToken = editCrmPublicToken.trim();
+      }
+
       await updateDoc(orgRef, updateData);
+
+      showToast('Empresa atualizada com sucesso!', 'success');
+      setSelectedOrg(null);
       
-      await logAudit('ACCEPT_TERMS', { 
+      // Log de auditoria fire-and-forget (não bloqueia a UI)
+      logAudit('ACCEPT_TERMS', { 
         action: 'UPDATE_ORG_PLAN', 
         targetOrgId: selectedOrg.id,
         plan: editPlan,
         status: editStatus
-      }, profile.displayName, profile.organizationId);
-
-      showToast('Empresa atualizada com sucesso!', 'success');
-      setSelectedOrg(null);
+      }, profile.displayName, profile.organizationId).catch(() => {});
     } catch (error) {
       console.error(error);
       showToast('Erro ao atualizar empresa.', 'error');
@@ -528,36 +446,42 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       const managerToken = `MGR-${generateSecureToken(6).toUpperCase()}`;
       const supervisorToken = `SUP-${generateSecureToken(6).toUpperCase()}`;
       const now = new Date().toISOString();
+      const savedName = newOrgName.trim();
+      const savedPlan = newOrgPlan;
 
       const newOrg: Organization = {
         id: orgId,
-        name: newOrgName.trim(),
-        cnpj: newOrgCnpj.trim() || undefined,
+        name: savedName,
         status: 'pending',
-        plan: newOrgPlan,
-        maxUsers: Number(newOrgMaxUsers),
-        maxTeams: Number(newOrgMaxTeams),
+        plan: savedPlan,
+        maxUsers: Number(newOrgMaxUsers) || 5,
+        maxTeams: Number(newOrgMaxTeams) || 1,
         managerInviteToken: managerToken,
         supervisorInviteToken: supervisorToken,
         createdAt: now
       };
 
-      await setDoc(doc(db, 'organizations', orgId), newOrg);
-      
-      await logAudit('CREATE_ORGANIZATION', {
-        orgId,
-        name: newOrgName,
-        plan: newOrgPlan
-      }, profile.displayName, profile.organizationId);
+      if (newOrgCnpj.trim()) {
+        newOrg.cnpj = newOrgCnpj.trim();
+      }
 
+      await setDoc(doc(db, 'organizations', orgId), newOrg);
+
+      // Fechar modal e limpar estado imediatamente após sucesso do Firestore
       showToast('Empresa criada com sucesso!', 'success');
-      
       setNewOrgName('');
       setNewOrgCnpj('');
       setNewOrgPlan('free');
       setNewOrgMaxUsers(5);
       setNewOrgMaxTeams(1);
       setIsCreateOrgOpen(false);
+      
+      // Log de auditoria fire-and-forget (não bloqueia a UI)
+      logAudit('CREATE_ORGANIZATION', {
+        orgId,
+        name: savedName,
+        plan: savedPlan
+      }, profile.displayName, profile.organizationId).catch(() => {});
     } catch (error) {
       console.error(error);
       showToast('Erro ao criar empresa.', 'error');
@@ -580,13 +504,23 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const handleDeleteOrganization = async (orgId: string, orgName: string) => {
     setIsDeleting(orgId);
     try {
-      const deleteInBatches = async (collectionName: string, progressMessage: string) => {
-        setDeletingProgress(progressMessage);
-        const ref = collection(db, collectionName);
-        const q = query(ref, where('organizationId', '==', orgId));
-        const snap = await getDocs(q);
-        
-        if (snap.empty) return;
+      // Fase 1: Buscar todas as coleções em paralelo para máxima velocidade
+      setDeletingProgress('Localizando dados da empresa...');
+      const collectionsToDelete = ['agreements', 'teams', 'reconciliations', 'settings', 'audit_logs', 'users', 'invites'];
+      const snapshots = await Promise.all(
+        collectionsToDelete.map(colName => {
+          const ref = collection(db, colName);
+          const q = query(ref, where('organizationId', '==', orgId));
+          return getDocs(q).then(snap => ({ colName, snap }));
+        })
+      );
+
+      // Fase 2: Deletar os documentos encontrados em batches
+      const totalDocs = snapshots.reduce((sum, s) => sum + s.snap.size, 0);
+      let deletedDocs = 0;
+
+      for (const { colName, snap } of snapshots) {
+        if (snap.empty) continue;
         
         const docs = snap.docs;
         const chunkSize = 400;
@@ -595,16 +529,12 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           const batch = writeBatch(db);
           chunk.forEach(d => batch.delete(d.ref));
           await batch.commit();
+          deletedDocs += chunk.length;
+          setDeletingProgress(`Excluindo dados (${deletedDocs}/${totalDocs})...`);
         }
-      };
+      }
 
-      await deleteInBatches('agreements', 'Apagando acordos da empresa...');
-      await deleteInBatches('teams', 'Apagando equipes...');
-      await deleteInBatches('reconciliations', 'Apagando conciliações...');
-      await deleteInBatches('settings', 'Apagando configurações...');
-      await deleteInBatches('audit_logs', 'Apagando logs de auditoria...');
-      await deleteInBatches('users', 'Apagando perfis de usuários...');
-
+      // Fase 3: Excluir o documento da organização
       setDeletingProgress('Finalizando exclusão da empresa...');
       await deleteDoc(doc(db, 'organizations', orgId));
 
@@ -1124,11 +1054,23 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrganization} className="space-y-4 text-xs">
+            <form 
+              onSubmit={handleCreateOrganization} 
+              autoComplete="off" 
+              data-1p-ignore="true" 
+              data-lpignore="true" 
+              data-bwignore="true" 
+              className="space-y-4 text-xs"
+            >
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nome da Empresa</label>
                 <input 
                   type="text" 
+                  name="org_company_name"
+                  autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
                   value={newOrgName}
                   onChange={(e) => setNewOrgName(e.target.value)}
                   placeholder="Ex: Empresa Exemplo Ltda"
@@ -1141,6 +1083,11 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CNPJ (Opcional)</label>
                 <input 
                   type="text" 
+                  name="org_tax_id"
+                  autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
                   value={newOrgCnpj}
                   onChange={(e) => setNewOrgCnpj(e.target.value)}
                   placeholder="Ex: 00.000.000/0001-00"
@@ -1152,6 +1099,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Plano</label>
                   <select 
+                    name="org_plan_selection"
                     value={newOrgPlan}
                     onChange={(e) => handlePlanChange(e.target.value as Organization['plan'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1167,8 +1115,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Usuários</label>
                   <input 
                     type="number" 
+                    name="org_max_user_count"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={newOrgMaxUsers}
-                    onChange={(e) => setNewOrgMaxUsers(Number(e.target.value))}
+                    onChange={(e) => setNewOrgMaxUsers(e.target.value === '' ? '' : Number(e.target.value))}
                     min={1}
                     required
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1179,8 +1132,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Equipes</label>
                   <input 
                     type="number" 
+                    name="org_max_team_count"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={newOrgMaxTeams}
-                    onChange={(e) => setNewOrgMaxTeams(Number(e.target.value))}
+                    onChange={(e) => setNewOrgMaxTeams(e.target.value === '' ? '' : Number(e.target.value))}
                     min={1}
                     required
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1232,11 +1190,19 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               </button>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveLimits(); }} className="space-y-4 text-xs">
+            <form 
+              onSubmit={(e) => { e.preventDefault(); handleSaveLimits(); }} 
+              autoComplete="off" 
+              data-1p-ignore="true" 
+              data-lpignore="true" 
+              data-bwignore="true" 
+              className="space-y-4 text-xs"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Plano</label>
                   <select 
+                    name="edit_org_plan_selection"
                     value={editPlan}
                     onChange={(e) => setEditPlan(e.target.value as Organization['plan'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1251,6 +1217,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Status</label>
                   <select 
+                    name="edit_org_status_selection"
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as Organization['status'])}
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1267,8 +1234,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Usuários</label>
                   <input 
                     type="number" 
+                    name="edit_org_max_users_count"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={editMaxUsers}
-                    onChange={(e) => setEditMaxUsers(Number(e.target.value))}
+                    onChange={(e) => setEditMaxUsers(e.target.value === '' ? '' : Number(e.target.value))}
                     min={1}
                     required
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1279,8 +1251,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Máx. Equipes</label>
                   <input 
                     type="number" 
+                    name="edit_org_max_teams_count"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={editMaxTeams}
-                    onChange={(e) => setEditMaxTeams(Number(e.target.value))}
+                    onChange={(e) => setEditMaxTeams(e.target.value === '' ? '' : Number(e.target.value))}
                     min={1}
                     required
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1292,6 +1269,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Expiração do Plano</label>
                 <input 
                   type="date" 
+                  name="editOrgExpiresAt"
+                  autoComplete="off"
                   value={editExpiresAt ? editExpiresAt.split('T')[0] : ''}
                   onChange={(e) => setEditExpiresAt(e.target.value ? new Date(e.target.value).toISOString() : '')}
                   className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-sky-500 transition-all font-semibold"
@@ -1307,6 +1286,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Org ID</label>
                   <input 
                     type="text" 
+                    name="editOrgCrmOrgId"
+                    autoComplete="off"
                     value={editCrmOrgId}
                     onChange={(e) => setEditCrmOrgId(e.target.value)}
                     placeholder="Ex: 00D8a0000021xyz"
@@ -1319,6 +1300,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Client ID</label>
                     <input 
                       type="text" 
+                      name="editOrgCrmClientId"
+                      autoComplete="off"
                       value={editCrmClientId}
                       onChange={(e) => setEditCrmClientId(e.target.value)}
                       placeholder="Identificador do cliente"
@@ -1330,6 +1313,8 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Public Token</label>
                     <input 
                       type="password" 
+                      name="editOrgCrmPublicToken"
+                      autoComplete="off"
                       value={editCrmPublicToken}
                       onChange={(e) => setEditCrmPublicToken(e.target.value)}
                       placeholder="Token de acesso público"

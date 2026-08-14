@@ -517,7 +517,7 @@ export function AppContent() {
         </AnimatePresence>
         <Routes>
           <Route path="/login" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
-          <Route path="/register" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
+          <Route path="/register" element={<AcceptInvitePage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
           <Route path="/accept-invite" element={<AcceptInvitePage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
           <Route path="/status" element={<StatusPage />} />
           <Route path="/demo" element={
@@ -525,7 +525,11 @@ export function AppContent() {
               onStartDemo={handleStartDemo} 
             />
           } />
-          <Route path="*" element={<Navigate to={`/login${window.location.search}`} replace />} />
+          <Route path="*" element={
+            (window.location.search.includes('invite=') || window.location.search.includes('token='))
+              ? <Navigate to={`/accept-invite${window.location.search}`} replace />
+              : <Navigate to={`/login${window.location.search}`} replace />
+          } />
         </Routes>
       </>
     );

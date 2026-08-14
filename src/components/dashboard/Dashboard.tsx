@@ -339,22 +339,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedTargetTeamForTransfer, setSelectedTargetTeamForTransfer] = useState<string>('');
 
   // Carrega supervisores da organização (para gerente e coordenador)
-  // Lembrete de Engajamento do Windows Hello no Sino após 1 Hora de Uso
-  useEffect(() => {
-    if (!profile?.uid || profile?.isWebAuthnEnabled) return;
-
-    const timer = setTimeout(() => {
-      createNotification({
-        userId: profile.uid,
-        title: '🔒 Aumente a Segurança da sua Conta',
-        message: 'Você sabia que pode entrar no Tracker usando a digital ou PIN do seu Windows? Ative o Windows Hello no seu perfil.',
-        type: 'windows_hello_reminder'
-      }, profile.organizationId === 'sandbox-test');
-    }, 3600000);
-
-    return () => clearTimeout(timer);
-  }, [profile?.uid, profile?.isWebAuthnEnabled, profile?.organizationId]);
-
   useEffect(() => {
     if ((profile.role !== 'manager' && profile.role !== 'coordinator') || !profile.organizationId) return;
 
@@ -2599,7 +2583,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             />
           )}
 
-          <main className="max-w-7xl w-full mx-auto px-6 py-8 space-y-8 no-print">
+          <main className="w-full px-6 sm:px-10 py-8 space-y-8 no-print">
             {profile.organizationId === 'sandbox-test' && (
               <DemoFeatureBanner 
                 activeTab={dashboardTab}

@@ -34,7 +34,7 @@ import { db, auth } from '../../lib/firebase';
 import { sandboxService } from '../../lib/sandboxService';
 import { markNotificationAsRead } from '../../lib/notifications';
 import { useTabVisibility } from '../../hooks/useTabVisibility';
-import { getCurrentWeather, WeatherData } from '../../lib/weatherService';
+import { getUserLocalWeather, WeatherData } from '../../lib/weatherService';
 
 interface DashboardHeaderProps {
   profile: UserProfile;
@@ -112,7 +112,7 @@ export const DashboardHeader = ({
   const [weather, setWeather] = useState<WeatherData | null>(null);
 
   useEffect(() => {
-    getCurrentWeather(-23.5505, -46.6333, 'São Paulo').then(data => {
+    getUserLocalWeather().then(data => {
       if (data) setWeather(data);
     });
   }, []);
@@ -234,7 +234,7 @@ export const DashboardHeader = ({
     <header className={`sticky top-0 z-50 px-6 py-4 no-print !overflow-visible transition-all duration-300 ${
       theme === 'dark' ? 'bg-[#0f172a] border-b border-white/5 shadow-sm' : 'bg-transparent border-none shadow-none'
     }`} style={{ overflow: 'visible' }}>
-      <div className={`max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 transition-all duration-300 ${
+      <div className={`w-full mx-auto flex flex-col md:flex-row justify-between items-center gap-4 transition-all duration-300 ${
         theme === 'dark' 
           ? '' 
           : 'bg-white border border-slate-100 rounded-2xl p-4 shadow-sm'
@@ -258,14 +258,14 @@ export const DashboardHeader = ({
                 {organizationName || 'Tracker'}
               </h1>
               
-              {/* Widget de Clima e Temperatura ao Vivo (Open-Meteo) */}
+              {/* Widget de Clima e Temperatura ao Vivo com Detecção Local (Open-Meteo) */}
               <div
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-bold shrink-0 shadow-sm backdrop-blur-sm hover:bg-sky-500/20 transition-all cursor-default"
-                title={weather ? `${weather.cityName}: ${weather.description} (${weather.temperature}°C)` : 'Carregando dados meteorológicos...'}
+                title={weather ? `📍 ${weather.cityName}: ${weather.description} (${weather.temperature}°C) • Localização ao vivo` : 'Carregando dados meteorológicos...'}
               >
                 <span className="text-sm">{weather ? weather.icon : '🌡️'}</span>
                 <span>{weather ? `${weather.temperature}°C` : '--°C'}</span>
-                <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">{weather?.cityName || 'SP'}</span>
+                <span className="text-[10px] text-sky-200/80 font-medium hidden sm:inline max-w-[120px] truncate">{weather?.cityName || 'Carapicuíba'}</span>
               </div>
             </div>
             

@@ -52,8 +52,6 @@ import { UserProfile, Team, Organization, Invite, UserRole, TransferRequest, Col
 import { sandboxService } from '../../lib/sandboxService';
 import { getCollaborationNotes } from '../../lib/notes';
 import { createNotification } from '../../lib/notifications';
-import { registerWindowsHello, generateBackupCodes } from '../../lib/webAuthnService';
-import { sendBackupCodesEmail, EmailPayload } from '../../lib/emailService';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomConfirm } from '../ui/CustomConfirm';
 import { Avatar } from '../ui/Avatar';
@@ -320,52 +318,6 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const handleSwitchAvatarType = async (type: 'custom' | 'api') => {
     setAvatarType(type);
     await saveProfileFields({ avatarType: type });
-  };
-
-  const [isEnrollingHello, setIsEnrollingHello] = useState(false);
-  const [sandboxEmailPreview, setSandboxEmailPreview] = useState<EmailPayload | null>(null);
-
-  const handleEnableWindowsHello = async () => {
-    setIsEnrollingHello(true);
-    try {
-      const isSandbox = profile.organizationId === 'sandbox-test';
-      const cred = await registerWindowsHello(profile.uid, profile.email, profile.displayName || profile.email, isSandbox);
-      const backupCodes = generateBackupCodes(5);
-
-      const emailResult = await sendBackupCodesEmail(profile.email, profile.displayName || profile.email, backupCodes, isSandbox);
-
-      const existingCreds = profile.webAuthnCredentials || [];
-      const updatedCreds = [...existingCreds.filter(c => c.id !== cred.id), cred];
-
-      const patchData = {
-        isWebAuthnEnabled: true,
-        webAuthnCredentials: updatedCreds,
-        backupCodes
-      };
-
-      await saveProfileFields(patchData);
-      setSandboxEmailPreview(emailResult);
-      showToast('Windows Hello ativado com sucesso! Códigos de contingência enviados para o seu e-mail.', 'success');
-    } catch (err: any) {
-      console.error(err);
-      showToast(err.message || 'Erro ao ativar o Windows Hello.', 'error');
-    } finally {
-      setIsEnrollingHello(false);
-    }
-  };
-
-  const handleDisableWindowsHello = async () => {
-    try {
-      await saveProfileFields({
-        isWebAuthnEnabled: false,
-        webAuthnCredentials: [],
-        backupCodes: []
-      });
-      showToast('Windows Hello desativado da sua conta.', 'info');
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao desativar Windows Hello.', 'error');
-    }
   };
   
   useEffect(() => {
@@ -4038,47 +3990,8 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           </div>
         </div>
       )}
-      {/* Modal de Simulação de E-mail Enviado no Sandbox */}
-      {sandboxEmailPreview && (
-        <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 text-white text-left">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
-              <span className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-2">
-                <Envelope size={18} />
-                <span>Simulador Sandbox: E-mail Enviado</span>
-              </span>
-              <button onClick={() => setSandboxEmailPreview(null)} className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
 
-            <div className="text-xs text-slate-300 space-y-1 bg-slate-950/80 p-3 rounded-xl border border-white/5">
-              <p><strong>Para:</strong> {sandboxEmailPreview.to}</p>
-              <p><strong>Assunto:</strong> {sandboxEmailPreview.subject}</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 text-center space-y-2 max-h-60 overflow-y-auto">
-              <p className="text-xs text-amber-400 font-bold">🔑 Códigos de Contingência (Emergência):</p>
-              <div className="grid grid-cols-1 gap-1.5 font-mono text-sm font-black text-emerald-400 tracking-wider">
-                {sandboxEmailPreview.backupCodes.map((code, idx) => (
-                  <div key={idx} className="p-2 rounded-lg bg-white/5 border border-white/5">{code}</div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSandboxEmailPreview(null)}
-                className="px-5 py-2.5 rounded-xl bg-sky-500 text-white font-bold text-xs cursor-pointer"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* DIÁLOGO DE CONFIRMAÇÃO */}
       <CustomConfirm 
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
@@ -4089,4 +4002,4 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       />
     </div>
   );
-}
+};

@@ -539,14 +539,16 @@ export interface Invite {
   role: UserRole;
   teamId: string | null;
   organizationId: string;
+  orgName?: string;
   status: 'pending' | 'accepted' | 'expired';
   token: string;
-  invitedBy: string;
+  invitedBy?: string;
   createdAt: string;
-  expiresAt: string;
+  expiresAt?: string;
   monthlyServiceValue?: number; // Valor da prestação PJ mensal
   shiftStartHour?: number;
   shiftEndHour?: number;
+  emailSent?: boolean;
 }
 
 export interface TransferRequest {

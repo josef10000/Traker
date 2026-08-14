@@ -8,6 +8,7 @@ import { useSpotlightShortcut } from './hooks/useSpotlightShortcut';
 import { auth, db } from './lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LoginPage } from './components/auth/LoginPage';
+import { AcceptInvitePage } from './components/auth/AcceptInvitePage';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { ProfileSettings } from './components/profile/ProfileSettings';
@@ -45,8 +46,8 @@ export function AppContent() {
   });
   const [isOrgActive, setIsOrgActive] = useState(true);
   const [loading, setLoading] = useState<boolean>(() => auth.currentUser !== null);
-  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // Atalho de teclado Ctrl+K / Cmd+K via hook isolado
   useSpotlightShortcut(() => setIsSpotlightOpen(prev => !prev));
@@ -516,14 +517,19 @@ export function AppContent() {
         </AnimatePresence>
         <Routes>
           <Route path="/login" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
-          <Route path="/register" element={<LoginPage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
+          <Route path="/register" element={<AcceptInvitePage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
+          <Route path="/accept-invite" element={<AcceptInvitePage onAuthSuccess={() => navigate('/')} showToast={showToast} />} />
           <Route path="/status" element={<StatusPage />} />
           <Route path="/demo" element={
             <DemoPage 
               onStartDemo={handleStartDemo} 
             />
           } />
-          <Route path="*" element={<Navigate to={`/login${window.location.search}`} replace />} />
+          <Route path="*" element={
+            (window.location.search.includes('invite=') || window.location.search.includes('token='))
+              ? <Navigate to={`/accept-invite${window.location.search}`} replace />
+              : <Navigate to={`/login${window.location.search}`} replace />
+          } />
         </Routes>
       </>
     );

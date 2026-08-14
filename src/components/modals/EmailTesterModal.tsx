@@ -24,13 +24,25 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
 
   if (!isOpen) return null;
 
-  const previewInviteUrl = `${window.location.origin}/register?invite=inv-demo-123456`;
+  const previewInviteUrl = `${window.location.origin}/accept-invite?token=inv-demo-123456&email=colaborador@empresa.com&org=${encodeURIComponent(testOrgName)}&role=manager`;
   const previewHtml = generateInviteEmailHtml({
     recipientEmail: testEmail || 'colaborador@empresa.com',
     orgName: testOrgName,
     roleName: testRoleName,
     inviteUrl: previewInviteUrl
   });
+
+  const [customKey, setCustomKey] = useState(() => localStorage.getItem('custom_resend_api_key') || '');
+
+  const handleSaveCustomKey = (key: string) => {
+    setCustomKey(key);
+    if (key.trim()) {
+      localStorage.setItem('custom_resend_api_key', key.trim());
+      showToast('Chave de API do Resend salva com sucesso no navegador!', 'success');
+    } else {
+      localStorage.removeItem('custom_resend_api_key');
+    }
+  };
 
   const handleSendTestEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,13 +97,13 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black flex items-center gap-2">
-                <span>Testador de E-mails Resend (Nativo)</span>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  VITE_RESEND_API_KEY Configurada
+                <span>Testador de E-mails Resend</span>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                  Vercel Serverless Function (/api/send-email)
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Envie um e-mail de teste real nativo ou veja a pré-visualização do template HTML com a logo s-logo.
+                Dispare e-mails de teste reais pelo Resend e valide a entrega do convite corporativo.
               </p>
             </div>
           </div>
@@ -137,6 +149,27 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
         {activeTab === 'send' ? (
           <div className="space-y-5">
             <form onSubmit={handleSendTestEmail} className="space-y-4">
+              <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/20 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black uppercase text-sky-300 block">Chave de API do Resend (Opcional / Atualizar)</label>
+                  <a 
+                    href="https://resend.com/api-keys" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-sky-400 hover:underline font-bold"
+                  >
+                    Obter chave no Resend.com ↗
+                  </a>
+                </div>
+                <input
+                  type="password"
+                  value={customKey}
+                  onChange={(e) => handleSaveCustomKey(e.target.value)}
+                  placeholder="re_123456789... (cole sua chave do Resend aqui se desejar)"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-sky-500 transition-all placeholder:text-slate-600"
+                />
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
                 <div className="sm:col-span-6">
                   <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">E-mail de Destino (Seu E-mail)</label>

@@ -221,18 +221,26 @@ export const Sidebar = ({
                       </motion.span>
                     </div>
 
-                    {/* Tooltip Flutuante Categorizado à Direita */}
-                    <div className="absolute left-full ml-4 opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-50">
-                      <div className="glass-tooltip px-3.5 py-2.5 rounded-2xl min-w-[180px] max-w-[220px] text-left relative flex flex-col">
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="text-[7px] font-black uppercase tracking-wider text-primary px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/20">
+                    {/* Tooltip Flutuante de Alta Definição à Direita */}
+                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 translate-x-[-6px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 ease-out z-[100]">
+                      <div className="glass-tooltip px-3.5 py-2.5 rounded-2xl min-w-[200px] max-w-[260px] text-left relative flex flex-col shadow-2xl border border-white/10 bg-slate-900/95 backdrop-blur-xl">
+                        {/* Mini Seta Lateral */}
+                        <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 bg-slate-900 rotate-45 border-l border-b border-white/10 pointer-events-none" />
+
+                        <div className="flex items-center gap-1.5 mb-1.5 relative z-10">
+                          <span className="text-[7.5px] font-black uppercase tracking-wider text-primary px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/25">
                             {cat.badge}
                           </span>
+                          {isActive && (
+                            <span className="text-[7px] font-bold text-emerald-400 flex items-center gap-0.5">
+                              • Ativo
+                            </span>
+                          )}
                         </div>
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none">
+                        <span className="text-[11px] font-black text-white uppercase tracking-wider leading-snug relative z-10">
                           {item.label}
                         </span>
-                        <span className="text-[9px] text-slate-400 mt-1 font-medium leading-relaxed">
+                        <span className="text-[9.5px] text-slate-300 mt-1 font-normal leading-relaxed relative z-10">
                           {item.description}
                         </span>
                       </div>
@@ -254,10 +262,11 @@ export const Sidebar = ({
           <LogOut size={17} />
           
           {/* Tooltip Sair */}
-          <div className="absolute bottom-2 left-full ml-4 opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-50">
-            <div className="glass-tooltip px-3 py-1.5 rounded-xl min-w-[80px] text-center relative">
-              <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none">
-                Sair
+          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 translate-x-[-6px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 ease-out z-[100]">
+            <div className="glass-tooltip px-3 py-1.5 rounded-xl min-w-[90px] text-center relative border border-rose-500/20 bg-slate-900/95 backdrop-blur-xl shadow-xl">
+              <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-rose-500/20 pointer-events-none" />
+              <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none relative z-10">
+                Sair do App
               </span>
             </div>
           </div>

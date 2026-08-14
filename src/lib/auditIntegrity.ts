@@ -42,17 +42,11 @@ export async function verifyAuditChain(organizationId: string): Promise<Integrit
 
   const corruptedLogs: IntegrityResult['corruptedLogs'] = [];
 
-  let previousHash = '0';
+  let previousHash = 'genesis-block';
   for (const log of logs) {
-    // Recalcular o hash esperado com os mesmos campos usados na criação
-    const payload = JSON.stringify({
-      action: log.action,
-      userId: log.userId,
-      organizationId: log.organizationId,
-      timestamp: log.timestamp,
-      details: log.details,
-      previousHash,
-    });
+    // Recalcular o hash esperado com EXATAMENTE os mesmos campos e formato usados na criação (audit.ts)
+    // Formato: userId|action|timestamp|JSON.stringify(details)|previousHash
+    const payload = `${log.userId}|${log.action}|${log.timestamp}|${JSON.stringify(log.details)}|${previousHash}`;
     const expectedHash = await sha256(payload);
 
     if (log.hash !== expectedHash) {
