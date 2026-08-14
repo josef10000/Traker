@@ -72,6 +72,7 @@ import {
   revokeInvite
 } from '../../lib/teams';
 import { ToastType } from '../ui/Toast';
+import { getNationalHolidays, isNationalHoliday, NationalHoliday } from '../../lib/holidayService';
 
 
 const COVER_STILLS = [
@@ -378,6 +379,13 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
   const [scheduleNotes, setScheduleNotes] = useState<CollaborationNote[]>([]);
   const [scheduleEvents, setScheduleEvents] = useState<CalendarEvent[]>([]);
   const [confirmedPresenciais, setConfirmedPresenciais] = useState<Record<string, boolean>>({});
+  const [nationalHolidays, setNationalHolidays] = useState<NationalHoliday[]>([]);
+
+  useEffect(() => {
+    getNationalHolidays(scheduleDate.getFullYear()).then(data => {
+      setNationalHolidays(data || []);
+    });
+  }, [scheduleDate.getFullYear()]);
 
   useEffect(() => {
     if (activeTab !== 'schedule' || !profile.uid || !profile.organizationId) return;
@@ -1364,10 +1372,10 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           {/* ABA: MINHA ESCALA */}
           {activeTab === 'schedule' && (
             <div className="space-y-6 max-w-3xl animate-fadeIn">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pr-14 sm:pr-16">
                 <div>
                   <h3 className="text-xl font-bold text-white">Minha Escala</h3>
-                  <p className="text-xs text-slate-400 mt-1">Acompanhe suas presenças, atrasos, faltas e avisos da coordenação.</p>
+                  <p className="text-xs text-slate-400 mt-1">Acompanhe suas presenças, avisos da coordenação e feriados nacionais.</p>
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-center">
@@ -1375,6 +1383,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     type="button"
                     onClick={() => setScheduleDate(new Date(scheduleDate.getFullYear(), scheduleDate.getMonth() - 1, 1))}
                     className="p-2 rounded-xl border border-white/5 hover:bg-white/5 text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    title="Mês Anterior"
                   >
                     <CaretLeft size={16} />
                   </button>
@@ -1385,6 +1394,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     type="button"
                     onClick={() => setScheduleDate(new Date(scheduleDate.getFullYear(), scheduleDate.getMonth() + 1, 1))}
                     className="p-2 rounded-xl border border-white/5 hover:bg-white/5 text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    title="Próximo Mês"
                   >
                     <CaretRight size={16} />
                   </button>
@@ -1422,6 +1432,9 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       const monthStr = String(m + 1).padStart(2, '0');
                       const dateStr = `${y}-${monthStr}-${dayStr}`;
                       const targetDate = new Date(dateStr);
+
+                      // Buscar Feriado Nacional (BrasilAPI)
+                      const holiday = isNationalHoliday(dateStr, nationalHolidays);
 
                       // Buscar presenças
                       const dayNote = scheduleNotes.find(note => {
@@ -1487,27 +1500,42 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                                         : 'bg-slate-950/40 border-white/5'
                           }`}
                         >
-                          {/* Número do Dia */}
-                          <span className={`text-xs font-bold ${
-                            status === 'present'
-                              ? 'text-emerald-400'
-                              : status === 'late'
-                                ? 'text-amber-400'
-                                : status === 'absent'
-                                  ? 'text-rose-400'
-                                  : status === 'early_departure'
-                                    ? 'text-purple-400'
-                                    : status === 'day_off'
-                                      ? 'text-slate-400'
-                                      : status === 'vacation'
-                                        ? 'text-blue-400'
-                                        : 'text-slate-400'
-                          }`}>
-                            {dayNum}
-                          </span>
+                          {/* Número do Dia e Feriado */}
+                          <div className="flex items-center justify-between w-full">
+                            <span className={`text-xs font-bold ${
+                              status === 'present'
+                                ? 'text-emerald-400'
+                                : status === 'late'
+                                  ? 'text-amber-400'
+                                  : status === 'absent'
+                                    ? 'text-rose-400'
+                                    : status === 'early_departure'
+                                      ? 'text-purple-400'
+                                      : status === 'day_off'
+                                        ? 'text-slate-400'
+                                        : status === 'vacation'
+                                          ? 'text-blue-400'
+                                          : 'text-slate-400'
+                            }`}>
+                              {dayNum}
+                            </span>
+                            {holiday && (
+                              <span className="text-[9px]" title={`Feriado: ${holiday.name}`}>🇧🇷</span>
+                            )}
+                          </div>
+
+                          {/* Indicador de Feriado Nacional */}
+                          {holiday && (
+                            <span 
+                              className="text-[7px] font-black uppercase tracking-wider px-1 py-0.5 rounded-sm bg-amber-500/20 text-amber-300 border border-amber-500/30 truncate w-full text-center"
+                              title={`🇧🇷 Feriado Nacional: ${holiday.name}`}
+                            >
+                              {holiday.name}
+                            </span>
+                          )}
 
                           {/* Indicador de Tipo de Evento / Presencial */}
-                          {hasEvent && (
+                          {hasEvent && !holiday && (
                             <span className="text-[7px] font-black uppercase tracking-wider px-1 py-0.5 rounded-sm bg-sky-500/20 text-sky-400 border border-sky-500/20 truncate w-full text-center">
                               {dayEvents[0].title.split(' ').slice(1).join(' ') || dayEvents[0].title}
                             </span>
@@ -1556,8 +1584,14 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                           )}
 
                           {/* Hover Tooltip */}
-                          {(dayNote || hasEvent || status === 'present') && (
+                          {(dayNote || hasEvent || status === 'present' || holiday) && (
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-30 p-2.5 rounded-xl border border-white/10 bg-slate-950 text-slate-300 text-[9px] leading-relaxed shadow-xl w-44 pointer-events-none transition-all">
+                              {holiday && (
+                                <div className="mb-1 pb-1 border-b border-white/10">
+                                  <span className="font-bold text-amber-400 block">🇧🇷 Feriado Nacional:</span>
+                                  <span className="text-white block font-medium">{holiday.name}</span>
+                                </div>
+                              )}
                               {hasEvent && (
                                 <div className="mb-1">
                                   <span className="font-bold text-sky-400 block">📅 Aviso:</span>
@@ -1630,13 +1664,17 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                     <strong className="text-blue-400">Férias</strong>
                   </span>
                   <span className="flex items-center gap-1.5">
+                    <span className="px-1.5 py-0.5 rounded-sm bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[7px] font-black inline-block uppercase leading-none">🇧🇷 Feriado</span>
+                    Feriado Nacional
+                  </span>
+                  <span className="flex items-center gap-1.5">
                     <span className="px-1.5 py-0.5 rounded-sm bg-sky-500/20 text-sky-400 border border-sky-500/20 text-[7px] font-black inline-block uppercase leading-none">Presencial</span>
                     Aviso da Coordenação
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Info size={12} className="text-slate-500" />
-                  <span>Passe o mouse por cima das marcações para ver detalhes de atrasos ou faltas.</span>
+                  <span>Passe o mouse por cima das marcações para ver detalhes de atrasos, faltas ou feriados.</span>
                 </div>
               </div>
             </div>
