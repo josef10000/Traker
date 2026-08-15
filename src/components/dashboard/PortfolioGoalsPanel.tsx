@@ -24,6 +24,7 @@ import { sandboxService } from '../../lib/sandboxService';
 import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { GoalCampaignCard } from './GoalCampaignCard';
 import { GoalCampaignModal } from '../modals/GoalCampaignModal';
+import { PublicShareConfigModal } from '../modals/PublicShareConfigModal';
 import { GoalCampaign } from '../../types';
 import { Trophy, Plus } from '@phosphor-icons/react';
 
@@ -64,6 +65,10 @@ export const PortfolioGoalsPanel = ({
 
   // Estados do Módulo de Campanhas & Metas Individuais (PDIs)
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Permissão de Liderança para Gerar Link Público Modular
+  const canSharePublicLink = ['super_admin', 'manager', 'coordinator', 'supervisor'].includes(profile.role);
   const [campaigns, setCampaigns] = useState<GoalCampaign[]>([
     {
       id: 'camp_1',
@@ -487,13 +492,15 @@ export const PortfolioGoalsPanel = ({
               <FileSpreadsheet size={16} className="text-emerald-400" />
               <span>Exportar Excel</span>
             </button>
-            <button 
-              onClick={handleCopyPublicLink}
-              className="px-4 py-2.5 bg-sky-500/10 border border-sky-500/20 hover:bg-sky-500/20 text-sky-400 font-bold rounded-xl transition-all flex items-center gap-2 text-xs active:scale-95 shadow-lg cursor-pointer"
-            >
-              <Link size={16} />
-              <span>Link Público</span>
-            </button>
+            {canSharePublicLink && (
+              <button 
+                onClick={() => setIsShareModalOpen(true)}
+                className="px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-xl transition-all flex items-center gap-2 text-xs active:scale-95 shadow-lg cursor-pointer"
+              >
+                <Link size={16} />
+                <span>🔗 Gerar Link Público</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -516,6 +523,19 @@ export const PortfolioGoalsPanel = ({
         operators={operators}
         organizationId={profile.organizationId || ''}
       />
+
+      {/* MODAL CONFIGURADOR MODULAR DE LINK PÚBLICO */}
+      {canSharePublicLink && (
+        <PublicShareConfigModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          orgId={profile.organizationId || 'sandbox-test'}
+          orgName={profile.organizationName || 'Empresa'}
+          teams={managedTeamsData || []}
+          userProfile={profile}
+          showToast={showToast}
+        />
+      )}
 
       {/* CONTEÚDO DA SUB-ABA MATRIZ DE OFENSORES & PROMOTORES */}
       {portfolioSubTab === 'ofensores' && (

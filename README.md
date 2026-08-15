@@ -25,6 +25,7 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **⏱️ Jornada Hora a Hora** | Cockpit de acompanhamento de produção em tempo real com **Banco de Pausas Flexível de 72 min/dia**. |
 | **🚨 Risco em Vencimento no Dia** | Painel estritamente exclusivo para o cargo de **Supervisor** em carrossel horizontal navegável, ordenação por maior valor, operador destacado e cópia rápida em 1-clique (CPF, Nome e Mensagens). |
 | **📜 Prontuário 360° por CPF** | Histórico cronológico completo do cliente por CPF com registro de acordos passados, operadores e mural de anotações internas. |
+| **🔗 Link Público Modular** | Gerador interativo de relatórios públicos com **switches de bolinha verde**, presets rápidos (TV, Diretoria, Escala), módulos de Presença/Absenteísmo, Pacing, Pódio, Ranking, Ocultação de R$, Modo Sigiloso e PIN de 4 dígitos. |
 | **📑 Relatório Executivo em PDF** | Emissão em 1-clique de demonstrativo consolidado mensal com KPIs, taxas de liquidação, ticket médio e ranking operacional em layout A4 de alta fidelidade. |
 | **✨ Badges Semânticos & Shimmer Skeletons** | Badges dinâmicos com micro-animações de pulso esmeralda/âmbar e carregamento estruturado com efeito shimmer gradiente. |
 | **📁 Retenção R2 de Comprovantes** | Central de anexo de comprovantes bancários em nuvem R2 (retenção 24h na Sandbox e 1 ano em Produção). |
@@ -74,6 +75,13 @@ graph TD
 3. **Quadrante QA vs. Performance**: Cruzamento de nota de qualidade com retorno financeiro (ROI do treinamento).
 4. **Maturação & Alerta Preditivo**: Forecast N+1 com curva de liquidez e colchão de pagamentos parcelados (MRR).
 5. **Análise de Descontos**: Efetividade de pagamento e taxa de quebra em acordos com vs. sem desconto.
+
+### 🔗 Relatórios Públicos Modulares & Segurança Adaptativa
+- **Configurador Visual Interativo**: Modal com interruptores de **bolinha verde brilhante** para ativar ou desativar blocos em tempo real.
+- **Presets Rápidos em 1-Clique**: Perfis pré-definidos para *TV da Operação*, *Diretoria & Clientes* e *Escala & Presença*.
+- **Módulos Disponíveis**: Presença & Absenteísmo PJ, Ritmo Diário (Pacing & Run-rate), Picos de Produção (Hora a Hora), KPIs Globais, Pódio dos Campeões (Top 3), Ranking Geral (Leaderboard), Taxas de Liquidação, Ticket Médio e Distribuição por Carteiras.
+- **Privacidade & Compliance**: Ocultação seletiva de valores monetários brutos (Modo Percentual relativo), Modo Sigiloso (anonimização com Analista #1, #2...) e proteção com PIN numérico de 4 dígitos.
+- **Governança RBAC**: Recurso acessível exclusivamente por **Super Admins**, **Gerentes**, **Coordenadores** e **Supervisores** (com escopo restrito ao seu respectivo time).
 
 ---
 
