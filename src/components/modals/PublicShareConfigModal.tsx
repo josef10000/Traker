@@ -11,13 +11,13 @@ import {
   ShieldCheck, 
   Lock, 
   Users, 
-  BuildingOffice, 
-  Calendar,
-  X,
-  DeviceTv,
-  Briefcase,
-  UserList,
-  CheckSquareOffset
+  Buildings, 
+  Calendar, 
+  X, 
+  TelevisionSimple, 
+  Briefcase, 
+  UserList, 
+  CheckSquareOffset 
 } from '@phosphor-icons/react';
 import { Team, UserProfile } from '../../types';
 
@@ -395,7 +395,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
                 className="p-3 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 hover:border-emerald-500/40 text-left transition-all group cursor-pointer"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <DeviceTv size={16} className="text-sky-400 group-hover:scale-110 transition-transform" />
+                  <TelevisionSimple size={16} className="text-sky-400 group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-black text-white">TV da Operação</span>
                 </div>
                 <p className="text-[10px] text-slate-400">KPIs, Pódio, Ranking, Pacing e Picos</p>

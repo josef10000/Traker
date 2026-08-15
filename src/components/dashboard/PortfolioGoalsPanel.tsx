@@ -530,7 +530,7 @@ export const PortfolioGoalsPanel = ({
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
           orgId={profile.organizationId || 'sandbox-test'}
-          orgName={profile.organizationName || 'Empresa'}
+          orgName={(profile as any).organizationName || 'Empresa'}
           teams={managedTeamsData || []}
           userProfile={profile}
           showToast={showToast}
