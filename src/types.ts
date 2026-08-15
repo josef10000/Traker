@@ -116,6 +116,8 @@ export interface UserProfile {
   teamId?: string;
   organizationId?: string; // Tenant ID no SaaS
   managedTeams?: string[]; // Para supervisores que gerenciam múltiplos times
+  managedProducts?: string[]; // Para gerentes/coordenadores que gerenciam múltiplos produtos
+  product?: string;        // Produto primário vinculado
   jobTitle?: string;
   theme?: 'cyan' | 'obsidian' | 'emerald' | 'amber' | 'slate' | 'dark' | 'sky' | 'purple';
   customCursorStyle?: 'default' | 'cyan_enterprise' | 'precision_ring' | 'ambient_glow';
@@ -200,13 +202,14 @@ export interface Team {
   id: string;
   name: string;
   supervisorId: string | null;
+  managerId?: string | null;
+  product?: string;              // Carteira / Produto da equipe (ex: Consignado, Cartões, Auto)
   inviteToken: string;
   inviteTokenExpiresAt?: string; // Expiração do convite (LGPD/Segurança)
   organizationId: string;        // Vínculo com a empresa
   monthlyGoal?: number;
   effectivenessGoal?: number;
   supervisorInviteToken?: string | null;
-  managerId?: string | null;
   createdAt: string;
 }
 

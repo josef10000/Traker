@@ -17,7 +17,11 @@ import {
   TelevisionSimple, 
   Briefcase, 
   UserList, 
-  CheckSquareOffset 
+  QrCode,
+  TrendUp,
+  Tag,
+  UserCheck,
+  DownloadSimple
 } from '@phosphor-icons/react';
 import { Team, UserProfile } from '../../types';
 
@@ -27,6 +31,8 @@ interface PublicShareConfigModalProps {
   orgId: string;
   orgName?: string;
   teams: Team[];
+  managers?: UserProfile[];
+  supervisors?: UserProfile[];
   userProfile: UserProfile;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
@@ -69,6 +75,13 @@ const MODULE_OPTIONS: ModuleOption[] = [
     label: 'KPIs Globais de Recuperação',
     description: 'Meta Total, Faturamento Realizado R$, % Atingimento e Projeção',
     icon: '📊',
+    category: 'financial'
+  },
+  {
+    id: 'mom',
+    label: 'Comparativo vs. Mês Anterior (MoM)',
+    description: 'Indicadores percentuais de crescimento vs. fechamento anterior',
+    icon: '📈',
     category: 'financial'
   },
   {
@@ -129,15 +142,23 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
   onClose,
   orgId,
   orgName = 'Empresa',
-  teams,
+  teams = [],
+  managers = [],
+  supervisors = [],
   userProfile,
   showToast
 }) => {
   const isSupervisor = userProfile.role === 'supervisor';
-  const supervisorTeamId = userProfile.managedTeams?.[0] || userProfile.teamId || 'all';
+  const isManager = userProfile.role === 'manager';
+  const isSuperAdminOrCoord = userProfile.role === 'super_admin' || userProfile.role === 'coordinator';
 
-  // Estados de Configuração
-  const [selectedTeamId, setSelectedTeamId] = useState<string>(isSupervisor ? supervisorTeamId : 'all');
+  // 1. Estados da Árvore Hierárquica em Cascata
+  const [selectedProduct, setSelectedProduct] = useState<string>('all');
+  const [selectedManagerId, setSelectedManagerId] = useState<string>('all');
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>(isSupervisor ? userProfile.uid : 'all');
+  const [selectedTeamId, setSelectedTeamId] = useState<string>(isSupervisor ? (userProfile.managedTeams?.[0] || userProfile.teamId || 'all') : 'all');
+  const [customReportTitle, setCustomReportTitle] = useState<string>('');
+
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
@@ -147,6 +168,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
   // Módulos Ativos (Set de IDs)
   const [activeModules, setActiveModules] = useState<Record<string, boolean>>({
     kpis: true,
+    mom: true,
     attendance: false,
     pacing: true,
     ranking: true,
@@ -166,7 +188,69 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
   const [requirePin, setRequirePin] = useState<boolean>(false);
   const [pinCode, setPinCode] = useState<string>('');
 
+  // Controle de QR Code Modal
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+
+  // Lista de Produtos Disponíveis
+  const availableProducts = useMemo(() => {
+    const set = new Set<string>();
+    teams.forEach(t => {
+      const prod = t.product || (t as any).portfolio;
+      if (prod && typeof prod === 'string' && prod.trim()) {
+        set.add(prod.trim());
+      }
+    });
+    if (isManager && userProfile.managedProducts && userProfile.managedProducts.length > 0) {
+      return userProfile.managedProducts;
+    }
+    const list = Array.from(set).sort();
+    return list.length > 0 ? list : ['Consignado', 'Cartões', 'Veículos', 'Varejo'];
+  }, [teams, isManager, userProfile]);
+
+  // Gerentes Filtrados por Produto
+  const filteredManagers = useMemo(() => {
+    if (!isSuperAdminOrCoord) return [];
+    if (selectedProduct === 'all') return managers;
+    return managers.filter(m => m.managedProducts?.includes(selectedProduct) || m.product === selectedProduct);
+  }, [isSuperAdminOrCoord, selectedProduct, managers]);
+
+  // Supervisores Filtrados por Produto e Gerente
+  const filteredSupervisors = useMemo(() => {
+    if (isSupervisor) return supervisors.filter(s => s.uid === userProfile.uid);
+    let sups = supervisors;
+    if (isManager) {
+      sups = sups.filter(s => s.managerId === userProfile.uid || !s.managerId);
+    } else if (selectedManagerId !== 'all') {
+      sups = sups.filter(s => s.managerId === selectedManagerId);
+    }
+    if (selectedProduct !== 'all') {
+      const productTeamIds = new Set(teams.filter(t => (t.product === selectedProduct || (t as any).portfolio === selectedProduct)).map(t => t.id));
+      sups = sups.filter(s => s.product === selectedProduct || s.managedTeams?.some(tid => productTeamIds.has(tid)));
+    }
+    return sups;
+  }, [isSupervisor, isManager, userProfile, selectedManagerId, selectedProduct, supervisors, teams]);
+
+  // Equipes Filtradas
+  const filteredTeams = useMemo(() => {
+    let tList = teams;
+    if (isSupervisor) {
+      const supManaged = new Set(userProfile.managedTeams || (userProfile.teamId ? [userProfile.teamId] : []));
+      return tList.filter(t => supManaged.has(t.id) || t.supervisorId === userProfile.uid);
+    }
+    if (isManager) {
+      tList = tList.filter(t => t.managerId === userProfile.uid || !t.managerId);
+    } else if (selectedManagerId !== 'all') {
+      tList = tList.filter(t => t.managerId === selectedManagerId);
+    }
+    if (selectedProduct !== 'all') {
+      tList = tList.filter(t => (t.product === selectedProduct || (t as any).portfolio === selectedProduct));
+    }
+    if (selectedSupervisorId !== 'all') {
+      tList = tList.filter(t => t.supervisorId === selectedSupervisorId);
+    }
+    return tList;
+  }, [teams, isSupervisor, isManager, userProfile, selectedManagerId, selectedProduct, selectedSupervisorId]);
 
   // Alternar Módulo Individual
   const toggleModule = (moduleId: string) => {
@@ -183,6 +267,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
     if (presetType === 'tv') {
       setActiveModules({
         kpis: true,
+        mom: true,
         attendance: false,
         pacing: true,
         ranking: true,
@@ -200,6 +285,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
     } else if (presetType === 'board') {
       setActiveModules({
         kpis: true,
+        mom: true,
         attendance: true,
         pacing: true,
         ranking: false,
@@ -217,6 +303,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
     } else if (presetType === 'attendance') {
       setActiveModules({
         kpis: false,
+        mom: false,
         attendance: true,
         pacing: true,
         ranking: false,
@@ -243,9 +330,15 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
     const baseUrl = `${window.location.origin}/public/portfolio`;
     const params = new URLSearchParams();
     params.set('orgId', orgId);
-    params.set('teamId', selectedTeamId);
     params.set('month', selectedMonth.toString());
     params.set('year', selectedYear.toString());
+
+    // Dimensão Hierárquica
+    if (selectedProduct !== 'all') params.set('product', selectedProduct);
+    if (selectedManagerId !== 'all') params.set('managerId', selectedManagerId);
+    if (selectedSupervisorId !== 'all') params.set('supervisorId', selectedSupervisorId);
+    if (selectedTeamId !== 'all') params.set('teamId', selectedTeamId);
+    if (customReportTitle.trim()) params.set('title', customReportTitle.trim());
 
     // Módulos ativos separados por vírgula
     const activeList = Object.entries(activeModules)
@@ -264,7 +357,27 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
     }
 
     return `${baseUrl}?${params.toString()}`;
-  }, [orgId, selectedTeamId, selectedMonth, selectedYear, activeModules, hideValues, anonNames, hideNotes, requirePin, pinCode]);
+  }, [
+    orgId, 
+    selectedProduct, 
+    selectedManagerId, 
+    selectedSupervisorId, 
+    selectedTeamId, 
+    customReportTitle, 
+    selectedMonth, 
+    selectedYear, 
+    activeModules, 
+    hideValues, 
+    anonNames, 
+    hideNotes, 
+    requirePin, 
+    pinCode
+  ]);
+
+  // URL do QR Code
+  const qrCodeImageUrl = useMemo(() => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generatedUrl)}`;
+  }, [generatedUrl]);
 
   // Copiar Link
   const handleCopyLink = () => {
@@ -276,7 +389,8 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
 
   // Compartilhar WhatsApp
   const handleShareWhatsApp = () => {
-    const message = `📊 *Relatório de Performance Operacional — ${orgName}*\n\nAcesse os resultados atualizados através do link seguro abaixo:\n🔗 ${generatedUrl}${requirePin && pinCode ? `\n🔑 *PIN de Acesso*: ${pinCode}` : ''}`;
+    const productTxt = selectedProduct !== 'all' ? ` [Produto: ${selectedProduct}]` : '';
+    const message = `📊 *Relatório de Performance Operacional — ${orgName}${productTxt}*\n\nAcesse os resultados consolidados através do link seguro abaixo:\n🔗 ${generatedUrl}${requirePin && pinCode ? `\n🔑 *PIN de Acesso*: ${pinCode}` : ''}`;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -304,11 +418,11 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
               <h2 className="text-base sm:text-lg font-black flex items-center gap-2">
                 <span>Configurador de Link Público Modular</span>
                 <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Liderança
+                  Liderança Multi-Produto
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Ative ou desative os módulos e métricas que você deseja exibir no relatório compartilhado.
+                Segmente por Produto, Gerente, Supervisor e Equipes com controle de módulos e privacidade.
               </p>
             </div>
           </div>
@@ -323,56 +437,119 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
 
         {/* CORPO COM SCROLL */}
         <div className="space-y-6 overflow-y-auto pr-1 flex-1">
-          {/* 1. ESCOPO & PRESETS RÁPIDOS */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-slate-950/70 p-4 rounded-2xl border border-white/5 items-center">
-            <div className="md:col-span-6">
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1.5 flex items-center gap-1.5">
-                <Users size={14} className="text-sky-400" />
-                Escopo de Equipe
-              </label>
-              <select
-                value={selectedTeamId}
-                disabled={isSupervisor}
-                onChange={(e) => setSelectedTeamId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 transition-all disabled:opacity-60"
-              >
-                {!isSupervisor && <option value="all">🏢 Toda a Empresa (Consolidado)</option>}
-                {teams.map(t => (
-                  <option key={t.id} value={t.id}>👥 {t.name}</option>
-                ))}
-              </select>
-            </div>
+          {/* 1. ÁRVORE HIERÁRQUICA EM CASCATA */}
+          <div className="space-y-3 bg-slate-950/70 p-4 rounded-2xl border border-white/5">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <Tag size={15} className="text-sky-400" />
+              1. Escopo Hierárquico (Árvore de Produtos & Equipes):
+            </span>
 
-            <div className="md:col-span-6">
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1.5 flex items-center gap-1.5">
-                <Calendar size={14} className="text-purple-400" />
-                Período de Referência
-              </label>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* NÍVEL 1: PRODUTO */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 block mb-1">🏷️ Produto / Carteira</label>
                 <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 transition-all"
+                  value={selectedProduct}
+                  onChange={(e) => {
+                    setSelectedProduct(e.target.value);
+                    setSelectedManagerId('all');
+                    setSelectedSupervisorId(isSupervisor ? userProfile.uid : 'all');
+                    setSelectedTeamId('all');
+                  }}
+                  className="w-full px-2.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 transition-all cursor-pointer"
                 >
-                  <option value={1}>Janeiro</option>
-                  <option value={2}>Fevereiro</option>
-                  <option value={3}>Março</option>
-                  <option value={4}>Abril</option>
-                  <option value={5}>Maio</option>
-                  <option value={6}>Junho</option>
-                  <option value={7}>Julho</option>
-                  <option value={8}>Agosto</option>
-                  <option value={9}>Setembro</option>
-                  <option value={10}>Outubro</option>
-                  <option value={11}>Novembro</option>
-                  <option value={12}>Dezembro</option>
+                  <option value="all">🏢 Todos os Produtos</option>
+                  {availableProducts.map(p => (
+                    <option key={p} value={p}>🏷️ {p}</option>
+                  ))}
                 </select>
-                <input
-                  type="number"
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 transition-all text-center"
-                />
+              </div>
+
+              {/* NÍVEL 2: GERENTE (Se for Coordenador/Admin) */}
+              {isSuperAdminOrCoord && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">👔 Gerente Responsável</label>
+                  <select
+                    value={selectedManagerId}
+                    onChange={(e) => {
+                      setSelectedManagerId(e.target.value);
+                      setSelectedSupervisorId('all');
+                      setSelectedTeamId('all');
+                    }}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 transition-all cursor-pointer"
+                  >
+                    <option value="all">👔 Todos os Gerentes</option>
+                    {filteredManagers.map(m => (
+                      <option key={m.uid} value={m.uid}>👔 {m.displayName || m.email}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* NÍVEL 3: SUPERVISOR */}
+              {!isSupervisor && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">👤 Supervisor da Operação</label>
+                  <select
+                    value={selectedSupervisorId}
+                    onChange={(e) => {
+                      setSelectedSupervisorId(e.target.value);
+                      setSelectedTeamId('all');
+                    }}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 transition-all cursor-pointer"
+                  >
+                    <option value="all">👤 Todos os Supervisores</option>
+                    {filteredSupervisors.map(s => (
+                      <option key={s.uid} value={s.uid}>👤 {s.displayName || s.email}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* NÍVEL 4: EQUIPE */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 block mb-1">👥 Equipe / Time</label>
+                <select
+                  value={selectedTeamId}
+                  onChange={(e) => setSelectedTeamId(e.target.value)}
+                  className="w-full px-2.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 transition-all cursor-pointer"
+                >
+                  <option value="all">👥 Todas as Equipes</option>
+                  {filteredTeams.map(t => (
+                    <option key={t.id} value={t.id}>👥 {t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* PERÍODO DE REFERÊNCIA */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 block mb-1">📅 Período (Mês/Ano)</label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="w-full px-2 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 transition-all"
+                  >
+                    <option value={1}>Jan</option>
+                    <option value={2}>Fev</option>
+                    <option value={3}>Mar</option>
+                    <option value={4}>Abr</option>
+                    <option value={5}>Mai</option>
+                    <option value={6}>Jun</option>
+                    <option value={7}>Jul</option>
+                    <option value={8}>Ago</option>
+                    <option value={9}>Set</option>
+                    <option value={10}>Out</option>
+                    <option value={11}>Nov</option>
+                    <option value={12}>Dez</option>
+                  </select>
+                  <input
+                    type="number"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="w-full px-2 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-emerald-500 text-center"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -443,7 +620,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-400">KPIs Macro, Liquidação, Carteiras (Sigiloso)</p>
+                <p className="text-[10px] text-slate-400">KPIs Macro, MoM, Carteiras (Sigiloso)</p>
               </button>
 
               {/* PRESET: ESCALA & PRESENÇA */}
@@ -530,10 +707,10 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
               </div>
             </div>
 
-            {/* SEÇÃO FINANCEIRA */}
+            {/* SEÇÃO FINANCEIRA & MOM */}
             <div className="space-y-2 pt-2">
               <span className="text-[10px] font-black uppercase text-purple-400 tracking-wider">
-                2. Resultados Financeiros & Performance
+                2. Resultados Financeiros & Previsibilidade
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {MODULE_OPTIONS.filter(m => m.category === 'financial').map(mod => {
@@ -639,7 +816,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
           <div className="space-y-3 p-4 rounded-2xl bg-slate-950/80 border border-white/10">
             <span className="text-[11px] font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
               <ShieldCheck size={16} className="text-emerald-400" />
-              Controles de Privacidade & Segurança
+              Controles de Privacidade & Segurança LGPD
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -672,7 +849,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
               >
                 <div>
                   <strong className="text-xs font-bold text-slate-200 block">Modo Sigiloso</strong>
-                  <span className="text-[10px] text-slate-400">Anonimizar: Operador #1, #2</span>
+                  <span className="text-[10px] text-slate-400">Anonimizar: Analista #1, #2</span>
                 </div>
                 <div
                   className={`w-9 h-5 shrink-0 rounded-full transition-colors duration-300 p-0.5 flex items-center border ${
@@ -740,7 +917,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
           </div>
         </div>
 
-        {/* BARRA INFERIOR DE AÇÕES & LINK GERADO */}
+        {/* BARRA INFERIOR DE AÇÕES, QR CODE & LINK GERADO */}
         <div className="pt-4 border-t border-white/10 space-y-3 shrink-0">
           <div className="flex flex-col sm:flex-row gap-2 items-center">
             <div className="w-full bg-slate-950 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-emerald-300 font-mono truncate flex items-center gap-2">
@@ -764,6 +941,15 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
 
               <button
                 type="button"
+                onClick={() => setShowQrModal(true)}
+                className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center transition-all cursor-pointer shrink-0 border border-white/10"
+                title="Exibir QR Code Instantâneo"
+              >
+                <QrCode size={18} />
+              </button>
+
+              <button
+                type="button"
                 onClick={handleShareWhatsApp}
                 className="p-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
                 title="Compartilhar no WhatsApp"
@@ -782,6 +968,69 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
             </div>
           </div>
         </div>
+
+        {/* MODAL EXPANSÍVEL DE QR CODE INSTANTÂNEO */}
+        <AnimatePresence>
+          {showQrModal && (
+            <div 
+              className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md cursor-pointer"
+              onClick={() => setShowQrModal(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-900 border border-white/10 p-6 sm:p-8 rounded-3xl text-center space-y-4 max-w-sm w-full shadow-2xl cursor-default"
+              >
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <QrCode size={20} className="text-emerald-400" />
+                    <h3 className="text-sm font-black text-white">QR Code Instantâneo</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowQrModal(false)}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="p-4 bg-white rounded-2xl inline-block shadow-inner mx-auto">
+                  <img 
+                    src={qrCodeImageUrl} 
+                    alt="QR Code do Relatório Público" 
+                    className="w-48 h-48 mx-auto"
+                  />
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Aponte a câmera do celular para abrir o relatório público imediatamente.
+                </p>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Copy size={14} />
+                    <span>Copiar Link</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.open(qrCodeImageUrl, '_blank')}
+                    className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
+                    title="Baixar Imagem do QR Code"
+                  >
+                    <DownloadSimple size={16} />
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

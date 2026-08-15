@@ -76,10 +76,12 @@ graph TD
 4. **Maturação & Alerta Preditivo**: Forecast N+1 com curva de liquidez e colchão de pagamentos parcelados (MRR).
 5. **Análise de Descontos**: Efetividade de pagamento e taxa de quebra em acordos com vs. sem desconto.
 
-### 🔗 Relatórios Públicos Modulares & Segurança Adaptativa
-- **Configurador Visual Interativo**: Modal com interruptores de **bolinha verde brilhante** para ativar ou desativar blocos em tempo real.
+### 🔗 Relatórios Públicos Modulares & Suíte Executiva
+- **Árvore Organizacional em Cascata**: Navegação e filtragem dinâmica em 4 níveis: `🏢 Empresa` ➔ `🏷️ Produto/Carteira` ➔ `👔 Gerente` ➔ `👥 Supervisor` ➔ `👥 Equipe`.
+- **Configurador Visual Interativo**: Modal com interruptores de **bolinha verde brilhante** para ativar ou desativar blocos em tempo real com preservação de estado visual.
 - **Presets Rápidos em 1-Clique**: Perfis pré-definidos para *TV da Operação*, *Diretoria & Clientes* e *Escala & Presença*.
-- **Módulos Disponíveis**: Presença & Absenteísmo PJ, Ritmo Diário (Pacing & Run-rate), Picos de Produção (Hora a Hora), KPIs Globais, Pódio dos Campeões (Top 3), Ranking Geral (Leaderboard), Taxas de Liquidação, Ticket Médio e Distribuição por Carteiras.
+- **Módulos Disponíveis**: Presença & Absenteísmo PJ, Ritmo Diário (Pacing & Run-rate), Picos de Produção (Hora a Hora), KPIs Globais, Comparativo MoM (Mês a Mês), Pódio dos Campeões (Top 3), Ranking Geral (Leaderboard), Taxas de Liquidação, Ticket Médio e Distribuição por Carteiras.
+- **Ferramentas de Apresentação**: **QR Code Instantâneo** no modal para abertura rápida via celular em reuniões e botões de **Download em Imagem PNG** e **Impressão em PDF Executivo**.
 - **Privacidade & Compliance**: Ocultação seletiva de valores monetários brutos (Modo Percentual relativo), Modo Sigiloso (anonimização com Analista #1, #2...) e proteção com PIN numérico de 4 dígitos.
 - **Governança RBAC**: Recurso acessível exclusivamente por **Super Admins**, **Gerentes**, **Coordenadores** e **Supervisores** (com escopo restrito ao seu respectivo time).
 

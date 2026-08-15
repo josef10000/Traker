@@ -20,7 +20,14 @@ import {
   Percent,
   Coins,
   Medal,
-  Crown
+  Crown,
+  Tag,
+  Briefcase,
+  UserCheck,
+  Camera,
+  Printer,
+  ArrowUpRight,
+  ArrowDownRight
 } from '@phosphor-icons/react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -35,21 +42,28 @@ export const PublicPortfolioView = () => {
   const [operators, setOperators] = useState<UserProfile[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [supervisors, setSupervisors] = useState<UserProfile[]>([]);
+  const [managers, setManagers] = useState<UserProfile[]>([]);
   const [agreements, setAgreements] = useState<Agreement[]>([]);
+  const [prevAgreements, setPrevAgreements] = useState<Agreement[]>([]);
 
   // Parâmetros da URL
   const queryParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const orgId = queryParams.get('orgId') || 'sandbox-test';
-  const teamId = queryParams.get('teamId') || 'all';
   const month = parseInt(queryParams.get('month') || '') || (new Date().getMonth() + 1);
   const year = parseInt(queryParams.get('year') || '') || new Date().getFullYear();
+
+  // Escopo Hierárquico da URL
+  const productParam = queryParams.get('product') || queryParams.get('portfolio') || 'all';
+  const managerIdParam = queryParams.get('managerId') || 'all';
+  const supervisorIdParam = queryParams.get('supervisorId') || 'all';
+  const teamIdParam = queryParams.get('teamId') || 'all';
+  const customTitle = queryParams.get('title') || '';
 
   // Configurações Modulares da URL
   const rawModules = queryParams.get('modules');
   const activeModules = useMemo(() => {
     if (!rawModules) {
-      // Configuração padrão para retrocompatibilidade
-      return new Set(['kpis', 'attendance', 'pacing', 'ranking', 'podium', 'conversion', 'ticket', 'portfolios', 'highlights']);
+      return new Set(['kpis', 'mom', 'attendance', 'pacing', 'ranking', 'podium', 'conversion', 'ticket', 'portfolios', 'highlights']);
     }
     return new Set(rawModules.split(',').map(m => m.trim().toLowerCase()));
   }, [rawModules]);
@@ -84,8 +98,14 @@ export const PublicPortfolioView = () => {
           const allUsers = sandboxService.getUsers(orgId);
           setOperators(allUsers.filter(u => u.role === 'member'));
           setSupervisors(allUsers.filter(u => u.role === 'supervisor'));
+          setManagers(allUsers.filter(u => u.role === 'manager'));
           setTeams(sandboxService.getTeams(orgId));
           setAgreements(sandboxService.getAgreements(orgId, month, year));
+
+          // Mês Anterior para Comparativo MoM
+          const prevMonth = month === 1 ? 12 : month - 1;
+          const prevYear = month === 1 ? year - 1 : year;
+          setPrevAgreements(sandboxService.getAgreements(orgId, prevMonth, prevYear));
         } else {
           // 1. Operadores
           const opsQuery = query(
@@ -105,7 +125,16 @@ export const PublicPortfolioView = () => {
           const supsSnap = await getDocs(supsQuery);
           setSupervisors(supsSnap.docs.map(doc => doc.data() as UserProfile));
 
-          // 3. Equipes
+          // 3. Gerentes
+          const managersQuery = query(
+            collection(db, 'users'), 
+            where('organizationId', '==', orgId),
+            where('role', '==', 'manager')
+          );
+          const managersSnap = await getDocs(managersQuery);
+          setManagers(managersSnap.docs.map(doc => doc.data() as UserProfile));
+
+          // 4. Equipes
           const teamsQuery = query(
             collection(db, 'teams'), 
             where('organizationId', '==', orgId)
@@ -113,7 +142,7 @@ export const PublicPortfolioView = () => {
           const teamsSnap = await getDocs(teamsQuery);
           setTeams(teamsSnap.docs.map(doc => doc.data() as Team));
 
-          // 4. Acordos
+          // 5. Acordos do Mês Atual
           const agreementsQuery = query(
             collection(db, 'agreements'), 
             where('organizationId', '==', orgId)
@@ -121,12 +150,22 @@ export const PublicPortfolioView = () => {
           const agreementsSnap = await getDocs(agreementsQuery);
           const allAgreements = agreementsSnap.docs.map(doc => doc.data() as Agreement);
           
-          const filtered = allAgreements.filter(a => {
+          const filteredCurrent = allAgreements.filter(a => {
             if (!a.createdAt) return false;
             const date = new Date(a.createdAt);
             return (date.getMonth() + 1) === month && date.getFullYear() === year;
           });
-          setAgreements(filtered);
+          setAgreements(filteredCurrent);
+
+          // Acordos do Mês Anterior (MoM)
+          const prevMonth = month === 1 ? 12 : month - 1;
+          const prevYear = month === 1 ? year - 1 : year;
+          const filteredPrev = allAgreements.filter(a => {
+            if (!a.createdAt) return false;
+            const date = new Date(a.createdAt);
+            return (date.getMonth() + 1) === prevMonth && date.getFullYear() === prevYear;
+          });
+          setPrevAgreements(filteredPrev);
         }
       } catch (e) {
         console.error("Erro ao carregar dados públicos:", e);
@@ -138,9 +177,31 @@ export const PublicPortfolioView = () => {
     loadPublicData();
   }, [orgId, month, year, isSandbox]);
 
+  // Equipes que atendem aos filtros hierárquicos
+  const matchedTeamIds = useMemo(() => {
+    let tList = teams;
+    if (productParam !== 'all') {
+      tList = tList.filter(t => (t.product === productParam || (t as any).portfolio === productParam));
+    }
+    if (managerIdParam !== 'all') {
+      tList = tList.filter(t => t.managerId === managerIdParam);
+    }
+    if (supervisorIdParam !== 'all') {
+      tList = tList.filter(t => t.supervisorId === supervisorIdParam);
+    }
+    if (teamIdParam !== 'all') {
+      tList = tList.filter(t => t.id === teamIdParam);
+    }
+    return new Set(tList.map(t => t.id));
+  }, [teams, productParam, managerIdParam, supervisorIdParam, teamIdParam]);
+
   // Estatísticas dos Analistas Visíveis
   const visibleOperators = useMemo(() => {
-    const ops = teamId === 'all' ? operators : operators.filter(o => o.teamId === teamId);
+    let ops = operators.filter(o => o.teamId && matchedTeamIds.has(o.teamId));
+    if (ops.length === 0 && teamIdParam === 'all' && productParam === 'all' && supervisorIdParam === 'all') {
+      ops = operators;
+    }
+
     const workingDays = 22;
     const workedDays = Math.min(14, workingDays);
 
@@ -196,9 +257,9 @@ export const PublicPortfolioView = () => {
       }
       return { ...op, dispersion };
     });
-  }, [operators, agreements, teamId, anonNames]);
+  }, [operators, matchedTeamIds, agreements, teamIdParam, productParam, supervisorIdParam, anonNames]);
 
-  // Totais Gerais
+  // Totais Atuais
   const totals = useMemo(() => {
     let totalGoal = 0;
     let totalPartial = 0;
@@ -219,10 +280,9 @@ export const PublicPortfolioView = () => {
     const overallLiquidation = totalAgreementsCount > 0 ? (totalPaidCount / totalAgreementsCount) * 100 : 0;
     const ticketAverage = totalPaidCount > 0 ? totalPartial / totalPaidCount : 0;
 
-    // Presença Estimada (Mock coerente baseado na escala ativa)
     const activeMembersCount = visibleOperators.length;
     const attendanceRate = activeMembersCount > 0 ? 96.4 : 100;
-    const dailyPacingRequired = (totalGoal - totalPartial) / 8; // 8 dias úteis restantes
+    const dailyPacingRequired = (totalGoal - totalPartial) / 8;
 
     return {
       totalGoal,
@@ -239,6 +299,22 @@ export const PublicPortfolioView = () => {
       activeMembersCount
     };
   }, [visibleOperators]);
+
+  // Totais do Mês Anterior (para Comparativo MoM)
+  const prevTotals = useMemo(() => {
+    const visibleUids = new Set(visibleOperators.map(o => o.uid));
+    const prevPaidAgreements = prevAgreements.filter(a => visibleUids.has(a.operatorId) && a.status === AgreementStatus.PAID);
+    const prevPartial = prevPaidAgreements.reduce((sum, a) => sum + a.value, 0);
+
+    const momGrowthPercent = prevPartial > 0 
+      ? ((totals.totalPartial - prevPartial) / prevPartial) * 100 
+      : 0;
+
+    return {
+      prevPartial,
+      momGrowthPercent
+    };
+  }, [prevAgreements, visibleOperators, totals.totalPartial]);
 
   // Leaderboard Ordenado
   const rankingList = useMemo(() => {
@@ -265,18 +341,30 @@ export const PublicPortfolioView = () => {
     return Object.entries(summary).map(([name, data]) => ({ name, ...data }));
   }, [visibleOperators]);
 
-  // Nome da Equipe Selecionada
-  const selectedTeamName = useMemo(() => {
-    if (teamId === 'all') return 'Todas as Equipes (Visão Consolidada)';
-    const found = teams.find(t => t.id === teamId);
-    return found ? `Equipe ${found.name}` : 'Equipe Selecionada';
-  }, [teamId, teams]);
+  // Informações de Hierarquia Formatadas para o Cabeçalho
+  const hierarchyDetails = useMemo(() => {
+    const selectedTeam = teamIdParam !== 'all' ? teams.find(t => t.id === teamIdParam) : null;
+    const selectedSupervisor = supervisorIdParam !== 'all' ? supervisors.find(s => s.uid === supervisorIdParam) : null;
+    const selectedManager = managerIdParam !== 'all' ? managers.find(m => m.uid === managerIdParam) : null;
+
+    return {
+      productName: productParam !== 'all' ? productParam : null,
+      managerName: selectedManager ? selectedManager.displayName : null,
+      supervisorName: selectedSupervisor ? selectedSupervisor.displayName : null,
+      teamName: selectedTeam ? selectedTeam.name : (teamIdParam === 'all' ? 'Todas as Equipes' : null)
+    };
+  }, [productParam, managerIdParam, supervisorIdParam, teamIdParam, teams, supervisors, managers]);
+
+  // Impressão PDF
+  const handlePrint = () => {
+    window.print();
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4 text-slate-400">
         <Loader2 size={36} className="animate-spin text-emerald-400" />
-        <p className="text-xs uppercase tracking-widest font-black">Carregando relatório de performance...</p>
+        <p className="text-xs uppercase tracking-widest font-black">Carregando relatório executivo...</p>
       </div>
     );
   }
@@ -326,42 +414,67 @@ export const PublicPortfolioView = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 p-4 sm:p-8 lg:p-12 font-sans selection:bg-emerald-500/30 selection:text-white">
+    <div id="public-report-root" className="min-h-screen bg-[#020617] text-slate-100 p-4 sm:p-8 lg:p-12 font-sans selection:bg-emerald-500/30 selection:text-white print:p-0 print:bg-white print:text-black">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* HEADER DO RELATÓRIO PÚBLICO */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6">
-          <div className="space-y-2">
+        {/* HEADER DO RELATÓRIO PÚBLICO COM TRILHA HIERÁRQUICA */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6 print:border-b-2 print:border-slate-800">
+          <div className="space-y-3">
+            {/* TRILHA HIERÁRQUICA (BADGES) */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full font-black uppercase tracking-widest border border-emerald-500/20 flex items-center gap-1">
-                <ShieldCheck size={14} /> Relatório Corporativo Compartilhado
+                <ShieldCheck size={14} /> Relatório Corporativo
               </span>
-              {hideValues && (
-                <span className="text-[9px] bg-purple-500/10 text-purple-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-purple-500/20">
-                  Modo Percentual (% Relativo)
+
+              {hierarchyDetails.productName && (
+                <span className="text-[10px] bg-purple-500/10 text-purple-300 px-3 py-1 rounded-full font-black uppercase tracking-wider border border-purple-500/20 flex items-center gap-1">
+                  <Tag size={13} /> Produto: {hierarchyDetails.productName}
                 </span>
               )}
-              {anonNames && (
-                <span className="text-[9px] bg-sky-500/10 text-sky-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-sky-500/20">
-                  Modo Sigiloso (Nomes Anonimizados)
+
+              {hierarchyDetails.managerName && (
+                <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-amber-500/20 flex items-center gap-1">
+                  <Briefcase size={13} /> Gerente: {hierarchyDetails.managerName}
+                </span>
+              )}
+
+              {hierarchyDetails.supervisorName && (
+                <span className="text-[10px] bg-sky-500/10 text-sky-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-sky-500/20 flex items-center gap-1">
+                  <UserCheck size={13} /> Supervisor: {hierarchyDetails.supervisorName}
+                </span>
+              )}
+
+              {hierarchyDetails.teamName && (
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-emerald-500/20 flex items-center gap-1">
+                  <Users size={13} /> Equipe: {hierarchyDetails.teamName}
                 </span>
               )}
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span>Performance Operacional</span>
-              <span className="text-emerald-400 text-sm font-bold bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">
-                {selectedTeamName}
-              </span>
+              <span>{customTitle || 'Performance Operacional'}</span>
             </h1>
 
             <p className="text-xs text-slate-400 font-medium">
               Referência: <strong className="text-slate-200">{month.toString().padStart(2, '0')}/{year}</strong> • Atualizado em tempo real com conciliação contínua.
             </p>
           </div>
+
+          {/* BOTÕES DE EXPORTAÇÃO EXECUTIVA (IMPRIMIR / PDF / PRINT) */}
+          <div className="flex items-center gap-2 print:hidden shrink-0">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="px-4 py-2.5 rounded-2xl bg-slate-900 border border-white/10 hover:border-white/20 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg"
+              title="Imprimir ou Salvar como PDF Executivo"
+            >
+              <Printer size={16} className="text-sky-400" />
+              <span>Imprimir / PDF</span>
+            </button>
+          </div>
         </div>
 
-        {/* MÓDULO: KPIS GLOBAIS */}
+        {/* MÓDULO: KPIS GLOBAIS COM MOM */}
         {activeModules.has('kpis') && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-5 rounded-3xl bg-slate-900/90 border border-white/10 shadow-xl space-y-2">
@@ -381,8 +494,20 @@ export const PublicPortfolioView = () => {
                 <span className="text-[11px] font-black uppercase tracking-wider">Faturamento Realizado</span>
                 <Coins size={20} className="text-emerald-400" />
               </div>
-              <div className="text-2xl font-black text-emerald-400 tracking-tight">
-                {hideValues ? `${totals.progressPercent.toFixed(1)}% Atingido` : formatCurrency(totals.totalPartial)}
+              <div className="text-2xl font-black text-emerald-400 tracking-tight flex items-baseline justify-between gap-2">
+                <span>{hideValues ? `${totals.progressPercent.toFixed(1)}% Atingido` : formatCurrency(totals.totalPartial)}</span>
+                
+                {/* INDICADOR MOM */}
+                {activeModules.has('mom') && prevTotals.momGrowthPercent !== 0 && (
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 border shrink-0 ${
+                    prevTotals.momGrowthPercent >= 0
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                  }`}>
+                    {prevTotals.momGrowthPercent >= 0 ? <ArrowUpRight size={12} weight="bold" /> : <ArrowDownRight size={12} weight="bold" />}
+                    {prevTotals.momGrowthPercent >= 0 ? `+${prevTotals.momGrowthPercent.toFixed(1)}%` : `${prevTotals.momGrowthPercent.toFixed(1)}%`} MoM
+                  </span>
+                )}
               </div>
               <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-white/5">
                 <div 
@@ -650,7 +775,7 @@ export const PublicPortfolioView = () => {
 
         {/* FOOTER PÚBLICO */}
         <div className="border-t border-white/5 pt-6 text-center text-xs text-slate-500 font-medium">
-          Tracker Platform • Relatório Dinâmico em Conformidade com LGPD
+          Tracker Platform • Relatório Executivo Multi-Produto em Conformidade com LGPD
         </div>
       </div>
     </div>

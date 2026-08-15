@@ -25,6 +25,7 @@ import { OfensoresPromotoresTab } from './OfensoresPromotoresTab';
 import { GoalCampaignCard } from './GoalCampaignCard';
 import { GoalCampaignModal } from '../modals/GoalCampaignModal';
 import { PublicShareConfigModal } from '../modals/PublicShareConfigModal';
+import { HierarchicalFilterBar, HierarchyFilterState } from './HierarchicalFilterBar';
 import { GoalCampaign } from '../../types';
 import { Trophy, Plus } from '@phosphor-icons/react';
 
@@ -94,21 +95,45 @@ export const PortfolioGoalsPanel = ({
     showToast('Campanha / Meta de Sprint criada com sucesso!', 'success');
   };
 
-  // Estado de Filtro de Equipe no Cockpit
-  const [cockpitTeamId, setCockpitTeamId] = useState<string>(selectedTeamId || 'all');
+  // Estado de Filtro Hierárquico em Cascata (Produto -> Gerente -> Supervisor -> Equipe)
+  const [hierarchyFilters, setHierarchyFilters] = useState<HierarchyFilterState>({
+    product: 'all',
+    managerId: 'all',
+    supervisorId: 'all',
+    teamId: selectedTeamId || 'all'
+  });
 
   // Arrays seguros contra undefined
   const safeMembers = useMemo(() => currentTeamMembers || [], [currentTeamMembers]);
   const safeAgreements = useMemo(() => monthAgreements || [], [monthAgreements]);
+  const safeTeams = useMemo(() => managedTeamsData || [], [managedTeamsData]);
 
-  // Filtramos membros que são operadores (role === 'member') respeitando o filtro de equipe
+  // Equipes filtradas pela hierarquia
+  const matchedTeamIds = useMemo(() => {
+    let tList = safeTeams;
+    if (hierarchyFilters.product !== 'all') {
+      tList = tList.filter((t: any) => (t.product === hierarchyFilters.product || t.portfolio === hierarchyFilters.product));
+    }
+    if (hierarchyFilters.managerId !== 'all') {
+      tList = tList.filter((t: any) => t.managerId === hierarchyFilters.managerId);
+    }
+    if (hierarchyFilters.supervisorId !== 'all') {
+      tList = tList.filter((t: any) => t.supervisorId === hierarchyFilters.supervisorId);
+    }
+    if (hierarchyFilters.teamId !== 'all') {
+      tList = tList.filter((t: any) => t.id === hierarchyFilters.teamId);
+    }
+    return new Set(tList.map((t: any) => t.id));
+  }, [safeTeams, hierarchyFilters]);
+
+  // Filtramos membros que são operadores (role === 'member') respeitando o filtro hierárquico
   const operators = useMemo(() => {
     let result = safeMembers.filter(m => m.role === 'member');
-    if (cockpitTeamId !== 'all') {
-      result = result.filter(m => m.teamId === cockpitTeamId);
+    if (hierarchyFilters.teamId !== 'all' || hierarchyFilters.supervisorId !== 'all' || hierarchyFilters.managerId !== 'all' || hierarchyFilters.product !== 'all') {
+      result = result.filter(m => m.teamId && matchedTeamIds.has(m.teamId));
     }
     return result;
-  }, [safeMembers, cockpitTeamId]);
+  }, [safeMembers, hierarchyFilters, matchedTeamIds]);
 
   // Lógica de cálculo por operador
   const operatorStats = useMemo(() => {
@@ -457,26 +482,6 @@ export const PortfolioGoalsPanel = ({
 
         {portfolioSubTab === 'goals' && (
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            {/* Seletor de Equipe no Cockpit */}
-            <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-white/10">
-              <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5 whitespace-nowrap">
-                <Buildings size={14} className="text-purple-400" />
-                Equipe:
-              </span>
-              <select
-                value={cockpitTeamId}
-                onChange={(e) => setCockpitTeamId(e.target.value)}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-950 border border-slate-700 text-white focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
-              >
-                <option value="all">🏢 Todas as Equipes (Visão Geral)</option>
-                {(managedTeamsData || []).map((t: any) => (
-                  <option key={t.id} value={t.id}>
-                    👥 {t.name} ({t.supervisorName || 'Supervisor'})
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <button
               onClick={() => setIsCampaignModalOpen(true)}
               className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all flex items-center gap-2 text-xs active:scale-95 shadow-lg shadow-amber-500/20 cursor-pointer"
@@ -505,6 +510,18 @@ export const PortfolioGoalsPanel = ({
         )}
       </div>
 
+      {/* BARRA DE FILTRO HIERÁRQUICO EM CASCATA (PRODUTO -> GERENTE -> SUPERVISOR -> EQUIPE) */}
+      {portfolioSubTab === 'goals' && (
+        <HierarchicalFilterBar
+          userRole={profile.role}
+          userProfile={profile}
+          teams={safeTeams}
+          supervisors={supervisors || []}
+          filters={hierarchyFilters}
+          onFilterChange={setHierarchyFilters}
+        />
+      )}
+
       {/* RENDERIZAÇÃO DAS CAMPANHAS & METAS ATIVAS */}
       {campaigns.map(camp => (
         <GoalCampaignCard
@@ -531,7 +548,8 @@ export const PortfolioGoalsPanel = ({
           onClose={() => setIsShareModalOpen(false)}
           orgId={profile.organizationId || 'sandbox-test'}
           orgName={(profile as any).organizationName || 'Empresa'}
-          teams={managedTeamsData || []}
+          teams={safeTeams}
+          supervisors={supervisors || []}
           userProfile={profile}
           showToast={showToast}
         />
