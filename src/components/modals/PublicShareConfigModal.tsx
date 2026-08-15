@@ -141,17 +141,20 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
+  // Estado do Preset Selecionado
+  const [selectedPreset, setSelectedPreset] = useState<'tv' | 'board' | 'attendance' | 'all' | 'custom'>('tv');
+
   // Módulos Ativos (Set de IDs)
   const [activeModules, setActiveModules] = useState<Record<string, boolean>>({
     kpis: true,
-    attendance: true,
+    attendance: false,
     pacing: true,
     ranking: true,
     podium: true,
     conversion: true,
-    ticket: true,
-    portfolios: true,
-    hourly: false,
+    ticket: false,
+    portfolios: false,
+    hourly: true,
     highlights: true,
     dispersion: false
   });
@@ -167,6 +170,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
 
   // Alternar Módulo Individual
   const toggleModule = (moduleId: string) => {
+    setSelectedPreset('custom');
     setActiveModules(prev => ({
       ...prev,
       [moduleId]: !prev[moduleId]
@@ -175,6 +179,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
 
   // Presets Rápidos
   const applyPreset = (presetType: 'tv' | 'board' | 'attendance' | 'all') => {
+    setSelectedPreset(presetType);
     if (presetType === 'tv') {
       setActiveModules({
         kpis: true,
@@ -191,7 +196,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
       });
       setHideValues(false);
       setAnonNames(false);
-      showToast('Preset "TV da Operação" aplicado com sucesso!', 'success');
+      showToast('Preset "TV da Operação" selecionado com sucesso!', 'success');
     } else if (presetType === 'board') {
       setActiveModules({
         kpis: true,
@@ -208,7 +213,7 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
       });
       setHideValues(false);
       setAnonNames(true);
-      showToast('Preset "Diretoria & Clientes" aplicado com sucesso!', 'success');
+      showToast('Preset "Diretoria & Clientes" selecionado com sucesso!', 'success');
     } else if (presetType === 'attendance') {
       setActiveModules({
         kpis: false,
@@ -224,12 +229,12 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
         dispersion: false
       });
       setHideValues(true);
-      showToast('Preset "Escala & Presença" aplicado com sucesso!', 'success');
+      showToast('Preset "Escala & Presença" selecionado com sucesso!', 'success');
     } else if (presetType === 'all') {
       const allTrue: Record<string, boolean> = {};
       MODULE_OPTIONS.forEach(m => { allTrue[m.id] = true; });
       setActiveModules(allTrue);
-      showToast('Todos os módulos foram ativados!', 'success');
+      showToast('Todos os módulos foram selecionados!', 'success');
     }
   };
 
@@ -382,45 +387,85 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyPreset('all')}
-                className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+                className={`text-[10px] font-bold transition-all px-2 py-0.5 rounded-lg cursor-pointer ${
+                  selectedPreset === 'all'
+                    ? 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 font-black'
+                    : 'text-emerald-400 hover:text-emerald-300 underline'
+                }`}
               >
-                Ativar Todos
+                {selectedPreset === 'all' ? '✓ Todos Ativados' : 'Ativar Todos'}
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* PRESET: TV DA OPERAÇÃO */}
               <button
                 type="button"
                 onClick={() => applyPreset('tv')}
-                className="p-3 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 hover:border-emerald-500/40 text-left transition-all group cursor-pointer"
+                className={`p-3 rounded-2xl border text-left transition-all group cursor-pointer relative overflow-hidden ${
+                  selectedPreset === 'tv'
+                    ? 'bg-emerald-950/40 border-emerald-500/60 ring-2 ring-emerald-500/20 shadow-lg shadow-emerald-500/10'
+                    : 'bg-gradient-to-br from-slate-900 to-slate-950 border-white/10 hover:border-emerald-500/30 opacity-80 hover:opacity-100'
+                }`}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <TelevisionSimple size={16} className="text-sky-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-black text-white">TV da Operação</span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2">
+                    <TelevisionSimple size={16} className={`transition-transform ${selectedPreset === 'tv' ? 'text-emerald-400 scale-110' : 'text-sky-400 group-hover:scale-110'}`} />
+                    <span className="text-xs font-black text-white">TV da Operação</span>
+                  </div>
+                  {selectedPreset === 'tv' && (
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      ✓ Ativo
+                    </span>
+                  )}
                 </div>
                 <p className="text-[10px] text-slate-400">KPIs, Pódio, Ranking, Pacing e Picos</p>
               </button>
 
+              {/* PRESET: DIRETORIA & CLIENTES */}
               <button
                 type="button"
                 onClick={() => applyPreset('board')}
-                className="p-3 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 hover:border-purple-500/40 text-left transition-all group cursor-pointer"
+                className={`p-3 rounded-2xl border text-left transition-all group cursor-pointer relative overflow-hidden ${
+                  selectedPreset === 'board'
+                    ? 'bg-purple-950/40 border-purple-500/60 ring-2 ring-purple-500/20 shadow-lg shadow-purple-500/10'
+                    : 'bg-gradient-to-br from-slate-900 to-slate-950 border-white/10 hover:border-purple-500/30 opacity-80 hover:opacity-100'
+                }`}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <Briefcase size={16} className="text-purple-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-black text-white">Diretoria & Clientes</span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Briefcase size={16} className={`transition-transform ${selectedPreset === 'board' ? 'text-purple-400 scale-110' : 'text-purple-400 group-hover:scale-110'}`} />
+                    <span className="text-xs font-black text-white">Diretoria & Clientes</span>
+                  </div>
+                  {selectedPreset === 'board' && (
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      ✓ Ativo
+                    </span>
+                  )}
                 </div>
                 <p className="text-[10px] text-slate-400">KPIs Macro, Liquidação, Carteiras (Sigiloso)</p>
               </button>
 
+              {/* PRESET: ESCALA & PRESENÇA */}
               <button
                 type="button"
                 onClick={() => applyPreset('attendance')}
-                className="p-3 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 hover:border-emerald-500/40 text-left transition-all group cursor-pointer"
+                className={`p-3 rounded-2xl border text-left transition-all group cursor-pointer relative overflow-hidden ${
+                  selectedPreset === 'attendance'
+                    ? 'bg-emerald-950/40 border-emerald-500/60 ring-2 ring-emerald-500/20 shadow-lg shadow-emerald-500/10'
+                    : 'bg-gradient-to-br from-slate-900 to-slate-950 border-white/10 hover:border-emerald-500/30 opacity-80 hover:opacity-100'
+                }`}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <UserList size={16} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-black text-white">Escala & Presença</span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2">
+                    <UserList size={16} className={`transition-transform ${selectedPreset === 'attendance' ? 'text-emerald-400 scale-110' : 'text-emerald-400 group-hover:scale-110'}`} />
+                    <span className="text-xs font-black text-white">Escala & Presença</span>
+                  </div>
+                  {selectedPreset === 'attendance' && (
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      ✓ Ativo
+                    </span>
+                  )}
                 </div>
                 <p className="text-[10px] text-slate-400">Aderência, Faltas PJ e Pacing Operacional</p>
               </button>
