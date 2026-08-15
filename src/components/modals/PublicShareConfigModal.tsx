@@ -919,17 +919,18 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
 
         {/* BARRA INFERIOR DE AÇÕES, QR CODE & LINK GERADO */}
         <div className="pt-4 border-t border-white/10 space-y-3 shrink-0">
-          <div className="flex flex-col sm:flex-row gap-2 items-center">
+          <div className="flex flex-col md:flex-row gap-2 items-center justify-between">
             <div className="w-full bg-slate-950 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-emerald-300 font-mono truncate flex items-center gap-2">
               <Link size={16} className="text-slate-400 shrink-0" />
               <span className="truncate">{generatedUrl}</span>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <div className="flex items-center gap-2 w-full md:w-auto shrink-0 flex-wrap justify-end">
+              {/* BOTÃO COPIAR LINK */}
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border shrink-0 ${
+                className={`px-4 py-2.5 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border shrink-0 ${
                   copied 
                     ? 'bg-emerald-600 text-white border-emerald-400' 
                     : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
@@ -939,15 +940,18 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
                 <span>{copied ? 'Copiado!' : 'Copiar Link'}</span>
               </button>
 
+              {/* BOTÃO DE QR CODE SUPER DESTACADO COM TEXTO */}
               <button
                 type="button"
                 onClick={() => setShowQrModal(true)}
-                className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center transition-all cursor-pointer shrink-0 border border-white/10"
-                title="Exibir QR Code Instantâneo"
+                className="px-4 py-2.5 rounded-2xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0 border border-sky-500/40 shadow-lg shadow-sky-500/10"
+                title="Abrir QR Code para Celular"
               >
-                <QrCode size={18} />
+                <QrCode size={18} weight="bold" />
+                <span>📱 Ver QR Code</span>
               </button>
 
+              {/* WHATSAPP */}
               <button
                 type="button"
                 onClick={handleShareWhatsApp}
@@ -957,10 +961,11 @@ export const PublicShareConfigModal: React.FC<PublicShareConfigModalProps> = ({
                 <WhatsappLogo size={18} weight="fill" />
               </button>
 
+              {/* PRÉVIA */}
               <button
                 type="button"
                 onClick={() => window.open(generatedUrl, '_blank')}
-                className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
+                className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center transition-all cursor-pointer shrink-0 border border-white/10"
                 title="Abrir Prévia em Nova Aba"
               >
                 <Eye size={18} />

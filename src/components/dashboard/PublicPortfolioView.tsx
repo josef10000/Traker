@@ -27,7 +27,11 @@ import {
   Camera,
   Printer,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  QrCode,
+  X,
+  Copy,
+  DownloadSimple
 } from '@phosphor-icons/react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -77,6 +81,11 @@ export const PublicPortfolioView = () => {
   const [enteredPin, setEnteredPin] = useState('');
   const [isPinUnlocked, setIsPinUnlocked] = useState(!requiredPin);
   const [pinError, setPinError] = useState(false);
+
+  // Modal de QR Code para Apresentação em Tela / Reunião
+  const [showQrModal, setShowQrModal] = useState(false);
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}&bgcolor=FFFFFF&color=020617&margin=10`;
 
   const handleUnlockPin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -460,15 +469,25 @@ export const PublicPortfolioView = () => {
             </p>
           </div>
 
-          {/* BOTÕES DE EXPORTAÇÃO EXECUTIVA (IMPRIMIR / PDF / PRINT) */}
+          {/* BOTÕES DE EXPORTAÇÃO EXECUTIVA (QR CODE / IMPRIMIR PDF) */}
           <div className="flex items-center gap-2 print:hidden shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowQrModal(true)}
+              className="px-4 py-2.5 rounded-2xl bg-sky-500/15 border border-sky-500/30 hover:bg-sky-500/25 text-sky-300 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-sky-500/10"
+              title="Exibir QR Code para Apresentação em Tela"
+            >
+              <QrCode size={16} weight="bold" />
+              <span>📱 QR Code</span>
+            </button>
+
             <button
               type="button"
               onClick={handlePrint}
               className="px-4 py-2.5 rounded-2xl bg-slate-900 border border-white/10 hover:border-white/20 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg"
               title="Imprimir ou Salvar como PDF Executivo"
             >
-              <Printer size={16} className="text-sky-400" />
+              <Printer size={16} className="text-emerald-400" />
               <span>Imprimir / PDF</span>
             </button>
           </div>
@@ -662,53 +681,50 @@ export const PublicPortfolioView = () => {
           </div>
         )}
 
-        {/* MÓDULO: RANKING GERAL (LEADERBOARD) */}
+        {/* MÓDULO: RANKING GERAL (LEADERBOARD EM 3 COLUNAS EXECUTIVAS) */}
         {activeModules.has('ranking') && (
-          <div className="p-6 rounded-3xl bg-slate-900/90 border border-white/10 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="p-6 rounded-3xl bg-slate-900/90 border border-white/10 shadow-2xl space-y-4 print:p-4 print:bg-white print:border-slate-300 print:shadow-none break-inside-avoid">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4 print:border-slate-300">
               <div className="flex items-center gap-2">
-                <Trophy size={20} className="text-emerald-400" />
-                <h3 className="text-base font-black text-white">Ranking Geral de Performance</h3>
+                <Trophy size={20} className="text-emerald-400 print:text-slate-800" />
+                <h3 className="text-base font-black text-white print:text-slate-900">Ranking Geral de Performance</h3>
               </div>
-              <span className="text-xs text-slate-400 font-bold">{rankingList.length} analistas ativos</span>
+              <span className="text-xs text-slate-400 font-bold print:text-slate-600">
+                {rankingList.length} analistas ativos • Exibição Completa
+              </span>
             </div>
 
-            <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+            {/* GRADE COMPACTA EM 3 COLUNAS - EXIBE 100% DOS ANALISTAS SEM CORTES */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 print:grid-cols-3 print:gap-1.5 print:max-h-none print:overflow-visible">
               {rankingList.map((op, idx) => (
                 <div 
                   key={op.uid || idx}
-                  className="p-3.5 rounded-2xl bg-slate-950/60 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  className="p-3 rounded-2xl bg-slate-950/70 border border-white/5 flex items-center justify-between gap-2.5 text-xs print:bg-slate-50 print:border-slate-300 print:text-black break-inside-avoid"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`w-7 h-7 rounded-xl font-black text-xs flex items-center justify-center ${
-                      idx === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
-                      idx === 1 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40' :
-                      idx === 2 ? 'bg-amber-700/20 text-amber-600 border border-amber-700/40' :
-                      'bg-white/5 text-slate-400'
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`w-6 h-6 rounded-lg font-black text-[11px] flex items-center justify-center shrink-0 ${
+                      idx === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 print:bg-amber-100 print:text-amber-800' :
+                      idx === 1 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40 print:bg-slate-200 print:text-slate-800' :
+                      idx === 2 ? 'bg-amber-700/20 text-amber-600 border border-amber-700/40 print:bg-orange-100 print:text-orange-800' :
+                      'bg-white/5 text-slate-400 print:bg-slate-200 print:text-slate-700'
                     }`}>
                       #{idx + 1}
                     </span>
-                    <div>
-                      <strong className="text-white font-bold block">{op.displayName}</strong>
-                      <span className="text-[10px] text-slate-400">
-                        {op.paidCount} acordos pagos • Eficácia: {op.effectiveness.toFixed(0)}%
+                    <div className="min-w-0">
+                      <strong className="text-white print:text-slate-900 font-bold block truncate text-xs">{op.displayName}</strong>
+                      <span className="text-[9px] text-slate-400 print:text-slate-600 block">
+                        {op.paidCount} pagamentos • {op.effectiveness.toFixed(0)}% efic.
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <strong className="text-emerald-400 font-black text-sm block">
-                        {hideValues ? `${op.progressPercent.toFixed(1)}%` : formatCurrency(op.partial)}
-                      </strong>
-                      <span className="text-[10px] text-slate-400">
-                        Meta: {hideValues ? '100%' : formatCurrency(op.goal)}
-                      </span>
-                    </div>
-
-                    <div className="w-20 bg-slate-900 h-2 rounded-full overflow-hidden border border-white/5 shrink-0">
+                  <div className="text-right shrink-0">
+                    <strong className="text-emerald-400 print:text-emerald-700 font-black text-xs block">
+                      {hideValues ? `${op.progressPercent.toFixed(1)}%` : formatCurrency(op.partial)}
+                    </strong>
+                    <div className="w-14 bg-slate-900 print:bg-slate-200 h-1.5 rounded-full overflow-hidden border border-white/5 print:border-slate-300 mt-1">
                       <div 
-                        className="bg-emerald-400 h-full rounded-full"
+                        className="bg-emerald-400 print:bg-emerald-600 h-full rounded-full"
                         style={{ width: `${Math.min(100, op.progressPercent)}%` }}
                       />
                     </div>
@@ -778,6 +794,67 @@ export const PublicPortfolioView = () => {
           Tracker Platform • Relatório Executivo Multi-Produto em Conformidade com LGPD
         </div>
       </div>
+
+      {/* MODAL EXPANSÍVEL DE QR CODE PARA APRESENTAÇÕES */}
+      {showQrModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md cursor-pointer print:hidden"
+          onClick={() => setShowQrModal(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-slate-900 border border-white/10 p-6 sm:p-8 rounded-3xl text-center space-y-4 max-w-sm w-full shadow-2xl cursor-default"
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <QrCode size={20} className="text-emerald-400" />
+                <h3 className="text-sm font-black text-white">QR Code da Apresentação</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl inline-block shadow-inner mx-auto">
+              <img 
+                src={qrCodeImageUrl} 
+                alt="QR Code do Relatório" 
+                className="w-48 h-48 mx-auto"
+              />
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Aponte a câmera do celular para abrir este relatório instantaneamente no seu dispositivo.
+            </p>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(currentUrl);
+                  alert('Link copiado com sucesso!');
+                }}
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Copy size={14} />
+                <span>Copiar Link</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => window.open(qrCodeImageUrl, '_blank')}
+                className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                title="Baixar Imagem do QR Code"
+              >
+                <DownloadSimple size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
