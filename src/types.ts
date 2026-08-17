@@ -265,6 +265,37 @@ export interface Agreement {
 }
 
 
+export interface MonthlyAggregatedStats {
+  id: string;             // Ex: 'orgId_2026_8'
+  organizationId: string;
+  year: number;
+  month: number;          // 1 a 12
+  totalProjected: number;
+  totalPaid: number;
+  totalBroken: number;
+  totalAgreements: number;
+  paidCount: number;
+  brokenCount: number;
+  waitingCount: number;
+  ticketAverage: number;
+  effectivenessRate: number;
+  projectedMrr: number;
+  byTeam?: Record<string, {
+    totalProjected: number;
+    totalPaid: number;
+    count: number;
+    paidCount: number;
+  }>;
+  byOrigin?: Record<string, {
+    totalValue: number;
+    paidValue: number;
+    count: number;
+    paidCount: number;
+  }>;
+  lastUpdated: string;
+  version?: number;
+}
+
 export interface DashboardStats {
   totalProjected: number;
   totalPaid: number;

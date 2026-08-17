@@ -16,6 +16,7 @@
 
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import { firestoreMetrics } from './firestoreMetrics';
 
 // ─── Interface do documento de cache ────────────────────────────────────────
 
@@ -29,6 +30,11 @@ interface StatsCacheDoc {
   /** UID do operador que computou (para debugging) */
   computedBy: string;
 }
+
+// Cache local de frescor em memória (TTL: 90 segundos)
+// Evita consultar o Firestore repetidamente a cada mudança de filtro/render
+const localFreshnessCache = new Map<string, { isFresh: boolean; expiresAt: number }>();
+const FRESHNESS_TTL_MS = 90 * 1000;
 
 // ─── Funções auxiliares ─────────────────────────────────────────────────────
 
@@ -53,13 +59,8 @@ function getTodayStr(): string {
  * Verifica se o cache de TODOS os times indicados está fresco.
  * Retorna true somente se TODOS estão frescos.
  *
- * Regras de frescor:
- * 1. O documento existe
- * 2. computedAt está preenchido
- * 3. forDate === hoje (KPIs time-relative mudam a cada dia)
- * 4. staleAt é null OU staleAt < computedAt (nenhum acordo escrito desde o cálculo)
- *
- * Custo: 1 leitura Firestore por time (getDoc).
+ * Utiliza cache local em memória (90s TTL) para economizar 100% de leituras Firestore
+ * em navegações rápidas pelo painel.
  */
 export async function areStatsCachesFresh(
   orgId: string,
@@ -69,37 +70,68 @@ export async function areStatsCachesFresh(
 ): Promise<boolean> {
   if (!orgId || teamIds.length === 0) return false;
 
+  const now = Date.now();
   const today = getTodayStr();
 
+  // Verifica se todos os times já estão com frescor garantido em cache local recente
+  const allCachedFresh = teamIds.every(teamId => {
+    const cacheId = getStatsCacheId(orgId, teamId, month, year);
+    const entry = localFreshnessCache.get(cacheId);
+    return entry && entry.isFresh && now < entry.expiresAt;
+  });
+
+  if (allCachedFresh) {
+    firestoreMetrics.recordRead('stats_freshness', teamIds.length, true, 1);
+    return true;
+  }
+
   try {
+    const startTime = Date.now();
     const results = await Promise.all(
       teamIds.map(async (teamId) => {
         const cacheId = getStatsCacheId(orgId, teamId, month, year);
         const cacheRef = doc(db, 'monthlyStats', cacheId);
         const snap = await getDoc(cacheRef);
 
-        if (!snap.exists()) return false;
+        if (!snap.exists()) {
+          localFreshnessCache.set(cacheId, { isFresh: false, expiresAt: now + FRESHNESS_TTL_MS });
+          return false;
+        }
 
         const data = snap.data() as StatsCacheDoc;
 
         // Regra 1: computedAt deve existir
-        if (!data.computedAt) return false;
+        if (!data.computedAt) {
+          localFreshnessCache.set(cacheId, { isFresh: false, expiresAt: now + FRESHNESS_TTL_MS });
+          return false;
+        }
 
         // Regra 2: deve ter sido computado hoje
-        if (data.forDate !== today) return false;
+        if (data.forDate !== today) {
+          localFreshnessCache.set(cacheId, { isFresh: false, expiresAt: now + FRESHNESS_TTL_MS });
+          return false;
+        }
 
         // Regra 3: não pode ter sido invalidado
         if (data.staleAt) {
           const staleTime = new Date(data.staleAt).getTime();
           const computeTime = new Date(data.computedAt).getTime();
-          if (staleTime >= computeTime) return false;
+          if (staleTime >= computeTime) {
+            localFreshnessCache.set(cacheId, { isFresh: false, expiresAt: now + FRESHNESS_TTL_MS });
+            return false;
+          }
         }
 
+        localFreshnessCache.set(cacheId, { isFresh: true, expiresAt: now + FRESHNESS_TTL_MS });
         return true;
       })
     );
 
-    return results.every(Boolean);
+    const isAllFresh = results.every(Boolean);
+    const duration = Date.now() - startTime;
+    firestoreMetrics.recordRead('stats_freshness', teamIds.length, false, duration);
+
+    return isAllFresh;
   } catch (error) {
     console.error('[statsCache] Erro ao verificar frescor:', error);
     return false; // Em caso de erro, assume stale (seguro)
@@ -133,8 +165,10 @@ export async function saveStatsCache(
           forDate: today,
           computedBy: userId,
         } satisfies StatsCacheDoc);
+        localFreshnessCache.set(cacheId, { isFresh: true, expiresAt: Date.now() + FRESHNESS_TTL_MS });
       })
     );
+    firestoreMetrics.recordWrite('stats_freshness', teamIds.length);
   } catch (error) {
     // Falha ao salvar cache não deve impedir o fluxo principal
     console.error('[statsCache] Erro ao salvar cache:', error);
@@ -164,11 +198,13 @@ export async function markStatsStale(
     await Promise.all(
       teamIds.map(async (teamId) => {
         const cacheId = getStatsCacheId(orgId, teamId, month, year);
+        localFreshnessCache.delete(cacheId); // Invalida cache local imediatamente
         const cacheRef = doc(db, 'monthlyStats', cacheId);
         // merge: true garante que o documento é criado se não existir
         await setDoc(cacheRef, { staleAt: now }, { merge: true });
       })
     );
+    firestoreMetrics.recordWrite('stats_freshness', teamIds.length);
   } catch (error) {
     console.error('[statsCache] Erro ao marcar stale:', error);
   }

@@ -22,6 +22,7 @@ import { collection, query, where, orderBy, limit, getDocs } from 'firebase/fire
 import { db } from '../../lib/firebase';
 import { UserProfile } from '../../types';
 import { maskCPF } from '../../utils/masks';
+import { FinOpsFirestorePanel } from './FinOpsFirestorePanel';
 
 interface AuditTabProps {
   profile: UserProfile;
@@ -260,6 +261,9 @@ export const AuditTab: React.FC<AuditTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* PAINEL DE FINOPS & TELEMETRIA DO FIRESTORE */}
+      <FinOpsFirestorePanel theme={theme} />
+
       {/* Banner do Módulo */}
       <div className={`p-6 rounded-2xl border relative overflow-hidden backdrop-blur-md ${
         theme === 'dark' ? 'bg-slate-900/60 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900 shadow-sm'

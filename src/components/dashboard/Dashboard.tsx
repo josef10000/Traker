@@ -28,6 +28,7 @@ import { auth, db } from '../../lib/firebase';
 import { CustomSelect } from '../ui/CustomSelect';
 import { CustomMonthYearPicker } from '../ui/CustomMonthYearPicker';
 import { markStatsStale } from '../../lib/statsCache';
+import { getFreshMonthlyStats } from '../../lib/monthlyStatsService';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useDebounce } from '../../hooks/useDebounce';
 import { playDealSound } from '../../utils/audioSynth';
@@ -38,6 +39,7 @@ import {
   AgreementOrigin, 
   AgreementType,
   AgreementCategory,
+  MonthlyAggregatedStats,
   UserProfile, 
   Team,
   Reconciliation,
@@ -339,6 +341,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [managers, setManagers] = useState<UserProfile[]>([]);
   const [selectedOperatorToTransfer, setSelectedOperatorToTransfer] = useState<string>('');
   const [selectedTargetTeamForTransfer, setSelectedTargetTeamForTransfer] = useState<string>('');
+  const [serverAggregatedStats, setServerAggregatedStats] = useState<MonthlyAggregatedStats | null>(null);
+
+  // Carregamento de Estatísticas Materializadas Pré-Agregadas com Cache TTL
+  useEffect(() => {
+    if (!profile.organizationId) return;
+
+    let isMounted = true;
+    getFreshMonthlyStats(profile.organizationId, selectedYear, selectedMonth + 1, monthAgreements)
+      .then(res => {
+        if (isMounted) setServerAggregatedStats(res);
+      })
+      .catch(err => console.warn('[Dashboard] Fallback estatísticas:', err));
+
+    return () => { isMounted = false; };
+  }, [profile.organizationId, selectedYear, selectedMonth, monthAgreements.length]);
 
   // Carrega supervisores da organização (para gerente e coordenador)
   useEffect(() => {
@@ -1007,7 +1024,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     filteredAgreements: cardTimeFilteredAgreements,
     monthlyGoal,
     selectedMonth,
-    selectedYear
+    selectedYear,
+    aggregatedStats: serverAggregatedStats
   });
 
   // Estatísticas do período de comparação

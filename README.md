@@ -17,6 +17,9 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | Pilar | Descrição |
 | :--- | :--- |
 | **🏢 Multi-Tenant Isolado** | Isolamento físico e lógico absoluto de dados por organização no Firebase Firestore. |
+| **⚡ FinOps & Telemetria do Firestore** | Cockpit em tempo real de auditoria de leituras (*reads*), gravações (*writes*), latência média e taxa de *Cache Hit* por tela, prevenindo custos desnecessários em escala. |
+| **📦 Materialização de Estatísticas (`monthly_stats`)** | Agregação e pré-cálculo de métricas consolidadas por organização e carteira, reduzindo de 100.000 para **1 leitura única** no carregamento do Dashboard. |
+| **🧊 Freshness Gate com TTL em Camadas** | Cache de alta velocidade em memória e IndexedDB com política *Stale-While-Revalidate* e TTL de 90 a 180s, eliminando requisições repetitivas ao banco. |
 | **🔒 Compliance LGPD Nativo** | Mascaramento dinâmico de CPF/valores e **Cadeia de Auditoria Criptográfica (SHA-256)** encadeada em blockchain local. |
 | **📡 Resiliência Offline-First** | Operação ininterrupta sem internet via **IndexedDB Cache Gate**, com sincronização automática na reconexão. |
 | **📈 Grafana & Observabilidade** | Telemetria contínua com Grafana Cloud para monitoramento de métricas, throughput de rede e saúde do SaaS. |
