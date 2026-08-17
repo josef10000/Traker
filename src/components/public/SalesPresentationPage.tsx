@@ -32,7 +32,12 @@ import {
   Buildings,
   Scales,
   Lightbulb,
-  Quotes
+  Quotes,
+  BellSimpleRinging,
+  Calendar,
+  FileCheck,
+  SpeakerHigh,
+  ChatCircleDots
 } from '@phosphor-icons/react';
 import { formatCurrency } from '../../utils/masks';
 
@@ -345,6 +350,13 @@ export const SalesPresentationPage: React.FC = () => {
                   </td>
                 </tr>
                 <tr>
+                  <td className="p-5 font-bold text-white">Rotina & Governança Interna</td>
+                  <td className="p-5 text-slate-400">Dependência de WhatsApp, Teams e planilhas de escala</td>
+                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
+                    Escala integrada, aceite de folha PJ, avisos diretos e QA com áudio
+                  </td>
+                </tr>
+                <tr>
                   <td className="p-5 font-bold text-white">Taxa de Setup & Adesão</td>
                   <td className="p-5 text-slate-400">R$ 5.000 a R$ 15.000 + semanas de implantação</td>
                   <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
@@ -565,7 +577,95 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 6: PREVENÇÃO DE QUEBRAS (RADAR DE RISCO PREDITIVO) */}
+        {/* BLOCO 6: ROTINA OPERACIONAL & GOVERNANÇA INTERNA (NOVO MÓDULO) */}
+        {/* ------------------------------------------------------------------------- */}
+        <section className="space-y-10">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-widest">
+              <CalendarCheck size={16} weight="bold" />
+              Eficiência & Rotina Diária
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white">
+              Recursos Essenciais que Eliminam o Caos do Dia a Dia
+            </h2>
+            <p className="text-sm text-slate-400">
+              Além de cockpits de cobrança, a Tracker entrega as ferramentas completas para gerenciar a rotina, a comunicação e a governança da sua equipe:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {/* ITEM 1: ESCALA & DIAS PRESENCIAIS */}
+            <div className="p-8 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-sky-500/40 transition-all space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                <Calendar size={26} weight="bold" />
+              </div>
+              <h3 className="text-lg font-black text-white">Escala & Aceite de Presença</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Calendário individual onde o operador visualiza seus dias presenciais e remotos e realiza o aceite formal da escala diretamente na tela, sem planilhas paralelas de Excel.
+              </p>
+            </div>
+
+            {/* ITEM 2: ACEITE DE FOLHA PJ */}
+            <div className="p-8 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-emerald-500/40 transition-all space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <FileCheck size={26} weight="bold" />
+              </div>
+              <h3 className="text-lg font-black text-white">Aceite Digital de Folha PJ</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                O prestador de serviço visualiza a medição de seus honorários e realiza a validação digital com registro de data e hora, garantindo conformidade e segurança jurídica.
+              </p>
+            </div>
+
+            {/* ITEM 3: NOTIFICAÇÕES SEM RUÍDO */}
+            <div className="p-8 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-purple-500/40 transition-all space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                <BellSimpleRinging size={26} weight="bold" />
+              </div>
+              <h3 className="text-lg font-black text-white">Notificações Oficiais Diretas</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Coordenadores e supervisores enviam comunicados e alertas diretamente para a tela do operador. Fim dos grupos caóticos de WhatsApp e prints de tela.
+              </p>
+            </div>
+
+            {/* ITEM 4: MONITORIA COM ÁUDIO INTEGRADO */}
+            <div className="p-8 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-indigo-500/40 transition-all space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <SpeakerHigh size={26} weight="bold" />
+              </div>
+              <h3 className="text-lg font-black text-white">Áudio Anexado na Monitoria</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                A equipe de qualidade anexa a gravação da chamada na avaliação para o operador ouvir dentro do sistema, eliminando o envio manual de arquivos pesados.
+              </p>
+            </div>
+
+            {/* ITEM 5: FLUXO DE RÉPLICA E TRÉPLICA */}
+            <div className="p-8 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-amber-500/40 transition-all space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <ChatCircleDots size={26} weight="bold" />
+              </div>
+              <h3 className="text-lg font-black text-white">Ciclo de Réplica & Tréplica</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                O operador recebe o feedback, assina o aceite ou registra sua contestação (réplica), com alinhamento final documentado pelo supervisor (tréplica).
+              </p>
+            </div>
+
+            {/* ITEM 6: COMPARATIVO DE EQUIPES & PREVISIBILIDADE */}
+            <div className="p-8 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-rose-500/40 transition-all space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                <ChartBar size={26} weight="bold" />
+              </div>
+              <h3 className="text-lg font-black text-white">Benchmarking & Previsibilidade</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Comparativo de desempenho entre equipes e supervisores (conversão, quebra e pacing) com projeção de fechamento do faturamento do mês.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------------------- */}
+        {/* BLOCO 7: PREVENÇÃO DE QUEBRAS (RADAR DE RISCO PREDITIVO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -615,7 +715,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 7: SIMULADOR DE ROI INTERATIVO (CALCULADORA DE RETORNO) */}
+        {/* BLOCO 8: SIMULADOR DE ROI INTERATIVO (CALCULADORA DE RETORNO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -785,7 +885,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 8: ROADMAP DE INTELIGÊNCIA ARTIFICIAL (FUTURO / PREVISÃO) */}
+        {/* BLOCO 9: ROADMAP DE INTELIGÊNCIA ARTIFICIAL (FUTURO / PREVISÃO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -863,7 +963,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 9: MODELO DE PARCERIA & PLANO ÚNICO */}
+        {/* BLOCO 10: MODELO DE PARCERIA & PLANO ÚNICO */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -909,6 +1009,10 @@ export const SalesPresentationPage: React.FC = () => {
                 'Cockpit Operacional em Tempo Real',
                 'Radar de Risco & Prevenção de Quebras',
                 'Múltiplas Visões (Diretoria, Supervisão, Operador, QA)',
+                'Gestão de Escala & Aceite de Presença',
+                'Aceite Digital de Folha PJ com Timestamp',
+                'Notificações Oficiais Coordenador ➔ Operador',
+                'Ciclo Completo de QA com Áudio, Réplica e Tréplica',
                 'Suporte Executivo Direto de Segunda a Sexta',
                 'Novas Funcionalidades & Melhorias Contínuas',
                 'Roadmap de IA sem custo de adesão adicional',
@@ -938,7 +1042,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 10: SEGURANÇA CORPORATIVA & GOVERNANÇA */}
+        {/* BLOCO 11: SEGURANÇA CORPORATIVA & GOVERNANÇA */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -998,7 +1102,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 11: FAQ EXECUTIVO (RESOLUÇÃO DE OBJEÇÕES) */}
+        {/* BLOCO 12: FAQ EXECUTIVO (RESOLUÇÃO DE OBJEÇÕES) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -1014,7 +1118,7 @@ export const SalesPresentationPage: React.FC = () => {
             {[
               {
                 q: 'Quanto tempo leva para a plataforma estar 100% ativa na minha operação?',
-                a: 'A implantação padrão leva até 48 horas. Nossa equipe realiza a configuração da sua empresa, cadastro das equipes e alçadas de negociação, entregando o ambiente pronto para uso imediato.'
+                a: 'A implantação padrão leva até 48 horas. Nossa equipe realiza a configuração da sua empresa, cadastro das equipes e parâmetros operacionais, entregando o ambiente pronto para uso imediato.'
               },
               {
                 q: 'Existe algum limite de operadores ou cobrança por usuário adicional?',
@@ -1022,7 +1126,7 @@ export const SalesPresentationPage: React.FC = () => {
               },
               {
                 q: 'A Tracker substitui nosso discador ou integra com nossos sistemas atuais?',
-                a: 'A Tracker atua como o Cockpit Central de Inteligência e Gestão. Ela convive em harmonia com qualquer discador ou telefonia do mercado, centralizando os acordos, comissões, monitoria e prevenção de quebra.'
+                a: 'A Tracker atua como o Cockpit Central de Inteligência e Gestão. Ela convive em harmonia com qualquer discador ou telefonia do mercado, centralizando os acordos, comissões, monitoria, escala e prevenção de quebra.'
               },
               {
                 q: 'Como funciona o suporte técnico e atendimento?',
