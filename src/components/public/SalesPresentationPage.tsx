@@ -31,7 +31,6 @@ import {
   CloudCheck,
   Buildings,
   Scales,
-  XCircle,
   Lightbulb,
   Quotes
 } from '@phosphor-icons/react';
@@ -339,13 +338,6 @@ export const SalesPresentationPage: React.FC = () => {
                   </td>
                 </tr>
                 <tr>
-                  <td className="p-5 font-bold text-white">Alçadas do Operador</td>
-                  <td className="p-5 text-slate-400">Operador precisa pausar a ligação para pedir autorização</td>
-                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
-                    Calculadora inteligente de margens e parcelas seguras
-                  </td>
-                </tr>
-                <tr>
                   <td className="p-5 font-bold text-white">Visões por Cargo</td>
                   <td className="p-5 text-slate-400">Telas genéricas iguais para todos os níveis</td>
                   <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
@@ -386,7 +378,7 @@ export const SalesPresentationPage: React.FC = () => {
             {[
               { id: 'director', label: '👑 Diretoria / Gerência', desc: 'Faturamento, Pacing & Metas Globais' },
               { id: 'supervisor', label: '👥 Supervisão de Equipe', desc: 'Cockpit Hora a Hora & Radar de Risco' },
-              { id: 'operator', label: '🎧 Operador', desc: 'Metas Pessoais & Alçadas de Desconto' },
+              { id: 'operator', label: '🎧 Operador', desc: 'Metas Pessoais & Produtividade' },
               { id: 'qa', label: '🛡️ Monitoria / Qualidade', desc: 'Auditorias 360° & Feedbacks' }
             ].map((role) => (
               <button
@@ -531,11 +523,11 @@ export const SalesPresentationPage: React.FC = () => {
 
                 <div className="p-4 rounded-2xl bg-slate-950 border border-white/5 p-4 flex items-center justify-between text-xs">
                   <div>
-                    <span className="font-bold text-white">Calculadora de Descontos & Parcelas com Alçadas Seguras</span>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Permite ao operador fechar o acordo na hora dentro das margens autorizadas pelo gestor</p>
+                    <span className="font-bold text-white">Visão Direta de Desempenho & Metas Individuais</span>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Interface limpa que motiva o operador a acompanhar suas conversões e comissões minuto a minuto</p>
                   </div>
                   <span className="px-3 py-1 rounded-xl bg-sky-500/20 text-sky-300 text-xs font-black border border-sky-500/30">
-                    Alçada Ativa
+                    Tempo Real
                   </span>
                 </div>
               </div>
@@ -823,7 +815,7 @@ export const SalesPresentationPage: React.FC = () => {
               </div>
               <h3 className="text-base font-black text-white">Speech Analytics & Transcrição de Áudio</h3>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Transcrição automática de ligações e áudios para auditar scripts de atendimento, identificar termos proibidos e verificar alçadas de negociação.
+                Transcrição automática de ligações e áudios para auditar scripts de atendimento, identificar termos proibidos e verificar conformidade.
               </p>
               <div className="pt-2 text-[11px] font-bold text-purple-400 flex items-center gap-1.5">
                 <span>⚡ Em fase de testes e homologação</span>
@@ -910,31 +902,36 @@ export const SalesPresentationPage: React.FC = () => {
               </div>
             </div>
 
-            {/* BENEFÍCIOS INCLUÍDOS */}
+            {/* BENEFÍCIOS INCLUÍDOS (LISTA LIMPA COM APENAS CHECK VERDE) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
               {[
-                '👥 Usuários & Operadores 100% Ilimitados',
-                '⚡ Cockpit Operacional em Tempo Real',
-                '🎯 Radar de Risco & Prevenção de Quebras',
-                '👑 Múltiplas Visões (Diretoria, Supervisão, Operador, QA)',
-                '🛠️ Suporte Executivo Direto de Segunda a Sexta',
-                '🚀 Novas Funcionalidades & Melhorias Contínuas',
-                '🤖 Roadmap de IA sem custo de adesão adicional',
-                '🔒 Multi-tenant com Isolamento de Dados Corporativo',
-                '☁️ Infraestrutura em Nuvem de Alta Disponibilidade',
-                '📊 Telemetria FinOps & Exportação de Relatórios'
+                'Usuários & Operadores 100% Ilimitados',
+                'Cockpit Operacional em Tempo Real',
+                'Radar de Risco & Prevenção de Quebras',
+                'Múltiplas Visões (Diretoria, Supervisão, Operador, QA)',
+                'Suporte Executivo Direto de Segunda a Sexta',
+                'Novas Funcionalidades & Melhorias Contínuas',
+                'Roadmap de IA sem custo de adesão adicional',
+                'Multi-tenant com Isolamento de Dados Corporativo',
+                'Infraestrutura em Nuvem de Alta Disponibilidade',
+                'Telemetria FinOps & Exportação de Relatórios'
               ].map((feature, i) => (
                 <div key={i} className="flex items-center gap-3 text-slate-200">
                   <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                     <Check size={12} weight="bold" />
                   </div>
-                  <span>{feature}</span>
+                  <span className="font-medium">{feature}</span>
                 </div>
               ))}
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 flex items-center justify-between text-xs text-slate-400">
-              <span>✅ Sem taxas ocultas de setup • Implantação e treinamento inclusos</span>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Check size={10} weight="bold" />
+                </div>
+                <span>Sem taxas ocultas de setup • Implantação e treinamento inclusos</span>
+              </div>
               <span className="text-sky-400 font-bold font-mono">Contrato Corporativo</span>
             </div>
           </div>
