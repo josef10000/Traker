@@ -23,7 +23,10 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **🛡️ SonarCloud Security A** | Análise estática contínua de segurança, prevenção de bugs e 0 vulnerabilidades em pipeline CI/CD. |
 | **📊 BI & Forecast Preditivo** | Analytics estruturado em 4 visões focadas (Visão Geral & Heatmaps, Matriz de Canais, Análise de Descontos e Forecast Preditivo com Maturação), eliminando visões estáticas e consolidando scores preditivos. |
 | **⏱️ Jornada Hora a Hora** | Cockpit de acompanhamento de produção em tempo real com **Banco de Pausas Flexível de 72 min/dia**. |
-| **🚨 Risco em Vencimento no Dia** | Painel estritamente exclusivo para o cargo de **Supervisor** em carrossel horizontal navegável, ordenação por maior valor, operador destacado e cópia rápida em 1-clique (CPF, Nome e Mensagens). |
+| **🚨 Risco em Vencimento no Dia** | Painel exclusivo de Supervisão com configurador de corte de **"Valor Alto"**, filtro estrito, badges prioritárias, disparo direto via WhatsApp e cópia de scripts em 1-clique. |
+| **⭐ Biblioteca de Ouro (QA)** | Galeria de gravações de alta performance e áudios de destaque (*Best Practice*) para treinamento contínuo e *onboarding* de novos operadores. |
+| **🧹 Higienização & Deduplicação (Back Office)** | Importação inteligente com diagnóstico prévio em tempo real, detecção e remoção atômica de CPFs duplicados e validação cadastral. |
+| **🏆 Comparador Multi-Nível** | Benchmark lado a lado entre **Equipes, Supervisores e Operadores** com comparativos de R$ Gerado, R$ Pago, Efetividade % e Quebra %. |
 | **📜 Prontuário 360° por CPF** | Histórico cronológico completo do cliente por CPF com registro de acordos passados, operadores e mural de anotações internas. |
 | **🔗 Link Público Modular** | Gerador interativo de relatórios públicos com **switches de bolinha verde**, presets rápidos (TV, Diretoria, Escala), módulos de Presença/Absenteísmo, Pacing, Pódio, Ranking, Ocultação de R$, Modo Sigiloso e PIN de 4 dígitos. |
 | **📑 Relatório Executivo em PDF** | Emissão em 1-clique de demonstrativo consolidado mensal com KPIs, taxas de liquidação, ticket médio e ranking operacional em layout A4 de alta fidelidade. |

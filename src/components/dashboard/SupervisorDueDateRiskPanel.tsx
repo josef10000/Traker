@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Warning, 
@@ -18,7 +18,13 @@ import {
   CaretLeft,
   CaretRight,
   CaretUp,
-  CaretDown
+  CaretDown,
+  PencilSimple,
+  SlidersHorizontal,
+  X,
+  WhatsappLogo,
+  Flame,
+  Sparkle
 } from '@phosphor-icons/react';
 import { Agreement, UserProfile } from '../../types';
 import { formatCurrency, formatCPF } from '../../utils/masks';
@@ -44,6 +50,47 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
   const [sortBy, setSortBy] = useState<'value_desc' | 'value_asc' | 'name'>('value_desc');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+
+  // Configurações do Supervisor (Valor Alto & Filtro Estrito)
+  const [highValueThreshold, setHighValueThreshold] = useState<number>(1000);
+  const [onlyHighValue, setOnlyHighValue] = useState<boolean>(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState<boolean>(false);
+  const [tempThreshold, setTempThreshold] = useState<string>('1000');
+  const [tempOnlyHighValue, setTempOnlyHighValue] = useState<boolean>(false);
+
+  // Carrega configurações salvas do supervisor
+  useEffect(() => {
+    const key = `supervisor_risk_config_${profile.uid || profile.id || 'default'}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed.threshold === 'number') {
+          setHighValueThreshold(parsed.threshold);
+          setTempThreshold(parsed.threshold.toString());
+        }
+        if (typeof parsed.onlyHighValue === 'boolean') {
+          setOnlyHighValue(parsed.onlyHighValue);
+          setTempOnlyHighValue(parsed.onlyHighValue);
+        }
+      } catch (e) {
+        console.error('Erro ao ler config de risco:', e);
+      }
+    }
+  }, [profile.uid, profile.id]);
+
+  const handleSaveConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseFloat(tempThreshold.replace(/\D/g, '')) || 0;
+    setHighValueThreshold(val);
+    setOnlyHighValue(tempOnlyHighValue);
+    const key = `supervisor_risk_config_${profile.uid || profile.id || 'default'}`;
+    localStorage.setItem(key, JSON.stringify({
+      threshold: val,
+      onlyHighValue: tempOnlyHighValue
+    }));
+    setIsConfigModalOpen(false);
+  };
 
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +155,11 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
   const filteredAgreements = useMemo(() => {
     let result = [...pendingAgreements];
 
+    // Filtro estrito de valor alto se configurado
+    if (onlyHighValue && highValueThreshold > 0) {
+      result = result.filter(a => (a.value || 0) >= highValueThreshold);
+    }
+
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(a => 
@@ -124,7 +176,7 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
     });
 
     return result;
-  }, [pendingAgreements, searchTerm, sortBy]);
+  }, [pendingAgreements, searchTerm, sortBy, onlyHighValue, highValueThreshold]);
 
   // Função para copiar texto com feedback visual de 2s
   const handleCopy = (text: string, key: string) => {
@@ -133,11 +185,18 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Gerador de Mensagem Personalizada (SEM PIX)
+  // Gerador de Mensagem Personalizada
   const getCustomMessage = (a: Agreement) => {
     const cleanFirstName = (a.clientName || 'Cliente').split(' ')[0];
     const valFormatted = formatCurrency(a.value || 0);
     return `Olá ${cleanFirstName}, identificamos o vencimento do seu acordo hoje no valor de ${valFormatted}. Podemos ajudar no envio de dúvidas ou confirmação do atendimento pelo chat?`;
+  };
+
+  const handleOpenWhatsApp = (a: Agreement) => {
+    const msg = encodeURIComponent(getCustomMessage(a));
+    const phone = (a.clientPhone || '').replace(/\D/g, '');
+    const url = phone ? `https://wa.me/55${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
+    window.open(url, '_blank');
   };
 
   if (!isSupervisorRole) return null;
@@ -192,6 +251,21 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
               </div>
             </div>
 
+            {/* BOTÃO DE CONFIGURAR VALOR ALTO (LÁPIS/ENGRENAGEM) */}
+            <button
+              type="button"
+              onClick={() => {
+                setTempThreshold(highValueThreshold.toString());
+                setTempOnlyHighValue(onlyHighValue);
+                setIsConfigModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200 rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0 shadow-sm"
+              title="Configurar corte de valor alto e preferências"
+            >
+              <PencilSimple size={15} className="text-amber-400" />
+              <span className="hidden sm:inline">Corte R$ {highValueThreshold}</span>
+            </button>
+
             {/* BOTÃO DE MINIMIZAR / EXPANDIR PAINEL */}
             <button
               type="button"
@@ -219,15 +293,23 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
           <>
             {/* CONTROLES: BUSCA, ORDENAÇÃO E BOTÕES DE NAVEGAÇÃO LATERAL DO CARROSSEL */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="relative w-full sm:w-80">
-                <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por cliente, CPF ou operador..."
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50"
-                />
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-80">
+                  <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por cliente, CPF ou operador..."
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+
+                {onlyHighValue && (
+                  <span className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black shrink-0 flex items-center gap-1">
+                    <Flame size={13} className="text-amber-400" /> Filtro Ativo: ≥ {formatCurrency(highValueThreshold)}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
@@ -252,19 +334,18 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
                     <button
                       type="button"
                       onClick={() => scrollCarousel('left')}
-                      className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
-                      title="Anterior"
+                      className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                      title="Rolar para esquerda"
                     >
-                      <CaretLeft size={16} weight="bold" />
+                      <CaretLeft size={16} />
                     </button>
-                    <span className="text-[10px] font-bold text-slate-500 px-1">Arrastar</span>
                     <button
                       type="button"
                       onClick={() => scrollCarousel('right')}
-                      className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
-                      title="Próximo"
+                      className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                      title="Rolar para direita"
                     >
-                      <CaretRight size={16} weight="bold" />
+                      <CaretRight size={16} />
                     </button>
                   </div>
                 )}
@@ -304,9 +385,16 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
                         {/* Header do Card */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="space-y-0.5">
-                            <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
-                              Vence Hoje
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
+                                Vence Hoje
+                              </span>
+                              {(agreement.value || 0) >= highValueThreshold && (
+                                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] font-black uppercase tracking-tight flex items-center gap-0.5">
+                                  <Flame size={10} className="text-amber-400" /> Alto Valor
+                                </span>
+                              )}
+                            </div>
                             <h4 className="font-bold text-sm text-white line-clamp-1">
                               {agreement.clientName}
                             </h4>
@@ -372,8 +460,18 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
                           </button>
                         </div>
 
-                        {/* Botões de Mensagem */}
+                        {/* Botões de Mensagem & WhatsApp */}
                         <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenWhatsApp(agreement)}
+                            className="px-2.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Disparar mensagem no WhatsApp com 1 clique"
+                          >
+                            <WhatsappLogo size={16} weight="fill" className="text-emerald-400" />
+                            <span>WhatsApp</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleCopy(customMsg, keyMsg)}
@@ -384,7 +482,7 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
                             ) : (
                               <ChatText size={14} className="text-amber-400" />
                             )}
-                            <span>{copiedId === keyMsg ? 'Mensagem Copiada!' : 'Copiar Mensagem'}</span>
+                            <span>{copiedId === keyMsg ? 'Copiada!' : 'Copiar Texto'}</span>
                           </button>
 
                           {onOpenMessageTemplates && (
@@ -440,6 +538,96 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
           </>
         )}
       </div>
+
+      {/* MODAL DE CONFIGURAÇÃO DE VALOR ALTO DO SUPERVISOR */}
+      {isConfigModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setIsConfigModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-md bg-slate-900 border border-amber-500/30 rounded-3xl p-6 shadow-2xl text-slate-100 relative space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <SlidersHorizontal size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Configurar Painel de Risco</h3>
+                  <span className="text-[11px] text-slate-400 font-medium">Preferências exclusivas do seu perfil de supervisão</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsConfigModalOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveConfig} className="space-y-4 pt-1">
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center gap-1.5">
+                  <Flame size={14} className="text-amber-400" />
+                  Corte de "Valor Alto" (R$)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-amber-400 font-mono">
+                    R$
+                  </span>
+                  <input 
+                    type="number"
+                    min="1"
+                    step="50"
+                    value={tempThreshold}
+                    onChange={(e) => setTempThreshold(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-black font-mono bg-slate-950 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <span className="text-[11px] text-slate-400 mt-1 block">
+                  Acordos a partir deste valor receberão destaque visual prioritário no carrossel.
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-white/5 space-y-2">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div className="space-y-0.5 pr-2">
+                    <span className="text-xs font-bold text-white block">Filtrar Apenas Valores Altos</span>
+                    <span className="text-[11px] text-slate-400 block">
+                      Oculta acordos abaixo do corte e exibe estritamente os acordos mais pesados.
+                    </span>
+                  </div>
+                  <input 
+                    type="checkbox"
+                    checked={tempOnlyHighValue}
+                    onChange={(e) => setTempOnlyHighValue(e.target.checked)}
+                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConfigModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                >
+                  Salvar Preferências
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

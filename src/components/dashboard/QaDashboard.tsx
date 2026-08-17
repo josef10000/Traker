@@ -11,8 +11,9 @@ import { QaEvaluationsList } from './qa/QaEvaluationsList';
 import { PdiManager } from './qa/PdiManager';
 import { CompetenceManager } from './qa/CompetenceManager';
 import { QaSurveysPanel } from './qa/QaSurveysPanel';
+import { QaGoldenLibrary } from './qa/QaGoldenLibrary';
 import { QaModals } from './qa/QaModals';
-import { Plus, CircleNotch as Loader2, Warning as AlertTriangle } from '@phosphor-icons/react';
+import { Plus, CircleNotch as Loader2, Warning as AlertTriangle, Star } from '@phosphor-icons/react';
 import { CustomConfirm } from '../ui/CustomConfirm';
 
 interface QaDashboardProps {
@@ -57,7 +58,7 @@ export const QaDashboard = ({
   const [isUpdatingDates, setIsUpdatingDates] = useState(false);
 
   // Estados de navegação interna
-  const [qaSubTab, setQaSubTab] = useState<'overview' | 'evaluations' | 'pdis' | 'competences' | 'surveys'>(
+  const [qaSubTab, setQaSubTab] = useState<'overview' | 'evaluations' | 'golden_library' | 'pdis' | 'competences' | 'surveys'>(
     isSuperUser ? 'overview' : 'evaluations'
   );
 
@@ -703,6 +704,17 @@ export const QaDashboard = ({
           {isSuperUser ? 'Avaliações Realizadas' : 'Minhas Avaliações'}
         </button>
         <button
+          onClick={() => setQaSubTab('golden_library')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            qaSubTab === 'golden_library' 
+              ? theme === 'dark' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm' : 'bg-amber-50 text-amber-800 border border-amber-200'
+              : theme === 'dark' ? 'text-slate-500 hover:text-amber-400' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Star size={14} weight="fill" className="text-amber-400" />
+          <span>Biblioteca de Ouro</span>
+        </button>
+        <button
           onClick={() => setQaSubTab('pdis')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             qaSubTab === 'pdis' 
@@ -776,6 +788,20 @@ export const QaDashboard = ({
               currentUser={profile}
               onAcknowledgeEvaluation={handleAcknowledgeEvaluation}
               onRecordView={handleRecordView}
+            />
+          )}
+
+          {qaSubTab === 'golden_library' && (
+            <QaGoldenLibrary
+              evaluations={evaluations}
+              currentTeamMembers={currentTeamMembers}
+              competences={competences}
+              isSuperUser={isSuperUser}
+              currentUser={profile}
+              onToggleBestPractice={handleToggleBestPractice}
+              onAcknowledgeEvaluation={handleAcknowledgeEvaluation}
+              onRecordView={handleRecordView}
+              theme={theme}
             />
           )}
 

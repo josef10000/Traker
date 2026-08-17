@@ -69,6 +69,7 @@ import { AttendanceCalendarSection } from './AttendanceCalendarSection';
 import { TeamAttendanceComparisonSection } from './TeamAttendanceComparisonSection';
 import { ClosingPjSection } from '../profile/ClosingPjSection';
 import { TeamsManagementSection } from './TeamsManagementSection';
+import { MultiLevelPerformanceComparator } from './MultiLevelPerformanceComparator';
 import { InvitesSection } from './InvitesSection';
 import { OrgTreeSection } from './OrgTreeSection';
 import { TransfersSection } from './TransfersSection';
@@ -3747,6 +3748,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 </div>
                               );
                             })}
+                          </div>
+
+                          {/* COMPARADOR MULTI-NÍVEL DE PERFORMANCE (EQUIPES, SUPERVISORES E OPERADORES) */}
+                          <div className="pt-4">
+                            <MultiLevelPerformanceComparator
+                              agreements={monthAgreements}
+                              teams={managedTeamsData}
+                              collaborators={filteredTeamMembers}
+                              theme={theme}
+                            />
                           </div>
                         </div>
                         </div>

@@ -221,8 +221,40 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
     value: '',
     dueDate: ''
   });
+  const [deduplicateCpf, setDeduplicateCpf] = useState<boolean>(true);
+  const [ignoreInvalidCpf, setIgnoreInvalidCpf] = useState<boolean>(true);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Diagnóstico prévio de higienização da planilha
+  const uploadDiagnostic = useMemo(() => {
+    if (!excelData.length || !columnMapping.clientCpf) {
+      return { total: excelData.length, unique: 0, duplicates: 0, invalid: 0 };
+    }
+    const cpfSet = new Set<string>();
+    let duplicates = 0;
+    let invalid = 0;
+
+    excelData.forEach(row => {
+      const rawCpf = String(row[columnMapping.clientCpf] || '').trim().replace(/\D/g, '');
+      if (!rawCpf || rawCpf.length < 11) {
+        invalid++;
+        return;
+      }
+      if (cpfSet.has(rawCpf)) {
+        duplicates++;
+      } else {
+        cpfSet.add(rawCpf);
+      }
+    });
+
+    return {
+      total: excelData.length,
+      unique: cpfSet.size,
+      duplicates,
+      invalid
+    };
+  }, [excelData, columnMapping.clientCpf]);
 
   // Gaveta Lateral (Drawer) de Notas
   const [activeClientForNotes, setActiveClientForNotes] = useState<BackOfficeClient | null>(null);
@@ -611,6 +643,8 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
       };
 
       let validCount = 0;
+      let duplicatesCount = 0;
+      const seenCpfs = new Set<string>();
       const clientObjects: BackOfficeClient[] = [];
 
       excelData.forEach((row, index) => {
@@ -620,6 +654,16 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
         const rawDate = formatExcelDate(row[columnMapping.dueDate]);
 
         if (!rawName || !rawCpf) return; // Ignora se não houver identificador
+        if (ignoreInvalidCpf && rawCpf.length < 11) return;
+
+        // Deduplicação inteligente de CPFs
+        if (deduplicateCpf) {
+          if (seenCpfs.has(rawCpf)) {
+            duplicatesCount++;
+            return;
+          }
+          seenCpfs.add(rawCpf);
+        }
 
         validCount++;
 
@@ -1900,6 +1944,59 @@ export const BackOfficeTab: React.FC<BackOfficeTabProps> = ({
                 />
               </div>
             </div>
+
+            {/* Diagnóstico Prévia de Higienização de CPFs */}
+            {columnMapping.clientCpf && uploadDiagnostic.total > 0 && (
+              <div className={`p-3.5 rounded-2xl border space-y-2.5 ${
+                theme === 'dark' ? 'bg-slate-900/80 border-white/10' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase text-amber-400 tracking-wider">
+                    🧹 Diagnóstico de Higienização
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {uploadDiagnostic.total} linhas lidas
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 rounded-xl bg-slate-950/60 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Únicos Válidos</span>
+                    <span className="text-xs font-black text-emerald-400 font-mono">{uploadDiagnostic.unique}</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-950/60 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Duplicados</span>
+                    <span className="text-xs font-black text-amber-400 font-mono">{uploadDiagnostic.duplicates}</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-950/60 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Sem CPF/Inválidos</span>
+                    <span className="text-xs font-black text-rose-400 font-mono">{uploadDiagnostic.invalid}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-slate-300">
+                    <input 
+                      type="checkbox"
+                      checked={deduplicateCpf}
+                      onChange={(e) => setDeduplicateCpf(e.target.checked)}
+                      className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                    />
+                    <span>Deduplicar CPFs (importar apenas a 1ª ocorrência)</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-slate-300">
+                    <input 
+                      type="checkbox"
+                      checked={ignoreInvalidCpf}
+                      onChange={(e) => setIgnoreInvalidCpf(e.target.checked)}
+                      className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500"
+                    />
+                    <span>Ignorar linhas com CPF/CNPJ incompleto</span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             <p className="text-[10px] text-slate-500 leading-normal">
               <span className="font-bold text-amber-500">Nota:</span> Todas as outras colunas que não forem selecionadas acima serão salvas como tags dinâmicas e estarão disponíveis para consulta.
