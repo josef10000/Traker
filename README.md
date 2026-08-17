@@ -32,6 +32,7 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **🏆 Comparador Multi-Nível** | Benchmark lado a lado entre **Equipes, Supervisores e Operadores** com comparativos de R$ Gerado, R$ Pago, Efetividade % e Quebra %. |
 | **📜 Prontuário 360° por CPF** | Histórico cronológico completo do cliente por CPF com registro de acordos passados, operadores e mural de anotações internas. |
 | **🔗 Link Público Modular** | Gerador interativo de relatórios públicos com **switches de bolinha verde**, presets rápidos (TV, Diretoria, Escala), módulos de Presença/Absenteísmo, Pacing, Pódio, Ranking, Ocultação de R$, Modo Sigiloso e PIN de 4 dígitos. |
+| **🚀 Apresentação Comercial Interativa (`/apresentacao`)** | Landing page de vendas imersiva com **Simulador Interativo de ROI**, gerador em 1-clique de **Proposta Comercial em PDF** e apresentação da oferta única de **R$ 3.200/mês (All-Inclusive com usuários ilimitados)**. |
 | **📑 Relatório Executivo em PDF** | Emissão em 1-clique de demonstrativo consolidado mensal com KPIs, taxas de liquidação, ticket médio e ranking operacional em layout A4 de alta fidelidade. |
 | **✨ Badges Semânticos & Shimmer Skeletons** | Badges dinâmicos com micro-animações de pulso esmeralda/âmbar e carregamento estruturado com efeito shimmer gradiente. |
 | **📁 Retenção R2 de Comprovantes** | Central de anexo de comprovantes bancários em nuvem R2 (retenção 24h na Sandbox e 1 ano em Produção). |

@@ -33,7 +33,8 @@ import {
   CaretDown,
   CheckCircle,
   Envelope,
-  EnvelopeSimple
+  EnvelopeSimple,
+  Rocket
 } from '@phosphor-icons/react';
 import { useDesignMode } from '../../hooks/useDesignMode';
 import { useTheme } from '../../hooks/useTheme';
@@ -746,6 +747,18 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
             </div>
 
 
+
+            {/* BOTÃO LINK DE VENDAS */}
+            <a
+              href="/apresentacao"
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/30 font-black text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+              title="Abrir Apresentação Comercial Interativa"
+            >
+              <Rocket size={16} weight="fill" className="text-emerald-400" />
+              Página de Vendas
+            </a>
 
             {/* BOTÃO TESTAR E-MAIL RESEND */}
             <button

@@ -14,6 +14,7 @@ import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { ProfileSettings } from './components/profile/ProfileSettings';
 import { PublicPortfolioView } from './components/dashboard/PublicPortfolioView';
 import { DemoPage } from './components/demo/DemoPage';
+import { SalesPresentationPage } from './components/public/SalesPresentationPage';
 import { getUserProfile } from './lib/teams';
 import { UserProfile, UserRole } from './types';
 import { sandboxService } from './lib/sandboxService';
@@ -321,6 +322,11 @@ export function AppContent() {
 
   const isPublicRoute = window.location.pathname.startsWith('/public/');
   const isDemoRoute = window.location.pathname === '/demo';
+  const isSalesRoute = window.location.pathname === '/apresentacao' || 
+                       window.location.pathname === '/vendas' || 
+                       window.location.pathname === '/sales' || 
+                       window.location.search.includes('view=apresentacao') ||
+                       window.location.search.includes('view=vendas');
 
   if (isPublicRoute) {
     return (
@@ -337,6 +343,26 @@ export function AppContent() {
         <Routes>
           <Route path="/public/portfolio" element={<PublicPortfolioView />} />
         </Routes>
+      </>
+    );
+  }
+
+  // ROTA /apresentacao e /vendas PÚBLICA PARA APRESENTAÇÃO COMERCIAL
+  if (isSalesRoute && !simulation?.active) {
+    return (
+      <>
+        <AnimatePresence>
+          {toast && (
+            <Toast 
+              message={toast.message} 
+              type={toast.type} 
+              onClose={() => setToast(null)} 
+            />
+          )}
+        </AnimatePresence>
+        <SalesPresentationPage 
+          onStartDemo={handleStartDemo} 
+        />
       </>
     );
   }
@@ -525,6 +551,8 @@ export function AppContent() {
               onStartDemo={handleStartDemo} 
             />
           } />
+          <Route path="/apresentacao" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
+          <Route path="/vendas" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
           <Route path="*" element={
             (window.location.search.includes('invite=') || window.location.search.includes('token='))
               ? <Navigate to={`/accept-invite${window.location.search}`} replace />
@@ -577,6 +605,8 @@ export function AppContent() {
               onStartDemo={handleStartDemo} 
             />
           } />
+          <Route path="/apresentacao" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
+          <Route path="/vendas" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </>
@@ -608,6 +638,8 @@ export function AppContent() {
             }}
           />
         } />
+        <Route path="/apresentacao" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
+        <Route path="/vendas" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
         <Route path="/create-team" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
