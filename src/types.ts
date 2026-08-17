@@ -614,6 +614,7 @@ export interface AppNotification {
 export interface AttendanceReason {
   id: string;
   organizationId: string;
+  teamId?: string;        // Opcional: ID da equipe específica ou 'all'/undefined para global
   title: string;
   isNegotiation: boolean; // Flag 1: Oportunidade real de negociação
   isSuccess: boolean;     // Flag 2: Negociação culminou em acordo

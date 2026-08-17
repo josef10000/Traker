@@ -97,6 +97,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
 
   const [editingReason, setEditingReason] = useState<AttendanceReason | null>(null);
   const [reasonTitle, setReasonTitle] = useState('');
+  const [reasonTeamId, setReasonTeamId] = useState<string>('all');
   const [reasonIsNegotiation, setReasonIsNegotiation] = useState(true);
   const [reasonIsSuccess, setReasonIsSuccess] = useState(false);
 
@@ -129,6 +130,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
       updated = customReasons.map(r => r.id === editingReason.id ? {
         ...r,
         title: reasonTitle.trim(),
+        teamId: reasonTeamId === 'all' ? undefined : reasonTeamId,
         isNegotiation: reasonIsNegotiation,
         isSuccess: reasonIsSuccess
       } : r);
@@ -136,6 +138,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
       const newR: AttendanceReason = {
         id: `reason_${Date.now()}`,
         organizationId: profile.organizationId || '',
+        teamId: reasonTeamId === 'all' ? undefined : reasonTeamId,
         title: reasonTitle.trim(),
         isNegotiation: reasonIsNegotiation,
         isSuccess: reasonIsSuccess,
@@ -150,6 +153,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
 
     setEditingReason(null);
     setReasonTitle('');
+    setReasonTeamId('all');
     setReasonIsNegotiation(true);
     setReasonIsSuccess(false);
   };
@@ -157,6 +161,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
   const handleOpenEditReason = (reason: AttendanceReason) => {
     setEditingReason(reason);
     setReasonTitle(reason.title);
+    setReasonTeamId(reason.teamId || 'all');
     setReasonIsNegotiation(reason.isNegotiation);
     setReasonIsSuccess(reason.isSuccess);
   };
@@ -697,6 +702,8 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
         onSave={handleSaveTabulation}
         existingAgreements={agreements}
         customReasons={customReasons}
+        attendanceRecords={records}
+        userTeamId={profile.teamId}
         organizationId={profile.organizationId}
         theme={theme}
       />
@@ -723,7 +730,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
                 </div>
                 <div>
                   <h3 className="text-base font-black tracking-tight">Gerenciamento de Motivos de Tabulação</h3>
-                  <span className="text-[11px] text-slate-400 font-medium">O próprio atendente pode criar e ajustar os motivos</span>
+                  <span className="text-[11px] text-slate-400 font-medium">Configure motivos globais ou segmentados por equipe</span>
                 </div>
               </div>
               <button 
@@ -749,6 +756,23 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
                   required
                   className="w-full px-3 py-2 rounded-xl text-xs bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
+              </div>
+
+              {/* Seletor de Equipe para o Motivo */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-400 block mb-1">Equipe / Carteira Aplicável</label>
+                <select
+                  value={reasonTeamId}
+                  onChange={(e) => setReasonTeamId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                >
+                  <option value="all">🏢 Todas as Equipes (Motivo Global)</option>
+                  {teamsData.map(t => (
+                    <option key={t.id} value={t.id}>
+                      👥 Equipe: {t.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -777,7 +801,7 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
                 {editingReason && (
                   <button
                     type="button"
-                    onClick={() => { setEditingReason(null); setReasonTitle(''); }}
+                    onClick={() => { setEditingReason(null); setReasonTitle(''); setReasonTeamId('all'); }}
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs cursor-pointer"
                   >
                     Cancelar Edição
@@ -799,7 +823,18 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
                 {customReasons.map(r => (
                   <div key={r.id} className="p-3 rounded-xl bg-slate-950/40 border border-white/5 flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-white block">{r.title}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white block">{r.title}</span>
+                        {r.teamId && r.teamId !== 'all' ? (
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            👥 {teamsData.find(t => t.id === r.teamId)?.name || 'Equipe'}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                            🏢 Global
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 mt-0.5 text-[10px]">
                         <span className={r.isNegotiation ? 'text-emerald-400 font-semibold' : 'text-slate-400'}>
                           {r.isNegotiation ? '✓ Denominador' : '🚫 Excluído'}

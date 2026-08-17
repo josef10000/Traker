@@ -23,6 +23,8 @@ interface TabulationModalProps {
   }) => void;
   existingAgreements: Agreement[];
   customReasons?: AttendanceReason[];
+  attendanceRecords?: AttendanceRecord[];
+  userTeamId?: string;
   organizationId?: string;
   theme?: 'light' | 'dark';
 }
@@ -41,12 +43,13 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
   onSave,
   existingAgreements = [],
   customReasons = [],
+  attendanceRecords = [],
+  userTeamId,
   organizationId,
   theme = 'dark'
 }) => {
   const [cpf, setCpf] = useState('');
   const [clientName, setClientName] = useState('');
-  const [selectedReasonId, setSelectedReasonId] = useState('reason_1');
   const [audioUrl, setAudioUrl] = useState('');
   const [audioExpiresAt, setAudioExpiresAt] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
@@ -54,16 +57,54 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
   const [observation, setObservation] = useState('');
   const [selectedAgreementId, setSelectedAgreementId] = useState('');
 
-  const { isListening, isSupported, toggleListening } = useVoiceDictation({
-    onResult: (text) => {
-      setObservation(text);
-    }
+  const isDark = theme === 'dark';
+  const allReasons = customReasons.length > 0 ? customReasons : DEFAULT_REASONS;
+
+  // Filtragem de motivos: Globais (sem teamId ou 'all') + Específicos do time do operador
+  const reasons = React.useMemo(() => {
+    return allReasons.filter(r => {
+      if (!r.teamId || r.teamId === 'all') return true;
+      if (userTeamId && r.teamId === userTeamId) return true;
+      return false;
+    });
+  }, [allReasons, userTeamId]);
+
+  // Cálculo da frequência de uso de cada motivo nos atendimentos recentes
+  const usageCountMap = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    attendanceRecords.forEach(rec => {
+      const key = rec.reasonId || rec.reasonTitle;
+      if (key) {
+        counts[key] = (counts[key] || 0) + 1;
+      }
+      if (rec.reasonTitle) {
+        counts[rec.reasonTitle] = (counts[rec.reasonTitle] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [attendanceRecords]);
+
+  // Motivos ordenados por frequência de uso (mais usados primeiro nos botões rápidos)
+  const quickReasons = React.useMemo(() => {
+    return [...reasons].sort((a, b) => {
+      const countA = usageCountMap[a.id] || usageCountMap[a.title] || 0;
+      const countB = usageCountMap[b.id] || usageCountMap[b.title] || 0;
+      return countB - countA;
+    });
+  }, [reasons, usageCountMap]);
+
+  const [selectedReasonId, setSelectedReasonId] = useState(() => {
+    return quickReasons[0]?.id || 'reason_1';
   });
 
-  const isDark = theme === 'dark';
-  const reasons = customReasons.length > 0 ? customReasons : DEFAULT_REASONS;
+  // Atualiza seleção padrão se a lista de motivos mudar
+  useEffect(() => {
+    if (quickReasons.length > 0 && !quickReasons.some(r => r.id === selectedReasonId)) {
+      setSelectedReasonId(quickReasons[0].id);
+    }
+  }, [quickReasons, selectedReasonId]);
 
-  const currentReason = reasons.find(r => r.id === selectedReasonId) || reasons[0];
+  const currentReason = reasons.find(r => r.id === selectedReasonId) || reasons[0] || DEFAULT_REASONS[0];
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -160,13 +201,19 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 my-4">
           {/* Presets de Tabulação Rápida (1-Click Selection) */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkle size={13} className="text-amber-400" />
-              Tabulação Rápida (1 Clique)
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkle size={13} className="text-amber-400" />
+                Tabulação Rápida (Mais Usados / 1 Clique)
+              </label>
+              {Object.keys(usageCountMap).length > 0 && (
+                <span className="text-[10px] text-slate-400 font-medium">Ordem adaptada ao seu uso</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {reasons.slice(0, 5).map((r) => {
+              {quickReasons.slice(0, 6).map((r, idx) => {
                 const isSelected = r.id === selectedReasonId;
+                const uses = usageCountMap[r.id] || usageCountMap[r.title] || 0;
                 return (
                   <button
                     key={r.id}
@@ -180,12 +227,26 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
                         : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <span className="font-bold line-clamp-2 leading-tight">
-                      {r.title.split('/')[0].trim()}
-                    </span>
-                    <span className={`text-[9px] mt-1 font-semibold ${r.isSuccess ? 'text-emerald-400' : r.isNegotiation ? 'text-sky-400' : 'text-slate-400'}`}>
-                      {r.isSuccess ? '✓ Acordo' : r.isNegotiation ? '• Negociação' : '• Institucional'}
-                    </span>
+                    <div className="flex items-start justify-between gap-1">
+                      <span className="font-bold line-clamp-2 leading-tight">
+                        {r.title.split('/')[0].trim()}
+                      </span>
+                      {uses > 0 && idx === 0 && (
+                        <span className="text-[8px] font-black uppercase px-1 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                          Top #1
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className={`text-[9px] font-semibold ${r.isSuccess ? 'text-emerald-400' : r.isNegotiation ? 'text-sky-400' : 'text-slate-400'}`}>
+                        {r.isSuccess ? '✓ Acordo' : r.isNegotiation ? '• Negociação' : '• Institucional'}
+                      </span>
+                      {r.teamId && r.teamId !== 'all' && (
+                        <span className="text-[8px] font-mono text-indigo-400 bg-indigo-500/10 px-1 py-0.2 rounded">
+                          Equipe
+                        </span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
