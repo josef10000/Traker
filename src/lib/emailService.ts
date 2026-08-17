@@ -103,3 +103,7 @@ export const sendBackupCodesEmail = async (
 
   return payload;
 };
+
+// Re-exporta o serviço oficial de convites por e-mail para compatibilidade total em todo o projeto
+export { sendInviteEmail, generateInviteEmailHtml } from '../services/emailService';
+export type { SendInviteEmailParams, SendEmailResult } from '../services/emailService';

@@ -359,33 +359,6 @@ export function AppContent() {
   // NOTA: /apresentacao, /vendas e /demo são tratados como <Route> dentro dos blocos <Routes> abaixo
   // para que useNavigate() funcione corretamente em SalesPresentationPage e DemoPage.
 
-  const queryParams = new URLSearchParams(window.location.search);
-  const hasInviteToken = queryParams.has('invite');
-
-  if (hasInviteToken) {
-    return (
-      <>
-        <AnimatePresence>
-          {toast && (
-            <Toast 
-              message={toast.message} 
-              type={toast.type} 
-              onClose={() => setToast(null)} 
-            />
-          )}
-        </AnimatePresence>
-        <Routes>
-          <Route path="/login" element={<LoginPage onAuthSuccess={refreshProfile} showToast={showToast} />} />
-          <Route path="/register" element={<LoginPage onAuthSuccess={refreshProfile} showToast={showToast} />} />
-          <Route path="/apresentacao" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
-          <Route path="/vendas" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
-          <Route path="/demo" element={<DemoPage onStartDemo={handleStartDemo} />} />
-          <Route path="*" element={<Navigate to={`/register${window.location.search}`} replace />} />
-        </Routes>
-      </>
-    );
-  }
-
   // SIMULAÇÃO ATIVA (Tanto para SuperAdmin quanto para Visitantes na Rota /demo)
   if (simulation?.active) {
     const rawProfile = sandboxService.getProfile(simulatedUid);

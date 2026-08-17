@@ -211,3 +211,10 @@ O repositório utiliza **GitHub Actions** para executar verificações automatiz
 - **Segurança de Endpoints Serverless**: Varredura contra exposição de chaves privadas (`RESEND_API_KEY`) no bundle do cliente.
 - **Tags de Restauração**: Restauração garantida via tag de versão (`backup-pre-refactor-20260807`).
 
+---
+
+## 📘 Documentação de Funções Críticas
+
+Para entender o funcionamento detalhado de fluxos críticos em produção (Disparo de E-mails via Resend, Ciclo de Convites e Ativação de Usuários, Limites Enterprise, Roteamento SPA e Telemetria FinOps do Firestore), consulte o documento dedicado:
+
+👉 **[Guia de Funções Críticas & Troubleshooting](docs/FUNCOES_CRITICAS.md)**

@@ -47,9 +47,9 @@ export const createOrganization = async (uid: string, userEmail: string, orgName
     id: orgId,
     name: orgName,
     status: 'active',
-    plan: 'free',
-    maxUsers: 5,
-    maxTeams: 1,
+    plan: 'pro',
+    maxUsers: 999,
+    maxTeams: 50,
     createdAt: now
   };
 
@@ -492,7 +492,13 @@ export const createInvitesInBulk = async (
     const inviteId = generateSecureToken(12);
     const token = generateSecureToken(16);
 
-    const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/register?invite=${token}`;
+    const inviteParams = new URLSearchParams();
+    inviteParams.set('token', token);
+    inviteParams.set('email', data.email.trim().toLowerCase());
+    inviteParams.set('org', orgData.name.trim());
+    inviteParams.set('role', data.role);
+    inviteParams.set('orgId', organizationId);
+    const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/accept-invite?${inviteParams.toString()}`;
     const roleLabel = 
       data.role === 'super_admin' ? '👑 Administrador Master' :
       data.role === 'manager' ? '🏢 Gerente da Empresa' :

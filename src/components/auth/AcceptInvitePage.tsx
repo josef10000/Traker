@@ -211,7 +211,12 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         if (token.startsWith('sb-tok')) {
           sandboxService.acceptInvite(user.uid, token);
         } else if (token !== 'demo' && !token.startsWith('inv-demo-')) {
-          await acceptInvite(user.uid, token, cleanDisplayName).catch(() => {});
+          try {
+            await acceptInvite(user.uid, token, cleanDisplayName);
+          } catch (inviteErr: any) {
+            console.warn('[AcceptInvitePage] Aviso ao atualizar status do convite no Firestore:', inviteErr);
+            // O perfil e conta de autenticação já foram criados com sucesso
+          }
         }
       }
 
