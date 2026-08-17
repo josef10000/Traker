@@ -45,7 +45,8 @@ import {
   QaEvaluation,
   CalendarEvent,
   DashboardWidgetConfig,
-  WidgetId
+  WidgetId,
+  AttendanceRecord
 } from '../../types';
 import { removeTeamMember, getTeamMembers } from '../../lib/teams';
 import { formatCurrency, maskCPF } from '../../utils/masks';
@@ -1918,6 +1919,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
             paidAt: data.status === AgreementStatus.PAID ? now : null
           };
           sandboxService.setAgreement(agreementData);
+
+          // Auto-tabulação no Sandbox
+          if (data.status !== AgreementStatus.SCHEDULED) {
+            const autoAttId = `att_auto_${Date.now()}_${id.slice(-6)}`;
+            const autoAttendance: AttendanceRecord = {
+              id: autoAttId,
+              organizationId: profile.organizationId,
+              teamId: targetTeamId,
+              operatorId: profile.uid,
+              operatorName: profile.displayName || (profile.email ? profile.email.split('@')[0] : 'Operador'),
+              clientCpf: agreementData.clientCpf || '',
+              clientName: agreementData.clientName || 'Cliente',
+              reasonId: 'reason_1',
+              reasonTitle: 'Acordo Fechado / Negociação Aceita',
+              isNegotiation: true,
+              isSuccess: true,
+              agreementId: id,
+              observation: `Acordo gerado automaticamente no valor de R$ ${Number(agreementData.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+              createdAt: now
+            };
+            const storedAttendances = localStorage.getItem(`sandbox_attendances_${profile.organizationId}`);
+            const existingAttList = storedAttendances ? JSON.parse(storedAttendances) : [];
+            localStorage.setItem(`sandbox_attendances_${profile.organizationId}`, JSON.stringify([autoAttendance, ...existingAttList]));
+          }
+
           showToast('Acordo do Sandbox registrado na memória!', 'success');
 
           if (payload.backOfficeClientIdRef) {
@@ -1980,6 +2006,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
           paidAt: data.status === AgreementStatus.PAID ? now : null
         };
         await setDoc(doc(db, 'agreements', id), agreementData);
+
+        // Auto-tabulação no Firestore
+        if (data.status !== AgreementStatus.SCHEDULED) {
+          try {
+            const autoAttId = `att_auto_${Date.now()}_${id.slice(-6)}`;
+            const autoAttendance: AttendanceRecord = {
+              id: autoAttId,
+              organizationId: profile.organizationId,
+              teamId: targetTeamId,
+              operatorId: profile.uid,
+              operatorName: profile.displayName || (profile.email ? profile.email.split('@')[0] : 'Operador'),
+              clientCpf: agreementData.clientCpf || '',
+              clientName: agreementData.clientName || 'Cliente',
+              reasonId: 'reason_1',
+              reasonTitle: 'Acordo Fechado / Negociação Aceita',
+              isNegotiation: true,
+              isSuccess: true,
+              agreementId: id,
+              observation: `Acordo gerado automaticamente no valor de R$ ${Number(agreementData.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+              createdAt: now
+            };
+            await setDoc(doc(db, 'attendances', autoAttId), autoAttendance);
+          } catch (attErr) {
+            console.error('Erro ao gerar auto-tabulação:', attErr);
+          }
+        }
+
         showToast('Acordo registrado com sucesso!', 'success');
 
         // Se este acordo veio do Back Office, atualiza o status correspondente do cliente da planilha

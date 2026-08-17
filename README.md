@@ -32,6 +32,7 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **🎨 Design Enterprise Pastel** | Interface minimalista em Dark Mode com **Glassmorphism**, reduzindo o cansaço visual e otimizando o espaço vertical. |
 | **🔔 Sino & Confirmação de Ciência** | Entrega de 100% das notificações exclusivamente pelo sino (0 modais na tela no login) e sistema de confirmação de leitura com ciente e tréplica para QA e Comunicados. |
 | **🌤️ Clima & Feriados Nacionais** | Widget de temperatura ao vivo (Open-Meteo) e mapeamento automático de feriados brasileiros (BrasilAPI) no calendário geral de escala e atividades PJ. |
+| **🎧 Tabulação Ágil & Auto-Registro** | Auto-geração atômica de tabulação de atendimento ao firmar acordos (eliminando retrabalho do operador), CPF opcional para ligações improdutivas e presets rápidos de 1 clique. |
 | **⚖️ Conformidade Jurídica PJ** | Estruturação de nomenclatura e recursos operacionais voltados a prestadores de serviços PJ (Minha Escala e Prestação PJ), eliminando termos trabalhistas. |
 
 ---

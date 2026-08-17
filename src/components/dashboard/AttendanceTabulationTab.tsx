@@ -86,6 +86,8 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
   const tabulationExportData = useMemo(() => {
     return filteredRecords.map(r => ({
       ...r,
+      clientCpf: r.clientCpf || 'Não informado',
+      clientName: r.clientName || 'Contato sem identificação',
       isNegotiationText: r.isNegotiation ? 'Sim' : 'Não',
       isSuccessText: r.isSuccess ? 'Acordo Firmado' : 'Sem Acordo',
       hasAudio: r.audioUrl ? 'Sim (MP3 Gravado)' : 'Não',
@@ -573,8 +575,14 @@ export const AttendanceTabulationTab: React.FC<AttendanceTabulationTabProps> = (
                         {rec.operatorName}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-bold block text-sky-400">{rec.clientName}</span>
-                        <span className="font-mono text-[11px] text-slate-400">{maskCPF(rec.clientCpf)}</span>
+                        <span className="font-bold block text-sky-400">
+                          {rec.clientName || (rec.clientCpf ? 'Cliente Identificado' : 'Contato sem identificação')}
+                        </span>
+                        <span className="font-mono text-[11px] text-slate-400">
+                          {rec.clientCpf && rec.clientCpf.replace(/\D/g, '').length === 11 
+                            ? maskCPF(rec.clientCpf) 
+                            : (rec.clientCpf || 'Sem CPF / Não informado')}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="font-semibold block">{rec.reasonTitle}</span>

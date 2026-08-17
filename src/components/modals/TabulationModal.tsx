@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, PhoneCall, Check, User, FileText, Link, Headphones, CheckCircle, Warning, UploadSimple, FileAudio, CircleNotch, Microphone } from '@phosphor-icons/react';
+import { X, PhoneCall, Check, User, FileText, Link, Headphones, CheckCircle, Warning, UploadSimple, FileAudio, CircleNotch, Microphone, Sparkle, Info } from '@phosphor-icons/react';
 import { Agreement, AttendanceReason, UserProfile } from '../../types';
 import { formatCPF } from '../../utils/masks';
 import { formatAudioStreamUrl } from '../../utils/audio';
@@ -106,16 +106,17 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!cpf || cpf.replace(/\D/g, '').length < 11) {
-      alert('Por favor, informe um CPF válido.');
+    const cleanCpf = cpf.replace(/\D/g, '');
+    if (cleanCpf.length > 0 && cleanCpf.length < 11) {
+      alert('Por favor, informe um CPF completo com 11 dígitos ou deixe o campo em branco.');
       return;
     }
 
     const processedAudioUrl = formatAudioStreamUrl(audioUrl);
 
     onSave({
-      clientCpf: cpf,
-      clientName: clientName || 'Cliente não identificado',
+      clientCpf: cpf.trim(),
+      clientName: clientName.trim() || (cpf.trim() ? 'Cliente Identificado' : 'Contato sem identificação'),
       reasonId: currentReason.id,
       reasonTitle: currentReason.title,
       isNegotiation: currentReason.isNegotiation,
@@ -145,7 +146,7 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black tracking-tight">Nova Tabulação de Atendimento</h3>
-              <span className="text-[11px] text-slate-400 font-medium">Registro de contato telefônico / WhatsApp</span>
+              <span className="text-[11px] text-slate-400 font-medium">Registro ágil de contato telefônico e WhatsApp</span>
             </div>
           </div>
           <button 
@@ -156,45 +157,45 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 my-4">
-          {/* CPF com Autopreenchimento */}
-          <div>
-            <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1">
-              CPF do Cliente <span className="text-rose-400">*</span>
+        <form onSubmit={handleSubmit} className="space-y-4 my-4">
+          {/* Presets de Tabulação Rápida (1-Click Selection) */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkle size={13} className="text-amber-400" />
+              Tabulação Rápida (1 Clique)
             </label>
-            <input 
-              type="text"
-              value={cpf}
-              onChange={(e) => setCpf(formatCPF(e.target.value))}
-              placeholder="000.000.000-00"
-              maxLength={14}
-              required
-              className={`w-full px-3 py-2 rounded-xl text-xs font-mono border focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
-              }`}
-            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {reasons.slice(0, 5).map((r) => {
+                const isSelected = r.id === selectedReasonId;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setSelectedReasonId(r.id)}
+                    className={`p-2.5 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer text-xs ${
+                      isSelected
+                        ? 'bg-sky-500/20 border-sky-400 text-sky-200 shadow-md ring-1 ring-sky-400'
+                        : isDark
+                        ? 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="font-bold line-clamp-2 leading-tight">
+                      {r.title.split('/')[0].trim()}
+                    </span>
+                    <span className={`text-[9px] mt-1 font-semibold ${r.isSuccess ? 'text-emerald-400' : r.isNegotiation ? 'text-sky-400' : 'text-slate-400'}`}>
+                      {r.isSuccess ? '✓ Acordo' : r.isNegotiation ? '• Negociação' : '• Institucional'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Nome do Cliente (Auto-preenchido ou editável) */}
+          {/* Seletor Completo de Motivo */}
           <div>
             <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1">
-              Nome do Cliente
-            </label>
-            <input 
-              type="text"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="Nome completo do cliente"
-              className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
-              }`}
-            />
-          </div>
-
-          {/* Motivo do Atendimento */}
-          <div>
-            <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1">
-              Motivo do Atendimento <span className="text-rose-400">*</span>
+              Todos os Motivos Cadastrados
             </label>
             <select
               value={selectedReasonId}
@@ -223,6 +224,53 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
                 🎉 Acordo Gerado
               </span>
             )}
+          </div>
+
+          {/* Dados do Cliente: CPF Opcional & Nome Opcional */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {/* CPF Opcional com Autopreenchimento */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  CPF do Cliente
+                </label>
+                <span className="text-[10px] text-slate-500 font-semibold">Opcional</span>
+              </div>
+              <input 
+                type="text"
+                value={cpf}
+                onChange={(e) => setCpf(formatCPF(e.target.value))}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className={`w-full px-3 py-2 rounded-xl text-xs font-mono border focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                }`}
+              />
+            </div>
+
+            {/* Nome do Cliente (Auto-preenchido ou editável) */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  Nome do Cliente
+                </label>
+                <span className="text-[10px] text-slate-500 font-semibold">Opcional</span>
+              </div>
+              <input 
+                type="text"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder="Nome completo do cliente"
+                className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                }`}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
+            <Info size={14} className="text-sky-400 shrink-0" />
+            <span>Para atendimentos improdutivos (ex: Caixa Postal, Número Errado), não é necessário preencher CPF nem Nome.</span>
           </div>
 
           {/* Vínculo de Acordo se for Sucesso */}
