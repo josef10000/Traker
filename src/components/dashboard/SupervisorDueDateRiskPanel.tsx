@@ -194,7 +194,7 @@ export const SupervisorDueDateRiskPanel: React.FC<SupervisorDueDateRiskPanelProp
 
   const handleOpenWhatsApp = (a: Agreement) => {
     const msg = encodeURIComponent(getCustomMessage(a));
-    const phone = (a.clientPhone || '').replace(/\D/g, '');
+    const phone = ((a.clientPhone || a.phone || '') as string).replace(/\D/g, '');
     const url = phone ? `https://wa.me/55${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
     window.open(url, '_blank');
   };

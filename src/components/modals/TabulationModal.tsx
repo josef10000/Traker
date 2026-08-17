@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, PhoneCall, Check, User, FileText, Link, Headphones, CheckCircle, Warning, UploadSimple, FileAudio, CircleNotch, Microphone, Sparkle, Info } from '@phosphor-icons/react';
-import { Agreement, AttendanceReason, UserProfile } from '../../types';
+import { Agreement, AttendanceReason, AttendanceRecord, UserProfile } from '../../types';
 import { formatCPF } from '../../utils/masks';
 import { formatAudioStreamUrl } from '../../utils/audio';
 import { r2Service } from '../../lib/r2Service';
@@ -56,6 +56,12 @@ export const TabulationModal: React.FC<TabulationModalProps> = ({
   const [fileName, setFileName] = useState('');
   const [observation, setObservation] = useState('');
   const [selectedAgreementId, setSelectedAgreementId] = useState('');
+
+  const { isListening, isSupported, toggleListening } = useVoiceDictation({
+    onResult: (text) => {
+      setObservation(text);
+    }
+  });
 
   const isDark = theme === 'dark';
   const allReasons = customReasons.length > 0 ? customReasons : DEFAULT_REASONS;

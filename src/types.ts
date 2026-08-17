@@ -236,6 +236,7 @@ export interface Agreement {
   type: AgreementType;
   category: AgreementCategory;
   phone?: string;
+  clientPhone?: string;
 
   // Campos de Parcelamento
   installmentCount?: number;   // Quantidade de parcelas (informativo)
