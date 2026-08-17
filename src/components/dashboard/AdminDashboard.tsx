@@ -784,6 +784,50 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* BANNER COMERCIAL & LINK DE VENDAS */}
+        <section className="p-6 rounded-3xl bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-sky-950/60 border border-emerald-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
+              <Rocket size={26} weight="fill" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base font-black text-white">Página de Vendas & Apresentação Comercial</h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                  R$ 3.200/mês • Ilimitado
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Link interativo com simulador de ROI em tempo real e gerador de proposta em PDF para apresentar aos seus clientes.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/apresentacao`);
+                showToast('Link da página de vendas copiado!', 'success');
+              }}
+              className="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Copy size={16} />
+              <span>Copiar Link</span>
+            </button>
+
+            <a
+              href="/apresentacao"
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Rocket size={16} weight="fill" />
+              <span>Abrir Apresentação ↗</span>
+            </a>
+          </div>
+        </section>
+
         {/* CARDS DE INDICADORES EXECUTIVOS */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="p-6 rounded-3xl border bg-slate-900/40 border-white/10 relative overflow-hidden flex items-center gap-4 shadow-xl">
@@ -1067,11 +1111,13 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
       )}
 
       {/* MODAL DE TESTE DE E-MAIL DO RESEND */}
-      <EmailTesterModal
-        isOpen={isEmailTesterOpen}
-        onClose={() => setIsEmailTesterOpen(false)}
-        showToast={showToast}
-      />
+      {isEmailTesterOpen && (
+        <EmailTesterModal
+          isOpen={isEmailTesterOpen}
+          onClose={() => setIsEmailTesterOpen(false)}
+          showToast={showToast}
+        />
+      )}
 
       {/* MODAL DE CRIAÇÃO DE EMPRESA */}
       {isCreateOrgOpen && (
