@@ -35,7 +35,6 @@ import {
   Quotes,
   BellSimpleRinging,
   Calendar,
-  FileCheck,
   SpeakerHigh,
   ChatCircleDots
 } from '@phosphor-icons/react';
@@ -609,7 +608,7 @@ export const SalesPresentationPage: React.FC = () => {
             {/* ITEM 2: ACEITE DE FOLHA PJ */}
             <div className="p-8 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-emerald-500/40 transition-all space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <FileCheck size={26} weight="bold" />
+                <FileText size={26} weight="bold" />
               </div>
               <h3 className="text-lg font-black text-white">Aceite Digital de Folha PJ</h3>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
