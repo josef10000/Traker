@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { EnvelopeSimple, PaperPlaneRight, CheckCircle, Warning, Eye, ShieldCheck } from '@phosphor-icons/react';
+import { EnvelopeSimple, PaperPlaneRight, CheckCircle, Warning, Eye } from '@phosphor-icons/react';
 import { sendInviteEmail } from '../../services/emailService';
 import { generateInviteEmailHtml } from '../../templates/inviteEmailTemplate';
 
@@ -21,7 +21,6 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [activeTab, setActiveTab] = useState<'send' | 'preview'>('send');
   const [lastResult, setLastResult] = useState<{ success: boolean; messageId?: string; error?: string } | null>(null);
-  const [customKey, setCustomKey] = useState(() => localStorage.getItem('custom_resend_api_key') || '');
 
   if (!isOpen) return null;
 
@@ -32,16 +31,6 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
     roleName: testRoleName,
     inviteUrl: previewInviteUrl
   });
-
-  const handleSaveCustomKey = (key: string) => {
-    setCustomKey(key);
-    if (key.trim()) {
-      localStorage.setItem('custom_resend_api_key', key.trim());
-      showToast('Chave de API do Resend salva com sucesso no navegador!', 'success');
-    } else {
-      localStorage.removeItem('custom_resend_api_key');
-    }
-  };
 
   const handleSendTestEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +91,7 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Dispare e-mails de teste reais pelo Resend e valide a entrega do convite corporativo.
+                Dispare e-mails de teste reais pelo Resend usando a chave configurada nas variáveis de ambiente da Vercel.
               </p>
             </div>
           </div>
@@ -148,25 +137,16 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
         {activeTab === 'send' ? (
           <div className="space-y-5">
             <form onSubmit={handleSendTestEmail} className="space-y-4">
-              <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/20 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black uppercase text-sky-300 block">Chave de API do Resend (Opcional / Atualizar)</label>
-                  <a 
-                    href="https://resend.com/api-keys" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-sky-400 hover:underline font-bold"
-                  >
-                    Obter chave no Resend.com ↗
+              {/* Info sobre onde a chave é configurada */}
+              <div className="p-3 rounded-2xl bg-sky-500/5 border border-sky-500/15 flex items-start gap-3">
+                <EnvelopeSimple size={18} className="text-sky-400 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  A chave do Resend (<code className="text-sky-300 font-mono">RESEND_API_KEY</code>) é lida exclusivamente das 
+                  <strong className="text-slate-200"> variáveis de ambiente da Vercel</strong>. Configure em 
+                  <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline ml-1">
+                    Vercel → Settings → Environment Variables ↗
                   </a>
-                </div>
-                <input
-                  type="password"
-                  value={customKey}
-                  onChange={(e) => handleSaveCustomKey(e.target.value)}
-                  placeholder="re_123456789... (cole sua chave do Resend aqui se desejar)"
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-sky-500 transition-all placeholder:text-slate-600"
-                />
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
@@ -182,12 +162,22 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
                   />
                 </div>
 
-                <div className="sm:col-span-6">
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Nome da Empresa Exemplo</label>
+                <div className="sm:col-span-3">
+                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Empresa Exemplo</label>
                   <input
                     type="text"
                     value={testOrgName}
                     onChange={(e) => setTestOrgName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-bold focus:border-sky-500 transition-all"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Cargo Exemplo</label>
+                  <input
+                    type="text"
+                    value={testRoleName}
+                    onChange={(e) => setTestRoleName(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-bold focus:border-sky-500 transition-all"
                   />
                 </div>
