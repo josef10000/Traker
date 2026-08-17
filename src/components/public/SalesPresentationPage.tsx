@@ -28,7 +28,6 @@ import {
 } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../../utils/masks';
-import { jsPDF } from 'jspdf';
 
 interface SalesPresentationPageProps {
   onStartDemo?: (role: any) => void;
@@ -97,107 +96,190 @@ export const SalesPresentationPage: React.FC<SalesPresentationPageProps> = ({ on
     window.open(`https://wa.me/5511999999999?text=${message}`, '_blank');
   };
 
-  // Gerador de Proposta Comercial Formal em PDF
+  // Gerador de Proposta Comercial Formal em PDF (Janela de Impressão Vetorial A4)
   const handleGenerateProposalPdf = () => {
     setIsGeneratingPdf(true);
     try {
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const company = leadCompanyName.trim() || 'Sua Empresa';
       const contact = leadContactName.trim() || 'Diretoria / Gestão';
+      const currentDate = new Date().toLocaleDateString('pt-BR');
 
-      // Cabeçalho
-      doc.setFillColor(15, 23, 42); // Slate-900
-      doc.rect(0, 0, 210, 45, 'F');
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('Por favor, permita popups para gerar a proposta em PDF.');
+        setIsGeneratingPdf(false);
+        return;
+      }
 
-      doc.setTextColor(56, 189, 248); // Sky-400
-      doc.setFontSize(22);
-      doc.setFont('helvetica', 'bold');
-      doc.text('TRACKER PLATFORM', 15, 20);
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <title>Proposta Comercial - Tracker Platform - ${company}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 15mm;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+              color: #0f172a;
+              background-color: #ffffff;
+              margin: 0;
+              padding: 0;
+              font-size: 13px;
+              line-height: 1.5;
+            }
+            .header {
+              background: linear-gradient(135deg, #0f172a, #1e293b);
+              color: #ffffff;
+              padding: 24px;
+              border-radius: 12px;
+              margin-bottom: 24px;
+            }
+            .header h1 {
+              margin: 0 0 6px 0;
+              font-size: 24px;
+              color: #38bdf8;
+              letter-spacing: -0.5px;
+            }
+            .header p {
+              margin: 0;
+              font-size: 12px;
+              color: #94a3b8;
+            }
+            .recipient-box {
+              background-color: #f8fafc;
+              border: 1px solid #e2e8f0;
+              padding: 16px;
+              border-radius: 10px;
+              margin-bottom: 20px;
+            }
+            .recipient-box h3 {
+              margin: 0 0 4px 0;
+              font-size: 14px;
+              color: #0f172a;
+            }
+            .pricing-card {
+              border: 2px solid #0284c7;
+              background-color: #f0f9ff;
+              padding: 20px;
+              border-radius: 12px;
+              margin-bottom: 20px;
+            }
+            .pricing-card .badge {
+              display: inline-block;
+              background-color: #0284c7;
+              color: white;
+              font-size: 10px;
+              font-weight: bold;
+              padding: 3px 8px;
+              border-radius: 6px;
+              text-transform: uppercase;
+              margin-bottom: 8px;
+            }
+            .pricing-card .price {
+              font-size: 28px;
+              font-weight: 900;
+              color: #0369a1;
+              margin: 4px 0 12px 0;
+            }
+            .features-list {
+              margin: 0;
+              padding-left: 20px;
+            }
+            .features-list li {
+              margin-bottom: 6px;
+              color: #334155;
+            }
+            .roi-card {
+              background-color: #ecfdf5;
+              border: 1px solid #a7f3d0;
+              padding: 16px;
+              border-radius: 10px;
+              margin-bottom: 24px;
+            }
+            .roi-card h4 {
+              margin: 0 0 8px 0;
+              color: #047857;
+              font-size: 14px;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 15px;
+              border-top: 1px solid #e2e8f0;
+              text-align: center;
+              font-size: 10px;
+              color: #64748b;
+            }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>TRACKER PLATFORM</h1>
+            <p>Proposta Comercial & Solução de Gestão de Cobrança de Alta Performance</p>
+            <p>Data: ${currentDate} | Validade da Proposta: 15 dias</p>
+          </div>
 
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Proposta Comercial & Solução de Gestão de Cobrança de Alta Performance', 15, 28);
-      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')} | Validade: 15 dias`, 15, 35);
+          <div class="recipient-box">
+            <h3>Apresentado para: <strong>${company}</strong></h3>
+            <p style="margin: 2px 0;"><strong>A/C:</strong> ${contact}</p>
+            ${leadEmail ? `<p style="margin: 2px 0;"><strong>E-mail:</strong> ${leadEmail}</p>` : ''}
+          </div>
 
-      // Destinatário
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(13);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Apresentado para: ${company}`, 15, 58);
+          <div class="pricing-card">
+            <span class="badge">Plano Único All-Inclusive Enterprise</span>
+            <div class="price">R$ 3.200,00 <span style="font-size: 14px; font-weight: normal; color: #64748b;">/ mês fixo</span></div>
+            <ul class="features-list">
+              <li><strong>Usuários e Operadores ILIMITADOS</strong> (Sem cobrança por licença ou assento);</li>
+              <li><strong>Equipes, Carteiras e Supervisores ILIMITADOS</strong>;</li>
+              <li><strong>Suporte Técnico Prioritário</strong> de Segunda a Sexta-feira em horário comercial;</li>
+              <li><strong>Roadmap de IA & Previsões Preditivas</strong> de maturação e risco de quebra;</li>
+              <li><strong>Todas as Novas Funcionalidades e Releases</strong> inclusas sem custo extra;</li>
+              <li><strong>Onboarding & Treinamento Completo</strong> da operação.</li>
+            </ul>
+          </div>
 
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`A/C: ${contact}`, 15, 64);
-      if (leadEmail) doc.text(`E-mail: ${leadEmail}`, 15, 70);
+          <div style="margin-bottom: 20px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase; color: #475569;">Principais Módulos Inclusos:</h4>
+            <ol style="margin: 0; padding-left: 20px; font-size: 12px; color: #334155;">
+              <li style="margin-bottom: 6px;"><strong>Cockpit de Risco no Dia:</strong> Carrossel de acordos vencendo hoje com disparo em 1 clique para WhatsApp e filtro de alto valor;</li>
+              <li style="margin-bottom: 6px;"><strong>BI & Analytics Preditivo:</strong> Heatmaps de horários de pagamento e forecast de liquidez;</li>
+              <li style="margin-bottom: 6px;"><strong>Biblioteca de Ouro (QA):</strong> Player integrado com as melhores gravações para treinamento contínuo;</li>
+              <li style="margin-bottom: 6px;"><strong>Comparador Multi-Nível:</strong> Benchmark em tempo real de Equipes, Supervisores e Operadores;</li>
+              <li style="margin-bottom: 6px;"><strong>Higienização & Deduplicação (Back Office):</strong> Importador inteligente com limpeza automática de CPFs;</li>
+              <li style="margin-bottom: 6px;"><strong>Segurança & Conformidade PJ:</strong> Criptografia SHA-256 e adequação rigorosa à LGPD.</li>
+            </ol>
+          </div>
 
-      // Resumo da Oferta
-      doc.setDrawColor(226, 232, 240);
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(15, 78, 180, 48, 4, 4, 'FD');
+          <div class="roi-card">
+            <h4>Projeção Financeira & Retorno sobre o Investimento (ROI Estimado):</h4>
+            <p style="margin: 3px 0;">• Tamanho da Operação Simulado: <strong>${operatorCount} operadores</strong></p>
+            <p style="margin: 3px 0;">• Recuperação Adicional Projetada: <strong>~ ${formatCurrency(roiCalculations.totalExtraRecovery)} / mês</strong></p>
+            <p style="margin: 3px 0;">• Múltiplo de Retorno (ROI): <strong>~ ${roiCalculations.roiMultiplier}x o valor da mensalidade</strong></p>
+          </div>
 
-      doc.setTextColor(15, 23, 42);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PLANO ALL-INCLUSIVE ENTERPRISE', 20, 88);
+          <div class="footer">
+            <p>Tracker Platform • Tecnologia de Ponta em Recuperação de Crédito • www.trackerplatform.com.br</p>
+          </div>
 
-      doc.setTextColor(16, 185, 129); // Emerald
-      doc.setFontSize(16);
-      doc.text('R$ 3.200,00 / mês', 20, 98);
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+        </html>
+      `;
 
-      doc.setTextColor(71, 85, 105);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text('• Usuários, Operadores e Equipes ILIMITADOS (sem cobrança por assento)', 20, 106);
-      doc.text('• Suporte Técnico Prioritário de Segunda a Sexta-feira', 20, 112);
-      doc.text('• Todas as Novas Melhorias, Atualizações e Roadmap de IA Preditiva Inclusos', 20, 118);
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
 
-      // Pilares Tecnológicos
-      doc.setTextColor(15, 23, 42);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Principais Módulos & Benefícios Inclusos:', 15, 138);
-
-      const items = [
-        '1. Cockpit de Risco no Dia com acionamento WhatsApp em 1 clique (resgate de quebras);',
-        '2. BI & Analytics Preditivo com Heatmaps e Previsão de Liquidez;',
-        '3. Biblioteca de Ouro no Monitor de Qualidade (Gravações e Treinamento);',
-        '4. Comparador Multi-Nível (Benchmark entre Equipes, Supervisores e Operadores);',
-        '5. Módulo Back Office com Higienização e Deduplicação Inteligente de CPFs;',
-        '6. Segurança Enterprise com Criptografia SHA-256 e Conformidade LGPD & PJ.'
-      ];
-
-      doc.setFontSize(9.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(51, 65, 85);
-      let y = 146;
-      items.forEach(it => {
-        doc.text(it, 18, y);
-        y += 8;
-      });
-
-      // Simulação de Retorno
-      doc.setFillColor(238, 242, 255);
-      doc.roundedRect(15, 200, 180, 42, 4, 4, 'F');
-
-      doc.setTextColor(67, 56, 202);
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Projeção Financeira & ROI Estimado:', 20, 210);
-
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(9.5);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`• Tamanho da Operação Simulado: ${operatorCount} operadores`, 20, 218);
-      doc.text(`• Recuperação Adicional Projetada: ~ ${formatCurrency(roiCalculations.totalExtraRecovery)} / mês`, 20, 225);
-      doc.text(`• Múltiplo de Retorno sobre o Investimento: ~ ${roiCalculations.roiMultiplier}x o valor da mensalidade`, 20, 232);
-
-      // Rodapé
-      doc.setFontSize(8.5);
-      doc.setTextColor(148, 163, 184);
-      doc.text('Tracker Platform • Tecnologia de Ponta em Recuperação de Crédito • www.trackerplatform.com.br', 15, 280);
-
-      doc.save(`Proposta_Comercial_Tracker_${company.replace(/\s+/g, '_')}.pdf`);
       setIsProposalModalOpen(false);
     } catch (err) {
       console.error(err);

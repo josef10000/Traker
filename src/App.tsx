@@ -347,6 +347,21 @@ export function AppContent() {
     );
   }
 
+  const handleStartDemo = (role: UserRole) => {
+    const params = new URLSearchParams(window.location.search);
+    const roleParam = params.get('role') as UserRole | null;
+    const validRoles: UserRole[] = ['manager', 'coordinator', 'supervisor', 'member', 'backoffice', 'monitor'];
+    const restrictedRole = (roleParam && validRoles.includes(roleParam)) ? roleParam : simulation?.demoRestrictedRole;
+
+    setSimulation({ 
+      active: true, 
+      role, 
+      isDemoMode: true, 
+      demoRestrictedRole: restrictedRole 
+    });
+    showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
+  };
+
   // ROTA /apresentacao e /vendas PÚBLICA PARA APRESENTAÇÃO COMERCIAL
   if (isSalesRoute && !simulation?.active) {
     return (
@@ -366,21 +381,6 @@ export function AppContent() {
       </>
     );
   }
-
-  const handleStartDemo = (role: UserRole) => {
-    const params = new URLSearchParams(window.location.search);
-    const roleParam = params.get('role') as UserRole | null;
-    const validRoles: UserRole[] = ['manager', 'coordinator', 'supervisor', 'member', 'backoffice', 'monitor'];
-    const restrictedRole = (roleParam && validRoles.includes(roleParam)) ? roleParam : simulation?.demoRestrictedRole;
-
-    setSimulation({ 
-      active: true, 
-      role, 
-      isDemoMode: true, 
-      demoRestrictedRole: restrictedRole 
-    });
-    showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
-  };
 
   // ROTA /demo PÚBLICA PARA VISITANTES E CLIENTES DE TESTE
   if (isDemoRoute && !simulation?.active) {
