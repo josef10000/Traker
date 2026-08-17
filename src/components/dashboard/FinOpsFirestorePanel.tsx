@@ -11,7 +11,7 @@ import {
   Devices,
   Sparkle
 } from '@phosphor-icons/react';
-import { firestoreMetrics, FirestoreTelemetryData } from '../../lib/firestoreMetrics';
+import { firestoreMetrics, FirestoreTelemetryData, ScreenMetric } from '../../lib/firestoreMetrics';
 
 interface FinOpsFirestorePanelProps {
   theme?: 'light' | 'dark';
@@ -215,7 +215,7 @@ export const FinOpsFirestorePanel: React.FC<FinOpsFirestorePanelProps> = ({
                   </td>
                 </tr>
               ) : (
-                Object.entries(metrics.screens).map(([screenName, s]) => {
+                (Object.entries(metrics.screens) as [string, ScreenMetric][]).map(([screenName, s]) => {
                   const screenTotal = s.cacheHits + s.cacheMisses;
                   const screenHitRate = screenTotal > 0 ? Math.round((s.cacheHits / screenTotal) * 100) : 100;
                   return (

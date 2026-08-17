@@ -343,20 +343,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedTargetTeamForTransfer, setSelectedTargetTeamForTransfer] = useState<string>('');
   const [serverAggregatedStats, setServerAggregatedStats] = useState<MonthlyAggregatedStats | null>(null);
 
-  // Carregamento de Estatísticas Materializadas Pré-Agregadas com Cache TTL
-  useEffect(() => {
-    if (!profile.organizationId) return;
-
-    let isMounted = true;
-    getFreshMonthlyStats(profile.organizationId, selectedYear, selectedMonth + 1, monthAgreements)
-      .then(res => {
-        if (isMounted) setServerAggregatedStats(res);
-      })
-      .catch(err => console.warn('[Dashboard] Fallback estatísticas:', err));
-
-    return () => { isMounted = false; };
-  }, [profile.organizationId, selectedYear, selectedMonth, monthAgreements.length]);
-
   // Carrega supervisores da organização (para gerente e coordenador)
   useEffect(() => {
     if ((profile.role !== 'manager' && profile.role !== 'coordinator') || !profile.organizationId) return;
@@ -650,6 +636,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
     operatorId: operatorIdForAgreements,
     userId: profile.uid
   });
+
+  // Carregamento de Estatísticas Materializadas Pré-Agregadas com Cache TTL
+  useEffect(() => {
+    if (!profile.organizationId) return;
+
+    let isMounted = true;
+    getFreshMonthlyStats(profile.organizationId, selectedYear, selectedMonth + 1, monthAgreements)
+      .then(res => {
+        if (isMounted) setServerAggregatedStats(res);
+      })
+      .catch(err => console.warn('[Dashboard] Fallback estatísticas:', err));
+
+    return () => { isMounted = false; };
+  }, [profile.organizationId, selectedYear, selectedMonth, monthAgreements.length]);
 
   const isLoading = teamLoading || agreementsLoading;
 
