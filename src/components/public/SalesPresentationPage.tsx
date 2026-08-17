@@ -26,7 +26,6 @@ import {
   CalendarCheck,
   Check
 } from '@phosphor-icons/react';
-import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../../utils/masks';
 
 interface SalesPresentationPageProps {
@@ -34,7 +33,6 @@ interface SalesPresentationPageProps {
 }
 
 export const SalesPresentationPage: React.FC<SalesPresentationPageProps> = ({ onStartDemo }) => {
-  const navigate = useNavigate();
 
   // Estados do Simulador de ROI
   const [operatorCount, setOperatorCount] = useState<number>(20);
@@ -84,7 +82,7 @@ export const SalesPresentationPage: React.FC<SalesPresentationPageProps> = ({ on
     if (onStartDemo) {
       onStartDemo(role);
     } else {
-      navigate(`/demo?role=${role}`);
+      window.location.href = `/demo?role=${role}`;
     }
   };
 

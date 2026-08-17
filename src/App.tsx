@@ -321,12 +321,6 @@ export function AppContent() {
   }
 
   const isPublicRoute = window.location.pathname.startsWith('/public/');
-  const isDemoRoute = window.location.pathname === '/demo';
-  const isSalesRoute = window.location.pathname === '/apresentacao' || 
-                       window.location.pathname === '/vendas' || 
-                       window.location.pathname === '/sales' || 
-                       window.location.search.includes('view=apresentacao') ||
-                       window.location.search.includes('view=vendas');
 
   if (isPublicRoute) {
     return (
@@ -362,45 +356,8 @@ export function AppContent() {
     showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
   };
 
-  // ROTA /apresentacao e /vendas PÚBLICA PARA APRESENTAÇÃO COMERCIAL
-  if (isSalesRoute && !simulation?.active) {
-    return (
-      <>
-        <AnimatePresence>
-          {toast && (
-            <Toast 
-              message={toast.message} 
-              type={toast.type} 
-              onClose={() => setToast(null)} 
-            />
-          )}
-        </AnimatePresence>
-        <SalesPresentationPage 
-          onStartDemo={handleStartDemo} 
-        />
-      </>
-    );
-  }
-
-  // ROTA /demo PÚBLICA PARA VISITANTES E CLIENTES DE TESTE
-  if (isDemoRoute && !simulation?.active) {
-    return (
-      <>
-        <AnimatePresence>
-          {toast && (
-            <Toast 
-              message={toast.message} 
-              type={toast.type} 
-              onClose={() => setToast(null)} 
-            />
-          )}
-        </AnimatePresence>
-        <DemoPage 
-          onStartDemo={handleStartDemo} 
-        />
-      </>
-    );
-  }
+  // NOTA: /apresentacao, /vendas e /demo são tratados como <Route> dentro dos blocos <Routes> abaixo
+  // para que useNavigate() funcione corretamente em SalesPresentationPage e DemoPage.
 
   const queryParams = new URLSearchParams(window.location.search);
   const hasInviteToken = queryParams.has('invite');
@@ -420,6 +377,9 @@ export function AppContent() {
         <Routes>
           <Route path="/login" element={<LoginPage onAuthSuccess={refreshProfile} showToast={showToast} />} />
           <Route path="/register" element={<LoginPage onAuthSuccess={refreshProfile} showToast={showToast} />} />
+          <Route path="/apresentacao" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
+          <Route path="/vendas" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
+          <Route path="/demo" element={<DemoPage onStartDemo={handleStartDemo} />} />
           <Route path="*" element={<Navigate to={`/register${window.location.search}`} replace />} />
         </Routes>
       </>
@@ -497,6 +457,9 @@ export function AppContent() {
                 }}
               />
             } />
+            <Route path="/apresentacao" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
+            <Route path="/vendas" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
+            <Route path="/demo" element={<DemoPage onStartDemo={handleStartDemo} />} />
             <Route path="/create-team" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
