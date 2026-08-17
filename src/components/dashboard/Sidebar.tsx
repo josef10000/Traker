@@ -15,7 +15,8 @@ import {
   MonitorPlay as ExecutiveIcon,
   Clock,
   BookOpen,
-  Lock
+  Lock,
+  Rocket
 } from '@phosphor-icons/react';
 import { UserProfile } from '../../types';
 import { checkIsSuperUser } from '../../utils/roles';
@@ -253,8 +254,28 @@ export const Sidebar = ({
         })}
       </nav>
 
-      {/* Rodapé — Apenas Logout */}
-      <div className="p-3 border-t border-white/5 flex flex-col items-center shrink-0">
+      {/* Rodapé — Página de Vendas & Logout */}
+      <div className="p-3 border-t border-white/5 flex flex-col items-center gap-2 shrink-0">
+        <a
+          href="/apresentacao"
+          target="_blank"
+          rel="noreferrer"
+          className="relative group p-2 rounded-xl transition-all cursor-pointer active:scale-95 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 flex justify-center"
+          title="Abrir Apresentação Comercial"
+        >
+          <Rocket size={17} weight="fill" />
+          
+          {/* Tooltip Vendas */}
+          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 translate-x-[-6px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 ease-out z-[100]">
+            <div className="glass-tooltip px-3 py-1.5 rounded-xl min-w-[130px] text-center relative border border-emerald-500/30 bg-slate-900/95 backdrop-blur-xl shadow-xl">
+              <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-emerald-500/30 pointer-events-none" />
+              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none relative z-10">
+                Página de Vendas
+              </span>
+            </div>
+          </div>
+        </a>
+
         <button
           onClick={onLogoutClick}
           className="relative group p-2 rounded-xl transition-all cursor-pointer active:scale-95 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 flex justify-center"

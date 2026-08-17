@@ -21,6 +21,7 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [activeTab, setActiveTab] = useState<'send' | 'preview'>('send');
   const [lastResult, setLastResult] = useState<{ success: boolean; messageId?: string; error?: string } | null>(null);
+  const [customKey, setCustomKey] = useState(() => localStorage.getItem('custom_resend_api_key') || '');
 
   if (!isOpen) return null;
 
@@ -31,8 +32,6 @@ export const EmailTesterModal: React.FC<EmailTesterModalProps> = ({
     roleName: testRoleName,
     inviteUrl: previewInviteUrl
   });
-
-  const [customKey, setCustomKey] = useState(() => localStorage.getItem('custom_resend_api_key') || '');
 
   const handleSaveCustomKey = (key: string) => {
     setCustomKey(key);
