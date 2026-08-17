@@ -8,7 +8,7 @@ Este documento serve como a **Fonte Única de Verdade (Single Source of Truth)**
 
 1. [Serviço de Disparo de E-mails & Resend](#1-serviço-de-disparo-de-e-mails--resend)
 2. [Fluxo de Convites & Ativação de Usuários](#2-fluxo-de-convites--ativação-de-usuários)
-3. [Gestão de Organizações & Modelo Enterprise](#3-gestão-de-organizações--modelo-enterprise)
+3. [Gestão de Organizações & Modelo Enterprise Ilimitado](#3-gestão-de-organizações--modelo-enterprise-ilimitado)
 4. [Autenticação, Perfis & Roteamento SPA](#4-autenticação-perfis--roteamento-spa)
 5. [FinOps & Telemetria do Firestore](#5-finops--telemetria-do-firestore)
 6. [Matriz de Troubleshooting Rápido](#6-matriz-de-troubleshooting-rápido)
@@ -20,34 +20,27 @@ Este documento serve como a **Fonte Única de Verdade (Single Source of Truth)**
 ### 📂 Arquivos Responsáveis:
 - **Serverless Function (Backend)**: [`/api/send-email.ts`](file:///C:/Users/JoséFrazãodaSilvaNet/api/send-email.ts)
 - **Serviço Frontend**: [`src/services/emailService.ts`](file:///C:/Users/JoséFrazãodaSilvaNet/src/services/emailService.ts) e [`src/lib/emailService.ts`](file:///C:/Users/JoséFrazãodaSilvaNet/src/lib/emailService.ts)
-- **Template HTML Responsivo**: [`src/templates/inviteEmailTemplate.ts`](file:///C:/Users/JoséFrazãodaSilvaNet/src/templates/inviteEmailTemplate.ts)
-- **Painel de Teste no Super Admin**: [`src/components/modals/EmailTesterModal.tsx`](file:///C:/Users/JoséFrazãodaSilvaNet/src/components/modals/EmailTesterModal.tsx)
+- **Template HTML**: [`src/templates/inviteEmailTemplate.ts`](file:///C:/Users/JoséFrazãodaSilvaNet/src/templates/inviteEmailTemplate.ts)
+- **Modal de Teste no Super Admin**: [`src/components/modals/EmailTesterModal.tsx`](file:///C:/Users/JoséFrazãodaSilvaNet/src/components/modals/EmailTesterModal.tsx)
 
-### ⚙️ Como Funciona:
+### ⚙️ Arquitetura e Fluxo de Dados:
 ```
-[Frontend / UI]
+[Frontend / React]
    │
-   ├── sendInviteEmail({ recipientEmail, orgName, roleName, inviteUrl })
-   │
+   │ POST /api/send-email (Zero chaves ou dados sensíveis no client-side)
    ▼
-[Vercel Serverless Function: POST /api/send-email]
+[Vercel Serverless Function: api/send-email.ts]
    │
-   ├── 1. Valida payload (recipientEmail, inviteUrl)
-   ├── 2. Lê RESEND_API_KEY do process.env (Vercel Secrets)
-   ├── 3. Gera HTML com inviteEmailTemplate
-   ├── 4. Dispara POST https://api.resend.com/emails
-   │
+   │ Lê estritamente process.env.RESEND_API_KEY
    ▼
-[Fallback Firestore (Se a Serverless Function estiver offline)]
-   └── Grava documento em db.collection('mail') para envio via Firestore Trigger Email
+[Resend API: https://api.resend.com/emails]
+   │
+   ├── Sucesso: Retorna { success: true, id: 're_...' }
+   └── Falha: Retorna erro real e status code detalhado (ex: 403 Domínio Não Verificado)
 ```
 
-### 🔒 Variáveis de Ambiente Necessárias (Vercel):
-| Variável | Descrição | Exemplo |
-| :--- | :--- | :--- |
-| `RESEND_API_KEY` | Chave de API da conta Resend | `re_123456789...` |
-| `RESEND_FROM_EMAIL` | E-mail remetente verificado no Resend | `onboarding@resend.dev` ou `contato@seudominio.com.br` |
-| `RESEND_FROM_NAME` | Nome exibido no remetente | `Tracker Platform` |
+> **Princípio de Segurança**: O frontend **nunca** conhece a chave do Resend. A chave reside exclusivamente nas variáveis de ambiente seguras da Vercel (`Settings > Environment Variables`).
+> **Zero Fallback no Firestore**: Não são gerados documentos na coleção `mail`, eliminando escritas residuais e mantendo o custo de Firestore otimizado.
 
 ---
 
@@ -60,39 +53,40 @@ Este documento serve como a **Fonte Única de Verdade (Single Source of Truth)**
 - **Tela de Ativação**: [`src/components/auth/AcceptInvitePage.tsx`](file:///C:/Users/JoséFrazãodaSilvaNet/src/components/auth/AcceptInvitePage.tsx)
 - **Modal de Gestão**: [`src/components/modals/CompanyUserSetupModal.tsx`](file:///C:/Users/JoséFrazãodaSilvaNet/src/components/modals/CompanyUserSetupModal.tsx)
 
-### 🔄 Ciclo de Vida do Convite:
+### 🔄 Ciclo de Vida do Convite (Fonte Única da Verdade no Firestore):
 ```
 1. Gestor cria convite no modal -> createInvitesInBulk()
    ├── Gera token aleatório de 16 caracteres
    ├── Grava documento em `invites/{inviteId}` com status 'pending' e expiresAt (72h)
-   ├── Dispara e-mail com link: /accept-invite?token=ABC&email=user@emp.com&org=Empresa&role=manager&orgId=XYZ
-   └── Disponibiliza link para envio via WhatsApp ou cópia em lote
+   ├── Dispara e-mail com link limpo: /accept-invite?token=ABCDEF123456
+   └── Disponibiliza link seguro para WhatsApp ou cópia em lote
 
-2. Colaborador clica no link -> /accept-invite?token=ABC
-   ├── AcceptInvitePage valida token no Firestore (validateInvite)
-   ├── Se válido: preenche Nome da Empresa, Cargo e E-mail automaticamente
-   └── Exibe formulário "Defina sua Senha de Acesso"
+2. Colaborador clica no link -> /accept-invite?token=ABCDEF123456
+   ├── AcceptInvitePage extrai estritamente o `token` da URL
+   ├── Consulta Firestore: validateInvite(token)
+   ├── Se válido: preenche Nome da Empresa, Cargo e E-mail a partir do banco de dados
+   └── Se inválido ou expirado: bloqueia a tela com aviso explícito
 
-3. Colaborador envia formulário:
+3. Colaborador define sua senha e envia:
    ├── createUserWithEmailAndPassword() no Firebase Auth
-   ├── setDoc() no Firestore `users/{uid}` com role, organizationId e teamId
+   ├── setDoc() no Firestore `users/{uid}`
    ├── acceptInvite() atualiza status do convite para 'accepted'
    └── Redireciona diretamente para o Dashboard da empresa
 ```
 
 ---
 
-## 3. Gestão de Organizações & Modelo Enterprise
+## 3. Gestão de Organizações & Modelo Enterprise Ilimitado
 
 ### 📂 Arquivos Responsáveis:
 - **Provisionamento**: [`src/lib/teams.ts`](file:///C:/Users/JoséFrazãodaSilvaNet/src/lib/teams.ts) (`createOrganization`)
 - **Dashboard Super Admin**: [`src/components/dashboard/AdminDashboard.tsx`](file:///C:/Users/JoséFrazãodaSilvaNet/src/components/dashboard/AdminDashboard.tsx)
 
 ### 🏢 Parâmetros Corporativos:
-- **Plano Padrão**: `pro` (Modelo All-Inclusive Enterprise - R$ 3.200/mês).
-- **Limite de Usuários (`maxUsers`)**: `999` (Sem trava artificial de assentos).
-- **Limite de Equipes (`maxTeams`)**: `50`.
-- **Status da Empresa**: `active` ou `inactive` (Se inativa, os membros caem na tela [`OrgSuspendedScreen.tsx`](file:///C:/Users/JoséFrazãodaSilvaNet/src/components/app/OrgSuspendedScreen.tsx)).
+- **Plano Padrão**: `enterprise` (All-Inclusive — R$ 3.200/mês).
+- **Limite de Usuários (`maxUsers`)**: `-1` (onde `<= 0` ou `-1` = **Usuários Ilimitados** sem travas artificiais).
+- **Limite de Equipes (`maxTeams`)**: `-1` (Equipes Ilimitadas).
+- **Status da Empresa**: `active` ou `inactive`.
 
 ---
 
@@ -103,15 +97,15 @@ Este documento serve como a **Fonte Única de Verdade (Single Source of Truth)**
 - **Consulta de Perfil**: [`src/lib/teams.ts`](file:///C:/Users/JoséFrazãodaSilvaNet/src/lib/teams.ts) (`getUserProfile`)
 
 ### 🧭 Hierarquia de Roteamento no `App.tsx`:
-1. **`loading === true`** ➔ `<AppLoadingScreen />` (com safety timer de 800ms).
+1. **`loading === true`** ➔ `<AppLoadingScreen />` (safety timer de 800ms).
 2. **`isPublicRoute` (`/public/portfolio`)** ➔ `<PublicPortfolioView />`.
-3. **`simulation?.active`** ➔ `<Dashboard>` com dados mockados em memória via `sandboxService`.
+3. **`simulation?.active`** ➔ `<Dashboard>` em memória (`sandboxService`).
 4. **`!user` (Não autenticado)**:
    - `/login` ➔ `<LoginPage />`
    - `/register` ou `/accept-invite` ➔ `<AcceptInvitePage />`
    - `/apresentacao` ou `/vendas` ➔ `<SalesPresentationPage />`
    - `/demo` ➔ `<DemoPage />`
-   - `*` com `?token=` ➔ Redireciona para `/accept-invite?...`
+   - Links com `?token=` ➔ Redirecionam para `/accept-invite?...`
 5. **`profile?.role === 'super_admin'`** ➔ `<AdminDashboard />`.
 6. **`user` autenticado (Empresa)** ➔ `<Dashboard />`.
 
@@ -124,10 +118,10 @@ Este documento serve como a **Fonte Única de Verdade (Single Source of Truth)**
 - **Painel de Monitoramento**: [`src/components/dashboard/FinOpsFirestorePanel.tsx`](file:///C:/Users/JoséFrazãodaSilvaNet/src/components/dashboard/FinOpsFirestorePanel.tsx)
 
 ### 📊 Métricas Monitoradas em Tempo Real:
-- **Reads Reais**: Contagem exata de leituras feitas contra o Firestore no servidor.
-- **Cache Hits**: Leituras servidas pelo IndexedDB local do navegador (custo zero no Google Cloud).
-- **Writes / Deletes**: Operações de escrita e deleção registradas na sessão.
-- **Projeção de Custos**: Custo baseado na tabela oficial do Firebase Blaze Plan ($0.06 por 100k reads, $0.18 por 100k writes).
+- **Reads Reais**: Contagem de leituras cobráveis no servidor Firestore.
+- **Cache Hits**: Leituras servidas localmente pelo IndexedDB (custo zero).
+- **Writes / Deletes**: Operações de gravação e exclusão rastreadas.
+- **Projeção de Custos**: Cálculo em tempo real baseado no Blaze Plan oficial.
 
 ---
 
@@ -135,8 +129,7 @@ Este documento serve como a **Fonte Única de Verdade (Single Source of Truth)**
 
 | Sintoma / Erro | Causa Mais Provável | Onde Corrigir |
 | :--- | :--- | :--- |
-| **Erro 403 ao enviar e-mail** | `RESEND_API_KEY` ausente ou inválida no painel da Vercel | Vercel ➔ Settings ➔ Environment Variables |
-| **Link de convite caindo no Login** | URL antiga com `/register?invite=` sem rota mapeada | Verificar se `teams.ts` está usando `/accept-invite?token=` |
-| **Erro React #310** | Hook declarado após um `return` condicional ou `useNavigate` fora de `<Routes>` | Inspecionar topo do componente e garantir execução incondicional de hooks |
-| **Empresa bloqueada ao criar usuários** | `maxUsers` da organização setado com número baixo | No Super Admin ➔ Editar Empresa ➔ Aumentar Limite de Usuários para 999 |
-| **Convite Expirado** | Data de expiração ultrapassou as 72 horas | No Super Admin ➔ Setup da Empresa ➔ Reenviar Convite |
+| **Erro 403 no Resend** | 1. Conta em modo de teste do Resend enviando para destinatário que não é o titular da conta.<br>2. Chave `RESEND_API_KEY` na Vercel ausente ou sem permissões de envio.<br>3. Domínio remetente não verificado no painel do Resend. | No painel do Resend (`resend.com/domains`) verificar o domínio corporativo e atualizar `RESEND_API_KEY` na Vercel. |
+| **Link de convite caindo no Login** | URL antiga gerada com `/register?invite=` sem rota. | Gerar novo convite pelo sistema — agora padronizado em `/accept-invite?token=`. |
+| **Convite Inválido ou Expirado** | O token não existe na coleção `invites` ou ultrapassou 72 horas. | No Super Admin ➔ Setup da Empresa ➔ Reenviar Convite. |
+| **Empresa Bloqueada por Limite** | Organização com `maxUsers` positivo preenchido. | No Super Admin ➔ Editar Empresa ➔ Definir Limite de Usuários para ilimitado (`-1`). |

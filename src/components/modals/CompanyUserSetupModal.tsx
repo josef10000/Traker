@@ -130,16 +130,9 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     });
   };
 
-  // Helper para construir a URL completa do convite na rota dedicada /accept-invite
-  const buildInviteUrl = (token: string, email: string, role: UserRole) => {
-    const base = `${window.location.origin}/accept-invite`;
-    const params = new URLSearchParams();
-    params.set('token', token);
-    params.set('email', email.trim().toLowerCase());
-    params.set('org', orgName.trim());
-    params.set('role', role);
-    params.set('orgId', orgId);
-    return `${base}?${params.toString()}`;
+  // Helper para construir a URL limpa e segura do convite na rota dedicada /accept-invite
+  const buildInviteUrl = (token: string) => {
+    return `${window.location.origin}/accept-invite?token=${token}`;
   };
 
   // Criar e Gerar Links de Convite
@@ -256,7 +249,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
   // Compartilhar link individual via WhatsApp
   const handleShareWhatsApp = (inv: PendingInvite) => {
-    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
+    const inviteUrl = buildInviteUrl(inv.token);
     const roleLabel = getRoleLabel(inv.role);
     const message = `🚀 Olá! Segue seu link de acesso corporativo à plataforma Tracker (*${orgName}*):\n\n👤 *Cargo*: ${roleLabel}\n📧 *E-mail*: ${inv.email}\n🔗 *Ativar Minha Conta*: ${inviteUrl}\n\nBasta clicar no link acima e definir sua senha de acesso!`;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
@@ -265,7 +258,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
   // Copiar link individual
   const handleCopySingleLink = (inv: PendingInvite) => {
-    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
+    const inviteUrl = buildInviteUrl(inv.token);
     navigator.clipboard.writeText(inviteUrl);
     setCopiedToken(inv.token);
     showToast('Link de convite copiado para a área de transferência!', 'success');
@@ -279,7 +272,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     let text = `🚀 *Links de Acesso e Setup — ${orgName}*\n\n`;
     pendingInvites.forEach(inv => {
       const roleLabel = getRoleLabel(inv.role);
-      const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
+      const inviteUrl = buildInviteUrl(inv.token);
       text += `👤 *${inv.email}* (${roleLabel}):\n🔗 ${inviteUrl}\n\n`;
     });
 

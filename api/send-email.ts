@@ -38,11 +38,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'URL do convite é obrigatória.' });
     }
 
-    // Leitura da chave do Resend no ambiente do servidor Vercel
-    const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+    // Leitura estrita da chave do Resend no ambiente seguro do servidor Vercel
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       console.error('[Vercel Serverless]: RESEND_API_KEY não configurada no painel da Vercel.');
       return res.status(500).json({ 
+        success: false,
         error: 'RESEND_API_KEY não encontrada nas variáveis de ambiente da Vercel. Configure em Settings > Environment Variables.' 
       });
     }
@@ -142,15 +143,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!resendResponse.ok) {
-      console.error('[Vercel Serverless Resend Error]:', data);
+      console.error('[Vercel Serverless Resend Error]:', resendResponse.status, data);
       return res.status(resendResponse.status).json({ 
-        error: data.message || data.error?.message || 'Erro ao enviar e-mail via Resend.' 
+        success: false,
+        status: resendResponse.status,
+        error: data.message || data.error?.message || data.name || `Resend recusou o envio (Status ${resendResponse.status}).`
       });
     }
 
     return res.status(200).json({ success: true, id: data.id });
   } catch (error: any) {
     console.error('[Vercel Serverless Handler Error]:', error);
-    return res.status(500).json({ error: error.message || 'Erro interno no servidor ao disparar e-mail.' });
+    return res.status(500).json({ success: false, error: error.message || 'Erro interno no servidor ao disparar e-mail.' });
   }
 }

@@ -47,9 +47,9 @@ export const createOrganization = async (uid: string, userEmail: string, orgName
     id: orgId,
     name: orgName,
     status: 'active',
-    plan: 'pro',
-    maxUsers: 999,
-    maxTeams: 50,
+    plan: 'enterprise',
+    maxUsers: -1, // -1 = Usuários Ilimitados (Modelo Enterprise)
+    maxTeams: -1, // -1 = Equipes Ilimitadas
     createdAt: now
   };
 
@@ -477,10 +477,13 @@ export const createInvitesInBulk = async (
   const pendingInvites = await getPendingInvites(organizationId);
   const totalSlotsUsed = userCountSnap.size + pendingInvites.length;
 
-  if (totalSlotsUsed + invitesData.length > orgData.maxUsers) {
-    throw new Error(
-      `Limite do plano excedido. Sua empresa possui ${userCountSnap.size} membros ativos e ${pendingInvites.length} convites pendentes. Limite máximo: ${orgData.maxUsers} usuários.`
-    );
+  // Checagem de limite apenas para planos com trava explícita (> 0). Para -1 ou null = Ilimitado.
+  if (orgData.maxUsers && orgData.maxUsers > 0) {
+    if (totalSlotsUsed + invitesData.length > orgData.maxUsers) {
+      throw new Error(
+        `Limite do plano excedido. Sua empresa possui ${userCountSnap.size} membros ativos e ${pendingInvites.length} convites pendentes. Limite máximo: ${orgData.maxUsers} usuários.`
+      );
+    }
   }
 
   const now = new Date().toISOString();
@@ -492,13 +495,7 @@ export const createInvitesInBulk = async (
     const inviteId = generateSecureToken(12);
     const token = generateSecureToken(16);
 
-    const inviteParams = new URLSearchParams();
-    inviteParams.set('token', token);
-    inviteParams.set('email', data.email.trim().toLowerCase());
-    inviteParams.set('org', orgData.name.trim());
-    inviteParams.set('role', data.role);
-    inviteParams.set('orgId', organizationId);
-    const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/accept-invite?${inviteParams.toString()}`;
+    const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/accept-invite?token=${token}`;
     const roleLabel = 
       data.role === 'super_admin' ? '👑 Administrador Master' :
       data.role === 'manager' ? '🏢 Gerente da Empresa' :

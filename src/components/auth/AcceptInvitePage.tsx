@@ -79,41 +79,27 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     const params = new URLSearchParams(searchStr);
     
     const urlToken = params.get('token') || params.get('invite');
-    const urlEmail = params.get('email');
-    const urlOrg = params.get('org');
-    const urlRole = params.get('role');
-    const urlOrgId = params.get('orgId');
 
-    if (!urlToken && !urlEmail) {
+    if (!urlToken) {
       setInviteError('Nenhum código de convite foi identificado na URL.');
       setIsValidating(false);
       return;
     }
 
-    const activeToken = urlToken || `inv-${Date.now()}`;
+    const activeToken = urlToken.trim();
     setToken(activeToken);
 
-    // Se os metadados já estão na URL (link seguro com parâmetros)
-    if (urlEmail && urlOrg) {
-      setEmail(urlEmail.trim().toLowerCase());
-      setOrgName(decodeURIComponent(urlOrg));
-      setRole((urlRole || 'member') as UserRole);
-      setOrgId(urlOrgId || '');
-      setIsValidating(false);
-      return;
-    }
-
-    // Demo / Sandbox
+    // Modo Sandbox / Demo
     if (activeToken === 'demo' || activeToken.startsWith('inv-demo-')) {
-      setEmail(urlEmail || 'colaborador@empresa.com');
-      setOrgName(urlOrg ? decodeURIComponent(urlOrg) : 'Empresa Demonstração');
-      setRole((urlRole || 'manager') as UserRole);
+      setEmail('colaborador@empresa.com');
+      setOrgName('Empresa Demonstração');
+      setRole('manager');
       setOrgId('demo-org');
       setIsValidating(false);
       return;
     }
 
-    // Consulta e validação no Firestore
+    // Consulta e validação estrita no Firestore (Fonte Única da Verdade)
     const runValidation = async () => {
       try {
         let inviteDoc: any = null;
@@ -129,26 +115,13 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
           setOrgId(inviteDoc.organizationId || '');
           setRole(inviteDoc.role || 'member');
           setTeamId(inviteDoc.teamId);
-          showToast(`Convite corporativo localizado para ${inviteDoc.email}`, 'success');
-        } else if (urlEmail) {
-          // Fallback para os dados básicos da URL
-          setEmail(urlEmail.trim().toLowerCase());
-          setOrgName(urlOrg ? decodeURIComponent(urlOrg) : 'Empresa Convidante');
-          setRole((urlRole || 'member') as UserRole);
-          setOrgId(urlOrgId || '');
+          showToast(`Convite corporativo validado para ${inviteDoc.email}`, 'success');
         } else {
           setInviteError('Este convite é inválido, já foi aceito ou expirou. Solicite um novo link ao gestor.');
         }
       } catch (err: any) {
-        console.error('Erro ao validar convite:', err);
-        if (urlEmail) {
-          setEmail(urlEmail.trim().toLowerCase());
-          setOrgName(urlOrg ? decodeURIComponent(urlOrg) : 'Empresa Convidante');
-          setRole((urlRole || 'member') as UserRole);
-          setOrgId(urlOrgId || '');
-        } else {
-          setInviteError('Não foi possível verificar a credencial de convite. Verifique sua conexão.');
-        }
+        console.error('Erro ao validar convite no Firestore:', err);
+        setInviteError('Não foi possível verificar a credencial de convite no servidor. Verifique sua conexão.');
       } finally {
         setIsValidating(false);
       }
@@ -188,12 +161,12 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       const user = userCredential.user;
       const cleanDisplayName = displayName.trim();
 
-      // 2. Atualiza perfil no Firebase Auth
+      // 2. Atualiza nome no Firebase Auth
       await updateProfile(user, {
         displayName: cleanDisplayName
       }).catch(() => {});
 
-      // 3. Gravação garantida do Perfil no Firestore (agora autenticado)
+      // 3. Gravação garantida do Perfil no Firestore
       const userProfile: UserProfile = {
         uid: user.uid,
         email: email,
@@ -206,30 +179,25 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
 
       await setDoc(doc(db, 'users', user.uid), userProfile);
 
-      // 4. Marcação do convite como aceito
-      if (token) {
+      // 4. Marcação estrita do convite como aceito no Firestore
+      if (token && token !== 'demo' && !token.startsWith('inv-demo-')) {
         if (token.startsWith('sb-tok')) {
           sandboxService.acceptInvite(user.uid, token);
-        } else if (token !== 'demo' && !token.startsWith('inv-demo-')) {
-          try {
-            await acceptInvite(user.uid, token, cleanDisplayName);
-          } catch (inviteErr: any) {
-            console.warn('[AcceptInvitePage] Aviso ao atualizar status do convite no Firestore:', inviteErr);
-            // O perfil e conta de autenticação já foram criados com sucesso
-          }
+        } else {
+          await acceptInvite(user.uid, token, cleanDisplayName);
         }
       }
 
       showToast('Conta corporativa ativada com sucesso! Redirecionando...', 'success');
       onAuthSuccess();
     } catch (err: any) {
-      console.error('Erro na criação de conta via convite:', err);
+      console.error('Erro na ativação da conta corporativa:', err);
       if (err.code === 'auth/email-already-in-use') {
         setError('Este e-mail já possui uma conta ativa. Faça login com suas credenciais ou recupere sua senha.');
       } else if (err.code === 'auth/weak-password') {
         setError('A senha informada é muito fraca. Utilize ao menos 8 caracteres misturando letras e números.');
       } else {
-        setError(err.message || 'Ocorreu um erro ao criar sua conta corporativa.');
+        setError(err.message || 'Ocorreu um erro ao ativar sua conta corporativa. Tente novamente.');
       }
     } finally {
       setLoading(false);
