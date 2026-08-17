@@ -63,6 +63,8 @@ import { CustomConfirm } from '../ui/CustomConfirm';
 import { ToastType } from '../ui/Toast';
 import { CompanyUserSetupModal } from '../modals/CompanyUserSetupModal';
 import { EmailTesterModal } from '../modals/EmailTesterModal';
+import { FinOpsFirestorePanel } from './FinOpsFirestorePanel';
+import { Lightning } from '@phosphor-icons/react';
 
 interface AdminDashboardProps {
   profile: UserProfile;
@@ -81,7 +83,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedDemo, setCopiedDemo] = useState(false);
-  const [activeTab, setActiveTab] = useState<'companies' | 'metrics' | 'email'>('companies');
+  const [activeTab, setActiveTab] = useState<'companies' | 'metrics' | 'finops' | 'email'>('companies');
 
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -816,7 +818,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         </section>
 
         {/* ABAS DO PAINEL MASTER */}
-        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4 flex-wrap">
           <button
             onClick={() => setActiveTab('companies')}
             className={`px-5 py-2.5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
@@ -827,6 +829,18 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
           >
             <Building2 size={18} />
             Empresas & Setup de Usuários ({organizations.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('finops')}
+            className={`px-5 py-2.5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'finops'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-400'
+                : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Lightning size={18} weight="fill" className="text-amber-400" />
+            FinOps & Telemetria do Firestore
           </button>
 
           <button
@@ -985,26 +999,41 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
               </div>
             </div>
           </section>
-        ) : (
-          <section className="p-8 rounded-3xl border border-white/10 bg-slate-900/40 space-y-6">
-            <h2 className="text-lg font-black text-white">Resumo Executivo do SaaS</h2>
-            <p className="text-xs text-slate-400">
-              Métricas detalhadas do uso da plataforma Tracker.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <span className="text-xs text-slate-400 font-bold uppercase block">Empresas no Banco</span>
-                <span className="text-2xl font-black text-sky-400">{organizations.length}</span>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <span className="text-xs text-slate-400 font-bold uppercase block">Usuários Cadastrados</span>
-                <span className="text-2xl font-black text-purple-400">{users.length}</span>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <span className="text-xs text-slate-400 font-bold uppercase block">Equipes Formadas</span>
-                <span className="text-2xl font-black text-emerald-400">{teams.length}</span>
+        )}
+
+        {/* ABA FINOPS & TELEMETRIA DO FIRESTORE */}
+        {activeTab === 'finops' && (
+          <section className="space-y-6">
+            <FinOpsFirestorePanel theme={theme} />
+          </section>
+        )}
+
+        {/* ABA INDICADORES GLOBAIS DO SAAS */}
+        {activeTab === 'metrics' && (
+          <section className="space-y-6">
+            <div className="p-8 rounded-3xl border border-white/10 bg-slate-900/40 space-y-6">
+              <h2 className="text-lg font-black text-white">Resumo Executivo do SaaS</h2>
+              <p className="text-xs text-slate-400">
+                Métricas detalhadas do uso da plataforma Tracker.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <span className="text-xs text-slate-400 font-bold uppercase block">Empresas no Banco</span>
+                  <span className="text-2xl font-black text-sky-400">{organizations.length}</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <span className="text-xs text-slate-400 font-bold uppercase block">Usuários Cadastrados</span>
+                  <span className="text-2xl font-black text-purple-400">{users.length}</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <span className="text-xs text-slate-400 font-bold uppercase block">Equipes Formadas</span>
+                  <span className="text-2xl font-black text-emerald-400">{teams.length}</span>
+                </div>
               </div>
             </div>
+
+            {/* Painel de FinOps também incorporado na visão de Métricas */}
+            <FinOpsFirestorePanel theme={theme} />
           </section>
         )}
       </main>
