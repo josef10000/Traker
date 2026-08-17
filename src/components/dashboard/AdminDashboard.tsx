@@ -857,7 +857,7 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         </div>
 
         {/* ABAS CONTEÚDO */}
-        {activeTab === 'companies' ? (
+        {activeTab === 'companies' && (
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
