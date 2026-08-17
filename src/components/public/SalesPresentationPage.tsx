@@ -29,7 +29,11 @@ import {
   FileText,
   ChartBar,
   CloudCheck,
-  Buildings
+  Buildings,
+  Scales,
+  XCircle,
+  Lightbulb,
+  Quotes
 } from '@phosphor-icons/react';
 import { formatCurrency } from '../../utils/masks';
 
@@ -169,7 +173,73 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 2: O DIAGNÓSTICO DO GARGALO (POR QUE AS OPERAÇÕES PERDEM DINHEIRO) */}
+        {/* BLOCO 2: AUTORIDADE & DADOS DE MERCADO (MCKINSEY & IGEOC) */}
+        {/* ------------------------------------------------------------------------- */}
+        <section className="space-y-10">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-black uppercase tracking-widest">
+              <Lightbulb size={16} weight="bold" />
+              Evidências & Dados de Mercado
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white">
+              O Que Dizem os Estudos Globais e Setoriais de Cobrança
+            </h2>
+            <p className="text-sm sm:text-base text-slate-400">
+              Dados consolidados do mercado financeiro e das maiores consultorias comprovam o impacto direto da agilidade e da prevenção em tempo real:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* CARD MCKINSEY */}
+            <div className="p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-sky-950/30 border border-sky-500/30 space-y-6 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sky-400">
+                  <Quotes size={28} weight="fill" />
+                  <span className="text-xs font-black uppercase tracking-widest">McKinsey & Company</span>
+                </div>
+                <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                  Estudo Global de Recuperação
+                </span>
+              </div>
+
+              <p className="text-base sm:text-lg text-slate-200 font-medium leading-relaxed italic">
+                &ldquo;Operações de cobrança e crédito que migram de processos manuais e reativos para <strong>gestão digital em tempo real e automação preventiva</strong> elevam as taxas de recuperação em até <strong>20%</strong> e reduzem os custos operacionais em até <strong>40%</strong>.&rdquo;
+              </p>
+
+              <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+                <span>Impacto Direto: <strong>Elevação de Margem & Agilidade</strong></span>
+                <span className="text-sky-400 font-bold font-mono">Fonte: McKinsey Insights</span>
+              </div>
+            </div>
+
+            {/* CARD IGEOC & BIRÔS */}
+            <div className="p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-purple-950/30 border border-purple-500/30 space-y-6 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-purple-400">
+                  <Quotes size={28} weight="fill" />
+                  <span className="text-xs font-black uppercase tracking-widest">IGEOC & Birôs de Crédito</span>
+                </div>
+                <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  Mercado Brasileiro
+                </span>
+              </div>
+
+              <p className="text-base sm:text-lg text-slate-200 font-medium leading-relaxed italic">
+                &ldquo;Entre <strong>25% e 40% dos acordos fechados quebram</strong> por falta de acompanhamento antes do vencimento. O recontato preventivo nas primeiras <strong>24h a 48h antes do vencimento</strong> resgata mais de <strong>20% dos acordos</strong> que seriam perdidos.&rdquo;
+              </p>
+
+              <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+                <span>Fator Decisivo: <strong>Prevenção antes da quebra</strong></span>
+                <span className="text-purple-400 font-bold font-mono">Setor de Cobrança Nacional</span>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------------------- */}
+        {/* BLOCO 3: O DIAGNÓSTICO DO GARGALO (POR QUE AS OPERAÇÕES PERDEM DINHEIRO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -219,7 +289,83 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 3: COCKPIT OPERACIONAL MULTIVISÃO (INTERATIVO) */}
+        {/* BLOCO 4: BENCHMARKING EXECUTIVO (TRACKER VS MERCADO TRADICIONAL) */}
+        {/* ------------------------------------------------------------------------- */}
+        <section className="space-y-10">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-black uppercase tracking-widest">
+              <Scales size={16} weight="bold" />
+              Benchmarking de Mercado
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white">
+              Por Que a Tracker é Superior às Plataformas Legadas
+            </h2>
+            <p className="text-sm text-slate-400">
+              Compare lado a lado o modelo tradicional do mercado contra a arquitetura moderna da Tracker:
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-3xl border border-white/10 bg-slate-900/80 backdrop-blur-md">
+            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-white/10 bg-slate-950/80">
+                  <th className="p-5 font-black text-slate-400 uppercase tracking-wider text-xs">Critério Operacional</th>
+                  <th className="p-5 font-black text-rose-400 uppercase tracking-wider text-xs">Softwares Tradicionais / Legados</th>
+                  <th className="p-5 font-black text-emerald-400 uppercase tracking-wider text-xs bg-sky-500/10 border-l border-sky-500/30">
+                    Tracker Platform Enterprise
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                <tr>
+                  <td className="p-5 font-bold text-white">Modelo de Cobrança</td>
+                  <td className="p-5 text-rose-300/90 font-medium">R$ 150 a R$ 250 / operador / mês (Custo escala)</td>
+                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
+                    R$ 3.200 / mês fixo com USUÁRIOS ILIMITADOS
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-5 font-bold text-white">Velocidade dos Dados</td>
+                  <td className="p-5 text-slate-400">Relatórios estáticos em D-1 (Reação tardia)</td>
+                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
+                    Tempo Real Contínuo (Pacing hora a hora instantâneo)
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-5 font-bold text-white">Prevenção de Quebras</td>
+                  <td className="p-5 text-slate-400">Reativo (espera o boleto vencer para cobrar de novo)</td>
+                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
+                    Radar de Risco Preditivo (Age 24h a 48h antes do vencimento)
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-5 font-bold text-white">Alçadas do Operador</td>
+                  <td className="p-5 text-slate-400">Operador precisa pausar a ligação para pedir autorização</td>
+                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
+                    Calculadora inteligente de margens e parcelas seguras
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-5 font-bold text-white">Visões por Cargo</td>
+                  <td className="p-5 text-slate-400">Telas genéricas iguais para todos os níveis</td>
+                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
+                    4 Cockpits dedicados (Diretoria, Supervisão, Operador, QA)
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-5 font-bold text-white">Taxa de Setup & Adesão</td>
+                  <td className="p-5 text-slate-400">R$ 5.000 a R$ 15.000 + semanas de implantação</td>
+                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
+                    Zero taxa oculta • Implantação e treinamento em 48h
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------------------- */}
+        {/* BLOCO 5: COCKPIT OPERACIONAL MULTIVISÃO (INTERATIVO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -427,7 +573,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 4: PREVENÇÃO DE QUEBRAS (RADAR DE RISCO PREDITIVO) */}
+        {/* BLOCO 6: PREVENÇÃO DE QUEBRAS (RADAR DE RISCO PREDITIVO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -477,7 +623,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 5: SIMULADOR DE ROI INTERATIVO (CALCULADORA DE RETORNO) */}
+        {/* BLOCO 7: SIMULADOR DE ROI INTERATIVO (CALCULADORA DE RETORNO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -647,7 +793,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 6: ROADMAP DE INTELIGÊNCIA ARTIFICIAL (FUTURO / PREVISÃO) */}
+        {/* BLOCO 8: ROADMAP DE INTELIGÊNCIA ARTIFICIAL (FUTURO / PREVISÃO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -725,7 +871,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 7: MODELO DE PARCERIA & PLANO ÚNICO */}
+        {/* BLOCO 9: MODELO DE PARCERIA & PLANO ÚNICO */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -795,7 +941,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 8: SEGURANÇA CORPORATIVA & GOVERNANÇA */}
+        {/* BLOCO 10: SEGURANÇA CORPORATIVA & GOVERNANÇA */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -855,7 +1001,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 9: FAQ EXECUTIVO (RESOLUÇÃO DE OBJEÇÕES) */}
+        {/* BLOCO 11: FAQ EXECUTIVO (RESOLUÇÃO DE OBJEÇÕES) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
