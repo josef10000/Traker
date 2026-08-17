@@ -152,7 +152,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
       for (const row of validRows) {
         const token = `inv-${generateSecureToken(8).toLowerCase()}`;
-        const inviteUrl = buildInviteUrl(token, row.email, row.role);
+        const inviteUrl = buildInviteUrl(token);
         const roleLabel = getRoleLabel(row.role);
 
         const inviteDoc: any = {
@@ -209,7 +209,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
   // Reenviar E-mail de Convite Individual via Resend
   const handleResendEmail = async (inv: PendingInvite) => {
-    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
+    const inviteUrl = buildInviteUrl(inv.token);
     const roleLabel = getRoleLabel(inv.role);
 
     setResendingTokens(prev => ({ ...prev, [inv.token]: 'loading' }));
