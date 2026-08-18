@@ -58,10 +58,10 @@ export const FinancialPerformanceInsights = ({
 }: FinancialPerformanceInsightsProps) => {
 
   const chartData = useMemo(() => [
-    { name: 'Meta', value: monthlyGoal, color: 'url(#colorMeta)' },
-    { name: 'Pago', value: stats.totalPaid, color: 'url(#colorPaid)' },
-    { name: 'Vencido', value: stats.totalOverdue, color: 'url(#colorOverdue)' },
-    { name: 'Pendente', value: Math.max(0, stats.totalProjected - stats.totalPaid - stats.totalOverdue), color: 'url(#colorPending)' }
+    { name: 'Meta', value: monthlyGoal, color: 'url(#colorMeta)', solidColor: '#334155' },
+    { name: 'Pago', value: stats.totalPaid, color: 'url(#colorPaid)', solidColor: '#10b981' },
+    { name: 'Vencido', value: stats.totalOverdue, color: 'url(#colorOverdue)', solidColor: '#f43f5e' },
+    { name: 'Pendente', value: Math.max(0, stats.totalProjected - stats.totalPaid - stats.totalOverdue), color: 'url(#colorPending)', solidColor: '#f59e0b' }
   ], [monthlyGoal, stats]);
 
   const [showTooltip, setShowTooltip] = useState(false);
@@ -229,10 +229,10 @@ export const FinancialPerformanceInsights = ({
             </ResponsiveContainer>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-4 border-t border-white/5">
             {chartData.map((item, idx) => (
               <div key={idx} className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                <div className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: item.solidColor }} />
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.name}</span>
               </div>
             ))}

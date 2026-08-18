@@ -54,7 +54,7 @@ export const MultiLevelPerformanceComparator: React.FC<MultiLevelPerformanceComp
 
   // Operadores cadastrados
   const operators = useMemo(() => {
-    return collaborators.filter(c => c.role === 'operator' || !c.role);
+    return collaborators.filter(c => c.role === 'operator' || c.role === 'member' || !c.role);
   }, [collaborators]);
 
   // 1. Métricas de Equipes
