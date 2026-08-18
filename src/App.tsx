@@ -353,6 +353,7 @@ export function AppContent() {
       isDemoMode: true, 
       demoRestrictedRole: restrictedRole 
     });
+    navigate('/');
     showToast(`Simulação iniciada como ${role.toUpperCase()}!`, 'success');
   };
 
@@ -432,7 +433,7 @@ export function AppContent() {
             } />
             <Route path="/apresentacao" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
             <Route path="/vendas" element={<SalesPresentationPage onStartDemo={handleStartDemo} />} />
-            <Route path="/demo" element={<DemoPage onStartDemo={handleStartDemo} />} />
+            <Route path="/demo" element={<Navigate to="/" replace />} />
             <Route path="/create-team" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
