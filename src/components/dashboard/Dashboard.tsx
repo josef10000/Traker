@@ -55,7 +55,8 @@ import { formatCurrency, maskCPF } from '../../utils/masks';
 import { parseLocalDate, getMonthName, getWorkingDaysInMonth, getRemainingWorkingDays, MONTHS, getYearRange } from '../../utils/date';
 import { triggerWebhook } from '../../utils/webhook';
 import { addCollaborationNote, getCollaborationNotes, getAttendanceStatusForDay } from '../../lib/notes';
-import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus, SlidersHorizontal, FileCsv as FileSpreadsheet, BookOpen } from '@phosphor-icons/react';
+import { CheckSquare, ShieldWarning, Trash, Users, Handshake, ArrowRight, Calendar, UserMinus, UserSwitch, ArrowLeft, CalendarPlus, SlidersHorizontal, FileCsv as FileSpreadsheet, BookOpen, Rocket, GraduationCap, Sparkle, Square } from '@phosphor-icons/react';
+import { calculateTenure, DEFAULT_ONBOARDING_CHECKLIST } from '../../utils/tenure';
 import { sandboxService } from '../../lib/sandboxService';
 import { createNotification } from '../../lib/notifications';
 import { useTheme } from '../../hooks/useTheme';
@@ -161,7 +162,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return 'financial';
   });
 
-  const [coordinationSubTab, setCoordinationSubTab] = useState<'performance' | 'frequency' | 'closing_pj' | 'teams_mgmt' | 'org_tree' | 'invites' | 'transfers'>('performance');
+  const [coordinationSubTab, setCoordinationSubTab] = useState<'performance' | 'frequency' | 'onboarding' | 'closing_pj' | 'teams_mgmt' | 'org_tree' | 'invites' | 'transfers' | 'dimensionamento'>('frequency');
+  const [coordOnboardingRampDays, setCoordOnboardingRampDays] = useState<number>(90);
   const [financialSubTab, setFinancialSubTab] = useState<'overview' | 'charge'>('overview');
   const [biMasterSubTab, setBiMasterSubTab] = useState<'analytics' | 'goals' | 'ofensores'>('analytics');
   const [peopleSubTab, setPeopleSubTab] = useState<'members' | 'attendance' | 'pj'>('members');
@@ -1450,16 +1452,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleSaveCalendarEvent = async (
     title: string,
     date: string,
-    targetType: 'team' | 'individual',
+    targetType: 'team' | 'individual' | 'multi_custom',
     targetId: string,
-    selectedCollaboratorIds: string[]
+    selectedCollaboratorIds: string[],
+    customEvents?: { collaboratorId: string; date: string; title: string }[]
   ) => {
     if (!profile.organizationId) return;
 
     try {
       const now = new Date().toISOString();
 
-      if (targetType === 'team') {
+      if (targetType === 'multi_custom' && customEvents && customEvents.length > 0) {
+        if (profile.organizationId === 'sandbox-test') {
+          customEvents.forEach(item => {
+            const eventId = secureRandomId('event');
+            const event: CalendarEvent = {
+              id: eventId,
+              organizationId: profile.organizationId!,
+              title: item.title || title,
+              date: item.date,
+              targetType: 'individual',
+              targetId: item.collaboratorId,
+              createdBy: profile.uid,
+              createdAt: now
+            };
+            sandboxService.addCalendarEvent(event);
+          });
+        } else {
+          const batch = writeBatch(db);
+          customEvents.forEach(item => {
+            const eventId = secureRandomId('event');
+            const event: CalendarEvent = {
+              id: eventId,
+              organizationId: profile.organizationId!,
+              title: item.title || title,
+              date: item.date,
+              targetType: 'individual',
+              targetId: item.collaboratorId,
+              createdBy: profile.uid,
+              createdAt: now
+            };
+            batch.set(doc(db, 'calendar_events', eventId), event);
+          });
+          await batch.commit();
+        }
+      } else if (targetType === 'team') {
         const eventId = secureRandomId('event');
         const event: CalendarEvent = {
           id: eventId,
@@ -1483,7 +1520,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             const eventId = secureRandomId('event');
             const event: CalendarEvent = {
               id: eventId,
-              organizationId: profile.organizationId,
+              organizationId: profile.organizationId!,
               title,
               date,
               targetType: 'individual',
@@ -1499,7 +1536,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             const eventId = secureRandomId('event');
             const event: CalendarEvent = {
               id: eventId,
-              organizationId: profile.organizationId,
+              organizationId: profile.organizationId!,
               title,
               date,
               targetType: 'individual',
@@ -1513,7 +1550,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
       }
 
-      showToast('Evento agendado com sucesso no calendário!', 'success');
+      showToast('Escala/Evento agendado com sucesso no calendário!', 'success');
     } catch (error) {
       console.error(error);
       showToast('Erro ao agendar evento.', 'error');
@@ -1561,6 +1598,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setIsLoadingCollabHistory(false);
     }
   };
+
+  const handleCoordToggleChecklist = async (targetUid: string, itemId: string, currentVal: boolean) => {
+    try {
+      const targetUser = filteredTeamMembers.find(m => m.uid === targetUid);
+      if (!targetUser) return;
+      const updatedChecklist = {
+        ...(targetUser.onboardingChecklist || {}),
+        [itemId]: !currentVal
+      };
+
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.updateUser(targetUid, { onboardingChecklist: updatedChecklist });
+      } else {
+        await updateDoc(doc(db, 'users', targetUid), {
+          onboardingChecklist: updatedChecklist
+        });
+      }
+      showToast('Item do checklist de integração atualizado!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao atualizar checklist.', 'error');
+    }
+  };
+
+  const handleCoordGraduateMember = async (targetUid: string) => {
+    try {
+      const nowIso = new Date().toISOString();
+      if (profile.organizationId === 'sandbox-test') {
+        sandboxService.updateUser(targetUid, { onboardingGraduatedAt: nowIso });
+      } else {
+        await updateDoc(doc(db, 'users', targetUid), {
+          onboardingGraduatedAt: nowIso
+        });
+      }
+      showToast('Colaborador graduado da rampa de onboarding com sucesso!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao graduar colaborador.', 'error');
+    }
+  };
+
+  const coordOnboardingMembers = useMemo(() => {
+    return filteredTeamMembers
+      .filter(m => {
+        if (m.role === 'manager' || m.role === 'super_admin') return false;
+        if (m.onboardingGraduatedAt) return false;
+        const tenure = calculateTenure(m.startDate, m.createdAt, coordOnboardingRampDays);
+        return tenure.isOnboarding;
+      })
+      .map(member => ({
+        member,
+        tenure: calculateTenure(member.startDate, member.createdAt, coordOnboardingRampDays)
+      }))
+      .sort((a, b) => (a.tenure.days || 0) - (b.tenure.days || 0));
+  }, [filteredTeamMembers, coordOnboardingRampDays]);
 
   const handleDismissUser = async (uid: string, displayName: string, role: string) => {
     const isSandbox = profile.organizationId === 'sandbox-test';
@@ -3458,6 +3550,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       >
                         📅 Frequência & Calendário
                       </button>
+                      <button
+                        onClick={() => setCoordinationSubTab('onboarding')}
+                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          coordinationSubTab === 'onboarding'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-md shadow-emerald-500/10'
+                            : 'text-slate-400 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        🚀 Onboarding & Recém-Chegados
+                        {coordOnboardingMembers.length > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px]">
+                            {coordOnboardingMembers.length}
+                          </span>
+                        )}
+                      </button>
                       {profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <>
                           {profile.role === 'coordinator' && (
@@ -3795,6 +3902,162 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               theme={theme}
                             />
                           </div>
+                        </div>
+                      )}
+
+                      {/* SUB-ABA: CENTRAL DE ONBOARDING & RECÉM-CHEGADOS */}
+                      {coordinationSubTab === 'onboarding' && (
+                        <div className="space-y-6 animate-fadeIn">
+                          {/* CABEÇALHO DO ONBOARDING & CONFIGURADOR DE DIAS DE RAMPA */}
+                          <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-950/20 border border-emerald-500/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+                                <Sparkle size={16} weight="fill" />
+                                <span>Integração e Acompanhamento de Rampa</span>
+                              </div>
+                              <h4 className="text-base font-black text-white">
+                                Central de Onboarding & Recém-Contratados
+                              </h4>
+                              <p className="text-xs text-slate-400 max-w-xl">
+                                Acompanhe o checklist operacional de integração de cada novato. Ao completar o período de rampa configurado, o colaborador é automaticamente promovido e sai desta lista.
+                              </p>
+                            </div>
+
+                            {/* SELETOR CONFIGURÁVEL DE DIAS DE RAMPA */}
+                            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-950/80 border border-white/10">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase pl-2">Janela de Rampa:</span>
+                              {[30, 60, 90].map(days => (
+                                <button
+                                  key={days}
+                                  onClick={() => setCoordOnboardingRampDays(days)}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                    coordOnboardingRampDays === days
+                                      ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                  }`}
+                                >
+                                  {days} Dias
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* LISTAGEM DE COLABORADORES EM ONBOARDING */}
+                          {coordOnboardingMembers.length === 0 ? (
+                            <div className="text-center py-16 border rounded-3xl bg-slate-900/20 border-white/5 space-y-3">
+                              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+                                <GraduationCap size={26} weight="bold" />
+                              </div>
+                              <h5 className="text-sm font-bold text-white">Nenhum Colaborador em Período de Onboarding</h5>
+                              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                                Todos os colaboradores cadastrados já ultrapassaram a janela de {coordOnboardingRampDays} dias de admissão ou concluíram sua integração com sucesso.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 gap-4">
+                              {coordOnboardingMembers.map(({ member, tenure }) => {
+                                const checklist = member.onboardingChecklist || {};
+                                const completedCount = DEFAULT_ONBOARDING_CHECKLIST.filter(item => checklist[item.id]).length;
+                                const totalItems = DEFAULT_ONBOARDING_CHECKLIST.length;
+                                const progressPct = Math.round((completedCount / totalItems) * 100);
+                                const memberTeam = managedTeamsData.find(t => t.id === member.teamId);
+
+                                return (
+                                  <div 
+                                    key={member.uid}
+                                    className="p-6 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-emerald-500/30 transition-all space-y-6 shadow-md"
+                                  >
+                                    {/* TOPO DO CARD: DADOS DO NOVATO & DIAS DE CASA */}
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-4">
+                                      <div className="flex items-center gap-3.5">
+                                        <Avatar
+                                          displayName={member.displayName || member.email}
+                                          email={member.email}
+                                          avatarStyle={member.avatarStyle}
+                                          avatarSeed={member.avatarSeed}
+                                          photoURL={member.photoURL}
+                                          avatarType={member.avatarType}
+                                          theme={theme}
+                                          size="md"
+                                          className="rounded-2xl"
+                                        />
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            <h5 className="font-bold text-sm text-white">
+                                              {member.displayName || member.email.split('@')[0]}
+                                            </h5>
+                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${tenure.categoryBadgeClass}`}>
+                                              {tenure.categoryLabel} ({tenure.days} {tenure.days === 1 ? 'dia' : 'dias'})
+                                            </span>
+                                          </div>
+                                          <p className="text-[11px] text-slate-400 font-mono">
+                                            {member.jobTitle || (member.role === 'supervisor' ? 'Supervisor' : member.role === 'backoffice' ? 'Back Office' : 'Operador')} • {memberTeam?.name || 'Sem Equipe'} • Admissão: {member.startDate ? new Date(member.startDate + 'T12:00:00').toLocaleDateString('pt-BR') : 'Data não informada'}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* PROGRESSO DO CHECKLIST & BOTÃO DE GRADUAÇÃO */}
+                                      <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                        <div className="text-right">
+                                          <span className="text-[10px] font-bold uppercase text-slate-400 block">Progresso da Integração</span>
+                                          <span className="text-xs font-black text-emerald-400 font-mono">
+                                            {completedCount} de {totalItems} concluídos ({progressPct}%)
+                                          </span>
+                                        </div>
+
+                                        <button
+                                          onClick={() => handleCoordGraduateMember(member.uid)}
+                                          className="px-3 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                          title="Concluir Onboarding e Graduar Operador"
+                                        >
+                                          <GraduationCap size={15} weight="bold" />
+                                          <span>Graduar</span>
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* BARRA DE PROGRESSO VISUAL */}
+                                    <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-white/5">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300"
+                                        style={{ width: `${progressPct}%` }}
+                                      />
+                                    </div>
+
+                                    {/* LISTA DE ITENS DO CHECKLIST INTERATIVO */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                      {DEFAULT_ONBOARDING_CHECKLIST.map((item) => {
+                                        const isDone = !!checklist[item.id];
+                                        return (
+                                          <button
+                                            key={item.id}
+                                            type="button"
+                                            onClick={() => handleCoordToggleChecklist(member.uid, item.id, isDone)}
+                                            className={`p-3 rounded-2xl border text-left transition-all flex items-start gap-2.5 cursor-pointer ${
+                                              isDone
+                                                ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+                                                : 'bg-slate-950/60 border-white/5 text-slate-400 hover:border-white/20 hover:text-slate-200'
+                                            }`}
+                                          >
+                                            <div className="mt-0.5 shrink-0">
+                                              {isDone ? (
+                                                <CheckSquare size={16} weight="fill" className="text-emerald-400" />
+                                              ) : (
+                                                <Square size={16} className="text-slate-500" />
+                                              )}
+                                            </div>
+                                            <span className="text-xs font-medium leading-snug">
+                                              {item.label}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
 
