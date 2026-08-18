@@ -36,7 +36,12 @@ import {
   BellSimpleRinging,
   Calendar,
   SpeakerHigh,
-  ChatCircleDots
+  ChatCircleDots,
+  WhatsappLogo,
+  Microphone,
+  Play,
+  ShareNetwork,
+  Fingerprint
 } from '@phosphor-icons/react';
 import { formatCurrency } from '../../utils/masks';
 
@@ -342,6 +347,13 @@ export const SalesPresentationPage: React.FC = () => {
                   </td>
                 </tr>
                 <tr>
+                  <td className="p-5 font-bold text-white">Acesso & Consultas Executivas</td>
+                  <td className="p-5 text-slate-400">Dependência de login no PC e navegação manual por filtros</td>
+                  <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
+                    Copiloto WhatsApp (Áudio e texto em tempo real)
+                  </td>
+                </tr>
+                <tr>
                   <td className="p-5 font-bold text-white">Visões por Cargo</td>
                   <td className="p-5 text-slate-400">Telas genéricas iguais para todos os níveis</td>
                   <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
@@ -350,7 +362,7 @@ export const SalesPresentationPage: React.FC = () => {
                 </tr>
                 <tr>
                   <td className="p-5 font-bold text-white">Rotina & Governança Interna</td>
-                  <td className="p-5 text-slate-400">Dependência de WhatsApp, Teams e planilhas de escala</td>
+                  <td className="p-5 text-slate-400">Dependência de WhatsApp informal e planilhas de escala</td>
                   <td className="p-5 font-black text-emerald-300 bg-sky-500/5 border-l border-sky-500/20">
                     Escala integrada, aceite de folha PJ, avisos diretos e QA com áudio
                   </td>
@@ -576,7 +588,209 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 6: ROTINA OPERACIONAL & GOVERNANÇA INTERNA (NOVO MÓDULO) */}
+        {/* BLOCO 6: COPILOTO EXECUTIVO VIA WHATSAPP (VOZ & TEXTO) — DESTAQUE MÁXIMO */}
+        {/* ------------------------------------------------------------------------- */}
+        <section className="space-y-12">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-widest">
+              <WhatsappLogo size={16} weight="bold" />
+              Inovação em Desenvolvimento • Próxima Release
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+              Seu Gestor Não Precisa Abrir o Dashboard.<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-400">
+                Pergunte ao Tracker pelo WhatsApp por Voz ou Texto.
+              </span>
+            </h2>
+            <p className="text-sm sm:text-base text-slate-400">
+              O gestor não precisa saber qual filtro usar ou qual tela abrir. Ele simplesmente manda um áudio no trânsito ou no escritório e recebe a inteligência da operação em segundos:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* MOCKUP INTERATIVO DE WHATSAPP (DARK THEME CORPORATIVO) */}
+            <div className="lg:col-span-7 p-6 sm:p-8 rounded-3xl bg-slate-950 border-2 border-emerald-500/30 shadow-2xl space-y-6 relative overflow-hidden">
+              
+              {/* TOPO DO CHAT WHATSAPP */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                    <WhatsappLogo size={24} weight="fill" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white flex items-center gap-2">
+                      <span>Tracker Copilot IA</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-mono">Autenticado • Empresa Exemplo S.A.</p>
+                  </div>
+                </div>
+
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-white/5 text-slate-300 border border-white/10">
+                  Criptografia Ponta a Ponta
+                </span>
+              </div>
+
+              {/* CONVERSA DO CHAT */}
+              <div className="space-y-4 text-xs font-sans">
+                
+                {/* BALÃO 1: ÁUDIO DO GESTOR (DIREITA) */}
+                <div className="flex justify-end">
+                  <div className="max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl rounded-tr-none bg-emerald-700/40 border border-emerald-500/30 text-white space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-400 text-slate-950 flex items-center justify-center shrink-0 font-bold">
+                        <Play size={14} weight="fill" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-1 bg-white/30 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-300 w-[65%]" />
+                        </div>
+                        <div className="flex justify-between text-[9px] text-emerald-200">
+                          <span>0:04</span>
+                          <span>Áudio do Gestor</span>
+                        </div>
+                      </div>
+                      <Microphone size={18} className="text-emerald-300" weight="fill" />
+                    </div>
+                    <p className="text-[11px] text-emerald-100 italic">
+                      &ldquo;Como a equipe de cartões está indo hoje?&rdquo;
+                    </p>
+                  </div>
+                </div>
+
+                {/* BALÃO 2: RESPOSTA DO TRACKER (ESQUERDA) */}
+                <div className="flex justify-start">
+                  <div className="max-w-[90%] sm:max-w-[85%] p-5 rounded-2xl rounded-tl-none bg-slate-900 border border-white/10 text-slate-200 space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2 text-[10px] font-mono text-emerald-400 font-bold">
+                      <span>EQUIPE CARTÕES / VAREJO — HOJE</span>
+                      <span>14:32</span>
+                    </div>
+
+                    <div className="space-y-1.5 font-mono text-xs">
+                      <p>👥 <strong>18 operadores ativos</strong> (100% da escala)</p>
+                      <p>🎯 Meta do Dia: <strong>R$ 85.000</strong></p>
+                      <p>💰 Recuperado: <strong className="text-emerald-400">R$ 63.400</strong> (74,6% da meta)</p>
+                      <p>📈 Pacing: <strong className="text-sky-400">+12% vs. ontem</strong> no mesmo horário</p>
+                      <p className="text-amber-300">⚠️ <strong>4 operadores abaixo de 50%</strong> da meta individual</p>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+                      <span className="text-amber-400 font-bold">Status: 🟡 Atenção</span>
+                      <span className="text-slate-400 italic">Deseja que eu detalhe os 4 operadores?</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BALÃO 3: CONFIRMAÇÃO DO GESTOR (DIREITA) */}
+                <div className="flex justify-end">
+                  <div className="p-2.5 px-4 rounded-2xl rounded-tr-none bg-emerald-700/40 border border-emerald-500/30 text-white text-xs font-bold">
+                    Sim, por favor.
+                  </div>
+                </div>
+
+                {/* BALÃO 4: DETALHAMENTO INSTANTÂNEO (ESQUERDA) */}
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] p-4 rounded-2xl rounded-tl-none bg-slate-900 border border-white/10 text-slate-200 space-y-2">
+                    <span className="text-[10px] font-mono text-slate-400 font-bold uppercase block">
+                      Operadores Abaixo de 50% (Ação Recomendada):
+                    </span>
+                    <div className="space-y-1 font-mono text-xs text-slate-300">
+                      <p>• João Santos — 38% (R$ 1.900 / R$ 5.000)</p>
+                      <p>• Carlos Ferreira — 42% (R$ 2.100 / R$ 5.000)</p>
+                      <p>• Ana Souza — 44% (R$ 2.200 / R$ 5.000)</p>
+                      <p>• Pedro Alves — 47% (R$ 2.350 / R$ 5.000)</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* CASOS DE USO EXECUTIVO & PERMISSION LAYER (LADO DIREITO) */}
+            <div className="lg:col-span-5 space-y-6">
+              
+              {/* CASOS DE USO RÁPIDOS */}
+              <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/10 space-y-4">
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <Brain size={20} className="text-sky-400" />
+                  <span>Exemplos de Comandos por Voz</span>
+                </h3>
+
+                <div className="space-y-2.5 text-xs text-slate-300">
+                  <div className="p-3 rounded-xl bg-slate-950 border border-white/5 flex items-start gap-2.5">
+                    <Microphone size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white">Consulta Rápida:</strong>
+                      <p className="text-slate-400 mt-0.5">&ldquo;Quanto a operação inteira recuperou hoje?&rdquo;</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950 border border-white/5 flex items-start gap-2.5">
+                    <Microphone size={16} className="text-sky-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white">Comparativo:</strong>
+                      <p className="text-slate-400 mt-0.5">&ldquo;Compara o fechamento de hoje com a semana passada.&rdquo;</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950 border border-white/5 flex items-start gap-2.5">
+                    <Microphone size={16} className="text-purple-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white">Ranking de Destaques:</strong>
+                      <p className="text-slate-400 mt-0.5">&ldquo;Quem são os cinco melhores operadores de hoje?&rdquo;</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950 border border-white/5 flex items-start gap-2.5">
+                    <Microphone size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white">Fechamento no Carro:</strong>
+                      <p className="text-slate-400 mt-0.5">&ldquo;Como fechamos ontem à noite?&rdquo;</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CONTROLE DE PERMISSÕES POR ESCOPO (SEGURANÇA CORPORATIVA) */}
+              <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/10 space-y-4">
+                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                  <Lock size={18} className="text-purple-400" />
+                  <span>Controle Hierárquico por Cargo (Permission Layer)</span>
+                </h3>
+
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  O sistema reconhece o número de telefone autenticado e aplica o escopo exato de acesso:
+                </p>
+
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-white/5">
+                    <span className="font-bold text-white">👑 Diretor</span>
+                    <span className="text-[11px] text-slate-400">Empresa inteira e metas globais</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-white/5">
+                    <span className="font-bold text-white">👥 Gerente</span>
+                    <span className="text-[11px] text-slate-400">Suas carteiras e equipes subordinadas</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-white/5">
+                    <span className="font-bold text-white">👥 Supervisor</span>
+                    <span className="text-[11px] text-slate-400">Estritamente a sua equipe direta</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-white/5">
+                    <span className="font-bold text-white">🎧 Operador</span>
+                    <span className="text-[11px] text-slate-400">Seus próprios dados e comissão</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------------------- */}
+        {/* BLOCO 7: ROTINA OPERACIONAL & GOVERNANÇA INTERNA */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -664,7 +878,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 7: PREVENÇÃO DE QUEBRAS (RADAR DE RISCO PREDITIVO) */}
+        {/* BLOCO 8: PREVENÇÃO DE QUEBRAS (RADAR DE RISCO PREDITIVO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -714,7 +928,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 8: SIMULADOR DE ROI INTERATIVO (CALCULADORA DE RETORNO) */}
+        {/* BLOCO 9: SIMULADOR DE ROI INTERATIVO (CALCULADORA DE RETORNO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -884,7 +1098,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 9: ROADMAP DE INTELIGÊNCIA ARTIFICIAL (FUTURO / PREVISÃO) */}
+        {/* BLOCO 10: ROADMAP DE INTELIGÊNCIA ARTIFICIAL (FUTURO / PREVISÃO) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -962,7 +1176,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 10: MODELO DE PARCERIA & PLANO ÚNICO */}
+        {/* BLOCO 11: MODELO DE PARCERIA & PLANO ÚNICO */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -1006,6 +1220,7 @@ export const SalesPresentationPage: React.FC = () => {
               {[
                 'Usuários & Operadores 100% Ilimitados',
                 'Cockpit Operacional em Tempo Real',
+                'Copiloto WhatsApp por Voz & Texto (Inovação)',
                 'Radar de Risco & Prevenção de Quebras',
                 'Múltiplas Visões (Diretoria, Supervisão, Operador, QA)',
                 'Gestão de Escala & Aceite de Presença',
@@ -1041,7 +1256,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 11: SEGURANÇA CORPORATIVA & GOVERNANÇA */}
+        {/* BLOCO 12: SEGURANÇA CORPORATIVA & GOVERNANÇA */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -1101,7 +1316,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 12: FAQ EXECUTIVO (RESOLUÇÃO DE OBJEÇÕES) */}
+        {/* BLOCO 13: FAQ EXECUTIVO (RESOLUÇÃO DE OBJEÇÕES) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -1122,6 +1337,10 @@ export const SalesPresentationPage: React.FC = () => {
               {
                 q: 'Existe algum limite de operadores ou cobrança por usuário adicional?',
                 a: 'Não. O plano Enterprise possui usuários e operadores 100% ilimitados. Sua mensalidade de R$ 3.200 permanece rigorosamente a mesma se sua equipe tiver 15 ou 150 colaboradores.'
+              },
+              {
+                q: 'Como funciona o Copiloto por WhatsApp para a diretoria e supervisores?',
+                a: 'O assistente funciona através do WhatsApp corporativo. O gestor pode enviar uma mensagem de áudio ou texto e a IA consulta os indicadores em tempo real, respeitando estritamente o cargo e as permissões de cada usuário.'
               },
               {
                 q: 'A Tracker substitui nosso discador ou integra com nossos sistemas atuais?',
