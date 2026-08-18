@@ -71,6 +71,7 @@ import {
 } from '../../lib/teams';
 import { ToastType } from '../ui/Toast';
 import { getNationalHolidays, isNationalHoliday, NationalHoliday } from '../../lib/holidayService';
+import { calculateTenure } from '../../utils/tenure';
 
 
 const COVER_STILLS = [
@@ -98,6 +99,7 @@ interface ProfileSettingsProps {
 export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTeam, showToast, theme = 'dark', initialTab, onOpenReconciliation, onOpenMessageTemplates }: ProfileSettingsProps) {
   const [displayName, setDisplayName] = useState(profile.displayName || '');
   const [jobTitle, setJobTitle] = useState(profile.jobTitle || '');
+  const [startDate, setStartDate] = useState(profile.startDate || '');
   const [avatarStyle, setAvatarStyle] = useState(profile.avatarStyle || 'initials');
   const [avatarSeed, setAvatarSeed] = useState(profile.avatarSeed || '');
   const [photoURL, setPhotoURL] = useState(profile.photoURL || '');
@@ -254,6 +256,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     const updatedData = {
       displayName,
       jobTitle,
+      startDate,
       avatarStyle,
       avatarSeed,
       photoURL,
@@ -285,12 +288,13 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
     if (profile) {
       setDisplayName(profile.displayName || '');
       setJobTitle(profile.jobTitle || '');
+      setStartDate(profile.startDate || '');
       setAvatarStyle(profile.avatarStyle || 'initials');
       setAvatarSeed(profile.avatarSeed || '');
       if (profile.photoURL !== undefined) setPhotoURL(profile.photoURL);
       if (profile.avatarType) setAvatarType(profile.avatarType);
     }
-  }, [profile.displayName, profile.jobTitle, profile.avatarStyle, profile.avatarSeed, profile.photoURL, profile.avatarType]);
+  }, [profile.displayName, profile.jobTitle, profile.startDate, profile.avatarStyle, profile.avatarSeed, profile.photoURL, profile.avatarType]);
 
   const handleProfilePhotoUpload = async (file: File | Blob) => {
     setIsUploadingPhoto(true);
@@ -867,6 +871,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
           ...profile,
           displayName,
           jobTitle,
+          startDate,
           avatarStyle,
           avatarSeed,
           photoURL,
@@ -874,10 +879,11 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
         });
         setIsSaveSuccess(true);
         setTimeout(() => setIsSaveSuccess(false), 2500);
-        showToast('Perfil simulado atualizado com sucesso!', 'success');
+        showToast('Perfil do Sandbox atualizado!', 'success');
         onUpdate({
           displayName,
           jobTitle,
+          startDate,
           avatarStyle,
           avatarSeed,
           photoURL,
@@ -890,6 +896,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       await updateDoc(userRef, {
         displayName,
         jobTitle,
+        startDate,
         avatarStyle,
         avatarSeed,
         photoURL,
@@ -901,6 +908,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
       onUpdate({
         displayName,
         jobTitle,
+        startDate,
         avatarStyle,
         avatarSeed,
         photoURL,
@@ -2026,7 +2034,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-0.5">
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Nome Completo</span>
                         <p className="text-sm font-bold text-white truncate">{displayName || 'Não informado'}</p>
@@ -2036,11 +2044,29 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cargo / Função</span>
                         <p className="text-sm font-bold text-white truncate">{jobTitle || 'Não informado'}</p>
                       </div>
+
+                      {/* CARD: TEMPO DE CASA */}
+                      {(() => {
+                        const tenure = calculateTenure(profile.startDate, profile.createdAt);
+                        return (
+                          <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-0.5">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                              <span>Tempo de Casa</span>
+                              <span className={`px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase border ${tenure.categoryBadgeClass}`}>
+                                {tenure.categoryLabel}
+                              </span>
+                            </span>
+                            <p className="text-sm font-black text-emerald-400 truncate">
+                              {tenure.formatted}
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-white/5">
-                      <span>Modo de Exibição: <strong className="text-sky-300 font-bold">{avatarType === 'custom' ? 'Foto Personalizada' : 'Avatar Dinâmico'}</strong></span>
-                      <span>Estilo Avatar: <strong className="text-purple-300 font-bold capitalize">{avatarStyle}</strong></span>
+                      <span>Admissão: <strong className="text-white font-bold">{profile.startDate ? new Date(profile.startDate + 'T12:00:00').toLocaleDateString('pt-BR') : 'Data não informada'}</strong></span>
+                      <span>Modo: <strong className="text-sky-300 font-bold">{avatarType === 'custom' ? 'Foto' : 'Avatar'}</strong> ({avatarStyle})</span>
                     </div>
                   </div>
                 ) : (
@@ -2099,7 +2125,7 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Nome Completo</label>
                         <div className="relative group">
@@ -2124,7 +2150,20 @@ export function ProfileSettings({ isOpen, onClose, profile, onUpdate, onCreateTe
                             value={jobTitle}
                             onChange={(e) => setJobTitle(e.target.value)}
                             className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-3.5 text-xs text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm"
-                            placeholder="Ex: Gerente de Receptivo"
+                            placeholder="Ex: Operador de Cobrança"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Data de Admissão / Entrada</label>
+                        <div className="relative group">
+                          <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary/80 transition-colors" size={18} />
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-3.5 text-xs text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-white/20 backdrop-blur-sm [color-scheme:dark]"
                           />
                         </div>
                       </div>

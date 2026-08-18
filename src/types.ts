@@ -102,6 +102,7 @@ export interface Organization {
   contactChannels?: ContactChannelConfig[];
   tabulationReasons?: TabulationReasonConfig[];
   createdAt: string;
+  onboardingDaysLimit?: number; // Padrão: 90 dias
   closingConfig?: {
     enabled: boolean;
     closingDay: number;
@@ -130,6 +131,8 @@ export interface UserProfile {
   createdAt: string; // Aceite da LGPD no primeiro login
   startDate?: string; // Data oficial de início da contratação PJ
   acceptedTermsAt?: string; // Aceite da LGPD no primeiro login
+  onboardingChecklist?: Record<string, boolean>;
+  onboardingGraduatedAt?: string;
   dashboardPreferences?: {
     hiddenCards: string[];
   };

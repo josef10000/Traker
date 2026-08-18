@@ -41,6 +41,7 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **🌤️ Clima & Feriados Nacionais** | Widget de temperatura ao vivo (Open-Meteo) e mapeamento automático de feriados brasileiros (BrasilAPI) no calendário geral de escala e atividades PJ. |
 | **🎧 Tabulação Ágil & Auto-Registro** | Auto-geração de tabulação ao fechar acordos (sem retrabalho), CPF opcional para ligações improdutivas, presets rápidos ordenados adaptativamente por mais usados e segmentação de motivos por equipe/carteira. |
 | **⚖️ Conformidade Jurídica PJ** | Estruturação de nomenclatura e recursos operacionais voltados a prestadores de serviços PJ (Minha Escala e Prestação PJ), eliminando termos trabalhistas. |
+| **🚀 Onboarding & Tempo de Casa** | Central de integração para novatos com checklist interativo (acesso, equipamentos de trabalho, treinamento, contrato/NDA, 1ª monitoria), dias de rampa configuráveis (30/60/90 dias) e badge dinâmico de tempo de casa para todos os colaboradores. |
 
 ---
 
