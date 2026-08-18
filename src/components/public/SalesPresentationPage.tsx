@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Rocket, 
   ShieldCheck, 
@@ -12,40 +12,66 @@ import {
   CurrencyDollar, 
   ChartLineUp, 
   Crown, 
-  Database,
-  Lock,
-  CalendarCheck,
-  Check,
-  Clock,
-  ChartPieSlice,
-  ArrowsClockwise,
-  Target,
-  PresentationChart,
-  Eye,
-  SlidersHorizontal,
-  WarningCircle,
-  Brain,
-  CaretDown,
-  FileText,
-  ChartBar,
-  CloudCheck,
-  Buildings,
-  Scales,
-  Lightbulb,
-  Quotes,
-  BellSimpleRinging,
-  Calendar,
-  SpeakerHigh,
-  ChatCircleDots,
-  WhatsappLogo,
-  Microphone,
-  Play,
-  ShareNetwork,
-  Fingerprint
+  Database, 
+  Lock, 
+  CalendarCheck, 
+  Check, 
+  Clock, 
+  ChartPieSlice, 
+  ArrowsClockwise, 
+  Target, 
+  PresentationChart, 
+  Eye, 
+  SlidersHorizontal, 
+  WarningCircle, 
+  Brain, 
+  CaretDown, 
+  FileText, 
+  ChartBar, 
+  CloudCheck, 
+  Buildings, 
+  Scales, 
+  Lightbulb, 
+  Quotes, 
+  BellSimpleRinging, 
+  Calendar, 
+  SpeakerHigh, 
+  ChatCircleDots, 
+  WhatsappLogo, 
+  Microphone, 
+  Play, 
+  ShareNetwork, 
+  Fingerprint, 
+  WifiHigh, 
+  BatteryFull, 
+  VideoCamera, 
+  Phone, 
+  DotsThreeVertical, 
+  PaperPlaneRight, 
+  Smiley, 
+  Paperclip 
 } from '@phosphor-icons/react';
 import { formatCurrency } from '../../utils/masks';
 
 export const SalesPresentationPage: React.FC = () => {
+  // Horário Dinâmico em Tempo Real (Sincronizado com o relógio do computador do visitante)
+  const [currentDeviceTime, setCurrentDeviceTime] = useState<string>('14:30');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      setCurrentDeviceTime(`${hours}:${minutes}`);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Cenário Ativo do Mockup de WhatsApp
+  const [activeWhatsappScenario, setActiveWhatsappScenario] = useState<'team_status' | 'daily_closing' | 'trend_comparison' | 'top_operators'>('team_status');
+
   // Estados do Simulador de ROI Interativo
   const [operatorCount, setOperatorCount] = useState<number>(25);
   const [monthlyVolume, setMonthlyVolume] = useState<number>(1800000);
@@ -588,7 +614,7 @@ export const SalesPresentationPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 6: COPILOTO EXECUTIVO VIA WHATSAPP (VOZ & TEXTO) — DESTAQUE MÁXIMO */}
+        {/* BLOCO 6: COPILOTO EXECUTIVO VIA WHATSAPP (MOCKUP IPHONE INTERATIVO REAL) */}
         {/* ------------------------------------------------------------------------- */}
         <section className="space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -603,158 +629,427 @@ export const SalesPresentationPage: React.FC = () => {
               </span>
             </h2>
             <p className="text-sm sm:text-base text-slate-400">
-              O gestor não precisa saber qual filtro usar ou qual tela abrir. Ele simplesmente manda um áudio no trânsito ou no escritório e recebe a inteligência da operação em segundos:
+              Clique nos comandos na lateral para ver o celular responder instantaneamente em tempo real:
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
-            {/* MOCKUP INTERATIVO DE WHATSAPP (DARK THEME CORPORATIVO) */}
-            <div className="lg:col-span-7 p-6 sm:p-8 rounded-3xl bg-slate-950 border-2 border-emerald-500/30 shadow-2xl space-y-6 relative overflow-hidden">
-              
-              {/* TOPO DO CHAT WHATSAPP */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                    <WhatsappLogo size={24} weight="fill" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black text-white flex items-center gap-2">
-                      <span>Tracker Copilot IA</span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    </h4>
-                    <p className="text-[10px] text-slate-400 font-mono">Autenticado • Empresa Exemplo S.A.</p>
-                  </div>
-                </div>
-
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-white/5 text-slate-300 border border-white/10">
-                  Criptografia Ponta a Ponta
-                </span>
-              </div>
-
-              {/* CONVERSA DO CHAT */}
-              <div className="space-y-4 text-xs font-sans">
+            {/* MOCKUP ULTRA REALISTA DE SMARTPHONE (IPHONE TITÂNIO COM HORÁRIO DINÂMICO DO SISTEMA) */}
+            <div className="lg:col-span-6 flex justify-center">
+              <div className="w-full max-w-[360px] sm:max-w-[390px] rounded-[52px] p-3 bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 shadow-[0_25px_70px_rgba(0,0,0,0.85)] border-4 border-slate-600/60 relative">
                 
-                {/* BALÃO 1: ÁUDIO DO GESTOR (DIREITA) */}
-                <div className="flex justify-end">
-                  <div className="max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl rounded-tr-none bg-emerald-700/40 border border-emerald-500/30 text-white space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-400 text-slate-950 flex items-center justify-center shrink-0 font-bold">
-                        <Play size={14} weight="fill" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="h-1 bg-white/30 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-300 w-[65%]" />
+                {/* BOTÕES LATERAIS DE TITÂNIO DO IPHONE */}
+                <div className="absolute -left-[7px] top-28 w-[3px] h-9 bg-slate-600 rounded-l" />
+                <div className="absolute -left-[7px] top-40 w-[3px] h-12 bg-slate-600 rounded-l" />
+                <div className="absolute -left-[7px] top-56 w-[3px] h-12 bg-slate-600 rounded-l" />
+                <div className="absolute -right-[7px] top-36 w-[3px] h-16 bg-slate-600 rounded-r" />
+
+                {/* TELA INTERNA DO IPHONE */}
+                <div className="w-full rounded-[42px] bg-[#0b141a] overflow-hidden border border-slate-950 flex flex-col h-[620px] relative">
+                  
+                  {/* BARRA SUPERIOR DE STATUS (COM HORÁRIO SINCRONIZADO EM TEMPO REAL) */}
+                  <div className="px-7 pt-3 pb-2 flex items-center justify-between text-[11px] font-bold text-slate-200 z-20">
+                    <span className="font-mono">{currentDeviceTime}</span>
+                    
+                    {/* DYNAMIC ISLAND DO IPHONE */}
+                    <div className="w-24 h-5 bg-black rounded-full flex items-center justify-end px-2 gap-1.5 shadow-inner">
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800" />
+                      <div className="w-2 h-2 rounded-full bg-emerald-500/80 animate-pulse" />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <WifiHigh size={14} weight="bold" />
+                      <BatteryFull size={16} weight="fill" />
+                    </div>
+                  </div>
+
+                  {/* HEADER DO WHATSAPP CORPORATIVO */}
+                  <div className="px-4 py-2.5 bg-[#1f2c34] border-b border-white/5 flex items-center justify-between text-white z-10">
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative">
+                        <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                          <img src="/logo.png" alt="Tracker" className="h-5 w-auto object-contain" />
                         </div>
-                        <div className="flex justify-between text-[9px] text-emerald-200">
-                          <span>0:04</span>
-                          <span>Áudio do Gestor</span>
-                        </div>
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-[#1f2c34] rounded-full" />
                       </div>
-                      <Microphone size={18} className="text-emerald-300" weight="fill" />
-                    </div>
-                    <p className="text-[11px] text-emerald-100 italic">
-                      &ldquo;Como a equipe de cartões está indo hoje?&rdquo;
-                    </p>
-                  </div>
-                </div>
-
-                {/* BALÃO 2: RESPOSTA DO TRACKER (ESQUERDA) */}
-                <div className="flex justify-start">
-                  <div className="max-w-[90%] sm:max-w-[85%] p-5 rounded-2xl rounded-tl-none bg-slate-900 border border-white/10 text-slate-200 space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2 text-[10px] font-mono text-emerald-400 font-bold">
-                      <span>EQUIPE CARTÕES / VAREJO — HOJE</span>
-                      <span>14:32</span>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-white tracking-tight">Tracker Copilot</span>
+                          <CheckCircle size={12} weight="fill" className="text-sky-400" />
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-medium">online • tempo real</span>
+                      </div>
                     </div>
 
-                    <div className="space-y-1.5 font-mono text-xs">
-                      <p>👥 <strong>18 operadores ativos</strong> (100% da escala)</p>
-                      <p>🎯 Meta do Dia: <strong>R$ 85.000</strong></p>
-                      <p>💰 Recuperado: <strong className="text-emerald-400">R$ 63.400</strong> (74,6% da meta)</p>
-                      <p>📈 Pacing: <strong className="text-sky-400">+12% vs. ontem</strong> no mesmo horário</p>
-                      <p className="text-amber-300">⚠️ <strong>4 operadores abaixo de 50%</strong> da meta individual</p>
-                    </div>
-
-                    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
-                      <span className="text-amber-400 font-bold">Status: 🟡 Atenção</span>
-                      <span className="text-slate-400 italic">Deseja que eu detalhe os 4 operadores?</span>
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <VideoCamera size={17} weight="bold" />
+                      <Phone size={17} weight="bold" />
+                      <DotsThreeVertical size={17} weight="bold" />
                     </div>
                   </div>
-                </div>
 
-                {/* BALÃO 3: CONFIRMAÇÃO DO GESTOR (DIREITA) */}
-                <div className="flex justify-end">
-                  <div className="p-2.5 px-4 rounded-2xl rounded-tr-none bg-emerald-700/40 border border-emerald-500/30 text-white text-xs font-bold">
-                    Sim, por favor.
+                  {/* CORPO DE MENSAGENS COM TRANSIÇÃO ANIMADA */}
+                  <div className="flex-1 p-3.5 space-y-3 overflow-y-auto font-sans text-xs bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
+                    
+                    <div className="text-center my-1">
+                      <span className="px-2.5 py-0.5 rounded-md bg-[#182229] text-[9px] font-mono text-slate-400 border border-white/5">
+                        HOJE • CRIPTOGRAFIA DE PONTA A PONTA
+                      </span>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      
+                      {/* CENÁRIO 1: CONSULTA DE EQUIPE */}
+                      {activeWhatsappScenario === 'team_status' && (
+                        <motion.div 
+                          key="team_status"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-2.5"
+                        >
+                          {/* ÁUDIO DO GESTOR */}
+                          <div className="flex justify-end">
+                            <div className="max-w-[85%] p-3 rounded-2xl rounded-tr-none bg-[#005c4b] text-white space-y-1.5 shadow-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-full bg-white text-slate-900 flex items-center justify-center shrink-0">
+                                  <Play size={12} weight="fill" />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <div className="h-1 bg-white/30 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-200 w-[65%]" />
+                                  </div>
+                                  <div className="flex justify-between text-[9px] text-emerald-100">
+                                    <span>0:04</span>
+                                    <span>{currentDeviceTime}</span>
+                                  </div>
+                                </div>
+                                <Microphone size={16} className="text-emerald-200" weight="fill" />
+                              </div>
+                              <p className="text-[10px] text-emerald-100 italic">
+                                &ldquo;Como a equipe de cartões está indo hoje?&rdquo;
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* RESPOSTA DO TRACKER */}
+                          <div className="flex justify-start">
+                            <div className="max-w-[90%] p-3.5 rounded-2xl rounded-tl-none bg-[#202c33] text-slate-200 space-y-2 border border-white/5 shadow-sm">
+                              <div className="flex items-center justify-between border-b border-white/10 pb-1.5 text-[10px] font-mono text-emerald-400 font-bold">
+                                <span>EQUIPE CARTÕES — HOJE</span>
+                                <span>{currentDeviceTime}</span>
+                              </div>
+                              <div className="space-y-1 font-mono text-[11px] leading-tight">
+                                <p>👥 <strong>18 operadores ativos</strong></p>
+                                <p>🎯 Meta: <strong>R$ 85.000</strong></p>
+                                <p>💰 Recuperado: <strong className="text-emerald-400">R$ 63.400</strong> (74,6%)</p>
+                                <p>📈 Pacing: <strong className="text-sky-400">+12% vs. ontem</strong></p>
+                                <p className="text-amber-300">⚠️ <strong>4 operadores abaixo de 50%</strong></p>
+                              </div>
+                              <div className="pt-1.5 border-t border-white/5 flex items-center justify-between text-[10px]">
+                                <span className="text-amber-400 font-bold">Status: 🟡 Atenção</span>
+                                <span className="text-slate-400 italic">Quer detalhar os 4?</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* CONFIRMAÇÃO & DETALHES */}
+                          <div className="flex justify-end">
+                            <div className="p-2 px-3 rounded-xl rounded-tr-none bg-[#005c4b] text-white text-[11px] font-bold">
+                              Sim, por favor.
+                            </div>
+                          </div>
+
+                          <div className="flex justify-start">
+                            <div className="max-w-[85%] p-3 rounded-xl rounded-tl-none bg-[#202c33] text-slate-300 space-y-1 border border-white/5 text-[10px] font-mono">
+                              <p className="text-slate-400 font-bold">Operadores em Atenção:</p>
+                              <p>• João Santos — 38% (R$ 1.900)</p>
+                              <p>• Carlos Ferreira — 42% (R$ 2.100)</p>
+                              <p>• Ana Souza — 44% (R$ 2.200)</p>
+                              <p>• Pedro Alves — 47% (R$ 2.350)</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* CENÁRIO 2: FECHAMENTO NO CARRO (DIRETORIA) */}
+                      {activeWhatsappScenario === 'daily_closing' && (
+                        <motion.div 
+                          key="daily_closing"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-2.5"
+                        >
+                          <div className="flex justify-end">
+                            <div className="max-w-[85%] p-3 rounded-2xl rounded-tr-none bg-[#005c4b] text-white space-y-1.5 shadow-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-full bg-white text-slate-900 flex items-center justify-center shrink-0">
+                                  <Play size={12} weight="fill" />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <div className="h-1 bg-white/30 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-200 w-[80%]" />
+                                  </div>
+                                  <div className="flex justify-between text-[9px] text-emerald-100">
+                                    <span>0:03</span>
+                                    <span>{currentDeviceTime}</span>
+                                  </div>
+                                </div>
+                                <Microphone size={16} className="text-emerald-200" weight="fill" />
+                              </div>
+                              <p className="text-[10px] text-emerald-100 italic">
+                                &ldquo;Como fechamos ontem à noite?&rdquo;
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-start">
+                            <div className="max-w-[90%] p-3.5 rounded-2xl rounded-tl-none bg-[#202c33] text-slate-200 space-y-2 border border-white/5 shadow-sm">
+                              <div className="flex items-center justify-between border-b border-white/10 pb-1.5 text-[10px] font-mono text-emerald-400 font-bold">
+                                <span>FECHAMENTO CONSOLIDADO</span>
+                                <span>{currentDeviceTime}</span>
+                              </div>
+                              <div className="space-y-1 font-mono text-[11px] leading-tight">
+                                <p>💰 Total: <strong className="text-emerald-400">R$ 184.320 recuperados</strong></p>
+                                <p>🎯 Atingimento: <strong>92% da meta diária</strong></p>
+                                <p>👥 8 equipes operando (142 acordos)</p>
+                                <p>🏆 Destaque: <strong className="text-sky-400">Equipe Alpha (108%)</strong></p>
+                                <p className="text-amber-300">⚠️ 2 equipes fecharam abaixo de 75%</p>
+                              </div>
+                              <div className="pt-1.5 border-t border-white/5 text-[10px] text-slate-400 italic">
+                                Deseja o relatório de quebras por supervisor?
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* CENÁRIO 3: COMPARATIVO DE RITMO */}
+                      {activeWhatsappScenario === 'trend_comparison' && (
+                        <motion.div 
+                          key="trend_comparison"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-2.5"
+                        >
+                          <div className="flex justify-end">
+                            <div className="max-w-[85%] p-3 rounded-2xl rounded-tr-none bg-[#005c4b] text-white space-y-1.5 shadow-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-full bg-white text-slate-900 flex items-center justify-center shrink-0">
+                                  <Play size={12} weight="fill" />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <div className="h-1 bg-white/30 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-200 w-[55%]" />
+                                  </div>
+                                  <div className="flex justify-between text-[9px] text-emerald-100">
+                                    <span>0:05</span>
+                                    <span>{currentDeviceTime}</span>
+                                  </div>
+                                </div>
+                                <Microphone size={16} className="text-emerald-200" weight="fill" />
+                              </div>
+                              <p className="text-[10px] text-emerald-100 italic">
+                                &ldquo;Compara o fechamento de hoje com a semana passada.&rdquo;
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-start">
+                            <div className="max-w-[90%] p-3.5 rounded-2xl rounded-tl-none bg-[#202c33] text-slate-200 space-y-2 border border-white/5 shadow-sm">
+                              <div className="flex items-center justify-between border-b border-white/10 pb-1.5 text-[10px] font-mono text-sky-400 font-bold">
+                                <span>COMPARATIVO SEMANAL</span>
+                                <span>{currentDeviceTime}</span>
+                              </div>
+                              <div className="space-y-1 font-mono text-[11px] leading-tight">
+                                <p>📈 Crescimento: <strong className="text-emerald-400">+14.2% em volume</strong></p>
+                                <p>🎫 Ticket Médio: <strong>R$ 1.480</strong> vs R$ 1.320</p>
+                                <p>🛡️ Taxa de Quebra: <strong className="text-purple-400">Caiu de 26% para 18%</strong></p>
+                                <p>⚡ Projeção: Bater a meta <strong>3 dias antes</strong> do fim do mês</p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* CENÁRIO 4: RANKING TOP OPERADORES */}
+                      {activeWhatsappScenario === 'top_operators' && (
+                        <motion.div 
+                          key="top_operators"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-2.5"
+                        >
+                          <div className="flex justify-end">
+                            <div className="max-w-[85%] p-3 rounded-2xl rounded-tr-none bg-[#005c4b] text-white space-y-1.5 shadow-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-full bg-white text-slate-900 flex items-center justify-center shrink-0">
+                                  <Play size={12} weight="fill" />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <div className="h-1 bg-white/30 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-200 w-[50%]" />
+                                  </div>
+                                  <div className="flex justify-between text-[9px] text-emerald-100">
+                                    <span>0:03</span>
+                                    <span>{currentDeviceTime}</span>
+                                  </div>
+                                </div>
+                                <Microphone size={16} className="text-emerald-200" weight="fill" />
+                              </div>
+                              <p className="text-[10px] text-emerald-100 italic">
+                                &ldquo;Quem são os cinco melhores operadores de hoje?&rdquo;
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-start">
+                            <div className="max-w-[90%] p-3.5 rounded-2xl rounded-tl-none bg-[#202c33] text-slate-200 space-y-2 border border-white/5 shadow-sm">
+                              <div className="flex items-center justify-between border-b border-white/10 pb-1.5 text-[10px] font-mono text-amber-400 font-bold">
+                                <span>🏆 TOP 5 OPERADORES — HOJE</span>
+                                <span>{currentDeviceTime}</span>
+                              </div>
+                              <div className="space-y-1 font-mono text-[11px] leading-tight">
+                                <p>🥇 1º Ana Souza — <strong>R$ 18.400</strong> (12 acordos)</p>
+                                <p>🥈 2º Carlos Ferreira — <strong>R$ 14.100</strong> (9 acordos)</p>
+                                <p>🥉 3º Juliana Mendes — <strong>R$ 11.800</strong> (8 acordos)</p>
+                                <p>4º Marcos Rocha — <strong>R$ 9.600</strong> (6 acordos)</p>
+                                <p>5º Fernanda Lima — <strong>R$ 8.900</strong> (6 acordos)</p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                    </AnimatePresence>
+
                   </div>
-                </div>
 
-                {/* BALÃO 4: DETALHAMENTO INSTANTÂNEO (ESQUERDA) */}
-                <div className="flex justify-start">
-                  <div className="max-w-[85%] p-4 rounded-2xl rounded-tl-none bg-slate-900 border border-white/10 text-slate-200 space-y-2">
-                    <span className="text-[10px] font-mono text-slate-400 font-bold uppercase block">
-                      Operadores Abaixo de 50% (Ação Recomendada):
-                    </span>
-                    <div className="space-y-1 font-mono text-xs text-slate-300">
-                      <p>• João Santos — 38% (R$ 1.900 / R$ 5.000)</p>
-                      <p>• Carlos Ferreira — 42% (R$ 2.100 / R$ 5.000)</p>
-                      <p>• Ana Souza — 44% (R$ 2.200 / R$ 5.000)</p>
-                      <p>• Pedro Alves — 47% (R$ 2.350 / R$ 5.000)</p>
+                  {/* BARRA INFERIOR DE DIGITAÇÃO DO WHATSAPP */}
+                  <div className="p-2.5 bg-[#1f2c34] flex items-center gap-2 border-t border-white/5">
+                    <div className="flex items-center gap-2 text-slate-400 pl-1">
+                      <Smiley size={18} />
+                      <Paperclip size={18} />
+                    </div>
+                    <div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1.5 text-[11px] text-slate-400 font-sans">
+                      Pergunte algo por áudio ou texto...
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                      <Microphone size={16} weight="fill" />
                     </div>
                   </div>
-                </div>
 
+                  {/* HOME INDICATOR DO IPHONE */}
+                  <div className="py-1.5 bg-[#1f2c34] flex justify-center">
+                    <div className="w-32 h-1 bg-slate-400 rounded-full" />
+                  </div>
+
+                </div>
               </div>
-
             </div>
 
-            {/* CASOS DE USO EXECUTIVO & PERMISSION LAYER (LADO DIREITO) */}
-            <div className="lg:col-span-5 space-y-6">
+            {/* COMANDOS CLICÁVEIS & CONTROLE DE PERMISSÕES (LADO DIREITO) */}
+            <div className="lg:col-span-6 space-y-6">
               
-              {/* CASOS DE USO RÁPIDOS */}
-              <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/10 space-y-4">
-                <h3 className="text-base font-black text-white flex items-center gap-2">
-                  <Brain size={20} className="text-sky-400" />
-                  <span>Exemplos de Comandos por Voz</span>
-                </h3>
+              {/* SELETOR DE COMANDOS INTERATIVOS */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-white/10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <Microphone size={20} className="text-emerald-400" />
+                    <span>Clique nos Comandos para Testar a Resposta:</span>
+                  </h3>
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                    Interativo
+                  </span>
+                </div>
 
-                <div className="space-y-2.5 text-xs text-slate-300">
-                  <div className="p-3 rounded-xl bg-slate-950 border border-white/5 flex items-start gap-2.5">
-                    <Microphone size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-white">Consulta Rápida:</strong>
-                      <p className="text-slate-400 mt-0.5">&ldquo;Quanto a operação inteira recuperou hoje?&rdquo;</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  
+                  {/* BOTÃO 1: CONSULTA DE EQUIPE */}
+                  <button
+                    onClick={() => setActiveWhatsappScenario('team_status')}
+                    className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer space-y-1 ${
+                      activeWhatsappScenario === 'team_status'
+                        ? 'bg-emerald-950/40 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                        : 'bg-slate-950/60 border-white/5 text-slate-400 hover:text-white hover:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-emerald-400">🎤 Consulta de Equipe</span>
+                      {activeWhatsappScenario === 'team_status' && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
                     </div>
-                  </div>
+                    <p className="text-[11px] text-slate-300 font-medium leading-snug">
+                      &ldquo;Como a equipe de cartões está indo hoje?&rdquo;
+                    </p>
+                  </button>
 
-                  <div className="p-3 rounded-xl bg-slate-950 border border-white/5 flex items-start gap-2.5">
-                    <Microphone size={16} className="text-sky-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-white">Comparativo:</strong>
-                      <p className="text-slate-400 mt-0.5">&ldquo;Compara o fechamento de hoje com a semana passada.&rdquo;</p>
+                  {/* BOTÃO 2: FECHAMENTO NO CARRO */}
+                  <button
+                    onClick={() => setActiveWhatsappScenario('daily_closing')}
+                    className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer space-y-1 ${
+                      activeWhatsappScenario === 'daily_closing'
+                        ? 'bg-emerald-950/40 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                        : 'bg-slate-950/60 border-white/5 text-slate-400 hover:text-white hover:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-sky-400">🚗 Fechamento no Carro</span>
+                      {activeWhatsappScenario === 'daily_closing' && <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />}
                     </div>
-                  </div>
+                    <p className="text-[11px] text-slate-300 font-medium leading-snug">
+                      &ldquo;Como fechamos ontem à noite?&rdquo;
+                    </p>
+                  </button>
 
-                  <div className="p-3 rounded-xl bg-slate-950 border border-white/5 flex items-start gap-2.5">
-                    <Microphone size={16} className="text-purple-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-white">Ranking de Destaques:</strong>
-                      <p className="text-slate-400 mt-0.5">&ldquo;Quem são os cinco melhores operadores de hoje?&rdquo;</p>
+                  {/* BOTÃO 3: COMPARATIVO */}
+                  <button
+                    onClick={() => setActiveWhatsappScenario('trend_comparison')}
+                    className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer space-y-1 ${
+                      activeWhatsappScenario === 'trend_comparison'
+                        ? 'bg-emerald-950/40 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                        : 'bg-slate-950/60 border-white/5 text-slate-400 hover:text-white hover:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-purple-400">📈 Comparativo de Ritmo</span>
+                      {activeWhatsappScenario === 'trend_comparison' && <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />}
                     </div>
-                  </div>
+                    <p className="text-[11px] text-slate-300 font-medium leading-snug">
+                      &ldquo;Compara o fechamento com a semana passada.&rdquo;
+                    </p>
+                  </button>
 
-                  <div className="p-3 rounded-xl bg-slate-950 border border-white/5 flex items-start gap-2.5">
-                    <Microphone size={16} className="text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-white">Fechamento no Carro:</strong>
-                      <p className="text-slate-400 mt-0.5">&ldquo;Como fechamos ontem à noite?&rdquo;</p>
+                  {/* BOTÃO 4: TOP OPERADORES */}
+                  <button
+                    onClick={() => setActiveWhatsappScenario('top_operators')}
+                    className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer space-y-1 ${
+                      activeWhatsappScenario === 'top_operators'
+                        ? 'bg-emerald-950/40 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                        : 'bg-slate-950/60 border-white/5 text-slate-400 hover:text-white hover:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-400">🏆 Ranking de Destaques</span>
+                      {activeWhatsappScenario === 'top_operators' && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />}
                     </div>
-                  </div>
+                    <p className="text-[11px] text-slate-300 font-medium leading-snug">
+                      &ldquo;Quem são os cinco melhores operadores de hoje?&rdquo;
+                    </p>
+                  </button>
+
                 </div>
               </div>
 
               {/* CONTROLE DE PERMISSÕES POR ESCOPO (SEGURANÇA CORPORATIVA) */}
-              <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/10 space-y-4">
+              <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/60 border border-white/10 space-y-4">
                 <h3 className="text-sm font-black text-white flex items-center gap-2">
                   <Lock size={18} className="text-purple-400" />
                   <span>Controle Hierárquico por Cargo (Permission Layer)</span>
