@@ -559,21 +559,21 @@ export const SalesPresentationPage: React.FC = () => {
                     <span className="text-[10px] text-indigo-300">Faltam apenas R$ 3.000 para bater!</span>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-950 border border-white/5 space-y-1">
-                    <span className="text-[10px] font-black uppercase text-slate-400">Minha Comissão Estimada</span>
-                    <p className="text-2xl font-black text-emerald-400">R$ 1.420,00</p>
-                    <span className="text-[10px] text-slate-500">Cálculo transparente em tempo real</span>
+                    <span className="text-[10px] font-black uppercase text-slate-400">Taxa de Efetividade</span>
+                    <p className="text-2xl font-black text-emerald-400">78.5%</p>
+                    <span className="text-[10px] text-slate-500">Índice de conversão e acordos cumpridos</span>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-950 border border-white/5 space-y-1">
                     <span className="text-[10px] font-black uppercase text-slate-400">Meus Acordos Hoje</span>
                     <p className="text-2xl font-black text-sky-400">8 Acordos</p>
-                    <span className="text-[10px] text-slate-500">Taxa de conversão: 34%</span>
+                    <span className="text-[10px] text-slate-500">Taxa de recuperação: 34%</span>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-950 border border-white/5 p-4 flex items-center justify-between text-xs">
                   <div>
                     <span className="font-bold text-white">Visão Direta de Desempenho & Metas Individuais</span>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Interface limpa que motiva o operador a acompanhar suas conversões e comissões minuto a minuto</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Interface limpa que motiva o operador a acompanhar suas conversões e taxa de recuperação minuto a minuto</p>
                   </div>
                   <span className="px-3 py-1 rounded-xl bg-sky-500/20 text-sky-300 text-xs font-black border border-sky-500/30">
                     Tempo Real
@@ -1074,7 +1074,7 @@ export const SalesPresentationPage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-white/5">
                     <span className="font-bold text-white">🎧 Operador</span>
-                    <span className="text-[11px] text-slate-400">Seus próprios dados e comissão</span>
+                    <span className="text-[11px] text-slate-400">Seus próprios acordos, metas e efetividade</span>
                   </div>
                 </div>
               </div>
@@ -1216,7 +1216,7 @@ export const SalesPresentationPage: React.FC = () => {
               </div>
               <h3 className="text-base font-black text-white">Conciliação Instantânea</h3>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Baixa os acordos pagos em segundos, liberando a comissão do operador e atualizando o atingimento de metas da empresa.
+                Baixa os acordos pagos em segundos, atualizando a taxa de recuperação do operador e o atingimento de metas da empresa.
               </p>
             </div>
           </div>
@@ -1639,7 +1639,7 @@ export const SalesPresentationPage: React.FC = () => {
               },
               {
                 q: 'A Tracker substitui nosso discador ou integra com nossos sistemas atuais?',
-                a: 'A Tracker atua como o Cockpit Central de Inteligência e Gestão. Ela convive em harmonia com qualquer discador ou telefonia do mercado, centralizando os acordos, comissões, monitoria, escala e prevenção de quebra.'
+                a: 'A Tracker atua como o Cockpit Central de Inteligência e Gestão. Ela convive em harmonia com qualquer discador ou telefonia do mercado, centralizando os acordos, taxas de recuperação, monitoria, escala e prevenção de quebra.'
               },
               {
                 q: 'Como funciona o suporte técnico e atendimento?',
