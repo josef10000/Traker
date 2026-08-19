@@ -25,7 +25,7 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 | **📈 Grafana & Observabilidade** | Telemetria contínua com Grafana Cloud para monitoramento de métricas, throughput de rede e saúde do SaaS. |
 | **🛡️ SonarCloud Security A** | Análise estática contínua de segurança, prevenção de bugs e 0 vulnerabilidades em pipeline CI/CD. |
 | **📊 BI & Forecast Preditivo** | Analytics estruturado em 4 visões focadas (Visão Geral & Heatmaps, Matriz de Canais, Análise de Descontos e Forecast Preditivo com Maturação), eliminando visões estáticas e consolidando scores preditivos. |
-| **⏱️ Jornada Hora a Hora** | Cockpit de acompanhamento de produção em tempo real com **Banco de Pausas Flexível de 72 min/dia**. |
+| **⏱️ Jornada Hora a Hora & Exportador Excel** | Cockpit de acompanhamento de produção em tempo real com **Banco de Pausas Flexível de 72 min/dia**, **Coluna AGORA iluminada em tempo real**, **Mapa de Calor Semântico (Heatmap)**, **Filtros Rápidos de Status/Busca** e **Exportador Avançado em Excel/CSV** com recortes por Diário, Semanal (7 dias) e Mensal por equipe ou operador individual. |
 | **🚨 Risco em Vencimento no Dia** | Painel exclusivo de Supervisão com configurador de corte de **"Valor Alto"**, filtro estrito, badges prioritárias, disparo direto via WhatsApp e cópia de scripts em 1-clique. |
 | **⭐ Biblioteca de Ouro (QA)** | Galeria de gravações de alta performance e áudios de destaque (*Best Practice*) para treinamento contínuo e *onboarding* de novos operadores. |
 | **🧹 Higienização & Deduplicação (Back Office)** | Importação inteligente com diagnóstico prévio em tempo real, detecção e remoção atômica de CPFs duplicados e validação cadastral. |
