@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Briefcase,
   UserPlus,
@@ -16,6 +16,8 @@ import {
   Star,
   Archive,
   CaretRight,
+  CaretDown,
+  Check,
   PencilSimple,
   Copy,
   Link,
@@ -26,6 +28,78 @@ import {
   Buildings
 } from '@phosphor-icons/react';
 import { UserProfile, Team, JobOpening, Candidate, CandidateStage } from '../../types';
+import { CustomSelect } from '../ui/CustomSelect';
+
+const STAGE_OPTIONS: { value: CandidateStage; label: string; bg: string; text: string; border: string }[] = [
+  { value: 'applied', label: '📥 Triagem', bg: 'bg-sky-500/20', text: 'text-sky-300', border: 'border-sky-500/40' },
+  { value: 'contacted', label: '📞 Em Contato', bg: 'bg-amber-500/20', text: 'text-amber-300', border: 'border-amber-500/40' },
+  { value: 'interview_scheduled', label: '🗣️ Entrevista Agendada', bg: 'bg-purple-500/20', text: 'text-purple-300', border: 'border-purple-500/40' },
+  { value: 'approved', label: '⭐ Aprovado (Contratado)', bg: 'bg-emerald-500/20', text: 'text-emerald-300', border: 'border-emerald-500/40' },
+  { value: 'talent_pool', label: '🗄️ Banco de Talentos', bg: 'bg-indigo-500/20', text: 'text-indigo-300', border: 'border-indigo-500/40' },
+  { value: 'rejected', label: '❌ Reprovado / Desistiu', bg: 'bg-rose-500/20', text: 'text-rose-300', border: 'border-rose-500/40' },
+];
+
+function StageDropdown({
+  stage,
+  onChange
+}: {
+  stage: CandidateStage;
+  onChange: (stage: CandidateStage) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentOption = STAGE_OPTIONS.find(opt => opt.value === stage) || STAGE_OPTIONS[0];
+
+  return (
+    <div ref={dropdownRef} className="relative inline-block text-left">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-between gap-2 cursor-pointer shadow-sm hover:brightness-110 active:scale-95 ${currentOption.bg} ${currentOption.text} ${currentOption.border}`}
+      >
+        <span>{currentOption.label}</span>
+        <CaretDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 w-52 rounded-2xl bg-[#090d16] border border-white/10 shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 backdrop-blur-xl">
+          {STAGE_OPTIONS.map((opt) => {
+            const isSelected = opt.value === stage;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer mb-0.5 ${
+                  isSelected
+                    ? `${opt.bg} ${opt.text} ${opt.border} border`
+                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <span>{opt.label}</span>
+                {isSelected && <Check size={14} className={opt.text} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface RecruitmentManagementSubTabProps {
   theme: 'dark' | 'light';
@@ -803,32 +877,12 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                         )}
                       </td>
 
-                      {/* Seletor Direto de Estágio */}
+                      {/* Seletor Direto de Estágio 100% Personalizado */}
                       <td className="py-4 px-4">
-                        <select
-                          value={cand.stage}
-                          onChange={(e) => handleUpdateCandidateStage(cand.id, e.target.value as CandidateStage)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border cursor-pointer focus:outline-none ${
-                            cand.stage === 'approved'
-                              ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
-                              : cand.stage === 'interview_scheduled'
-                              ? 'bg-purple-950/40 text-purple-300 border-purple-500/40'
-                              : cand.stage === 'contacted'
-                              ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
-                              : cand.stage === 'talent_pool'
-                              ? 'bg-purple-950 text-purple-300 border-purple-500/40'
-                              : cand.stage === 'rejected'
-                              ? 'bg-rose-950/40 text-rose-300 border-rose-500/40'
-                              : 'bg-slate-950 text-slate-300 border-white/10'
-                          }`}
-                        >
-                          <option value="applied">📥 Triagem</option>
-                          <option value="contacted">📞 Em Contato</option>
-                          <option value="interview_scheduled">🗣️ Entrevista Agendada</option>
-                          <option value="approved">⭐ Aprovado (Contratado)</option>
-                          <option value="talent_pool">🗄️ Banco de Talentos</option>
-                          <option value="rejected">❌ Reprovado / Desistiu</option>
-                        </select>
+                        <StageDropdown
+                          stage={cand.stage}
+                          onChange={(newStage) => handleUpdateCandidateStage(cand.id, newStage)}
+                        />
                       </td>
 
                       {/* Ações */}
@@ -998,15 +1052,14 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
               <div className="space-y-4 text-xs">
                 <div>
                   <label className="font-bold text-slate-300 uppercase tracking-wider block mb-1">Equipe de Destino:</label>
-                  <select
+                  <CustomSelect
                     value={selectedApproveTeamId}
-                    onChange={(e) => setSelectedApproveTeamId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl font-bold bg-slate-950 border border-white/10 text-white focus:outline-none"
-                  >
-                    {managedTeamsData.map(t => (
-                      <option key={t.id} value={t.id}>👥 {t.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedApproveTeamId(val)}
+                    options={managedTeamsData.map(t => ({
+                      value: t.id,
+                      label: `👥 ${t.name}`
+                    }))}
+                  />
                 </div>
 
                 <div>
@@ -1249,31 +1302,30 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-300 block mb-1">Vaga Pretendida</label>
-                  <select
+                  <CustomSelect
                     value={newCandJobId}
-                    onChange={(e) => setNewCandJobId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none font-bold"
-                  >
-                    <option value="">Geral / Sem Vaga Específica</option>
-                    {jobOpenings.map(j => (
-                      <option key={j.id} value={j.id}>{j.title}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setNewCandJobId(val)}
+                    placeholder="Geral / Sem Vaga Específica"
+                    options={[
+                      { value: '', label: 'Geral / Sem Vaga Específica' },
+                      ...jobOpenings.map(j => ({ value: j.id, label: j.title }))
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="font-bold text-slate-300 block mb-1">Onde se Inscreveu?</label>
-                  <select
+                  <CustomSelect
                     value={newCandSource}
-                    onChange={(e) => setNewCandSource(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none"
-                  >
-                    <option value="LinkedIn">LinkedIn</option>
-                    <option value="Indicação Interna">Indicação Interna</option>
-                    <option value="WhatsApp">WhatsApp Direto</option>
-                    <option value="Gupy">Gupy / Vagas.com</option>
-                    <option value="InfoJobs">InfoJobs</option>
-                    <option value="Outro">Outro Canal</option>
-                  </select>
+                    onChange={(val) => setNewCandSource(val)}
+                    options={[
+                      { value: 'LinkedIn', label: 'LinkedIn' },
+                      { value: 'Indicação Interna', label: 'Indicação Interna' },
+                      { value: 'WhatsApp', label: 'WhatsApp Direto' },
+                      { value: 'Gupy', label: 'Gupy / Vagas.com' },
+                      { value: 'InfoJobs', label: 'InfoJobs' },
+                      { value: 'Outro', label: 'Outro Canal' }
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -1349,15 +1401,14 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-300 block mb-1">Equipe de Destino</label>
-                  <select
+                  <CustomSelect
                     value={newJobTeamId}
-                    onChange={(e) => setNewJobTeamId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none font-bold"
-                  >
-                    {managedTeamsData.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setNewJobTeamId(val)}
+                    options={managedTeamsData.map(t => ({
+                      value: t.id,
+                      label: `👥 ${t.name}`
+                    }))}
+                  />
                 </div>
                 <div>
                   <label className="font-bold text-slate-300 block mb-1">Total de Posições (Vagas)</label>
