@@ -3566,16 +3566,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </span>
                         )}
                       </button>
-                      <button
-                        onClick={() => setCoordinationSubTab('recruitment')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          coordinationSubTab === 'recruitment'
-                            ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-md shadow-indigo-500/10'
-                            : 'text-slate-400 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        🎯 Recrutamento & Vagas
-                      </button>
+                      {(profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'super_admin') && (
+                        <button
+                          onClick={() => setCoordinationSubTab('recruitment')}
+                          className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                            coordinationSubTab === 'recruitment'
+                              ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-md shadow-indigo-500/10'
+                              : 'text-slate-400 hover:text-white border border-transparent'
+                          }`}
+                        >
+                          🎯 Recrutamento & Vagas
+                        </button>
+                      )}
                       {profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <>
                           {profile.role === 'coordinator' && (
@@ -4072,8 +4074,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       )}
 
-                      {/* SUB-ABA: RECRUTAMENTO & VAGAS (ATS INTEGRADO AO ONBOARDING) */}
-                      {coordinationSubTab === 'recruitment' && (
+                      {/* SUB-ABA: RECRUTAMENTO & VAGAS (ATS INTEGRADO AO ONBOARDING - RESTRITO À COORDENAÇÃO) */}
+                      {coordinationSubTab === 'recruitment' && (profile.role === 'coordinator' || profile.role === 'manager' || profile.role === 'super_admin') && (
                         <RecruitmentManagementSubTab
                           theme={theme}
                           profile={profile}
