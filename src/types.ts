@@ -762,3 +762,49 @@ export interface KnowledgeArticle {
   updatedAt: string;
 }
 
+// -------------------------------------------------------------
+// RECRUTAMENTO & SELEÇÃO (ATS INTEGRADO AO ONBOARDING)
+// -------------------------------------------------------------
+
+export interface JobOpening {
+  id: string;
+  organizationId?: string;
+  title: string;                 // Ex: "Operador de Cobrança Jr", "Monitor de Qualidade"
+  teamId?: string;               // Equipe de destino prevista
+  shiftStartHour?: number;       // Ex: 8
+  shiftEndHour?: number;         // Ex: 17
+  totalSlots: number;            // Total de vagas abertas
+  filledSlots: number;           // Vagas preenchidas/contratados
+  sourceChannel?: string;        // "LinkedIn", "WhatsApp", "Indicação Interna", "Gupy", "Outro"
+  status: 'open' | 'paused' | 'closed';
+  salaryOffer?: number;
+  description?: string;
+  createdAt: string;
+}
+
+export type CandidateStage = 'applied' | 'contacted' | 'interview_scheduled' | 'approved' | 'rejected' | 'talent_pool';
+
+export interface Candidate {
+  id: string;
+  organizationId?: string;
+  jobOpeningId?: string;         // ID da vaga vinculada
+  fullName: string;
+  phone: string;
+  email?: string;
+  sourceChannel: string;         // Onde se inscreveu: LinkedIn, WhatsApp, Indicação, etc.
+  resumeText?: string;           // Resumo do currículo / experiências
+  resumeUrl?: string;            // Link para arquivo PDF / Drive
+  stage: CandidateStage;
+  contactNotes?: string;         // Observações de contato
+  interviewDate?: string;        // Data e hora da entrevista (ISO ou YYYY-MM-DDTHH:mm)
+  interviewFeedback?: string;    // Feedback da entrevista
+  rejectionReason?: string;      // Motivo do descarte se reprovado/desistente
+  isTalentPool?: boolean;        // Se foi guardado no banco de talentos
+  graduatedToOnboardingAt?: string; // Se aprovado e integrado ao Onboarding
+  assignedTeamId?: string;       // Equipe atribuída na contratação
+  assignedSupervisorId?: string; // Supervisor atribuído
+  startDate?: string;            // Data de início efetivo
+  createdAt: string;
+  updatedAt: string;
+}
+

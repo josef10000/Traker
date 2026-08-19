@@ -76,6 +76,7 @@ import { MultiLevelPerformanceComparator } from './MultiLevelPerformanceComparat
 import { InvitesSection } from './InvitesSection';
 import { OrgTreeSection } from './OrgTreeSection';
 import { TransfersSection } from './TransfersSection';
+import { RecruitmentManagementSubTab } from './RecruitmentManagementSubTab';
 
 // Lazy Loading de Abas Pesadas para Otimização de Performance
 const BiAnalyticsTab = lazy(() => import('./BiAnalyticsTab').then(m => ({ default: m.BiAnalyticsTab })));
@@ -162,7 +163,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return 'financial';
   });
 
-  const [coordinationSubTab, setCoordinationSubTab] = useState<'performance' | 'frequency' | 'onboarding' | 'closing_pj' | 'teams_mgmt' | 'org_tree' | 'invites' | 'transfers' | 'dimensionamento'>('frequency');
+  const [coordinationSubTab, setCoordinationSubTab] = useState<'performance' | 'frequency' | 'onboarding' | 'recruitment' | 'closing_pj' | 'teams_mgmt' | 'org_tree' | 'invites' | 'transfers' | 'dimensionamento'>('frequency');
   const [coordOnboardingRampDays, setCoordOnboardingRampDays] = useState<number>(90);
   const [financialSubTab, setFinancialSubTab] = useState<'overview' | 'charge'>('overview');
   const [biMasterSubTab, setBiMasterSubTab] = useState<'analytics' | 'goals' | 'ofensores'>('analytics');
@@ -3565,6 +3566,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </span>
                         )}
                       </button>
+                      <button
+                        onClick={() => setCoordinationSubTab('recruitment')}
+                        className={`flex items-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          coordinationSubTab === 'recruitment'
+                            ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-md shadow-indigo-500/10'
+                            : 'text-slate-400 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        🎯 Recrutamento & Vagas
+                      </button>
                       {profile.role !== 'monitor' && profile.role !== 'qa' && (
                         <>
                           {profile.role === 'coordinator' && (
@@ -4059,6 +4070,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                           )}
                         </div>
+                      )}
+
+                      {/* SUB-ABA: RECRUTAMENTO & VAGAS (ATS INTEGRADO AO ONBOARDING) */}
+                      {coordinationSubTab === 'recruitment' && (
+                        <RecruitmentManagementSubTab
+                          theme={theme}
+                          profile={profile}
+                          managedTeamsData={managedTeamsData}
+                          teamMembers={filteredTeamMembers}
+                          showToast={showToast}
+                        />
                       )}
 
                       {/* SUB-ABA 3: FECHAMENTO PJ (Estritamente para Coordenador) */}
