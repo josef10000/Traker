@@ -268,6 +268,25 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     localStorage.setItem('noverde_recruitment_candidates', JSON.stringify(candidates));
   }, [candidates]);
 
+  // 2.1 Lista de Cargos Cadastrados / Mais Usados
+  const DEFAULT_ROLES = [
+    'Operador de Cobrança Jr',
+    'Operador de Cobrança Pleno',
+    'Operador de Negociação Ativo',
+    'Líder de Equipe / Supervisor',
+    'Analista de Qualidade & Processos',
+    'Assistente de Backoffice'
+  ];
+
+  const [jobRolesList, setJobRolesList] = useState<string[]>(() => {
+    const saved = localStorage.getItem('noverde_job_roles');
+    return saved ? JSON.parse(saved) : DEFAULT_ROLES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('noverde_job_roles', JSON.stringify(jobRolesList));
+  }, [jobRolesList]);
+
   // 3. Filtros e Busca
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [stageFilter, setStageFilter] = useState<CandidateStage | 'all'>('all');
@@ -276,10 +295,15 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
 
   // 4. Modais e Drawers
   const [newJobModalOpen, setNewJobModalOpen] = useState(false);
+  const [editingJobModal, setEditingJobModal] = useState<JobOpening | null>(null);
   const [newCandidateModalOpen, setNewCandidateModalOpen] = useState(false);
   const [selectedCandidateForDrawer, setSelectedCandidateForDrawer] = useState<Candidate | null>(null);
   const [scheduleInterviewModal, setScheduleInterviewModal] = useState<Candidate | null>(null);
-  const [interviewDateTime, setInterviewDateTime] = useState('');
+  
+  // Campos de Agendamento de Entrevista (Data, Hora e Notas)
+  const [interviewDateOnly, setInterviewDateOnly] = useState('');
+  const [interviewTimeOnly, setInterviewTimeOnly] = useState('');
+  const [interviewNotes, setInterviewNotes] = useState('');
   
   // Modal de Aprovação / Geração de Convite
   const [approveModal, setApproveModal] = useState<Candidate | null>(null);
@@ -291,8 +315,9 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
   const [rejectionModal, setRejectionModal] = useState<Candidate | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string>('');
 
-  // Formulário Nova Vaga (COM SITE OBRIGATÓRIO E SEM SALÁRIO)
+  // Formulário Nova Vaga (COM CARGO, SITE OBRIGATÓRIO E SEM SALÁRIO)
   const [newJobTitle, setNewJobTitle] = useState('');
+  const [newJobRole, setNewJobRole] = useState('');
   const [newJobSiteId, setNewJobSiteId] = useState<string>(operationalSites[0]?.id || 'site-1');
   const [newJobSlots, setNewJobSlots] = useState<number>(1);
   const [newJobShiftStart, setNewJobShiftStart] = useState<number>(8);
@@ -300,6 +325,18 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
   const [newJobSource, setNewJobSource] = useState('LinkedIn');
   const [newJobDescription, setNewJobDescription] = useState('');
   const [newJobTeamId, setNewJobTeamId] = useState(managedTeamsData[0]?.id || '');
+
+  // Formulário Editar Vaga
+  const [editJobTitle, setEditJobTitle] = useState('');
+  const [editJobRole, setEditJobRole] = useState('');
+  const [editJobSiteId, setEditJobSiteId] = useState<string>('site-1');
+  const [editJobSlots, setEditJobSlots] = useState<number>(1);
+  const [editJobShiftStart, setEditJobShiftStart] = useState<number>(8);
+  const [editJobShiftEnd, setEditJobShiftEnd] = useState<number>(17);
+  const [editJobSource, setEditJobSource] = useState('LinkedIn');
+  const [editJobDescription, setEditJobDescription] = useState('');
+  const [editJobTeamId, setEditJobTeamId] = useState('');
+  const [editJobStatus, setEditJobStatus] = useState<'open' | 'closed' | 'paused'>('open');
 
   // Formulário Novo Candidato (COM UPLOAD DE PDF)
   const [newCandName, setNewCandName] = useState('');
@@ -371,7 +408,53 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
   }, [candidates]);
 
   // Ações de Candidatos
+  const handleOpenScheduleInterviewModal = (cand: Candidate) => {
+    setScheduleInterviewModal(cand);
+    if (cand.interviewDate) {
+      // Tentar extrair data e hora
+      const parts = cand.interviewDate.split('T');
+      if (parts.length === 2) {
+        setInterviewDateOnly(parts[0]);
+        setInterviewTimeOnly(parts[1].slice(0, 5));
+      } else {
+        const d = new Date(cand.interviewDate);
+        if (!isNaN(d.getTime())) {
+          setInterviewDateOnly(d.toISOString().slice(0, 10));
+          setInterviewTimeOnly(d.toTimeString().slice(0, 5));
+        } else {
+          setInterviewDateOnly(new Date().toISOString().slice(0, 10));
+          setInterviewTimeOnly('14:00');
+        }
+      }
+    } else {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      setInterviewDateOnly(tomorrow.toISOString().slice(0, 10));
+      setInterviewTimeOnly('14:00');
+    }
+    setInterviewNotes(cand.interviewNotes || '');
+  };
+
   const handleUpdateCandidateStage = (candidateId: string, newStage: CandidateStage) => {
+    const candidate = candidates.find(c => c.id === candidateId);
+    if (!candidate) return;
+
+    if (newStage === 'interview_scheduled') {
+      handleOpenScheduleInterviewModal(candidate);
+      return;
+    }
+
+    if (newStage === 'approved') {
+      setApproveModal(candidate);
+      setSelectedApproveTeamId(candidate.assignedTeamId || managedTeamsData[0]?.id || '');
+      setGeneratedInviteLink(null);
+      return;
+    }
+
+    if (newStage === 'rejected') {
+      setRejectionModal(candidate);
+      return;
+    }
+
     setCandidates(prev => prev.map(c => {
       if (c.id === candidateId) {
         return { ...c, stage: newStage, updatedAt: new Date().toISOString() };
@@ -390,26 +473,32 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
   };
 
   const handleSaveInterviewSchedule = () => {
-    if (!scheduleInterviewModal || !interviewDateTime) {
-      showToast('Selecione a data e horário da entrevista.', 'warning');
+    if (!scheduleInterviewModal || !interviewDateOnly || !interviewTimeOnly) {
+      showToast('Selecione a data e o horário da entrevista.', 'warning');
       return;
     }
+
+    const fullDateTime = `${interviewDateOnly}T${interviewTimeOnly}`;
 
     setCandidates(prev => prev.map(c => {
       if (c.id === scheduleInterviewModal.id) {
         return {
           ...c,
           stage: 'interview_scheduled',
-          interviewDate: interviewDateTime,
+          interviewDate: fullDateTime,
+          interviewNotes: interviewNotes.trim(),
           updatedAt: new Date().toISOString()
         };
       }
       return c;
     }));
 
-    showToast(`Entrevista agendada com sucesso para ${new Date(interviewDateTime).toLocaleString('pt-BR')}!`, 'success');
+    const dateFormatted = `${interviewDateOnly.split('-').reverse().join('/')} às ${interviewTimeOnly}h`;
+    showToast(`Entrevista agendada com sucesso para ${dateFormatted}!`, 'success');
     setScheduleInterviewModal(null);
-    setInterviewDateTime('');
+    setInterviewDateOnly('');
+    setInterviewTimeOnly('');
+    setInterviewNotes('');
   };
 
   // Upload de Arquivo PDF
@@ -547,6 +636,60 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     setDeleteJobModal(null);
   };
 
+  const handleOpenEditJobModal = (job: JobOpening, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingJobModal(job);
+    setEditJobTitle(job.title);
+    setEditJobRole(job.roleTitle || job.title);
+    setEditJobSiteId(job.siteId || operationalSites[0]?.id || 'site-1');
+    setEditJobSlots(job.totalSlots);
+    setEditJobShiftStart(job.shiftStartHour || 8);
+    setEditJobShiftEnd(job.shiftEndHour || 17);
+    setEditJobSource(job.sourceChannel || 'LinkedIn');
+    setEditJobDescription(job.description || '');
+    setEditJobTeamId(job.teamId || managedTeamsData[0]?.id || '');
+    setEditJobStatus(job.status);
+  };
+
+  const handleSaveEditedJob = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingJobModal) return;
+    if (!editJobTitle.trim()) {
+      showToast('Informe o título da vaga.', 'warning');
+      return;
+    }
+
+    const selectedSite = operationalSites.find(s => s.id === editJobSiteId) || operationalSites[0];
+    const roleToSave = editJobRole.trim() || editJobTitle.trim();
+
+    if (roleToSave && !jobRolesList.includes(roleToSave)) {
+      setJobRolesList(prev => [...prev, roleToSave]);
+    }
+
+    setJobOpenings(prev => prev.map(j => {
+      if (j.id === editingJobModal.id) {
+        return {
+          ...j,
+          title: editJobTitle.trim(),
+          roleTitle: roleToSave,
+          siteId: selectedSite?.id,
+          siteName: selectedSite?.name,
+          teamId: editJobTeamId,
+          shiftStartHour: editJobShiftStart,
+          shiftEndHour: editJobShiftEnd,
+          totalSlots: Number(editJobSlots) || 1,
+          sourceChannel: editJobSource,
+          description: editJobDescription,
+          status: editJobStatus
+        };
+      }
+      return j;
+    }));
+
+    showToast(`Vaga "${editJobTitle}" atualizada com sucesso!`, 'success');
+    setEditingJobModal(null);
+  };
+
   const handleCreateJobOpening = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newJobTitle.trim()) {
@@ -555,10 +698,16 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     }
 
     const selectedSite = operationalSites.find(s => s.id === newJobSiteId) || operationalSites[0];
+    const roleToSave = newJobRole.trim() || newJobTitle.trim();
+
+    if (roleToSave && !jobRolesList.includes(roleToSave)) {
+      setJobRolesList(prev => [...prev, roleToSave]);
+    }
 
     const newJob: JobOpening = {
       id: `job-${Date.now()}`,
       title: newJobTitle.trim(),
+      roleTitle: roleToSave,
       siteId: selectedSite?.id,
       siteName: selectedSite?.name,
       teamId: newJobTeamId,
@@ -576,6 +725,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     showToast('Nova vaga aberta com sucesso!', 'success');
     setNewJobModalOpen(false);
     setNewJobTitle('');
+    setNewJobRole('');
     setNewJobDescription('');
   };
 
@@ -738,6 +888,13 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                           <span>{job.siteName}</span>
                         </span>
                       )}
+
+                      {job.roleTitle && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 flex items-center gap-1">
+                          <Briefcase size={11} weight="fill" />
+                          <span>{job.roleTitle}</span>
+                        </span>
+                      )}
                     </div>
 
                     <h4 className="text-base font-black text-white mt-2 group-hover:text-indigo-300 transition-colors">
@@ -748,8 +905,17 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                     </span>
                   </div>
 
-                  {/* AÇÕES DA VAGA (FECHAR / EXCLUIR) */}
+                  {/* AÇÕES DA VAGA (EDITAR / FECHAR / EXCLUIR) */}
                   <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenEditJobModal(job, e)}
+                      className="p-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 transition-all cursor-pointer"
+                      title="Editar Vaga e Cargo"
+                    >
+                      <PencilSimple size={15} />
+                    </button>
+
                     <button
                       type="button"
                       onClick={(e) => handleToggleJobStatus(job.id, e)}
@@ -1025,20 +1191,26 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                       {/* Entrevista */}
                       <td className="py-4 px-4">
                         {cand.stage === 'interview_scheduled' && cand.interviewDate ? (
-                          <div className={`p-2 rounded-xl text-xs font-mono font-bold inline-flex items-center gap-1.5 ${
-                            isInterviewToday
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse'
-                              : 'bg-slate-950 text-slate-300 border border-white/10'
-                          }`}>
-                            <Calendar size={14} className="text-purple-400" />
-                            <span>{new Date(cand.interviewDate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}h</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className={`p-2 rounded-xl text-xs font-mono font-bold inline-flex items-center gap-1.5 ${
+                              isInterviewToday
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse'
+                                : 'bg-slate-950 text-slate-300 border border-white/10'
+                            }`}>
+                              <Calendar size={14} className="text-purple-400" />
+                              <span>{new Date(cand.interviewDate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}h</span>
+                            </div>
+                            <button
+                              onClick={() => handleOpenScheduleInterviewModal(cand)}
+                              className="p-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 cursor-pointer transition-all"
+                              title="Alterar / Reagendar Horário"
+                            >
+                              <PencilSimple size={14} />
+                            </button>
                           </div>
                         ) : (
                           <button
-                            onClick={() => {
-                              setScheduleInterviewModal(cand);
-                              setInterviewDateTime(cand.interviewDate || '');
-                            }}
+                            onClick={() => handleOpenScheduleInterviewModal(cand)}
                             className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer"
                           >
                             <Calendar size={14} />
@@ -1322,11 +1494,11 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
       {/* 7. MODAL DE AGENDAMENTO DE ENTREVISTA */}
       {scheduleInterviewModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-          <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-5 shadow-2xl text-white">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-4 shadow-2xl text-white">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2.5 text-purple-400">
                 <Calendar size={24} weight="bold" />
-                <h3 className="text-base font-black text-white">Agendar Entrevista</h3>
+                <h3 className="text-base font-black text-white">Agendar / Alterar Entrevista</h3>
               </div>
               <button 
                 onClick={() => setScheduleInterviewModal(null)}
@@ -1337,22 +1509,49 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
             </div>
 
             <div>
-              <span className="text-xs text-slate-400">Candidato:</span>
+              <span className="text-xs text-slate-400 font-medium">Candidato:</span>
               <h4 className="text-sm font-black text-white">{scheduleInterviewModal.fullName}</h4>
+              <span className="text-[11px] text-indigo-400 font-mono">📱 {scheduleInterviewModal.phone}</span>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Data e Horário da Entrevista:</label>
-              <input
-                type="datetime-local"
-                value={interviewDateTime}
-                onChange={(e) => setInterviewDateTime(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold bg-slate-950 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
-              />
-              <p className="text-[11px] text-slate-400 mt-1">
-                💡 O painel avisará automaticamente com destaque quando estiver próximo do horário.
-              </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-purple-300 block mb-1">Data da Entrevista *</label>
+                <input
+                  type="date"
+                  required
+                  value={interviewDateOnly}
+                  onChange={(e) => setInterviewDateOnly(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-mono font-bold bg-slate-950 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-300 block mb-1">Horário *</label>
+                <input
+                  type="time"
+                  required
+                  value={interviewTimeOnly}
+                  onChange={(e) => setInterviewTimeOnly(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-mono font-bold bg-slate-950 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+                />
+              </div>
             </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1">Local / Link da Reunião ou Observações</label>
+              <input
+                type="text"
+                placeholder="Ex: Link do Google Meet, Sala 4 no 3º andar, Presencial..."
+                value={interviewNotes}
+                onChange={(e) => setInterviewNotes(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-950 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
+            </div>
+
+            <p className="text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded-xl border border-white/5">
+              💡 O sistema notificará a equipe no cockpit de entrevistas do dia quando o horário estiver próximo.
+            </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
@@ -1366,7 +1565,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
               <button
                 type="button"
                 onClick={handleSaveInterviewSchedule}
-                className="px-5 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-purple-500/20 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-purple-500/20 cursor-pointer active:scale-95 transition-all"
               >
                 <CheckCircle size={16} weight="bold" />
                 <span>Salvar Agendamento</span>
@@ -1624,11 +1823,44 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
 
             <form onSubmit={handleCreateJobOpening} className="space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-slate-300 block mb-1">Título do Cargo / Vaga *</label>
+                <label className="font-bold text-slate-300 block mb-1">Cargo da Vaga *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Operador de Cobrança Jr - Turno Manhã"
+                  placeholder="Ex: Operador de Cobrança Jr"
+                  value={newJobRole}
+                  onChange={(e) => {
+                    setNewJobRole(e.target.value);
+                    if (!newJobTitle) setNewJobTitle(e.target.value);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+
+                {/* SUGGESTÕES DOS CARGOS MAIS USADOS */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold">Mais Usados:</span>
+                  {jobRolesList.map(role => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => {
+                        setNewJobRole(role);
+                        if (!newJobTitle) setNewJobTitle(role);
+                      }}
+                      className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer"
+                    >
+                      + {role}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-300 block mb-1">Título / Identificador Completo da Vaga *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Operador de Cobrança Jr - Turno Manhã (Paulista)"
                   value={newJobTitle}
                   onChange={(e) => setNewJobTitle(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none"
@@ -1740,6 +1972,183 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                   className="px-5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold cursor-pointer"
                 >
                   Criar Vaga
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 11. MODAL DE EDIÇÃO DE VAGA A QUALQUER MOMENTO */}
+      {editingJobModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-lg bg-slate-900 border border-sky-500/30 rounded-3xl p-6 space-y-4 shadow-2xl text-white">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 text-sky-400">
+                <PencilSimple size={22} weight="bold" />
+                <h3 className="text-base font-black text-white">Editar Vaga Cadastrada</h3>
+              </div>
+              <button onClick={() => setEditingJobModal(null)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditedJob} className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-bold text-slate-300 block mb-1">Cargo da Vaga *</label>
+                <input
+                  type="text"
+                  required
+                  value={editJobRole}
+                  onChange={(e) => setEditJobRole(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold">Mais Usados:</span>
+                  {jobRolesList.map(role => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => setEditJobRole(role)}
+                      className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer"
+                    >
+                      + {role}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-300 block mb-1">Título / Identificador Completo da Vaga *</label>
+                <input
+                  type="text"
+                  required
+                  value={editJobTitle}
+                  onChange={(e) => setEditJobTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-sky-300 block mb-1 flex items-center gap-1">
+                    <MapPin size={14} weight="fill" />
+                    <span>Site de Atuação *</span>
+                  </label>
+                  <CustomSelect
+                    value={editJobSiteId}
+                    onChange={(val) => setEditJobSiteId(val)}
+                    options={operationalSites.map(s => ({
+                      value: s.id,
+                      label: `📍 ${s.name}`
+                    }))}
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">Status da Vaga</label>
+                  <CustomSelect
+                    value={editJobStatus}
+                    onChange={(val) => setEditJobStatus(val as any)}
+                    options={[
+                      { value: 'open', label: '🟢 Aberta' },
+                      { value: 'paused', label: '🟡 Pausada' },
+                      { value: 'closed', label: '🔒 Encerrada' }
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">Equipe de Destino</label>
+                  <CustomSelect
+                    value={editJobTeamId}
+                    onChange={(val) => setEditJobTeamId(val)}
+                    options={managedTeamsData.map(t => ({
+                      value: t.id,
+                      label: `👥 ${t.name}`
+                    }))}
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">Total de Vagas</label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={editJobSlots}
+                    onChange={(e) => setEditJobSlots(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">Turno (Horário)</label>
+                  <div className="flex items-center gap-1 font-mono">
+                    <input
+                      type="number"
+                      min={6}
+                      max={22}
+                      value={editJobShiftStart}
+                      onChange={(e) => setEditJobShiftStart(Number(e.target.value))}
+                      className="w-full px-2 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-center"
+                    />
+                    <span>às</span>
+                    <input
+                      type="number"
+                      min={6}
+                      max={22}
+                      value={editJobShiftEnd}
+                      onChange={(e) => setEditJobShiftEnd(Number(e.target.value))}
+                      className="w-full px-2 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-center"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">Canal de Captação</label>
+                  <CustomSelect
+                    value={editJobSource}
+                    onChange={(val) => setEditJobSource(val)}
+                    options={[
+                      { value: 'LinkedIn', label: 'LinkedIn' },
+                      { value: 'Indicação Interna', label: 'Indicação Interna' },
+                      { value: 'Gupy', label: 'Gupy / Vagas.com' },
+                      { value: 'WhatsApp', label: 'WhatsApp' },
+                      { value: 'InfoJobs', label: 'InfoJobs' },
+                      { value: 'Misto / Geral', label: 'Misto / Geral' }
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-300 block mb-1">Descrição / Requisitos</label>
+                <textarea
+                  rows={2}
+                  value={editJobDescription}
+                  onChange={(e) => setEditJobDescription(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingJobModal(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold cursor-pointer"
+                >
+                  Salvar Alterações
                 </button>
               </div>
             </form>

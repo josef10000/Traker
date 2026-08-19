@@ -770,6 +770,7 @@ export interface JobOpening {
   id: string;
   organizationId?: string;
   title: string;                 // Ex: "Operador de Cobrança Jr", "Monitor de Qualidade"
+  roleTitle?: string;            // Cargo da Vaga (ex: "Operador de Cobrança Jr", "Analista de Qualidade")
   teamId?: string;               // Equipe de destino prevista
   siteId?: string;               // ID do Site da Operação
   siteName?: string;             // Nome do Site (ex: "Site SP Paulista", "Home Office")
@@ -798,6 +799,7 @@ export interface Candidate {
   stage: CandidateStage;
   contactNotes?: string;         // Observações de contato
   interviewDate?: string;        // Data e hora da entrevista (ISO ou YYYY-MM-DDTHH:mm)
+  interviewNotes?: string;       // Observações / Link da entrevista (ex: Google Meet / Sala 4)
   interviewFeedback?: string;    // Feedback da entrevista
   rejectionReason?: string;      // Motivo do descarte se reprovado/desistente
   isTalentPool?: boolean;        // Se foi guardado no banco de talentos
