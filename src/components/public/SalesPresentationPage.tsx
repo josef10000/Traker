@@ -69,6 +69,43 @@ export const SalesPresentationPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Tipografia Cinética Rotativa (Estilo Snapcn Text Motion)
+  const HERO_ROTATING_WORDS = [
+    'Estanca a Perda de Acordos',
+    'Acelera a Recuperação em +42%',
+    'Elimina Planilhas Perdidas',
+    'Previne Quebras de Boletos',
+    'Escala com Usuários Ilimitados'
+  ];
+  const [rotatingWordIndex, setRotatingWordIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRotatingWordIndex(prev => (prev + 1) % HERO_ROTATING_WORDS.length);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Estado da Aba Ativa no Mockup de Browser Desktop do Cockpit (Hero Launch)
+  const [activeHeroTab, setActiveHeroTab] = useState<'cockpit' | 'recovery' | 'onboarding' | 'bi'>('cockpit');
+
+  // Estado dos Micro-Demos Interativos (Snapcn Video Cards com Legendas)
+  const [activeDemoCard, setActiveDemoCard] = useState<number>(0);
+  const [demoProgress, setDemoProgress] = useState<number>(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDemoProgress(prev => {
+        if (prev >= 100) {
+          setActiveDemoCard(c => (c + 1) % 3);
+          return 0;
+        }
+        return prev + 1.25; // 8 segundos para 100%
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
   // Cenário Ativo do Mockup de WhatsApp
   const [activeWhatsappScenario, setActiveWhatsappScenario] = useState<'team_status' | 'daily_closing' | 'trend_comparison' | 'top_operators'>('team_status');
 
@@ -125,13 +162,16 @@ export const SalesPresentationPage: React.FC = () => {
       <header className="sticky top-0 z-50 bg-slate-950/85 backdrop-blur-xl border-b border-white/10 px-4 sm:px-8 py-4 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
-          {/* IDENTIDADE OFICIAL TRACKER */}
-          <div className="flex items-center gap-3.5">
-            <img 
-              src="/logo.png" 
-              alt="Tracker Logo" 
-              className="h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]" 
-            />
+          {/* IDENTIDADE OFICIAL TRACKER COM LOGO STING GLOW */}
+          <div className="flex items-center gap-3.5 group cursor-pointer">
+            <div className="relative">
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-sky-500 to-emerald-500 opacity-30 group-hover:opacity-75 blur-md transition duration-500 group-hover:scale-110" />
+              <img 
+                src="/logo.png" 
+                alt="Tracker Logo" 
+                className="relative h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(56,189,248,0.5)] transition-transform duration-300 group-hover:scale-105" 
+              />
+            </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-lg font-black tracking-tight text-white uppercase font-mono">
@@ -152,6 +192,13 @@ export const SalesPresentationPage: React.FC = () => {
               <Buildings size={16} className="text-sky-400" />
               <span>Para Operações de 10 a 500+ Operadores</span>
             </span>
+            <a
+              href="#simulador-roi"
+              className="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-sky-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              <Sparkle size={15} weight="fill" />
+              <span>Simular ROI</span>
+            </a>
           </div>
         </div>
       </header>
@@ -162,16 +209,31 @@ export const SalesPresentationPage: React.FC = () => {
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-12 sm:py-16 space-y-24">
 
         {/* ------------------------------------------------------------------------- */}
-        {/* BLOCO 1: HERO & PROPOSTA DE VALOR */}
+        {/* BLOCO 1: HERO & PROPOSTA DE VALOR COM TIPOGRAFIA CINÉTICA */}
         {/* ------------------------------------------------------------------------- */}
-        <section className="text-center max-w-4xl mx-auto space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-black uppercase tracking-widest">
+        <section className="text-center max-w-5xl mx-auto space-y-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-black uppercase tracking-widest animate-pulse">
             <Rocket size={16} weight="bold" />
             Visibilidade Absoluta • Mais Faturamento • Menos Quebras
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.12] tracking-tight">
-            A Plataforma de Gestão que <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-indigo-300 to-purple-400">Estanca a Perda de Acordos</span> em Tempo Real
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.2] tracking-tight min-h-[140px] sm:min-h-[150px] flex flex-col justify-center items-center">
+            <span>A Plataforma de Gestão que</span>
+            <span className="relative inline-block h-[1.3em] overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={rotatingWordIndex}
+                  initial={{ y: 35, opacity: 0, filter: 'blur(8px)' }}
+                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ y: -35, opacity: 0, filter: 'blur(8px)' }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-teal-300 to-purple-400 font-black whitespace-nowrap"
+                >
+                  {HERO_ROTATING_WORDS[rotatingWordIndex]}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+            <span>em Tempo Real</span>
           </h1>
 
           <p className="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
@@ -179,29 +241,324 @@ export const SalesPresentationPage: React.FC = () => {
           </p>
 
           {/* GRID DE MÉTRICAS COMPROVADAS DE MERCADO */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-6">
-            <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-2">
+            <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1 hover:border-emerald-500/30 transition-all">
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Recuperação de Quebras</span>
               <p className="text-3xl sm:text-4xl font-black text-emerald-400 font-mono">+20%</p>
               <span className="text-xs text-slate-400">resgate de promessas de pgto</span>
             </div>
 
-            <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1">
+            <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1 hover:border-sky-500/30 transition-all">
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pacing Diário</span>
               <p className="text-3xl sm:text-4xl font-black text-sky-400 font-mono">+18%</p>
               <span className="text-xs text-slate-400">aceleração da meta do mês</span>
             </div>
 
-            <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1">
+            <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1 hover:border-purple-500/30 transition-all">
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Economia de Software</span>
               <p className="text-3xl sm:text-4xl font-black text-purple-400 font-mono">-70%</p>
               <span className="text-xs text-slate-400">vs licenças por operador</span>
             </div>
 
-            <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1">
+            <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 space-y-1 hover:border-amber-500/30 transition-all">
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Implantação Ágil</span>
               <p className="text-3xl sm:text-4xl font-black text-amber-400 font-mono">48h</p>
               <span className="text-xs text-slate-400">operação pronta e rodando</span>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* HERO LAUNCH: DESKTOP BROWSER MOCKUP INTERATIVO (ESTILO SNAPCN COCKPIT) */}
+          {/* ========================================================================= */}
+          <div className="pt-6">
+            <div className="w-full rounded-[32px] bg-slate-950/90 border border-white/15 shadow-[0_30px_90px_-15px_rgba(0,0,0,0.9)] overflow-hidden text-left relative group">
+              
+              {/* BARRA SUPERIOR DO NAVEGADOR (CHROME / MACOS STYLE) */}
+              <div className="px-6 py-3.5 bg-slate-900/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
+                
+                {/* BOTÕES DE JANELA */}
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-rose-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                </div>
+
+                {/* BARRA DE ENDEREÇO SEGURA */}
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs font-mono text-slate-300">
+                  <Lock size={12} className="text-emerald-400" />
+                  <span>https://tracker.hubsymples.com.br/cockpit</span>
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded">LIVE</span>
+                </div>
+
+                {/* STATUS DE CONEXÃO & LATÊNCIA */}
+                <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span>18ms • Nuvem Segura</span>
+                </div>
+              </div>
+
+              {/* SELETOR DE ABAS INTERATIVAS DO COCKPIT */}
+              <div className="px-6 py-3 bg-slate-900/40 border-b border-white/5 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setActiveHeroTab('cockpit')}
+                  className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeHeroTab === 'cockpit'
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <ChartLineUp size={15} />
+                  <span>Visão Geral & Faturamento</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveHeroTab('recovery')}
+                  className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeHeroTab === 'recovery'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <ShieldCheck size={15} />
+                  <span>Balcão de Quebras (Fila Cega)</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveHeroTab('onboarding')}
+                  className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeHeroTab === 'onboarding'
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <Rocket size={15} />
+                  <span>Onboarding & Rampa de 30d</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveHeroTab('bi')}
+                  className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeHeroTab === 'bi'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <Lightning size={15} />
+                  <span>BI & Heatmap Horários Nobres</span>
+                </button>
+              </div>
+
+              {/* CONTEÚDO DO BROWSER MOCKUP CONFORME ABA SELECIONADA */}
+              <div className="p-6 sm:p-8 min-h-[360px] bg-slate-950/60 font-sans">
+                <AnimatePresence mode="wait">
+                  
+                  {/* ABA 1: COCKPIT DE FATURAMENTO */}
+                  {activeHeroTab === 'cockpit' && (
+                    <motion.div
+                      key="cockpit"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-6"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="p-5 rounded-2xl bg-slate-900/80 border border-emerald-500/20 space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Recuperado no Mês</span>
+                          <p className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">R$ 1.842.650,00</p>
+                          <span className="text-[11px] text-emerald-400/80 font-semibold flex items-center gap-1">
+                            <TrendUp size={13} weight="bold" /> +24,8% vs mês anterior
+                          </span>
+                        </div>
+
+                        <div className="p-5 rounded-2xl bg-slate-900/80 border border-sky-500/20 space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Meta do Mês (87,4%)</span>
+                          <p className="text-2xl sm:text-3xl font-black text-sky-400 font-mono">R$ 2.100.000,00</p>
+                          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+                            <div className="h-full bg-sky-400 w-[87.4%]" />
+                          </div>
+                        </div>
+
+                        <div className="p-5 rounded-2xl bg-slate-900/80 border border-purple-500/20 space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operadores Ativos Agora</span>
+                          <p className="text-2xl sm:text-3xl font-black text-purple-400 font-mono">34 Online</p>
+                          <span className="text-[11px] text-slate-400 font-medium">100% integrados sem limites de assento</span>
+                        </div>
+                      </div>
+
+                      {/* FEED DE ACORDOS RECENTES EM TEMPO REAL */}
+                      <div className="p-4 rounded-2xl bg-slate-900/50 border border-white/5 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                          <span className="flex items-center gap-1.5 text-emerald-400">
+                            <Sparkle size={14} weight="fill" />
+                            Últimos Acordos Liquidados (Atualização Automática)
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono">Feed Seguro</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                          <div className="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/30 flex items-center justify-between">
+                            <div>
+                              <span className="font-bold text-white block">R$ 12.450,00 (PIX À Vista)</span>
+                              <span className="text-[10px] text-slate-400">Ana Souza • Equipe Fênix</span>
+                            </div>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Há 2 min</span>
+                          </div>
+
+                          <div className="p-3 rounded-xl bg-slate-950/80 border border-sky-500/30 flex items-center justify-between">
+                            <div>
+                              <span className="font-bold text-white block">R$ 8.900,00 (Entrada Paga)</span>
+                              <span className="text-[10px] text-slate-400">Carlos Lima • Equipe Alpha</span>
+                            </div>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300">Há 7 min</span>
+                          </div>
+
+                          <div className="p-3 rounded-xl bg-slate-950/80 border border-purple-500/30 flex items-center justify-between">
+                            <div>
+                              <span className="font-bold text-white block">R$ 15.200,00 (Quitado)</span>
+                              <span className="text-[10px] text-slate-400">Mariana Dias • Equipe Elite</span>
+                            </div>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">Há 12 min</span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ABA 2: BALCÃO DE QUEBRAS */}
+                  {activeHeroTab === 'recovery' && (
+                    <motion.div
+                      key="recovery"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-bold text-white">Fila Cega de Resgate de Promessas Vencendo Hoje</h4>
+                          <p className="text-xs text-slate-400">Acordos com alto risco de quebra distribuídos automaticamente para recontato imediato.</p>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          18 Acordos em Alerta Preventivo
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {[
+                          { cliente: 'Marcelo F. (CPF ***.892.441-**)', valor: 'R$ 4.200,00', venc: 'Vence Hoje às 17h', status: 'Envio PIX Pendente', tag: 'Prioridade Alta' },
+                          { cliente: 'Patrícia S. (CPF ***.145.782-**)', valor: 'R$ 7.850,00', venc: 'Vence Hoje às 19h', status: 'Boleto Visualizado', tag: 'Resgate Rápido' },
+                          { cliente: 'Roberto M. (CPF ***.933.208-**)', valor: 'R$ 11.200,00', venc: 'Vencimento em 24h', status: 'WhatsApp Enviado', tag: 'Ticket Alto' }
+                        ].map((item, idx) => (
+                          <div key={idx} className="p-3.5 rounded-xl bg-slate-900/80 border border-white/5 flex items-center justify-between gap-3 text-xs">
+                            <div>
+                              <span className="font-bold text-white block">{item.cliente}</span>
+                              <span className="text-[10px] text-slate-400">{item.status} • {item.venc}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-mono font-bold text-emerald-400 block">{item.valor}</span>
+                              <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">{item.tag}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ABA 3: ONBOARDING & RAMPA */}
+                  {activeHeroTab === 'onboarding' && (
+                    <motion.div
+                      key="onboarding"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-bold text-white">Central de Onboarding & Formação de Novos Operadores</h4>
+                          <p className="text-xs text-slate-400">Rampa de 30 a 90 dias com checklist operacional de 5 etapas para aceleração da produtividade.</p>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          Rampa Ativa: 30 Dias
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="p-4 rounded-2xl bg-slate-900/80 border border-purple-500/30 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-white text-xs">Lucas Andrade (Operador Júnior)</span>
+                            <span className="text-[10px] font-mono text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full">12 dias de casa</span>
+                          </div>
+                          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div className="h-full bg-purple-400 w-[80%]" />
+                          </div>
+                          <p className="text-[10px] text-slate-400">4 de 5 etapas concluídas • 1ª Monitoria QA Realizada</p>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-slate-900/80 border border-emerald-500/30 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-white text-xs">Camila Rocha (Operadora Júnior)</span>
+                            <span className="text-[10px] font-mono text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full">26 dias de casa</span>
+                          </div>
+                          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-400 w-[100%]" />
+                          </div>
+                          <p className="text-[10px] text-emerald-300 font-bold">100% Concluído • Pronta para Graduação Definitiva</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ABA 4: BI & HEATMAP */}
+                  {activeHeroTab === 'bi' && (
+                    <motion.div
+                      key="bi"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-bold text-white">Heatmap de Horários Nobres & Concentração de Pagamentos</h4>
+                          <p className="text-xs text-slate-400">Identificação preditiva das janelas de maior liquidez e efetividade da carteira.</p>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                          Pico: 10h-12h e 16h-18h
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 pt-2">
+                        {Array.from({ length: 24 }).map((_, h) => {
+                          const isPeak = (h >= 10 && h <= 12) || (h >= 16 && h <= 18);
+                          const isMid = (h >= 9 && h <= 15);
+                          return (
+                            <div 
+                              key={h} 
+                              className={`p-2 rounded-xl text-center font-mono text-[10px] border transition-all ${
+                                isPeak 
+                                  ? 'bg-emerald-500/30 border-emerald-500/50 text-emerald-200 font-bold shadow-md shadow-emerald-500/10' 
+                                  : isMid 
+                                    ? 'bg-sky-500/20 border-sky-500/30 text-sky-200' 
+                                    : 'bg-slate-900 border-white/5 text-slate-600'
+                              }`}
+                            >
+                              <span>{h}h</span>
+                              <span className="block text-[8px] opacity-75">{isPeak ? '94%' : isMid ? '68%' : '12%'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+
+                </AnimatePresence>
+              </div>
+
             </div>
           </div>
         </section>
@@ -602,7 +959,7 @@ export const SalesPresentationPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950 border border-white/5 p-4 space-y-1 text-xs">
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/5 space-y-1 text-xs">
                   <span className="font-bold text-white block">Régua de Qualidade & Retenção de Provas de Atendimento</span>
                   <p className="text-slate-400 leading-relaxed text-xs">
                     Armazenamento seguro de evidências, roteiros de conformidade e histórico de evolução por operador.
@@ -610,6 +967,195 @@ export const SalesPresentationPage: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* BLOCO: MICRO-DEMOS INTERATIVOS DE 8 SEGUNDOS (ESTILO SNAPCN VIDEO CARDS) */}
+        {/* ========================================================================= */}
+        <section className="space-y-12">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-black uppercase tracking-widest">
+              <Sparkle size={16} weight="bold" />
+              Experiência Prática em Vídeo-Cards • Demos em 8 Segundos
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white">
+              Veja a Simplicidade e o Poder do Tracker em Ação
+            </h2>
+            <p className="text-sm sm:text-base text-slate-400">
+              Fluxos ultra-ágeis desenhados para a velocidade da operação. Clique nos cards para alternar a demonstração:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* DEMO CARD 1: FECHAMENTO PIX EM 2 CLIQUES */}
+            <div 
+              onClick={() => { setActiveDemoCard(0); setDemoProgress(0); }}
+              className={`p-6 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between space-y-6 relative overflow-hidden ${
+                activeDemoCard === 0 
+                  ? 'bg-slate-900/90 border-emerald-500/50 shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/30' 
+                  : 'bg-slate-900/40 border-white/10 hover:border-white/20'
+              }`}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
+                    <Lightning size={22} weight="bold" />
+                  </div>
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-950 text-emerald-400 border border-emerald-500/20 font-bold">
+                    01 • Emissão PIX
+                  </span>
+                </div>
+                <h3 className="text-lg font-black text-white">Acordo PIX em 2 Cliques</h3>
+                <p className="text-xs text-slate-400">
+                  O operador calcula o desconto autorizado, gera a chave copia-e-cola e envia ao devedor sem sair do atendimento.
+                </p>
+              </div>
+
+              {/* MINI TELA SIMULADA DO FLUXO */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/5 space-y-3">
+                <div className="flex items-center justify-between text-[11px] font-mono border-b border-white/5 pb-2">
+                  <span className="text-slate-400">Dívida: R$ 4.500,00</span>
+                  <span className="text-emerald-400 font-bold">PIX: R$ 1.800,00</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">Chave Copiada!</span>
+                  <span className="text-[10px] text-slate-400">Auto-tabulado sem retrabalho</span>
+                </div>
+              </div>
+
+              {/* LEGENDA DINÂMICA (BURNED-IN CAPTIONS SNAPCN STYLE) */}
+              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/20 text-center">
+                <span className="text-xs font-bold text-emerald-200">
+                  {demoProgress < 35 
+                    ? '🎯 "Aplicando 60% de desconto autorizado"' 
+                    : demoProgress < 70 
+                      ? '⚡ "Chave PIX e QR Code gerados no mesmo segundo"' 
+                      : '✅ "Acordo liquidado e computado na meta da equipe!"'}
+                </span>
+              </div>
+
+              {/* BARRA DE PROGRESSO DO LOOP */}
+              <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-400 transition-all"
+                  style={{ width: activeDemoCard === 0 ? `${demoProgress}%` : '0%' }}
+                />
+              </div>
+            </div>
+
+            {/* DEMO CARD 2: ONBOARDING & RAMPA EM 30 DIAS */}
+            <div 
+              onClick={() => { setActiveDemoCard(1); setDemoProgress(0); }}
+              className={`p-6 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between space-y-6 relative overflow-hidden ${
+                activeDemoCard === 1 
+                  ? 'bg-slate-900/90 border-purple-500/50 shadow-xl shadow-purple-500/10 ring-1 ring-purple-500/30' 
+                  : 'bg-slate-900/40 border-white/10 hover:border-white/20'
+              }`}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-black">
+                    <Rocket size={22} weight="bold" />
+                  </div>
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-950 text-purple-400 border border-purple-500/20 font-bold">
+                    02 • Rampa de Gestão
+                  </span>
+                </div>
+                <h3 className="text-lg font-black text-white">Onboarding & Rampa em 30d</h3>
+                <p className="text-xs text-slate-400">
+                  Checklist operacional de 5 etapas (acessos, ferramentas, treinamento, NDA e 1ª monitoria QA) para formar operadores de alta performance.
+                </p>
+              </div>
+
+              {/* MINI TELA SIMULADA DO FLUXO */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/5 space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-white">Mateus Ramos (8 dias de casa)</span>
+                  <span className="text-[10px] text-purple-300 font-mono">Etapa 4/5</span>
+                </div>
+                <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                  <div className="h-full bg-purple-400 w-[80%]" />
+                </div>
+              </div>
+
+              {/* LEGENDA DINÂMICA (BURNED-IN CAPTIONS SNAPCN STYLE) */}
+              <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/20 text-center">
+                <span className="text-xs font-bold text-purple-200">
+                  {demoProgress < 35 
+                    ? '📋 "Admissão e liberação de acessos em 1 clique"' 
+                    : demoProgress < 70 
+                      ? '🎧 "1ª monitoria com anexo na Biblioteca de Ouro"' 
+                      : '🎓 "Graduação com operador batendo meta no 1º mês"'}
+                </span>
+              </div>
+
+              {/* BARRA DE PROGRESSO DO LOOP */}
+              <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-purple-400 transition-all"
+                  style={{ width: activeDemoCard === 1 ? `${demoProgress}%` : '0%' }}
+                />
+              </div>
+            </div>
+
+            {/* DEMO CARD 3: COMPARADOR MULTI-NÍVEL & RESGATE DE QUEBRAS */}
+            <div 
+              onClick={() => { setActiveDemoCard(2); setDemoProgress(0); }}
+              className={`p-6 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between space-y-6 relative overflow-hidden ${
+                activeDemoCard === 2 
+                  ? 'bg-slate-900/90 border-sky-500/50 shadow-xl shadow-sky-500/10 ring-1 ring-sky-500/30' 
+                  : 'bg-slate-900/40 border-white/10 hover:border-white/20'
+              }`}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-black">
+                    <ChartBar size={22} weight="bold" />
+                  </div>
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-950 text-sky-400 border border-sky-500/20 font-bold">
+                    03 • Benchmark Operacional
+                  </span>
+                </div>
+                <h3 className="text-lg font-black text-white">Comparador Multi-Nível</h3>
+                <p className="text-xs text-slate-400">
+                  Cruzamento lado a lado entre Equipes, Supervisores e Operadores para identificar quem converte mais e onde estão os gargalos.
+                </p>
+              </div>
+
+              {/* MINI TELA SIMULADA DO FLUXO */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/5 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-slate-300">Equipe Alpha: 82% Efetividade</span>
+                  <span className="text-emerald-400 font-bold">R$ 480k</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-slate-400">Equipe Beta: 61% Efetividade</span>
+                  <span className="text-amber-400 font-bold">R$ 310k</span>
+                </div>
+              </div>
+
+              {/* LEGENDA DINÂMICA (BURNED-IN CAPTIONS SNAPCN STYLE) */}
+              <div className="p-3 rounded-xl bg-sky-950/40 border border-sky-500/20 text-center">
+                <span className="text-xs font-bold text-sky-200">
+                  {demoProgress < 35 
+                    ? '📊 "Visão comparativa de R$ Gerado vs R$ Pago"' 
+                    : demoProgress < 70 
+                      ? '🔍 "Diagnóstico da equipe com maior índice de quebra"' 
+                      : '🏆 "Pódio em tempo real estimulando a produtividade"'}
+                </span>
+              </div>
+
+              {/* BARRA DE PROGRESSO DO LOOP */}
+              <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-sky-400 transition-all"
+                  style={{ width: activeDemoCard === 2 ? `${demoProgress}%` : '0%' }}
+                />
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -1225,7 +1771,7 @@ export const SalesPresentationPage: React.FC = () => {
         {/* ------------------------------------------------------------------------- */}
         {/* BLOCO 9: SIMULADOR DE ROI INTERATIVO (CALCULADORA DE RETORNO) */}
         {/* ------------------------------------------------------------------------- */}
-        <section className="space-y-10">
+        <section id="simulador-roi" className="space-y-10 scroll-mt-24">
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-widest">
               <CurrencyDollar size={16} weight="bold" />
