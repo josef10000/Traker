@@ -16,6 +16,7 @@ import {
   Star,
   Archive,
   CaretRight,
+  CaretLeft,
   CaretDown,
   Check,
   PencilSimple,
@@ -30,7 +31,9 @@ import {
   Lock,
   LockOpen,
   UploadSimple,
-  ArrowsOut
+  ArrowsOut,
+  ListBullets,
+  CalendarBlank
 } from '@phosphor-icons/react';
 import { UserProfile, Team, JobOpening, Candidate, CandidateStage } from '../../types';
 import { CustomSelect } from '../ui/CustomSelect';
@@ -287,7 +290,60 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     localStorage.setItem('noverde_job_roles', JSON.stringify(jobRolesList));
   }, [jobRolesList]);
 
-  // 3. Filtros e Busca
+  // 3. Modos de Visão (Lista Executiva x Calendário de Entrevistas)
+  const [activeTabMode, setActiveTabMode] = useState<'list' | 'calendar'>('list');
+  const [calendarMonthDate, setCalendarMonthDate] = useState<Date>(() => new Date());
+  const [selectedCalendarDateStr, setSelectedCalendarDateStr] = useState<string>(() => new Date().toISOString().slice(0, 10));
+
+  // Mapeamento de Entrevistas por Data (YYYY-MM-DD)
+  const interviewsByDateMap = useMemo(() => {
+    const map: Record<string, Candidate[]> = {};
+    candidates.forEach(c => {
+      if (c.stage === 'interview_scheduled' && c.interviewDate) {
+        const dateStr = c.interviewDate.slice(0, 10);
+        if (!map[dateStr]) map[dateStr] = [];
+        map[dateStr].push(c);
+      }
+    });
+    Object.keys(map).forEach(dateStr => {
+      map[dateStr].sort((a, b) => (a.interviewDate || '').localeCompare(b.interviewDate || ''));
+    });
+    return map;
+  }, [candidates]);
+
+  // Cálculo da Grade do Calendário Mensal
+  const calendarDaysInfo = useMemo(() => {
+    const year = calendarMonthDate.getFullYear();
+    const month = calendarMonthDate.getMonth();
+
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 (Dom) a 6 (Sáb)
+    const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const days: Array<{
+      dayNumber: number;
+      dateStr: string;
+      interviewsCount: number;
+      interviews: Candidate[];
+    }> = [];
+
+    for (let day = 1; day <= totalDaysInMonth; day++) {
+      const dayStr = String(day).padStart(2, '0');
+      const monthStr = String(month + 1).padStart(2, '0');
+      const dateStr = `${year}-${monthStr}-${dayStr}`;
+      const dayInterviews = interviewsByDateMap[dateStr] || [];
+
+      days.push({
+        dayNumber: day,
+        dateStr,
+        interviewsCount: dayInterviews.length,
+        interviews: dayInterviews
+      });
+    }
+
+    return { firstDayIndex, totalDaysInMonth, days, year, month };
+  }, [calendarMonthDate, interviewsByDateMap]);
+
+  // 3.1 Filtros e Busca
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [stageFilter, setStageFilter] = useState<CandidateStage | 'all'>('all');
   const [filterJobId, setFilterJobId] = useState<string>('all');
@@ -806,6 +862,40 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
           </div>
         </div>
 
+        {/* ALTERNADOR DE VISÃO (LISTA EXECUTIVA X CALENDÁRIO DE ENTREVISTAS) */}
+        <div className="mt-6 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
+          <button
+            type="button"
+            onClick={() => setActiveTabMode('list')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTabMode === 'list'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+            }`}
+          >
+            <ListBullets size={16} weight="bold" />
+            <span>📋 Visão Geral (Cockpit & Candidatos)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTabMode('calendar')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer relative ${
+              activeTabMode === 'calendar'
+                ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+            }`}
+          >
+            <CalendarBlank size={16} weight="bold" />
+            <span>📅 Agenda / Calendário Mensal de Entrevistas</span>
+            {Object.keys(interviewsByDateMap).length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-400 text-slate-950">
+                {Object.keys(interviewsByDateMap).reduce((acc, dateKey) => acc + (interviewsByDateMap[dateKey]?.length || 0), 0)}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* 2. ALERTA DE ENTREVISTAS DO DIA */}
         {upcomingInterviews.length > 0 && (
           <div className="mt-6 p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -835,6 +925,231 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
           </div>
         )}
       </div>
+
+      {/* RENDERIZAÇÃO CONDICIONAL ENTRE CALENDÁRIO MENSAL E LISTA EXECUTIVA */}
+      {activeTabMode === 'calendar' ? (
+        <div className="space-y-6 animate-fade-in">
+          {/* NAVEGAÇÃO DO MÊS */}
+          <div className="p-6 rounded-3xl bg-slate-900/80 border border-white/10 shadow-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  <Calendar size={26} weight="bold" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white capitalize">
+                    {calendarMonthDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </h3>
+                  <span className="text-xs text-slate-400 font-medium">
+                    Clique em qualquer dia para ver a pauta completa de entrevistas agendadas.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const prev = new Date(calendarMonthDate);
+                    prev.setMonth(prev.getMonth() - 1);
+                    setCalendarMonthDate(prev);
+                  }}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer transition-all"
+                  title="Mês Anterior"
+                >
+                  <CaretLeft size={18} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCalendarMonthDate(new Date());
+                    setSelectedCalendarDateStr(new Date().toISOString().slice(0, 10));
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 cursor-pointer"
+                >
+                  Mês Atual (Hoje)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = new Date(calendarMonthDate);
+                    next.setMonth(next.getMonth() + 1);
+                    setCalendarMonthDate(next);
+                  }}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer transition-all"
+                  title="Próximo Mês"
+                >
+                  <CaretRight size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* GRADE DO CALENDÁRIO (DOM A SÁB) */}
+            <div>
+              <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-black uppercase text-slate-400 tracking-wider">
+                <div>Dom</div>
+                <div>Seg</div>
+                <div>Ter</div>
+                <div>Qua</div>
+                <div>Qui</div>
+                <div>Sex</div>
+                <div>Sáb</div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2">
+                {/* Espaços vazios do início do mês */}
+                {Array.from({ length: calendarDaysInfo.firstDayIndex }).map((_, idx) => (
+                  <div key={`empty-${idx}`} className="h-24 rounded-2xl bg-slate-950/20 border border-white/5 opacity-30" />
+                ))}
+
+                {/* Dias do mês */}
+                {calendarDaysInfo.days.map((dayObj) => {
+                  const isToday = dayObj.dateStr === new Date().toISOString().slice(0, 10);
+                  const isSelected = dayObj.dateStr === selectedCalendarDateStr;
+                  const hasInterviews = dayObj.interviewsCount > 0;
+
+                  return (
+                    <div
+                      key={dayObj.dateStr}
+                      onClick={() => setSelectedCalendarDateStr(dayObj.dateStr)}
+                      className={`h-24 p-2.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative group ${
+                        isSelected
+                          ? 'bg-purple-950/60 border-purple-500 ring-2 ring-purple-500/40'
+                          : isToday
+                          ? 'bg-indigo-950/40 border-indigo-500/60'
+                          : hasInterviews
+                          ? 'bg-slate-900 border-purple-500/30 hover:border-purple-500/60'
+                          : 'bg-slate-950/60 border-white/5 hover:bg-slate-900 hover:border-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-black ${
+                          isToday ? 'text-indigo-400 bg-indigo-500/20 px-2 py-0.5 rounded-md' : 'text-slate-300'
+                        }`}>
+                          {dayObj.dayNumber}
+                        </span>
+
+                        {isToday && (
+                          <span className="text-[9px] font-black uppercase text-indigo-400">Hoje</span>
+                        )}
+                      </div>
+
+                      {hasInterviews ? (
+                        <div className="space-y-1">
+                          <span className="px-2 py-1 rounded-xl text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center justify-between gap-1">
+                            <span>🗣️ {dayObj.interviewsCount} intv.</span>
+                            <span className="font-mono text-[9px]">
+                              {dayObj.interviews[0]?.interviewDate?.slice(11, 16)}h
+                            </span>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-600 font-medium group-hover:text-slate-500">Sem agendamentos</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* PAINEL DAS ENTREVISTAS DO DIA SELECIONADO */}
+          <div className="p-6 rounded-3xl bg-slate-900/90 border border-purple-500/30 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 text-purple-300">
+                <CalendarBlank size={22} weight="bold" />
+                <h4 className="text-base font-black text-white">
+                  Entrevistas Agendadas para {selectedCalendarDateStr.split('-').reverse().join('/')}
+                </h4>
+              </div>
+
+              <span className="text-xs text-purple-300 font-bold px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30">
+                {interviewsByDateMap[selectedCalendarDateStr]?.length || 0} candidato(s)
+              </span>
+            </div>
+
+            {!interviewsByDateMap[selectedCalendarDateStr] || interviewsByDateMap[selectedCalendarDateStr].length === 0 ? (
+              <div className="py-12 text-center text-slate-500 space-y-2">
+                <Calendar size={36} className="mx-auto text-slate-600 mb-2" />
+                <p className="text-xs font-bold text-slate-400">Nenhuma entrevista agendada para este dia ({selectedCalendarDateStr.split('-').reverse().join('/')}).</p>
+                <p className="text-[11px] text-slate-500">Altere a data ou selecione um candidato na tabela para agendar um horário.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {interviewsByDateMap[selectedCalendarDateStr].map(cand => {
+                  const job = jobOpenings.find(j => j.id === cand.jobOpeningId);
+                  const timeStr = cand.interviewDate ? cand.interviewDate.slice(11, 16) : '--:--';
+
+                  return (
+                    <div 
+                      key={cand.id}
+                      className="p-5 rounded-2xl bg-slate-950 border border-white/10 hover:border-purple-500/40 space-y-3 transition-all shadow-md"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono font-bold text-xs">
+                              ⏰ {timeStr}h
+                            </span>
+                            {job?.siteName && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                                📍 {job.siteName}
+                              </span>
+                            )}
+                          </div>
+
+                          <h5 className="text-base font-black text-white mt-2">{cand.fullName}</h5>
+                          <span className="text-xs text-indigo-400 font-bold block">
+                            💼 Vaga: {job?.roleTitle || job?.title || 'Geral'}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenScheduleInterviewModal(cand)}
+                          className="p-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 cursor-pointer"
+                          title="Reagendar / Alterar Horário"
+                        >
+                          <PencilSimple size={16} />
+                        </button>
+                      </div>
+
+                      {cand.interviewNotes && (
+                        <div className="p-2.5 rounded-xl bg-slate-900 border border-white/5 text-xs text-slate-300 font-mono">
+                          📍 {cand.interviewNotes}
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWhatsApp(cand.phone, cand.fullName, `Olá ${cand.fullName}! Confirmando nossa entrevista de hoje às ${timeStr}h para a vaga de ${job?.roleTitle || job?.title || 'nossa equipe'}.`)}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
+                        >
+                          <WhatsappLogo size={15} weight="fill" />
+                          <span>WhatsApp</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCandidateForDrawer(cand)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <FileText size={15} />
+                          <span>Ler Ficha / PDF</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
 
       {/* 3. CARDS DE VAGAS EM ABERTO COM SITES OPERACIONAIS E AÇÕES */}
       <div className="space-y-3">
@@ -1264,6 +1579,8 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
           </table>
         </div>
       </div>
+    </div>
+    )}
 
       {/* 5. DRAWER LATERAL AMPLO COM VISUALIZADOR EMBUTIDO DE PDF */}
       {selectedCandidateForDrawer && (
