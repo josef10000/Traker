@@ -25,10 +25,30 @@ import {
   Funnel,
   Sparkle,
   X,
-  Buildings
+  Buildings,
+  MapPin,
+  Lock,
+  LockOpen,
+  UploadSimple,
+  ArrowsOut
 } from '@phosphor-icons/react';
 import { UserProfile, Team, JobOpening, Candidate, CandidateStage } from '../../types';
 import { CustomSelect } from '../ui/CustomSelect';
+import { db } from '../../lib/firebase';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+
+export interface OperationalSite {
+  id: string;
+  name: string;
+  city: string;
+  type: 'Presencial' | 'Remoto';
+}
+
+const DEFAULT_SITES: OperationalSite[] = [
+  { id: 'site-1', name: 'Site SP Paulista - 4º Andar', city: 'São Paulo - SP', type: 'Presencial' },
+  { id: 'site-2', name: 'Site Campinas - Unidade Central', city: 'Campinas - SP', type: 'Presencial' },
+  { id: 'site-3', name: 'Home Office / Remoto BR', city: 'Nacional (Brasil)', type: 'Remoto' },
+];
 
 const STAGE_OPTIONS: { value: CandidateStage; label: string; bg: string; text: string; border: string }[] = [
   { value: 'applied', label: '📥 Triagem', bg: 'bg-sky-500/20', text: 'text-sky-300', border: 'border-sky-500/40' },
@@ -113,26 +133,28 @@ const DEFAULT_JOB_OPENINGS: JobOpening[] = [
   {
     id: 'job-1',
     title: 'Operador de Cobrança Ativo Jr',
+    siteId: 'site-1',
+    siteName: 'Site SP Paulista - 4º Andar',
     shiftStartHour: 8,
     shiftEndHour: 17,
     totalSlots: 5,
     filledSlots: 2,
     sourceChannel: 'LinkedIn & Gupy',
     status: 'open',
-    salaryOffer: 1650,
     description: 'Atuação na recuperação de crédito massificado via discador automático e WhatsApp.',
     createdAt: new Date().toISOString()
   },
   {
     id: 'job-2',
     title: 'Operador de Negociação Tarde',
+    siteId: 'site-3',
+    siteName: 'Home Office / Remoto BR',
     shiftStartHour: 10,
     shiftEndHour: 19,
     totalSlots: 3,
     filledSlots: 1,
     sourceChannel: 'Indicação Interna',
     status: 'open',
-    salaryOffer: 1720,
     description: 'Foco em carteiras de alta complexidade e clientes com acordos quebrados.',
     createdAt: new Date().toISOString()
   }
@@ -149,7 +171,7 @@ const DEFAULT_CANDIDATES: Candidate[] = [
     resumeText: '3 anos de experiência em call center ativo de cobrança, boa dicção, facilidade com sistemas de CRM e metas diárias. Passagens por assessorias de recuperação e carteiras bancárias.',
     stage: 'interview_scheduled',
     contactNotes: 'Entrou em contato no dia anterior, muito comunicativo e interessado no turno da manhã.',
-    interviewDate: new Date(Date.now() + 1000 * 60 * 25).toISOString().slice(0, 16), // daqui 25 min
+    interviewDate: new Date(Date.now() + 1000 * 60 * 25).toISOString().slice(0, 16),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -189,7 +211,43 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
 }) => {
   const isDark = theme === 'dark';
 
-  // 1. Estados de Dados
+  // 1. Sites Cadastrados no Sistema
+  const [operationalSites, setOperationalSites] = useState<OperationalSite[]>(DEFAULT_SITES);
+
+  useEffect(() => {
+    const orgId = profile.organizationId;
+    if (!orgId || orgId === 'sandbox-test') {
+      const savedSites = localStorage.getItem('noverde_operational_sites');
+      if (savedSites) {
+        try {
+          setOperationalSites(JSON.parse(savedSites));
+        } catch {
+          setOperationalSites(DEFAULT_SITES);
+        }
+      }
+      return;
+    }
+
+    try {
+      const q = query(collection(db, `organizations/${orgId}/sites`), orderBy('name', 'asc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const loadedSites = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as OperationalSite));
+          setOperationalSites(loadedSites);
+        } else {
+          setOperationalSites(DEFAULT_SITES);
+        }
+      }, (err) => {
+        console.warn('Erro ao carregar sites do firestore, usando fallback:', err);
+        setOperationalSites(DEFAULT_SITES);
+      });
+      return () => unsubscribe();
+    } catch {
+      setOperationalSites(DEFAULT_SITES);
+    }
+  }, [profile.organizationId]);
+
+  // 2. Estados de Vagas e Candidatos
   const [jobOpenings, setJobOpenings] = useState<JobOpening[]>(() => {
     const saved = localStorage.getItem('noverde_recruitment_openings');
     return saved ? JSON.parse(saved) : DEFAULT_JOB_OPENINGS;
@@ -209,13 +267,13 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     localStorage.setItem('noverde_recruitment_candidates', JSON.stringify(candidates));
   }, [candidates]);
 
-  // 2. Filtros e Busca
+  // 3. Filtros e Busca
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [stageFilter, setStageFilter] = useState<CandidateStage | 'all'>('all');
   const [filterJobId, setFilterJobId] = useState<string>('all');
   const [showTalentPoolOnly, setShowTalentPoolOnly] = useState<boolean>(false);
 
-  // 3. Modais e Drawers
+  // 4. Modais e Drawers
   const [newJobModalOpen, setNewJobModalOpen] = useState(false);
   const [newCandidateModalOpen, setNewCandidateModalOpen] = useState(false);
   const [selectedCandidateForDrawer, setSelectedCandidateForDrawer] = useState<Candidate | null>(null);
@@ -232,17 +290,17 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
   const [rejectionModal, setRejectionModal] = useState<Candidate | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string>('');
 
-  // Formulário Nova Vaga
+  // Formulário Nova Vaga (COM SITE OBRIGATÓRIO E SEM SALÁRIO)
   const [newJobTitle, setNewJobTitle] = useState('');
+  const [newJobSiteId, setNewJobSiteId] = useState<string>(operationalSites[0]?.id || 'site-1');
   const [newJobSlots, setNewJobSlots] = useState<number>(1);
   const [newJobShiftStart, setNewJobShiftStart] = useState<number>(8);
   const [newJobShiftEnd, setNewJobShiftEnd] = useState<number>(17);
   const [newJobSource, setNewJobSource] = useState('LinkedIn');
-  const [newJobSalary, setNewJobSalary] = useState<string>('1650');
   const [newJobDescription, setNewJobDescription] = useState('');
   const [newJobTeamId, setNewJobTeamId] = useState(managedTeamsData[0]?.id || '');
 
-  // Formulário Novo Candidato
+  // Formulário Novo Candidato (COM UPLOAD DE PDF)
   const [newCandName, setNewCandName] = useState('');
   const [newCandPhone, setNewCandPhone] = useState('');
   const [newCandEmail, setNewCandEmail] = useState('');
@@ -250,8 +308,10 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
   const [newCandSource, setNewCandSource] = useState('LinkedIn');
   const [newCandResumeText, setNewCandResumeText] = useState('');
   const [newCandResumeUrl, setNewCandResumeUrl] = useState('');
+  const [uploadedPdfFileName, setUploadedPdfFileName] = useState<string | null>(null);
+  const [isReadingPdf, setIsReadingPdf] = useState(false);
 
-  // 4. Entrevistas Iminentes / do Dia
+  // 5. Entrevistas Iminentes / do Dia
   const upcomingInterviews = useMemo(() => {
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
@@ -265,7 +325,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     }).sort((a, b) => new Date(a.interviewDate!).getTime() - new Date(b.interviewDate!).getTime());
   }, [candidates]);
 
-  // 5. Lista Filtrada de Candidatos
+  // 6. Lista Filtrada de Candidatos
   const filteredCandidates = useMemo(() => {
     let list = candidates;
 
@@ -295,7 +355,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     return list;
   }, [candidates, showTalentPoolOnly, stageFilter, filterJobId, searchTerm]);
 
-  // 6. Contagens por Estágio
+  // 7. Contagens por Estágio
   const stageCounts = useMemo(() => {
     const active = candidates.filter(c => c.stage !== 'talent_pool');
     return {
@@ -309,7 +369,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     };
   }, [candidates]);
 
-  // Ações Rápidas
+  // Ações de Candidatos
   const handleUpdateCandidateStage = (candidateId: string, newStage: CandidateStage) => {
     setCandidates(prev => prev.map(c => {
       if (c.id === candidateId) {
@@ -349,6 +409,37 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     showToast(`Entrevista agendada com sucesso para ${new Date(interviewDateTime).toLocaleString('pt-BR')}!`, 'success');
     setScheduleInterviewModal(null);
     setInterviewDateTime('');
+  };
+
+  // Upload de Arquivo PDF
+  const handlePdfFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+      showToast('Por favor, selecione um arquivo em formato PDF.', 'warning');
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('O arquivo PDF deve ter no máximo 15MB.', 'warning');
+      return;
+    }
+
+    setIsReadingPdf(true);
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const result = uploadEvent.target?.result as string;
+      setNewCandResumeUrl(result);
+      setUploadedPdfFileName(`${file.name} (${Math.round(file.size / 1024)} KB)`);
+      setIsReadingPdf(false);
+      showToast('Currículo PDF anexado com sucesso!', 'success');
+    };
+    reader.onerror = () => {
+      setIsReadingPdf(false);
+      showToast('Erro ao ler arquivo PDF.', 'error');
+    };
+    reader.readAsDataURL(file);
   };
 
   // Aprovar e Gerar Link de Convite da Equipe
@@ -425,6 +516,28 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     setRejectionReason('');
   };
 
+  // 8. Gestão de Vagas (Fechar, Reabrir, Excluir)
+  const handleToggleJobStatus = (jobId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setJobOpenings(prev => prev.map(j => {
+      if (j.id === jobId) {
+        const nextStatus = j.status === 'open' ? 'closed' : 'open';
+        showToast(nextStatus === 'closed' ? `Vaga "${j.title}" foi encerrada.` : `Vaga "${j.title}" foi reaberta!`, 'info');
+        return { ...j, status: nextStatus };
+      }
+      return j;
+    }));
+  };
+
+  const handleDeleteJobOpening = (jobId: string, jobTitle: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`Tem certeza que deseja excluir definitivamente a vaga "${jobTitle}"? Os candidatos inscritos serão mantidos no processo.`)) {
+      setJobOpenings(prev => prev.filter(j => j.id !== jobId));
+      if (filterJobId === jobId) setFilterJobId('all');
+      showToast(`Vaga "${jobTitle}" excluída.`, 'info');
+    }
+  };
+
   const handleCreateJobOpening = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newJobTitle.trim()) {
@@ -432,16 +545,19 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
       return;
     }
 
+    const selectedSite = operationalSites.find(s => s.id === newJobSiteId) || operationalSites[0];
+
     const newJob: JobOpening = {
       id: `job-${Date.now()}`,
       title: newJobTitle.trim(),
+      siteId: selectedSite?.id,
+      siteName: selectedSite?.name,
       teamId: newJobTeamId,
       shiftStartHour: newJobShiftStart,
       shiftEndHour: newJobShiftEnd,
       totalSlots: Number(newJobSlots) || 1,
       filledSlots: 0,
       sourceChannel: newJobSource,
-      salaryOffer: Number(newJobSalary) || 0,
       description: newJobDescription,
       status: 'open',
       createdAt: new Date().toISOString()
@@ -483,6 +599,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
     setNewCandEmail('');
     setNewCandResumeText('');
     setNewCandResumeUrl('');
+    setUploadedPdfFileName(null);
   };
 
   return (
@@ -505,7 +622,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-medium mt-0.5">
-                Gestão centralizada de vagas, candidatos, currículos, agendamentos de entrevista e admissão na equipe.
+                Gestão centralizada de vagas por Site da Operação, candidatos, visualizador embutido de PDF e admissão.
               </p>
             </div>
           </div>
@@ -560,12 +677,12 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
         )}
       </div>
 
-      {/* 3. CARDS DE VAGAS EM ABERTO (AMPLOS E ESPAÇOSOS) */}
+      {/* 3. CARDS DE VAGAS EM ABERTO COM SITES OPERACIONAIS E AÇÕES */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
             <Buildings size={18} className="text-indigo-400" />
-            <span>Vagas em Aberto ({jobOpenings.length})</span>
+            <span>Vagas Cadastradas ({jobOpenings.length})</span>
           </h3>
           {filterJobId !== 'all' && (
             <button
@@ -583,6 +700,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
             const candidatesInJob = candidates.filter(c => c.jobOpeningId === job.id && c.stage !== 'talent_pool');
             const percentFilled = Math.min(100, Math.round((job.filledSlots / job.totalSlots) * 100));
             const isSelectedFilter = filterJobId === job.id;
+            const isJobOpen = job.status === 'open';
 
             return (
               <div 
@@ -591,29 +709,59 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                 className={`p-5 rounded-3xl border transition-all cursor-pointer shadow-lg relative group ${
                   isSelectedFilter
                     ? 'bg-indigo-950/40 border-indigo-500/60 ring-2 ring-indigo-500/30'
+                    : !isJobOpen
+                    ? 'bg-slate-900/40 border-white/5 opacity-75'
                     : isDark ? 'bg-slate-900/70 border-white/10 hover:border-white/20' : 'bg-white border-slate-200'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                      job.status === 'open' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'
-                    }`}>
-                      {job.status === 'open' ? '🟢 Vaga Aberta' : '⚪ Encerrada'}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        isJobOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-white/5'
+                      }`}>
+                        {isJobOpen ? '🟢 Vaga Aberta' : '🔒 Encerrada'}
+                      </span>
+
+                      {job.siteName && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-300 border border-sky-500/20 flex items-center gap-1">
+                          <MapPin size={11} weight="fill" />
+                          <span>{job.siteName}</span>
+                        </span>
+                      )}
+                    </div>
+
                     <h4 className="text-base font-black text-white mt-2 group-hover:text-indigo-300 transition-colors">
                       {job.title}
                     </h4>
                     <span className="text-xs text-slate-400 font-medium block mt-0.5">
-                      👥 Equipe: <strong className="text-slate-300">{team?.name || 'Geral'}</strong>
+                      👥 Equipe: <strong className="text-slate-300">{team?.name || 'Geral da Operação'}</strong>
                     </span>
                   </div>
 
-                  <div className="text-right font-mono bg-slate-950 px-3 py-2 rounded-2xl border border-white/5">
-                    <span className="text-[10px] text-slate-400 uppercase font-black block">Preenchimento</span>
-                    <span className="text-base font-black text-indigo-400">
-                      {job.filledSlots} / {job.totalSlots}
-                    </span>
+                  {/* AÇÕES DA VAGA (FECHAR / EXCLUIR) */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleJobStatus(job.id, e)}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                        isJobOpen 
+                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-white/10'
+                          : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
+                      }`}
+                      title={isJobOpen ? 'Encerrar Vaga' : 'Reabrir Vaga'}
+                    >
+                      {isJobOpen ? <Lock size={15} /> : <LockOpen size={15} />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteJobOpening(job.id, job.title, e)}
+                      className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all cursor-pointer"
+                      title="Excluir Vaga"
+                    >
+                      <Trash size={15} />
+                    </button>
                   </div>
                 </div>
 
@@ -631,10 +779,10 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                   </div>
                 </div>
 
-                {/* Metadados da Vaga */}
+                {/* Metadados da Vaga (SEM MENÇÃO A SALÁRIO) */}
                 <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-medium text-slate-300">
-                  <span>⏰ Turno: <strong>{job.shiftStartHour}h-{job.shiftEndHour}h</strong></span>
-                  <span>💰 Base: <strong>R$ {job.salaryOffer?.toLocaleString('pt-BR') || 'A combinar'}</strong></span>
+                  <span>⏰ Turno: <strong>{job.shiftStartHour}h às {job.shiftEndHour}h</strong></span>
+                  <span>🌐 Origem: <strong>{job.sourceChannel || 'Geral'}</strong></span>
                 </div>
 
                 <div className="mt-3 text-right">
@@ -648,7 +796,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
         </div>
       </div>
 
-      {/* 4. LISTA ESTRUTURADA DE CANDIDATOS (SUBSTITUI O KANBAN) */}
+      {/* 4. LISTA ESTRUTURADA DE CANDIDATOS */}
       <div className={`p-6 rounded-3xl border shadow-xl transition-all ${
         isDark ? 'bg-slate-900/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
@@ -775,7 +923,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
             <thead>
               <tr className="bg-slate-950/80 border-b border-white/10 text-slate-400 uppercase font-black text-[10px] tracking-wider">
                 <th className="py-3.5 px-4 min-w-[240px]">Candidato</th>
-                <th className="py-3.5 px-4 min-w-[180px]">Vaga & Origem</th>
+                <th className="py-3.5 px-4 min-w-[200px]">Vaga & Site</th>
                 <th className="py-3.5 px-4 min-w-[160px]">Contato & WhatsApp</th>
                 <th className="py-3.5 px-4 min-w-[160px]">Currículo</th>
                 <th className="py-3.5 px-4 min-w-[160px]">Entrevista</th>
@@ -794,6 +942,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                 filteredCandidates.map(cand => {
                   const job = jobOpenings.find(j => j.id === cand.jobOpeningId);
                   const isInterviewToday = cand.interviewDate && cand.interviewDate.slice(0, 10) === new Date().toISOString().slice(0, 10);
+                  const hasPdf = !!cand.resumeUrl;
 
                   return (
                     <tr 
@@ -817,14 +966,22 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                         </div>
                       </td>
 
-                      {/* Vaga & Origem */}
+                      {/* Vaga & Site */}
                       <td className="py-4 px-4">
                         <span className="text-xs font-bold text-slate-200 block">
                           💼 {job?.title || 'Vaga Geral'}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-medium bg-slate-950 px-2 py-0.5 rounded-md border border-white/5 inline-block mt-1">
-                          🌐 {cand.sourceChannel}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {job?.siteName && (
+                            <span className="text-[10px] text-sky-300 font-medium bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-500/20 inline-flex items-center gap-1">
+                              <MapPin size={10} weight="fill" />
+                              <span>{job.siteName}</span>
+                            </span>
+                          )}
+                          <span className="text-[10px] text-slate-400 font-medium bg-slate-950 px-2 py-0.5 rounded-md border border-white/5">
+                            🌐 {cand.sourceChannel}
+                          </span>
+                        </div>
                       </td>
 
                       {/* Contato & WhatsApp */}
@@ -845,10 +1002,14 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                       <td className="py-4 px-4">
                         <button
                           onClick={() => setSelectedCandidateForDrawer(cand)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
+                            hasPdf 
+                              ? 'bg-indigo-500/20 hover:bg-indigo-500/30 border-indigo-500/40 text-indigo-300'
+                              : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+                          }`}
                         >
-                          <FileText size={15} className="text-indigo-400" />
-                          <span>Ver Currículo</span>
+                          <FileText size={15} className={hasPdf ? 'text-indigo-300' : 'text-slate-400'} />
+                          <span>{hasPdf ? '📄 Ler PDF Embutido' : 'Ver Resumo'}</span>
                         </button>
                       </td>
 
@@ -923,10 +1084,10 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
         </div>
       </div>
 
-      {/* 5. DRAWER LATERAL AMPLO DE CURRÍCULO E FICHA DO CANDIDATO */}
+      {/* 5. DRAWER LATERAL AMPLO COM VISUALIZADOR EMBUTIDO DE PDF */}
       {selectedCandidateForDrawer && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex justify-end animate-fade-in">
-          <div className="w-full max-w-2xl bg-slate-900 border-l border-white/10 text-white h-full overflow-y-auto p-6 space-y-6 shadow-2xl animate-slide-left">
+          <div className="w-full max-w-3xl bg-slate-900 border-l border-white/10 text-white h-full overflow-y-auto p-6 space-y-6 shadow-2xl animate-slide-left">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-black text-xl">
@@ -947,10 +1108,10 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
               </button>
             </div>
 
-            {/* Origem e Dados Principais */}
-            <div className="grid grid-cols-2 gap-3 font-mono text-xs">
+            {/* Origem, Vaga e Site */}
+            <div className="grid grid-cols-3 gap-3 font-mono text-xs">
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-white/10">
-                <span className="text-[10px] text-slate-400 uppercase font-black block">Origem da Inscrição</span>
+                <span className="text-[10px] text-slate-400 uppercase font-black block">Origem</span>
                 <span className="text-sm font-bold text-sky-400">{selectedCandidateForDrawer.sourceChannel}</span>
               </div>
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-white/10">
@@ -959,35 +1120,53 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                   {jobOpenings.find(j => j.id === selectedCandidateForDrawer.jobOpeningId)?.title || 'Geral'}
                 </span>
               </div>
-            </div>
-
-            {/* RESUMO DO CURRÍCULO (LEITURA AMPLA E CONFORTÁVEL) */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-black uppercase text-indigo-300 tracking-wider flex items-center gap-2">
-                <FileText size={18} />
-                <span>Currículo & Experiências Prévias</span>
-              </h4>
-              <div className="p-5 rounded-2xl bg-slate-950 border border-white/10 text-xs text-slate-200 leading-relaxed max-h-72 overflow-y-auto whitespace-pre-wrap font-sans">
-                {selectedCandidateForDrawer.resumeText || 'Nenhum resumo profissional cadastrado.'}
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-white/10">
+                <span className="text-[10px] text-slate-400 uppercase font-black block">Site de Atuação</span>
+                <span className="text-sm font-bold text-emerald-400">
+                  {jobOpenings.find(j => j.id === selectedCandidateForDrawer.jobOpeningId)?.siteName || 'Geral'}
+                </span>
               </div>
             </div>
 
-            {/* Link para o PDF / Arquivo */}
-            {selectedCandidateForDrawer.resumeUrl && (
-              <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold text-indigo-200 block">Arquivo de Currículo Anexado</span>
-                  <span className="text-[11px] text-indigo-400 truncate max-w-sm block">{selectedCandidateForDrawer.resumeUrl}</span>
+            {/* VISUALIZADOR DE PDF EMBUTIDO DIRETAMENTE NA FICHA */}
+            {selectedCandidateForDrawer.resumeUrl ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black uppercase text-indigo-300 tracking-wider flex items-center gap-2">
+                    <FileText size={18} />
+                    <span>Visualizador de Currículo PDF (Embutido no Tracker)</span>
+                  </h4>
+                  <a
+                    href={selectedCandidateForDrawer.resumeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1"
+                  >
+                    <ArrowsOut size={13} />
+                    <span>Abrir em Nova Aba</span>
+                  </a>
                 </div>
-                <a
-                  href={selectedCandidateForDrawer.resumeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md"
-                >
-                  <Eye size={16} />
-                  <span>Abrir Documento</span>
-                </a>
+
+                <div className="w-full h-[520px] rounded-2xl overflow-hidden border border-white/10 bg-slate-950 shadow-2xl relative">
+                  <iframe
+                    src={selectedCandidateForDrawer.resumeUrl}
+                    className="w-full h-full border-0"
+                    title={`Currículo - ${selectedCandidateForDrawer.fullName}`}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {/* RESUMO EM TEXTO */}
+            {selectedCandidateForDrawer.resumeText && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
+                  <FileText size={16} />
+                  <span>Resumo Profissional / Experiências Anotadas</span>
+                </h4>
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 text-xs text-slate-200 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap font-sans">
+                  {selectedCandidateForDrawer.resumeText}
+                </div>
               </div>
             )}
 
@@ -1214,7 +1393,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
               <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Motivo do Descarte / Feedback:</label>
               <textarea
                 rows={2}
-                placeholder="Ex: Pretensão salarial acima da faixa, falta de experiência prévia, desistência..."
+                placeholder="Ex: Falta de experiência prévia, desistência, perfil não aderente..."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl text-xs bg-slate-950 border border-white/10 text-white focus:outline-none placeholder:text-slate-600"
@@ -1248,7 +1427,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
         </div>
       )}
 
-      {/* 9. MODAL CADASTRO DE NOVO CANDIDATO */}
+      {/* 9. MODAL CADASTRO DE NOVO CANDIDATO (COM UPLOAD DE PDF) */}
       {newCandidateModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-4 shadow-2xl text-white max-h-[90vh] overflow-y-auto">
@@ -1308,7 +1487,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                     placeholder="Geral / Sem Vaga Específica"
                     options={[
                       { value: '', label: 'Geral / Sem Vaga Específica' },
-                      ...jobOpenings.map(j => ({ value: j.id, label: j.title }))
+                      ...jobOpenings.map(j => ({ value: j.id, label: `${j.title} (${j.siteName || 'Geral'})` }))
                     ]}
                   />
                 </div>
@@ -1329,25 +1508,73 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-indigo-300 block mb-1">Resumo do Currículo / Experiência</label>
-                <textarea
-                  rows={3}
-                  placeholder="Cole aqui o resumo profissional, tempo de experiência em cobrança, empresas anteriores..."
-                  value={newCandResumeText}
-                  onChange={(e) => setNewCandResumeText(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none"
-                />
+              {/* ANEXO / UPLOAD DO CURRÍCULO EM PDF */}
+              <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-indigo-300 flex items-center gap-1.5">
+                    <UploadSimple size={16} weight="bold" />
+                    <span>Upload do Currículo (PDF)</span>
+                  </label>
+                  {uploadedPdfFileName && (
+                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                      ✓ Anexado
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-slate-950 border border-dashed border-indigo-500/40 hover:border-indigo-400 text-slate-300 hover:text-white cursor-pointer transition-all">
+                    <UploadSimple size={16} />
+                    <span className="truncate">
+                      {isReadingPdf ? 'Processando arquivo PDF...' : uploadedPdfFileName || 'Clique para selecionar arquivo .PDF'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handlePdfFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {uploadedPdfFileName && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewCandResumeUrl('');
+                        setUploadedPdfFileName(null);
+                      }}
+                      className="p-2 rounded-xl bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                      title="Remover anexo"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="pt-1">
+                  <span className="text-[10px] text-slate-400 block mb-1">Ou cole o link do currículo (Google Drive / URL externa):</span>
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/..."
+                    value={newCandResumeUrl.startsWith('data:') ? '' : newCandResumeUrl}
+                    onChange={(e) => {
+                      setNewCandResumeUrl(e.target.value);
+                      if (uploadedPdfFileName) setUploadedPdfFileName(null);
+                    }}
+                    disabled={newCandResumeUrl.startsWith('data:')}
+                    className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none font-mono text-[11px] disabled:opacity-50"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-300 block mb-1">Link do Currículo (PDF / Google Drive)</label>
-                <input
-                  type="url"
-                  placeholder="https://drive.google.com/..."
-                  value={newCandResumeUrl}
-                  onChange={(e) => setNewCandResumeUrl(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none font-mono"
+                <label className="font-bold text-slate-300 block mb-1">Resumo das Experiências / Anotações</label>
+                <textarea
+                  rows={2}
+                  placeholder="Cole anotações sobre tempo de experiência, empresas anteriores, dicção..."
+                  value={newCandResumeText}
+                  onChange={(e) => setNewCandResumeText(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none"
                 />
               </div>
 
@@ -1361,7 +1588,8 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold cursor-pointer"
+                  disabled={isReadingPdf}
+                  className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold cursor-pointer disabled:opacity-50"
                 >
                   Cadastrar Candidato
                 </button>
@@ -1371,7 +1599,7 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
         </div>
       )}
 
-      {/* 10. MODAL ABERTURA DE NOVA VAGA */}
+      {/* 10. MODAL ABERTURA DE NOVA VAGA (VINCULADA A SITES E SEM SALÁRIO) */}
       {newJobModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-4 shadow-2xl text-white">
@@ -1387,18 +1615,33 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
 
             <form onSubmit={handleCreateJobOpening} className="space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-slate-300 block mb-1">Título da Vaga *</label>
+                <label className="font-bold text-slate-300 block mb-1">Título do Cargo / Vaga *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Operador de Cobrança Jr - Manhã"
+                  placeholder="Ex: Operador de Cobrança Jr - Turno Manhã"
                   value={newJobTitle}
                   onChange={(e) => setNewJobTitle(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none"
                 />
               </div>
 
+              {/* SELEÇÃO DO SITE DA OPERAÇÃO */}
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-sky-300 block mb-1 flex items-center gap-1">
+                    <MapPin size={14} weight="fill" />
+                    <span>Site de Atuação *</span>
+                  </label>
+                  <CustomSelect
+                    value={newJobSiteId}
+                    onChange={(val) => setNewJobSiteId(val)}
+                    options={operationalSites.map(s => ({
+                      value: s.id,
+                      label: `📍 ${s.name}`
+                    }))}
+                  />
+                </div>
                 <div>
                   <label className="font-bold text-slate-300 block mb-1">Equipe de Destino</label>
                   <CustomSelect
@@ -1410,22 +1653,11 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                     }))}
                   />
                 </div>
-                <div>
-                  <label className="font-bold text-slate-300 block mb-1">Total de Posições (Vagas)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    required
-                    value={newJobSlots}
-                    onChange={(e) => setNewJobSlots(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none font-mono"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-300 block mb-1">Turno (Início - Fim)</label>
+                  <label className="font-bold text-slate-300 block mb-1">Turno (Horário)</label>
                   <div className="flex items-center gap-1 font-mono">
                     <input
                       type="number"
@@ -1447,21 +1679,39 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
                   </div>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-300 block mb-1">Salário Base (R$)</label>
+                  <label className="font-bold text-slate-300 block mb-1">Total de Vagas</label>
                   <input
                     type="number"
-                    value={newJobSalary}
-                    onChange={(e) => setNewJobSalary(e.target.value)}
+                    min={1}
+                    required
+                    value={newJobSlots}
+                    onChange={(e) => setNewJobSlots(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-300 block mb-1">Descrição / Requisitos</label>
+                <label className="font-bold text-slate-300 block mb-1">Canal de Captação Previsto</label>
+                <CustomSelect
+                  value={newJobSource}
+                  onChange={(val) => setNewJobSource(val)}
+                  options={[
+                    { value: 'LinkedIn', label: 'LinkedIn' },
+                    { value: 'Indicação Interna', label: 'Indicação Interna' },
+                    { value: 'Gupy', label: 'Gupy / Vagas.com' },
+                    { value: 'WhatsApp', label: 'WhatsApp' },
+                    { value: 'InfoJobs', label: 'InfoJobs' },
+                    { value: 'Misto / Geral', label: 'Misto / Geral' }
+                  ]}
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-300 block mb-1">Descrição / Requisitos da Vaga</label>
                 <textarea
                   rows={2}
-                  placeholder="Principais responsabilidades, requisitos e perfil desejado..."
+                  placeholder="Principais responsabilidades, perfil e requisitos..."
                   value={newJobDescription}
                   onChange={(e) => setNewJobDescription(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white focus:outline-none"

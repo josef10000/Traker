@@ -771,13 +771,14 @@ export interface JobOpening {
   organizationId?: string;
   title: string;                 // Ex: "Operador de Cobrança Jr", "Monitor de Qualidade"
   teamId?: string;               // Equipe de destino prevista
+  siteId?: string;               // ID do Site da Operação
+  siteName?: string;             // Nome do Site (ex: "Site SP Paulista", "Home Office")
   shiftStartHour?: number;       // Ex: 8
   shiftEndHour?: number;         // Ex: 17
   totalSlots: number;            // Total de vagas abertas
   filledSlots: number;           // Vagas preenchidas/contratados
   sourceChannel?: string;        // "LinkedIn", "WhatsApp", "Indicação Interna", "Gupy", "Outro"
   status: 'open' | 'paused' | 'closed';
-  salaryOffer?: number;
   description?: string;
   createdAt: string;
 }
