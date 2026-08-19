@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   BookOpen, 
   MagnifyingGlass, 
@@ -26,7 +26,10 @@ import {
   UploadSimple,
   Stack,
   FileCode,
-  ShieldCheck
+  ShieldCheck,
+  Microphone,
+  MicrophoneSlash,
+  Waveform
 } from '@phosphor-icons/react';
 import { KnowledgeArticle, KnowledgeCategory, UserProfile } from '../../types';
 import { 
@@ -37,6 +40,8 @@ import {
 } from '../../lib/knowledgeBaseService';
 import { uploadImage } from '../../lib/imageUpload';
 import { notifyAnnouncementPublished } from '../../lib/notifications';
+import { ConfirmModal } from '../modals/ConfirmModal';
+import { CustomSelect } from '../ui/CustomSelect';
 
 interface KnowledgeBaseSectionProps {
   profile: UserProfile;
@@ -112,6 +117,99 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
   const [formIsUrgent, setFormIsUrgent] = useState(false);
   const [formRequireAck, setFormRequireAck] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Ditado por Voz com Reconhecimento de Fala (Web Speech API)
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [activeVoiceField, setActiveVoiceField] = useState<'title' | 'content' | 'script' | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Modal de Exclusão de Artigo (ConfirmModal Customizado)
+  const [deleteArticleModal, setDeleteArticleModal] = useState<string | null>(null);
+
+  const toggleVoiceDictation = (field: 'title' | 'content' | 'script') => {
+    const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      if (showToast) showToast('Reconhecimento de voz não é suportado pelo seu navegador. Utilize o Google Chrome ou Edge.', 'error');
+      return;
+    }
+
+    if (isRecordingVoice && activeVoiceField === field) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+      setIsRecordingVoice(false);
+      setActiveVoiceField(null);
+      if (showToast) showToast('Ditado por voz pausado.', 'info');
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+
+      const recognition = new SpeechRecognitionClass();
+      recognition.lang = 'pt-BR';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setIsRecordingVoice(true);
+        setActiveVoiceField(field);
+        if (showToast) showToast('Microfone ativado! Fale agora para ditar.', 'success');
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            transcript += event.results[i][0].transcript;
+          }
+        }
+
+        if (transcript.trim()) {
+          if (field === 'title') {
+            setFormTitle(prev => prev ? `${prev} ${transcript.trim()}` : transcript.trim());
+          } else if (field === 'content') {
+            setFormContent(prev => prev ? `${prev} ${transcript.trim()}` : transcript.trim());
+          } else if (field === 'script') {
+            setFormCopyableScript(prev => prev ? `${prev} ${transcript.trim()}` : transcript.trim());
+          }
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          if (showToast) showToast('Acesso ao microfone negado. Permita o microfone nas permissões.', 'error');
+        }
+        setIsRecordingVoice(false);
+        setActiveVoiceField(null);
+      };
+
+      recognition.onend = () => {
+        setIsRecordingVoice(false);
+        setActiveVoiceField(null);
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (err) {
+      console.error('Error starting speech recognition:', err);
+      setIsRecordingVoice(false);
+      setActiveVoiceField(null);
+      if (showToast) showToast('Erro ao iniciar reconhecimento de voz.', 'error');
+    }
+  };
+
+  // Limpeza do microfone ao desmontar
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+    };
+  }, []);
 
   // Escuta os artigos da organização em tempo real
   useEffect(() => {
@@ -320,9 +418,14 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     }
   };
 
-  const handleDeleteArticle = async (articleId: string, e?: React.MouseEvent) => {
+  const handleDeleteArticle = (articleId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (!window.confirm('Tem certeza que deseja excluir este artigo/script?')) return;
+    setDeleteArticleModal(articleId);
+  };
+
+  const handleConfirmDeleteArticle = async () => {
+    if (!deleteArticleModal) return;
+    const articleId = deleteArticleModal;
     try {
       await deleteKnowledgeArticle(profile.organizationId || 'sandbox-test', articleId);
       if (selectedArticleId === articleId) {
@@ -332,6 +435,8 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
     } catch (e) {
       console.error('Erro ao excluir artigo:', e);
       if (showToast) showToast('Erro ao excluir artigo.', 'error');
+    } finally {
+      setDeleteArticleModal(null);
     }
   };
 
@@ -975,26 +1080,101 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
             </div>
 
             <form onSubmit={handleSaveArticle} className="space-y-4">
+              {/* BANNER PULSANTE QUANDO ESTIVER GRAVANDO VOZ */}
+              {isRecordingVoice && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-white flex items-center justify-between gap-3 animate-pulse">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-rose-500 text-white animate-bounce">
+                      <Microphone size={18} weight="fill" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black uppercase tracking-wider block text-rose-200">
+                        🔴 Gravando por Voz no campo {activeVoiceField === 'title' ? 'Título' : activeVoiceField === 'content' ? 'Conteúdo' : 'Roteiro (Script)'}
+                      </span>
+                      <span className="text-[11px] text-rose-300 font-medium">
+                        Fale naturalmente em português. Suas palavras estão sendo transcritas em tempo real...
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => activeVoiceField && toggleVoiceDictation(activeVoiceField)}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs cursor-pointer shadow-md"
+                  >
+                    Pausar Microfone
+                  </button>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Título do Artigo</label>
-                  <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold outline-none text-white" required />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Título do Artigo</label>
+                    <button
+                      type="button"
+                      onClick={() => toggleVoiceDictation('title')}
+                      className={`text-[11px] font-bold flex items-center gap-1 px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
+                        isRecordingVoice && activeVoiceField === 'title'
+                          ? 'bg-rose-500/30 text-rose-300 border-rose-500/50 animate-pulse'
+                          : 'text-sky-400 hover:text-sky-300 bg-sky-500/10 border-sky-500/20'
+                      }`}
+                      title="Ditar título com a voz"
+                    >
+                      <Microphone size={13} weight={isRecordingVoice && activeVoiceField === 'title' ? 'fill' : 'regular'} />
+                      <span>{isRecordingVoice && activeVoiceField === 'title' ? 'Ouvindo...' : 'Ditar Título'}</span>
+                    </button>
+                  </div>
+                  <input 
+                    type="text" 
+                    value={formTitle} 
+                    onChange={(e) => setFormTitle(e.target.value)} 
+                    placeholder="Ex: Script de Acordo com Desconto Máximo"
+                    className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold outline-none text-white focus:ring-1 focus:ring-sky-500" 
+                    required 
+                  />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Categoria</label>
-                  <select value={formCategory} onChange={(e) => setFormCategory(e.target.value as KnowledgeCategory)} className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold outline-none text-white cursor-pointer">
-                    <option value="script">💬 Script</option>
-                    <option value="announcement">🚨 Comunicado</option>
-                    <option value="policy">📜 Política</option>
-                    <option value="faq">❓ FAQ</option>
-                    <option value="general">📋 Geral</option>
-                  </select>
+                  <CustomSelect
+                    value={formCategory}
+                    onChange={(val) => setFormCategory(val as KnowledgeCategory)}
+                    options={[
+                      { value: 'script', label: '💬 Script' },
+                      { value: 'announcement', label: '🚨 Comunicado' },
+                      { value: 'policy', label: '📜 Política' },
+                      { value: 'faq', label: '❓ FAQ' },
+                      { value: 'general', label: '📋 Geral' }
+                    ]}
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Conteúdo / Descrição do Procedimento</label>
-                <textarea rows={4} value={formContent} onChange={(e) => setFormContent(e.target.value)} className="w-full p-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-medium outline-none text-white custom-scrollbar" required />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Conteúdo / Descrição do Procedimento</label>
+                  <button
+                    type="button"
+                    onClick={() => toggleVoiceDictation('content')}
+                    className={`text-[11px] font-bold flex items-center gap-1.5 px-2.5 py-1 rounded-xl border transition-all cursor-pointer ${
+                      isRecordingVoice && activeVoiceField === 'content'
+                        ? 'bg-rose-500/30 text-rose-300 border-rose-500/50 animate-pulse'
+                        : 'text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 border-indigo-500/20'
+                    }`}
+                    title="Ditar o conteúdo do artigo com sua voz"
+                  >
+                    <Microphone size={14} weight={isRecordingVoice && activeVoiceField === 'content' ? 'fill' : 'regular'} />
+                    <span>{isRecordingVoice && activeVoiceField === 'content' ? 'Gravando Voz... (Clique para parar)' : '🎤 Falar e Ditar Conteúdo'}</span>
+                  </button>
+                </div>
+                <textarea 
+                  rows={5} 
+                  value={formContent} 
+                  onChange={(e) => setFormContent(e.target.value)} 
+                  placeholder="Escreva ou dite o conteúdo do procedimento..."
+                  className="w-full p-3.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-medium outline-none text-white custom-scrollbar focus:ring-1 focus:ring-indigo-500 leading-relaxed" 
+                  required 
+                />
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/10 space-y-3">
@@ -1022,12 +1202,30 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
                   <span>🟢 Exigir Confirmação de Leitura e Ciência da Equipe</span>
                 </label>
 
-                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-sky-400 hover:text-sky-300">
-                  <input type="checkbox" checked={enableCopyableScript} onChange={(e) => { setEnableCopyableScript(e.target.checked); if (!e.target.checked) setFormCopyableScript(''); }} className="w-4 h-4 rounded accent-sky-500" />
-                  <span>💬 Incluir Bloco de Roteiro de Atendimento (Script Copiável)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-sky-400 hover:text-sky-300">
+                    <input type="checkbox" checked={enableCopyableScript} onChange={(e) => { setEnableCopyableScript(e.target.checked); if (!e.target.checked) setFormCopyableScript(''); }} className="w-4 h-4 rounded accent-sky-500" />
+                    <span>💬 Incluir Bloco de Roteiro de Atendimento (Script Copiável)</span>
+                  </label>
+
+                  {enableCopyableScript && (
+                    <button
+                      type="button"
+                      onClick={() => toggleVoiceDictation('script')}
+                      className={`text-[11px] font-bold flex items-center gap-1 px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
+                        isRecordingVoice && activeVoiceField === 'script'
+                          ? 'bg-rose-500/30 text-rose-300 border-rose-500/50 animate-pulse'
+                          : 'text-sky-400 hover:text-sky-300 bg-sky-500/10 border-sky-500/20'
+                      }`}
+                    >
+                      <Microphone size={13} weight={isRecordingVoice && activeVoiceField === 'script' ? 'fill' : 'regular'} />
+                      <span>{isRecordingVoice && activeVoiceField === 'script' ? 'Ouvindo...' : 'Ditar Script'}</span>
+                    </button>
+                  )}
+                </div>
+
                 {enableCopyableScript && (
-                  <textarea rows={3} value={formCopyableScript} onChange={(e) => setFormCopyableScript(e.target.value)} placeholder="Roteiro com variáveis ex: [NOME_DO_CLIENTE]..." className="w-full p-3.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-sans text-slate-200 outline-none leading-relaxed custom-scrollbar" />
+                  <textarea rows={3} value={formCopyableScript} onChange={(e) => setFormCopyableScript(e.target.value)} placeholder="Roteiro com variáveis ex: [NOME_DO_CLIENTE]..." className="w-full p-3.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-sans text-slate-200 outline-none leading-relaxed custom-scrollbar focus:ring-1 focus:ring-sky-500" />
                 )}
               </div>
 
@@ -1107,6 +1305,19 @@ export const KnowledgeBaseSection: React.FC<KnowledgeBaseSectionProps> = ({
           </div>
         </div>
       )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE ARTIGO (SEM ALERTS NATIVOS) */}
+      <ConfirmModal
+        isOpen={!!deleteArticleModal}
+        onClose={() => setDeleteArticleModal(null)}
+        onConfirm={handleConfirmDeleteArticle}
+        title="Excluir Artigo da Wiki"
+        message="Tem certeza que deseja excluir este artigo/script da Base de Conhecimento? Esta ação não poderá ser desfeita."
+        confirmText="Sim, Excluir Artigo"
+        cancelText="Cancelar"
+        variant="danger"
+        theme={isDark ? 'dark' : 'light'}
+      />
     </div>
   );
 };

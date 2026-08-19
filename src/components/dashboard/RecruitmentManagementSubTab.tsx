@@ -34,6 +34,7 @@ import {
 } from '@phosphor-icons/react';
 import { UserProfile, Team, JobOpening, Candidate, CandidateStage } from '../../types';
 import { CustomSelect } from '../ui/CustomSelect';
+import { ConfirmModal } from '../modals/ConfirmModal';
 import { db } from '../../lib/firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
@@ -517,6 +518,9 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
   };
 
   // 8. Gestão de Vagas (Fechar, Reabrir, Excluir)
+  // Modal de Exclusão de Vaga (ConfirmModal Customizado)
+  const [deleteJobModal, setDeleteJobModal] = useState<{ id: string; title: string } | null>(null);
+
   const handleToggleJobStatus = (jobId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setJobOpenings(prev => prev.map(j => {
@@ -531,11 +535,16 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
 
   const handleDeleteJobOpening = (jobId: string, jobTitle: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Tem certeza que deseja excluir definitivamente a vaga "${jobTitle}"? Os candidatos inscritos serão mantidos no processo.`)) {
-      setJobOpenings(prev => prev.filter(j => j.id !== jobId));
-      if (filterJobId === jobId) setFilterJobId('all');
-      showToast(`Vaga "${jobTitle}" excluída.`, 'info');
-    }
+    setDeleteJobModal({ id: jobId, title: jobTitle });
+  };
+
+  const handleConfirmDeleteJob = () => {
+    if (!deleteJobModal) return;
+    const { id, title } = deleteJobModal;
+    setJobOpenings(prev => prev.filter(j => j.id !== id));
+    if (filterJobId === id) setFilterJobId('all');
+    showToast(`Vaga "${title}" excluída com sucesso.`, 'info');
+    setDeleteJobModal(null);
   };
 
   const handleCreateJobOpening = (e: React.FormEvent) => {
@@ -1737,6 +1746,19 @@ export const RecruitmentManagementSubTab: React.FC<RecruitmentManagementSubTabPr
           </div>
         </div>
       )}
+
+      {/* 11. MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE VAGA (SEM ALERTS NATIVOS) */}
+      <ConfirmModal
+        isOpen={!!deleteJobModal}
+        onClose={() => setDeleteJobModal(null)}
+        onConfirm={handleConfirmDeleteJob}
+        title="Excluir Vaga"
+        message={`Tem certeza que deseja excluir definitivamente a vaga "${deleteJobModal?.title}"? Os candidatos inscritos serão mantidos no processo.`}
+        confirmText="Sim, Excluir Vaga"
+        cancelText="Cancelar"
+        variant="danger"
+        theme={theme}
+      />
     </div>
   );
 };
