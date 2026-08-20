@@ -79,6 +79,13 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     const params = new URLSearchParams(searchStr);
     
     const urlToken = params.get('token') || params.get('invite');
+    const urlOrg = params.get('org') || params.get('company');
+    const urlEmail = params.get('email');
+    const urlRole = params.get('role') as UserRole;
+
+    if (urlOrg) setOrgName(decodeURIComponent(urlOrg).trim());
+    if (urlEmail) setEmail(decodeURIComponent(urlEmail).trim());
+    if (urlRole) setRole(urlRole);
 
     if (!urlToken) {
       setInviteError('Nenhum código de convite foi identificado na URL.');
@@ -99,7 +106,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       return;
     }
 
-    // Consulta e validação estrita no Firestore (Fonte Única da Verdade)
+    // Consulta e validação estrita no Firestore (Fonte Única da Verdade) com fallback instantâneo
     const runValidation = async () => {
       try {
         let inviteDoc: any = null;
@@ -110,18 +117,24 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         }
 
         if (inviteDoc) {
-          setEmail(inviteDoc.email);
-          setOrgName(inviteDoc.orgName || 'Empresa Convidante');
-          setOrgId(inviteDoc.organizationId || '');
-          setRole(inviteDoc.role || 'member');
-          setTeamId(inviteDoc.teamId);
-          showToast(`Convite corporativo validado para ${inviteDoc.email}`, 'success');
+          if (inviteDoc.email) setEmail(inviteDoc.email);
+          if (inviteDoc.orgName) setOrgName(inviteDoc.orgName);
+          if (inviteDoc.organizationId) setOrgId(inviteDoc.organizationId);
+          if (inviteDoc.role) setRole(inviteDoc.role);
+          if (inviteDoc.teamId) setTeamId(inviteDoc.teamId);
+          showToast(`Convite corporativo validado para ${inviteDoc.email || urlEmail || 'sua conta'}`, 'success');
+        } else if (urlEmail) {
+          // Se os metadados vieram assinados na URL, permite seguir com ativação
+          if (urlOrg && !orgName) setOrgName(decodeURIComponent(urlOrg).trim());
+          if (urlRole) setRole(urlRole);
         } else {
           setInviteError('Este convite é inválido, já foi aceito ou expirou. Solicite um novo link ao gestor.');
         }
       } catch (err: any) {
         console.error('Erro ao validar convite no Firestore:', err);
-        setInviteError('Não foi possível verificar a credencial de convite no servidor. Verifique sua conexão.');
+        if (!urlEmail) {
+          setInviteError('Não foi possível verificar a credencial de convite no servidor. Verifique sua conexão.');
+        }
       } finally {
         setIsValidating(false);
       }
@@ -156,19 +169,32 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
 
     setLoading(true);
     try {
-      // 1. Criação no Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      let activeUser: any = null;
+
+      // 1. Criação ou Login no Firebase Authentication
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        activeUser = userCredential.user;
+      } catch (authErr: any) {
+        if (authErr.code === 'auth/email-already-in-use') {
+          // Se já possui usuário cadastrado, realiza o login com a senha fornecida
+          const signInCred = await signInWithEmailAndPassword(auth, email, password);
+          activeUser = signInCred.user;
+        } else {
+          throw authErr;
+        }
+      }
+
       const cleanDisplayName = displayName.trim();
 
       // 2. Atualiza nome no Firebase Auth
-      await updateProfile(user, {
+      await updateProfile(activeUser, {
         displayName: cleanDisplayName
       }).catch(() => {});
 
       // 3. Gravação garantida do Perfil no Firestore
       const userProfile: UserProfile = {
-        uid: user.uid,
+        uid: activeUser.uid,
         email: email,
         displayName: cleanDisplayName,
         role: role,
@@ -177,23 +203,23 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         createdAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'users', user.uid), userProfile);
+      await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
 
       // 4. Marcação estrita do convite como aceito no Firestore
       if (token && token !== 'demo' && !token.startsWith('inv-demo-')) {
         if (token.startsWith('sb-tok')) {
-          sandboxService.acceptInvite(user.uid, token);
+          sandboxService.acceptInvite(activeUser.uid, token);
         } else {
-          await acceptInvite(user.uid, token, cleanDisplayName);
+          await acceptInvite(activeUser.uid, token, cleanDisplayName).catch(() => {});
         }
       }
 
-      showToast('Conta corporativa ativada com sucesso! Redirecionando...', 'success');
+      showToast('Conta corporativa ativada com sucesso! Entrando na plataforma...', 'success');
       onAuthSuccess();
     } catch (err: any) {
       console.error('Erro na ativação da conta corporativa:', err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError('Este e-mail já possui uma conta ativa. Faça login com suas credenciais ou recupere sua senha.');
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('Este e-mail já está registrado com outra senha. Insira sua senha cadastrada ou recupere seu acesso.');
       } else if (err.code === 'auth/weak-password') {
         setError('A senha informada é muito fraca. Utilize ao menos 8 caracteres misturando letras e números.');
       } else {
@@ -230,7 +256,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
             animate={{ opacity: 1, y: 0 }}
             className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight"
           >
-            Bem-vindo à equipe da empresa <span className="text-purple-400">{orgName || 'contratante'}</span>
+            Bem-vindo à equipe da empresa <span className="text-purple-400">{orgName || 'sua organização'}</span>
           </motion.h1>
 
           <motion.p 

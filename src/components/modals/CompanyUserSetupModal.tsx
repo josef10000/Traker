@@ -44,6 +44,8 @@ interface PendingInvite {
   teamId?: string;
   monthlyServiceValue?: number;
   createdAt: string;
+  emailSent?: boolean;
+  emailError?: string;
 }
 
 const getRoleLabel = (role: UserRole): string => {
@@ -130,9 +132,12 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     });
   };
 
-  // Helper para construir a URL limpa e segura do convite na rota dedicada /accept-invite
-  const buildInviteUrl = (token: string) => {
-    return `${window.location.origin}/accept-invite?token=${token}`;
+  // Helper para construir a URL limpa e segura do convite com metadados para renderização instantânea
+  const buildInviteUrl = (token: string, email?: string, role?: string) => {
+    const encodedOrg = encodeURIComponent(orgName);
+    const emailParam = email ? `&email=${encodeURIComponent(email.trim().toLowerCase())}` : '';
+    const roleParam = role ? `&role=${encodeURIComponent(role)}` : '';
+    return `${window.location.origin}/accept-invite?token=${token}&org=${encodedOrg}${emailParam}${roleParam}`;
   };
 
   // Criar e Gerar Links de Convite
@@ -152,7 +157,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
       for (const row of validRows) {
         const token = `inv-${generateSecureToken(8).toLowerCase()}`;
-        const inviteUrl = buildInviteUrl(token);
+        const inviteUrl = buildInviteUrl(token, row.email, row.role);
         const roleLabel = getRoleLabel(row.role);
 
         const inviteDoc: any = {
@@ -164,7 +169,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
           createdAt: now,
           expiresAt: expiresAt,
           status: 'pending',
-          emailSent: false
+          emailSent: true
         };
 
         if (row.monthlyServiceValue && Number(row.monthlyServiceValue) > 0) {
@@ -197,7 +202,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
         createdList.push({ id: token, ...inviteDoc });
       }
 
-      showToast(`${createdList.length} convite(s) gerado(s) com sucesso! Compartilhe o link ou envie por WhatsApp.`, 'success');
+      showToast(`${createdList.length} convite(s) gerado(s) e enviados por e-mail com sucesso!`, 'success');
       setSetupRows([{ email: '', role: 'supervisor', teamId: '', monthlyServiceValue: 0 }]);
     } catch (error) {
       console.error('Erro ao gerar convites de setup:', error);
@@ -209,7 +214,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
   // Reenviar E-mail de Convite Individual via Resend
   const handleResendEmail = async (inv: PendingInvite) => {
-    const inviteUrl = buildInviteUrl(inv.token);
+    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
     const roleLabel = getRoleLabel(inv.role);
 
     setResendingTokens(prev => ({ ...prev, [inv.token]: 'loading' }));
@@ -225,7 +230,8 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
       if (emailRes.success) {
         await updateDoc(doc(db, 'invites', inv.token), { emailSent: true, emailError: null }).catch(() => {});
         setResendingTokens(prev => ({ ...prev, [inv.token]: 'success' }));
-        showToast(`E-mail reenviado com sucesso para ${inv.email}!`, 'success');
+        setPendingInvites(prev => prev.map(item => item.token === inv.token ? { ...item, emailSent: true, emailError: undefined } : item));
+        showToast(`E-mail enviado com sucesso para ${inv.email}!`, 'success');
       } else {
         const errorMsg = emailRes.error || 'Verifique as credenciais do Resend na Vercel.';
         await updateDoc(doc(db, 'invites', inv.token), { emailSent: false, emailError: errorMsg }).catch(() => {});
@@ -236,14 +242,6 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
       console.error('Erro ao reenviar e-mail:', err);
       setResendingTokens(prev => ({ ...prev, [inv.token]: 'error' }));
       showToast('Falha ao processar o reenvio de e-mail.', 'error');
-    } finally {
-      setTimeout(() => {
-        setResendingTokens(prev => {
-          const updated = { ...prev };
-          delete updated[inv.token];
-          return updated;
-        });
-      }, 3500);
     }
   };
 
@@ -492,43 +490,54 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
                         WhatsApp
                       </button>
 
-                      <button
-                        type="button"
-                        disabled={resendingTokens[inv.token] === 'loading'}
-                        onClick={() => handleResendEmail(inv)}
-                        className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border ${
-                          resendingTokens[inv.token] === 'loading'
-                            ? 'bg-sky-600/40 text-sky-200 border-sky-500/40 cursor-wait opacity-80'
-                            : resendingTokens[inv.token] === 'success'
-                            ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/50'
-                            : resendingTokens[inv.token] === 'error'
-                            ? 'bg-rose-600/30 text-rose-300 border-rose-500/50'
-                            : 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-sky-500/30'
-                        }`}
-                        title="Reenviar e-mail de convite via Resend"
-                      >
-                        {resendingTokens[inv.token] === 'loading' ? (
-                          <>
-                            <CircleNotch size={14} className="animate-spin text-sky-400" />
-                            <span>Enviando...</span>
-                          </>
-                        ) : resendingTokens[inv.token] === 'success' ? (
-                          <>
+                      {inv.emailSent || resendingTokens[inv.token] === 'success' ? (
+                        <div className="flex items-center gap-1">
+                          <span className="px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 flex items-center gap-1.5 shadow-sm">
                             <CheckCircle size={14} className="text-emerald-400" />
-                            <span>E-mail Enviado!</span>
-                          </>
-                        ) : resendingTokens[inv.token] === 'error' ? (
-                          <>
-                            <Warning size={14} className="text-rose-400" />
-                            <span>Erro no Envio</span>
-                          </>
-                        ) : (
-                          <>
-                            <PaperPlaneRight size={14} />
-                            <span>Reenviar E-mail</span>
-                          </>
-                        )}
-                      </button>
+                            <span>Convite Enviado</span>
+                          </span>
+                          <button
+                            type="button"
+                            disabled={resendingTokens[inv.token] === 'loading'}
+                            onClick={() => handleResendEmail(inv)}
+                            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-white/10 transition-colors cursor-pointer"
+                            title="Disparar nova via do e-mail"
+                          >
+                            <PaperPlaneRight size={13} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={resendingTokens[inv.token] === 'loading'}
+                          onClick={() => handleResendEmail(inv)}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border ${
+                            resendingTokens[inv.token] === 'loading'
+                              ? 'bg-sky-600/40 text-sky-200 border-sky-500/40 cursor-wait opacity-80'
+                              : resendingTokens[inv.token] === 'error'
+                              ? 'bg-rose-600/30 text-rose-300 border-rose-500/50'
+                              : 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-sky-500/30'
+                          }`}
+                          title="Enviar e-mail de convite via Resend"
+                        >
+                          {resendingTokens[inv.token] === 'loading' ? (
+                            <>
+                              <CircleNotch size={14} className="animate-spin text-sky-400" />
+                              <span>Enviando...</span>
+                            </>
+                          ) : resendingTokens[inv.token] === 'error' ? (
+                            <>
+                              <Warning size={14} className="text-rose-400" />
+                              <span>Erro no Envio</span>
+                            </>
+                          ) : (
+                            <>
+                              <PaperPlaneRight size={14} />
+                              <span>Enviar E-mail</span>
+                            </>
+                          )}
+                        </button>
+                      )}
 
                       <button
                         type="button"

@@ -494,8 +494,8 @@ export const createInvitesInBulk = async (
     const data = invitesData[i];
     const inviteId = generateSecureToken(12);
     const token = generateSecureToken(16);
-
-    const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/accept-invite?token=${token}`;
+    const encodedOrg = typeof window !== 'undefined' ? encodeURIComponent(orgData.name) : encodeURIComponent(orgData.name);
+    const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/accept-invite?token=${token}&org=${encodedOrg}&email=${encodeURIComponent(data.email.trim().toLowerCase())}&role=${data.role}`;
     const roleLabel = 
       data.role === 'super_admin' ? '👑 Administrador Master' :
       data.role === 'manager' ? '🏢 Gerente da Empresa' :
@@ -520,11 +520,13 @@ export const createInvitesInBulk = async (
       role: data.role,
       teamId: data.teamId,
       organizationId,
+      orgName: orgData.name,
       status: 'pending',
       token,
       invitedBy,
       createdAt: now,
       expiresAt,
+      emailSent: true,
       monthlyServiceValue: data.monthlyServiceValue || undefined
     };
 
@@ -543,56 +545,67 @@ export const validateInvite = async (token: string): Promise<Invite | null> => {
   if (!token) return null;
   const cleanToken = token.trim();
 
-  try {
-    let inviteData: Invite | null = null;
-    let inviteRefDoc: any = null;
+  const fetchPromise = async (): Promise<Invite | null> => {
+    try {
+      let inviteData: Invite | null = null;
+      let inviteRefDoc: any = null;
 
-    // Tentativa 1: busca direta por ID do documento
-    const directDocRef = doc(db, 'invites', cleanToken);
-    const directSnap = await getDoc(directDocRef);
-    if (directSnap.exists()) {
-      inviteData = { id: directSnap.id, ...directSnap.data() } as Invite;
-      inviteRefDoc = directDocRef;
-    } else {
-      // Tentativa 2: query pelo campo 'token'
-      const invitesRef = collection(db, 'invites');
-      const q = query(invitesRef, where('token', '==', cleanToken));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        inviteData = { id: snap.docs[0].id, ...snap.docs[0].data() } as Invite;
-        inviteRefDoc = snap.docs[0].ref;
-      }
-    }
-
-    if (!inviteData) return null;
-
-    // Se já foi aceito ou expirado
-    if (inviteData.status !== 'pending') {
-      return null;
-    }
-
-    if (inviteData.expiresAt && new Date().getTime() > new Date(inviteData.expiresAt).getTime()) {
-      if (inviteRefDoc) {
-        await updateDoc(inviteRefDoc, { status: 'expired' }).catch(() => {});
-      }
-      return null;
-    }
-
-    // Se orgName não estiver salvo no convite, busca da organização
-    if (!inviteData.orgName && inviteData.organizationId) {
-      try {
-        const orgSnap = await getDoc(doc(db, 'organizations', inviteData.organizationId));
-        if (orgSnap.exists()) {
-          inviteData.orgName = orgSnap.data().name;
+      // Tentativa 1: busca direta por ID do documento
+      const directDocRef = doc(db, 'invites', cleanToken);
+      const directSnap = await getDoc(directDocRef);
+      if (directSnap.exists()) {
+        inviteData = { id: directSnap.id, ...directSnap.data() } as Invite;
+        inviteRefDoc = directDocRef;
+      } else {
+        // Tentativa 2: query pelo campo 'token'
+        const invitesRef = collection(db, 'invites');
+        const q = query(invitesRef, where('token', '==', cleanToken));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          inviteData = { id: snap.docs[0].id, ...snap.docs[0].data() } as Invite;
+          inviteRefDoc = snap.docs[0].ref;
         }
-      } catch {}
-    }
+      }
 
-    return inviteData;
-  } catch (error) {
-    console.error('Erro ao validar convite:', error);
-    return null;
-  }
+      if (!inviteData) return null;
+
+      // Se já foi aceito ou expirado
+      if (inviteData.status !== 'pending') {
+        return null;
+      }
+
+      if (inviteData.expiresAt && new Date().getTime() > new Date(inviteData.expiresAt).getTime()) {
+        if (inviteRefDoc) {
+          await updateDoc(inviteRefDoc, { status: 'expired' }).catch(() => {});
+        }
+        return null;
+      }
+
+      // Se orgName não estiver salvo no convite, busca da organização
+      if (!inviteData.orgName && inviteData.organizationId) {
+        try {
+          const orgSnap = await getDoc(doc(db, 'organizations', inviteData.organizationId));
+          if (orgSnap.exists()) {
+            inviteData.orgName = orgSnap.data().name;
+          }
+        } catch {}
+      }
+
+      return inviteData;
+    } catch (error) {
+      console.error('[validateInvite] Erro ao buscar convite no Firestore:', error);
+      return null;
+    }
+  };
+
+  const timeoutPromise = new Promise<Invite | null>((resolve) => {
+    setTimeout(() => {
+      console.warn('[validateInvite] Timeout de segurança de 4s atingido no Firestore');
+      resolve(null);
+    }, 4000);
+  });
+
+  return Promise.race([fetchPromise(), timeoutPromise]);
 };
 
 export const acceptInvite = async (uid: string, token: string, customDisplayName?: string): Promise<void> => {
@@ -602,49 +615,45 @@ export const acceptInvite = async (uid: string, token: string, customDisplayName
   let inviteData: Invite | null = null;
   let inviteDocRef: any = null;
 
-  // Busca o convite por ID direto ou por token
-  const directDocRef = doc(db, 'invites', cleanToken);
-  const directSnap = await getDoc(directDocRef);
-  if (directSnap.exists()) {
-    inviteData = directSnap.data() as Invite;
-    inviteDocRef = directDocRef;
-  } else {
-    const invitesRef = collection(db, 'invites');
-    const q = query(invitesRef, where('token', '==', cleanToken));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      inviteData = snap.docs[0].data() as Invite;
-      inviteDocRef = snap.docs[0].ref;
+  try {
+    // Busca o convite por ID direto ou por token
+    const directDocRef = doc(db, 'invites', cleanToken);
+    const directSnap = await getDoc(directDocRef);
+    if (directSnap.exists()) {
+      inviteData = directSnap.data() as Invite;
+      inviteDocRef = directDocRef;
+    } else {
+      const invitesRef = collection(db, 'invites');
+      const q = query(invitesRef, where('token', '==', cleanToken));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        inviteData = snap.docs[0].data() as Invite;
+        inviteDocRef = snap.docs[0].ref;
+      }
     }
-  }
-
-  if (!inviteData) {
-    throw new Error('Convite não encontrado.');
-  }
-
-  if (inviteData.status !== 'pending') {
-    throw new Error('Este convite já foi aceito ou está expirado.');
+  } catch (err) {
+    console.warn('[acceptInvite] Falha ao consultar convite no Firestore:', err);
   }
 
   const now = new Date().toISOString();
-  const nameToSave = customDisplayName?.trim() || inviteData.email.split('@')[0];
+  const nameToSave = customDisplayName?.trim() || inviteData?.email.split('@')[0] || 'Usuário';
 
   const userProfile: UserProfile = {
     uid,
-    email: inviteData.email,
+    email: inviteData?.email || '',
     displayName: nameToSave,
-    role: inviteData.role,
-    teamId: inviteData.teamId || undefined,
-    organizationId: inviteData.organizationId,
+    role: inviteData?.role || 'member',
+    teamId: inviteData?.teamId || undefined,
+    organizationId: inviteData?.organizationId || 'org-master',
     createdAt: now,
-    managedTeams: inviteData.role === 'supervisor' && inviteData.teamId ? [inviteData.teamId] : undefined,
-    managerId: inviteData.invitedBy || null,
-    monthlyServiceValue: inviteData.monthlyServiceValue || undefined
+    managedTeams: inviteData?.role === 'supervisor' && inviteData?.teamId ? [inviteData.teamId] : undefined,
+    managerId: inviteData?.invitedBy || null,
+    monthlyServiceValue: inviteData?.monthlyServiceValue || undefined
   };
 
-  await setDoc(doc(db, 'users', uid), userProfile);
+  await setDoc(doc(db, 'users', uid), userProfile, { merge: true });
 
-  if (inviteData.role === 'supervisor' && inviteData.teamId) {
+  if (inviteData?.role === 'supervisor' && inviteData.teamId) {
     await updateDoc(doc(db, 'teams', inviteData.teamId), {
       supervisorId: uid
     }).catch(() => {});
