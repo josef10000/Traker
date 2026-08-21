@@ -16,7 +16,8 @@ import {
 import { 
   createUserWithEmailAndPassword, 
   updateProfile,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import { setDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
