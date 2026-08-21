@@ -1,10 +1,9 @@
 {
-  "projectId": "traker-app",
-  "appId": "1:126680340430:web:581f865c4e22623416bd9f",
-  "apiKey": "YOUR_FIREBASE_API_KEY",
-  "authDomain": "traker-app.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-764c464a-6ef4-407d-8079-cfe6869a3634",
-  "storageBucket": "traker-app.firebasestorage.app",
+  "projectId": "noverde-1d8a9",
+  "appId": "1:126680340430:web:42ea72a29b2d47a216bd9f",
+  "apiKey": "AIzaSyBAcHBfqGRtMeiLLHB_0r-lm2kELi0eoHQ",
+  "authDomain": "noverde-1d8a9.firebaseapp.com",
+  "storageBucket": "noverde-1d8a9.firebasestorage.app",
   "messagingSenderId": "126680340430",
   "measurementId": ""
 }

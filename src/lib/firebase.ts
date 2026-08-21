@@ -22,7 +22,7 @@ const firebaseConfig = {
 };
 
 // databaseId: Se for o identificador temporário do AI Studio ou vazio, não passa parâmetro de banco nomeado (conecta no banco default '(default)')
-const rawDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfigJson.firestoreDatabaseId;
+const rawDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
 const databaseId = rawDatabaseId && !rawDatabaseId.includes('ai-studio-') && rawDatabaseId !== '(default)'
   ? rawDatabaseId
   : undefined;
