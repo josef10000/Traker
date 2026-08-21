@@ -131,14 +131,14 @@ export function AppContent() {
           if (cached) userProfile = JSON.parse(cached);
         } catch {}
 
-        if (!userProfile) {
-          const isMaster = isMasterAdminEmail(u.email);
+        const isMaster = isMasterAdminEmail(u.email);
+
+        if (isMaster && !userProfile) {
           userProfile = {
             uid: u.uid,
-            email: u.email || '',
-            displayName: u.displayName || u.email?.split('@')[0] || (isMaster ? 'Super Admin Master' : 'Usuário'),
-            role: isMaster ? 'super_admin' : 'manager',
-            organizationId: isMaster ? undefined : 'org-master',
+            email: u.email || 'hubsymples@gmail.com',
+            displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
+            role: 'super_admin',
             createdAt: new Date().toISOString()
           };
         }
@@ -152,7 +152,7 @@ export function AppContent() {
             userProfile = freshProfile;
           }
 
-          if (isMasterAdminEmail(u.email)) {
+          if (isMaster) {
             if (!userProfile) {
               userProfile = {
                 uid: u.uid,
@@ -166,61 +166,71 @@ export function AppContent() {
               userProfile.role = 'super_admin';
               setDoc(doc(db, 'users', u.uid), { role: 'super_admin' }, { merge: true }).catch(() => {});
             }
-          } else {
-            if (!userProfile) {
-              userProfile = {
-                uid: u.uid,
-                email: u.email || 'operador@traker.com.br',
-                displayName: u.displayName || u.email?.split('@')[0] || 'Novo Usuário',
-                role: 'manager',
-                organizationId: 'org-master',
-                createdAt: new Date().toISOString()
-              };
-              setDoc(doc(db, 'users', u.uid), userProfile, { merge: true }).catch(() => {});
-            }
-            if (!userProfile.organizationId) {
-              userProfile.organizationId = 'org-master';
-            }
-          }
-
-          setProfile(userProfile);
-          try {
-            localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
-          } catch {}
-
-          if (userProfile && userProfile.organizationId && userProfile.role !== 'super_admin') {
-            getDoc(doc(db, 'organizations', userProfile.organizationId)).then(orgSnap => {
-              if (orgSnap.exists()) {
-                const orgData = orgSnap.data();
-                let active = orgData.status === 'active';
-                if (active && orgData.planExpiresAt) {
-                  const expiresDate = new Date(orgData.planExpiresAt + 'T23:59:59');
-                  if (new Date() > expiresDate) active = false;
-                }
-                setIsOrgActive(active);
-              } else {
-                setIsOrgActive(true);
-              }
-            }).catch(() => setIsOrgActive(true));
-          } else {
+            setProfile(userProfile);
             setIsOrgActive(true);
+            try {
+              localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
+            } catch {}
+          } else {
+            // Usuário comum ou de empresa
+            if (!userProfile || !userProfile.organizationId) {
+              // Não possui perfil nem empresa válida cadastrada -> desloga limpo
+              localStorage.removeItem('tracker_cached_profile');
+              await signOut(auth).catch(() => {});
+              setUser(null);
+              setProfile(null);
+              setIsOrgActive(true);
+              setLoading(false);
+              return;
+            }
+
+            // Valida se a organização realmente existe no Firestore
+            try {
+              const orgSnap = await getDoc(doc(db, 'organizations', userProfile.organizationId));
+              if (!orgSnap.exists()) {
+                // Organização foi excluída -> encerra a sessão e limpa cache
+                localStorage.removeItem('tracker_cached_profile');
+                await signOut(auth).catch(() => {});
+                setUser(null);
+                setProfile(null);
+                setIsOrgActive(true);
+                setLoading(false);
+                return;
+              }
+
+              const orgData = orgSnap.data();
+              let active = orgData.status === 'active';
+              if (active && orgData.planExpiresAt) {
+                const expiresDate = new Date(orgData.planExpiresAt + 'T23:59:59');
+                if (new Date() > expiresDate) active = false;
+              }
+              setIsOrgActive(active);
+            } catch (orgErr: any) {
+              // Se offline, mantém acesso com dados cacheados
+              setIsOrgActive(true);
+            }
+
+            setProfile(userProfile);
+            try {
+              localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
+            } catch {}
           }
         } catch (error: any) {
           const isOffline = error?.code === 'unavailable' || error?.message?.includes('offline');
           if (!isOffline) {
             console.warn("Aviso ao buscar perfil no Firestore:", error?.message || error);
           }
-          const isMaster = isMasterAdminEmail(u.email);
-          const fallbackProfile: UserProfile = {
-            uid: u.uid,
-            email: u.email || 'hubsymples@gmail.com',
-            displayName: u.displayName || u.email?.split('@')[0] || (isMaster ? 'Super Admin Master' : 'Novo Usuário'),
-            role: isMaster ? 'super_admin' : 'manager',
-            organizationId: isMaster ? undefined : 'org-master',
-            createdAt: new Date().toISOString()
-          };
-          setProfile(fallbackProfile);
-          setIsOrgActive(true);
+          if (isMaster) {
+            const fallbackProfile: UserProfile = {
+              uid: u.uid,
+              email: u.email || 'hubsymples@gmail.com',
+              displayName: u.displayName || u.email?.split('@')[0] || 'Super Admin Master',
+              role: 'super_admin',
+              createdAt: new Date().toISOString()
+            };
+            setProfile(fallbackProfile);
+            setIsOrgActive(true);
+          }
         }
       } else {
         setUser(null);

@@ -173,7 +173,7 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
         displayName: savedDisplayName
       }).catch(() => {});
 
-      // Salva perfil do usuário no Firestore diretamente (agora autenticado)
+      const now = new Date().toISOString();
       const userProfile: UserProfile = {
         uid,
         email: targetEmail,
@@ -181,10 +181,14 @@ export const LoginPage = ({ onAuthSuccess, showToast }: LoginPageProps) => {
         role: inviteData?.role || 'member',
         organizationId: inviteData?.organizationId || 'org-master',
         teamId: inviteData?.teamId || undefined,
-        createdAt: new Date().toISOString()
+        acceptedTermsAt: now,
+        createdAt: now
       };
 
-      await setDoc(doc(db, 'users', uid), userProfile);
+      await setDoc(doc(db, 'users', uid), userProfile, { merge: true });
+      try {
+        localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
+      } catch {}
 
       if (inviteToken) {
         if (inviteToken.startsWith('sb-tok')) {

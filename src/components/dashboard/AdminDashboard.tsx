@@ -507,22 +507,52 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const handleDeleteOrganization = async (orgId: string, orgName: string) => {
     setIsDeleting(orgId);
     try {
-      // Fase 1: Buscar todas as coleções em paralelo para máxima velocidade
-      setDeletingProgress('Localizando dados da empresa...');
-      const collectionsToDelete = ['agreements', 'teams', 'reconciliations', 'settings', 'audit_logs', 'users', 'invites'];
+      // Fase 1: Buscar todas as coleções e subcoleções vinculadas para expurgo total
+      setDeletingProgress('Localizando todos os dados, convites e usuários vinculados...');
+      const collectionsToDelete = [
+        'agreements',
+        'teams',
+        'reconciliations',
+        'settings',
+        'audit_logs',
+        'users',
+        'invites',
+        'monthly_stats',
+        'notifications',
+        'custom_origins',
+        'transfers',
+        'attendances',
+        'knowledge_base'
+      ];
+
       const snapshots = await Promise.all(
         collectionsToDelete.map(colName => {
           const ref = collection(db, colName);
           const q = query(ref, where('organizationId', '==', orgId));
-          return getDocs(q).then(snap => ({ colName, snap }));
+          return getDocs(q)
+            .then(snap => ({ colName, snap }))
+            .catch(() => ({ colName, snap: { empty: true, docs: [], size: 0 } as any }));
         })
       );
 
-      // Fase 2: Deletar os documentos encontrados em batches
-      const totalDocs = snapshots.reduce((sum, s) => sum + s.snap.size, 0);
+      // Busca subcoleções específicas dentro de organizations/{orgId}
+      const subcollections = ['survey_configs', 'survey_responses', 'knowledge_base', 'import_history'];
+      const subSnapshots = await Promise.all(
+        subcollections.map(subCol => {
+          const ref = collection(db, 'organizations', orgId, subCol);
+          return getDocs(ref)
+            .then(snap => ({ colName: `organizations/${orgId}/${subCol}`, snap }))
+            .catch(() => ({ colName: subCol, snap: { empty: true, docs: [], size: 0 } as any }));
+        })
+      );
+
+      const allSnapshots = [...snapshots, ...subSnapshots];
+
+      // Fase 2: Deletar todos os documentos em batches
+      const totalDocs = allSnapshots.reduce((sum, s) => sum + s.snap.size, 0);
       let deletedDocs = 0;
 
-      for (const { colName, snap } of snapshots) {
+      for (const { snap } of allSnapshots) {
         if (snap.empty) continue;
         
         const docs = snap.docs;
@@ -530,21 +560,32 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         for (let i = 0; i < docs.length; i += chunkSize) {
           const chunk = docs.slice(i, i + chunkSize);
           const batch = writeBatch(db);
-          chunk.forEach(d => batch.delete(d.ref));
+          chunk.forEach((d: any) => batch.delete(d.ref));
           await batch.commit();
           deletedDocs += chunk.length;
           setDeletingProgress(`Excluindo dados (${deletedDocs}/${totalDocs})...`);
         }
       }
 
-      // Fase 3: Excluir o documento da organização
+      // Fase 3: Excluir o documento raiz da organização
       setDeletingProgress('Finalizando exclusão da empresa...');
-      await deleteDoc(doc(db, 'organizations', orgId));
+      await deleteDoc(doc(db, 'organizations', orgId)).catch(() => {});
 
-      showToast(`Empresa "${orgName}" excluída permanentemente com sucesso.`, 'success');
+      // Limpeza de caches locais e sessões residuais
+      try {
+        const cached = localStorage.getItem('tracker_cached_profile');
+        if (cached) {
+          const p = JSON.parse(cached);
+          if (p.organizationId === orgId) {
+            localStorage.removeItem('tracker_cached_profile');
+          }
+        }
+      } catch {}
+
+      showToast(`Empresa "${orgName}" e todos os seus convites, equipes e dados foram excluídos permanentemente.`, 'success');
     } catch (error) {
       console.error(error);
-      showToast('Erro ao realizar a exclusão do tenant.', 'error');
+      showToast('Erro ao realizar a exclusão total da empresa.', 'error');
     } finally {
       setIsDeleting(null);
       setDeletingProgress('');

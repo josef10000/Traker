@@ -101,6 +101,12 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     const activeToken = urlToken.trim();
     setToken(activeToken);
 
+    // Desloga qualquer sessão anterior ativa no navegador para garantir isolamento limpo do novo convite
+    if (auth.currentUser) {
+      signOut(auth).catch(() => {});
+      localStorage.removeItem('tracker_cached_profile');
+    }
+
     // Modo Sandbox / Demo
     if (activeToken === 'demo' || activeToken.startsWith('inv-demo-')) {
       setEmail('colaborador@empresa.com');
@@ -147,6 +153,8 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     runValidation();
   }, []);
 
+  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(true);
+
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -173,6 +181,11 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       return;
     }
 
+    if (!acceptedTerms) {
+      setError('Você deve concordar com os Termos de Uso e Política de Privacidade (LGPD).');
+      return;
+    }
+
     setLoading(true);
     try {
       let activeUser: any = null;
@@ -192,24 +205,29 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       }
 
       const cleanDisplayName = displayName.trim();
+      const now = new Date().toISOString();
 
       // 2. Atualiza nome no Firebase Auth
       await updateProfile(activeUser, {
         displayName: cleanDisplayName
       }).catch(() => {});
 
-      // 3. Gravação garantida do Perfil no Firestore (sem campos undefined que o Firestore rejeita)
+      // 3. Gravação garantida do Perfil no Firestore com Termos já aceitos
       const userProfile: Record<string, any> = {
         uid: activeUser.uid,
         email: activeEmail,
         displayName: cleanDisplayName,
         role: role,
         organizationId: orgId || 'org-master',
-        createdAt: new Date().toISOString()
+        acceptedTermsAt: now,
+        createdAt: now
       };
       if (teamId) userProfile.teamId = teamId;
 
       await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
+      try {
+        localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
+      } catch {}
 
       // 4. Marcação estrita do convite como aceito no Firestore
       if (token && token !== 'demo' && !token.startsWith('inv-demo-')) {
@@ -456,10 +474,22 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
                   </div>
                 </div>
 
+                <label className="flex items-start gap-3 p-3 bg-white/[0.03] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/[0.06] transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-white/20 bg-slate-900 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                  />
+                  <span className="text-[11px] text-slate-300 leading-tight select-none">
+                    Declaro que li e concordo com os <strong className="text-purple-300">Termos de Uso</strong> e <strong className="text-purple-300">Política de Privacidade (LGPD)</strong> para acesso à plataforma.
+                  </span>
+                </label>
+
                 <button 
-                  disabled={loading} 
+                  disabled={loading || !acceptedTerms} 
                   type="submit" 
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 py-4 rounded-2xl font-black text-white transition-all shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer mt-2"
+                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 py-4 rounded-2xl font-black text-white transition-all shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <CircleNotch className="animate-spin" size={20} />

@@ -1218,25 +1218,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // 4. HANDLERS E FUNÇÕES OPERACIONAIS (CRUD e Regras de Negócio)
   const handleAcceptTerms = async () => {
+    const now = new Date().toISOString();
+
+    // Atualização otimista imediata no perfil e cache local para fechar o modal sem travar a interface
+    profile.acceptedTermsAt = now;
     try {
-      const now = new Date().toISOString();
+      localStorage.setItem('tracker_cached_profile', JSON.stringify({ ...profile, acceptedTermsAt: now }));
+    } catch {}
+    setIsTermsModalOpen(false);
+
+    try {
       if (profile.organizationId === 'sandbox-test') {
         sandboxService.setProfile({
           ...profile,
           acceptedTermsAt: now
         });
-        setIsTermsModalOpen(false);
-        showToast('Termos de Uso do Sandbox aceitos com sucesso!', 'success');
+        showToast('Termos de Uso aceitos com sucesso!', 'success');
         return;
       }
 
       await updateDoc(doc(db, 'users', profile.uid), { acceptedTermsAt: now });
-      await logAudit('ACCEPT_TERMS', {}, profile.displayName || '', profile.organizationId);
-      setIsTermsModalOpen(false);
+      await logAudit('ACCEPT_TERMS', {}, profile.displayName || '', profile.organizationId).catch(() => {});
       showToast('Termos de Uso aceitos com sucesso!', 'success');
-    } catch (error) {
-      console.error(error);
-      showToast('Erro ao salvar aceite dos termos.', 'error');
+    } catch (error: any) {
+      const isOffline = error?.code === 'unavailable' || error?.message?.includes('offline');
+      if (!isOffline) {
+        console.warn('Aviso ao sincronizar aceite dos termos no Firestore:', error?.message || error);
+      }
+      showToast('Termos de Uso aceitos com sucesso!', 'success');
     }
   };
 
