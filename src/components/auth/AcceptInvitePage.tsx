@@ -83,9 +83,11 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     
     const urlToken = params.get('token') || params.get('invite');
     const urlOrg = params.get('org') || params.get('company');
+    const urlOrgId = params.get('orgId') || params.get('org_id') || params.get('organizationId');
     const urlEmail = params.get('email');
     const urlRole = params.get('role') as UserRole;
 
+    if (urlOrgId) setOrgId(urlOrgId.trim());
     if (urlOrg) setOrgName(decodeURIComponent(urlOrg).trim());
     if (urlEmail) {
       setEmail(decodeURIComponent(urlEmail).trim());
@@ -140,7 +142,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
           if (inviteDoc.teamId) setTeamId(inviteDoc.teamId);
           showToast(`Convite corporativo validado com sucesso!`, 'success');
         } else {
-          // Fallback resiliente: libera o formulário para cadastro mesmo em links legados ou latência de rede
+          if (urlOrgId) setOrgId(urlOrgId.trim());
           if (urlOrg && !orgName) setOrgName(decodeURIComponent(urlOrg).trim());
           if (urlRole) setRole(urlRole);
         }
@@ -187,6 +189,11 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       return;
     }
 
+    if (!orgId && token !== 'demo' && !token.startsWith('inv-demo-')) {
+      setError('INVITE_INVALID: Não foi possível identificar a empresa vinculada a este convite.');
+      return;
+    }
+
     setLoading(true);
     try {
       let activeUser: any = null;
@@ -213,13 +220,13 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         displayName: cleanDisplayName
       }).catch(() => {});
 
-      // 3. Gravação garantida do Perfil no Firestore com Termos já aceitos
+      // 3. Gravação garantida do Perfil no Firestore com Termos já aceitos e organizationId real
       const userProfile: Record<string, any> = {
         uid: activeUser.uid,
         email: activeEmail,
         displayName: cleanDisplayName,
         role: role,
-        organizationId: orgId || 'org-master',
+        organizationId: orgId,
         acceptedTermsAt: now,
         createdAt: now
       };

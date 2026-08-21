@@ -8,6 +8,15 @@ interface EmailRequestBody {
   fromName?: string;
 }
 
+function escapeHtml(str: string): string {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS Universal para evitar bloqueios de origem (localhost, Vercel, Firebase)
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -38,6 +47,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'URL do convite é obrigatória.' });
     }
 
+    const safeOrgName = escapeHtml(orgName);
+    const safeRoleName = escapeHtml(roleName);
+    const safeRecipientEmail = escapeHtml(recipientEmail);
+    const safeInviteUrl = escapeHtml(inviteUrl);
+
     // Leitura estrita da chave do Resend no ambiente seguro do servidor Vercel
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
@@ -59,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Convite de Acesso Corporativo — ${orgName}</title>
+  <title>Convite de Acesso Corporativo — ${safeOrgName}</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #020617; color: #f8fafc; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased;">
   <div style="max-width: 580px; margin: 0 auto; background: linear-gradient(180deg, #0f172a 0%, #020617 100%); border: 1px solid #1e293b; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
@@ -70,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #38bdf8;">Acesso Corporativo Liberado</span>
       </div>
       <h1 style="font-size: 26px; font-weight: 900; color: #ffffff; margin: 0 0 8px 0; letter-spacing: -0.5px;">Convite de Acesso</h1>
-      <p style="font-size: 14px; color: #94a3b8; margin: 0; font-weight: 500;">Você foi convidado para ingressar na equipe da <strong>${orgName}</strong></p>
+      <p style="font-size: 14px; color: #94a3b8; margin: 0; font-weight: 500;">Você foi convidado para ingressar na equipe da <strong>${safeOrgName}</strong></p>
     </div>
 
     <!-- CORPO -->
@@ -79,15 +93,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 8px 0; font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 700; width: 40%;">Empresa:</td>
-            <td style="padding: 8px 0; font-size: 14px; color: #ffffff; font-weight: 700; text-align: right;">${orgName}</td>
+            <td style="padding: 8px 0; font-size: 14px; color: #ffffff; font-weight: 700; text-align: right;">${safeOrgName}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 700; border-top: 1px solid #1e293b;">Cargo / Função:</td>
-            <td style="padding: 8px 0; font-size: 14px; color: #a855f7; font-weight: 700; text-align: right; border-top: 1px solid #1e293b;">${roleName}</td>
+            <td style="padding: 8px 0; font-size: 14px; color: #a855f7; font-weight: 700; text-align: right; border-top: 1px solid #1e293b;">${safeRoleName}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 700; border-top: 1px solid #1e293b;">E-mail Cadastrado:</td>
-            <td style="padding: 8px 0; font-size: 13px; color: #38bdf8; font-family: monospace; font-weight: 700; text-align: right; border-top: 1px solid #1e293b;">${recipientEmail}</td>
+            <td style="padding: 8px 0; font-size: 13px; color: #38bdf8; font-family: monospace; font-weight: 700; text-align: right; border-top: 1px solid #1e293b;">${safeRecipientEmail}</td>
           </tr>
         </table>
       </div>
@@ -98,14 +112,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       <!-- BOTÃO CTA -->
       <div style="text-align: center; margin-bottom: 32px;">
-        <a href="${inviteUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%); color: #ffffff; font-size: 14px; font-weight: 800; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; padding: 16px 36px; border-radius: 14px; box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.4);">
+        <a href="${safeInviteUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%); color: #ffffff; font-size: 14px; font-weight: 800; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; padding: 16px 36px; border-radius: 14px; box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.4);">
           Ativar Minha Conta & Acessar ➔
         </a>
       </div>
 
       <div style="background: rgba(2, 6, 23, 0.6); border: 1px dashed #334155; border-radius: 12px; padding: 14px; text-align: center;">
         <p style="font-size: 11px; color: #64748b; margin: 0 0 6px 0;">Ou copie e cole o link direto no seu navegador:</p>
-        <p style="font-size: 11px; color: #38bdf8; font-family: monospace; word-break: break-all; margin: 0;">${inviteUrl}</p>
+        <p style="font-size: 11px; color: #38bdf8; font-family: monospace; word-break: break-all; margin: 0;">${safeInviteUrl}</p>
       </div>
     </div>
 

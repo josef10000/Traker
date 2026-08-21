@@ -86,27 +86,31 @@ async function fetchCityName(lat: number, lon: number): Promise<string> {
  */
 function getBrowserPosition(): Promise<{ lat: number; lon: number } | null> {
   return new Promise((resolve) => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude
-        });
-      },
-      () => {
+    try {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) {
         resolve(null);
-      },
-      {
-        timeout: 5000,
-        maximumAge: 600000,
-        enableHighAccuracy: false
+        return;
       }
-    );
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+        },
+        () => {
+          resolve(null);
+        },
+        {
+          timeout: 4000,
+          maximumAge: 600000,
+          enableHighAccuracy: false
+        }
+      );
+    } catch {
+      resolve(null);
+    }
   });
 }
 

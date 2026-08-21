@@ -85,14 +85,14 @@ export const InvitesSection: React.FC<InvitesSectionProps> = ({
       }
 
       await createInvitesInBulk(
-        profile.uid,
-        profile.organizationId,
         inviteRows.map(row => ({
           email: row.email.trim().toLowerCase(),
           role: row.role,
           teamId: row.teamId || null,
           monthlyServiceValue: ['member', 'backoffice', 'supervisor', 'monitor'].includes(row.role) ? row.monthlyServiceValue : undefined
-        }))
+        })),
+        profile.organizationId,
+        profile.uid
       );
 
       showToast('Convites gerados e enviados por e-mail com sucesso!', 'success');

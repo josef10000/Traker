@@ -16,7 +16,8 @@ Plataforma corporativa de **alta performance (Multi-Tenant)** voltada para a ges
 
 | Pilar | Descrição |
 | :--- | :--- |
-| **🏢 Multi-Tenant Isolado** | Isolamento físico e lógico absoluto de dados por organização no Firebase Firestore. |
+| **🏢 Multi-Tenant Isolado & Exclusão Serverless** | Isolamento físico e lógico absoluto por organização. Expurgo em lote atômico via **Firebase Admin SDK (`/api/delete-organization`)** eliminando documentos no Firestore e contas correspondentes no **Firebase Authentication**. |
+| **✉️ Onboarding Corporativo & Integridade de Identidade** | Sistema padronizado de convites (`invites/{token}`) com validação estrita de e-mail, vinculação mandatória de `orgId`, aceite nativo de Termos de Uso/LGPD no cadastro e eliminação de auto-provisionamentos em organizações padrão. |
 | **⚡ FinOps & Telemetria do Firestore** | Cockpit em tempo real de auditoria de leituras (*reads*), gravações (*writes*), latência média e taxa de *Cache Hit* por tela, prevenindo custos desnecessários em escala. |
 | **📦 Materialização de Estatísticas (`monthly_stats`)** | Agregação e pré-cálculo de métricas consolidadas por organização e carteira, reduzindo de 100.000 para **1 leitura única** no carregamento do Dashboard. |
 | **🧊 Freshness Gate com TTL em Camadas** | Cache de alta velocidade em memória e IndexedDB com política *Stale-While-Revalidate* e TTL de 90 a 180s, eliminando requisições repetitivas ao banco. |

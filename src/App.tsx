@@ -357,6 +357,30 @@ export function AppContent() {
     );
   }
 
+  const isInviteRoute = window.location.pathname.startsWith('/accept-invite') || 
+                        window.location.pathname.startsWith('/register') || 
+                        window.location.search.includes('token=') || 
+                        window.location.search.includes('invite=');
+
+  if (isInviteRoute) {
+    return (
+      <>
+        <AnimatePresence>
+          {toast && (
+            <Toast 
+              message={toast.message} 
+              type={toast.type} 
+              onClose={() => setToast(null)} 
+            />
+          )}
+        </AnimatePresence>
+        <Routes>
+          <Route path="*" element={<AcceptInvitePage onAuthSuccess={() => { refreshProfile(); navigate('/'); }} showToast={showToast} />} />
+        </Routes>
+      </>
+    );
+  }
+
   const handleStartDemo = (role: UserRole) => {
     const params = new URLSearchParams(window.location.search);
     const roleParam = params.get('role') as UserRole | null;

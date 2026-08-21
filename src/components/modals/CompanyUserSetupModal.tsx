@@ -135,9 +135,10 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
   // Helper para construir a URL limpa e segura do convite com metadados para renderização instantânea
   const buildInviteUrl = (token: string, email?: string, role?: string) => {
     const encodedOrg = encodeURIComponent(orgName);
+    const orgIdParam = `&orgId=${encodeURIComponent(orgId)}`;
     const emailParam = email ? `&email=${encodeURIComponent(email.trim().toLowerCase())}` : '';
     const roleParam = role ? `&role=${encodeURIComponent(role)}` : '';
-    return `${window.location.origin}/accept-invite?token=${token}&org=${encodedOrg}${emailParam}${roleParam}`;
+    return `${window.location.origin}/accept-invite?token=${token}${orgIdParam}&org=${encodedOrg}${emailParam}${roleParam}`;
   };
 
   // Criar e Gerar Links de Convite

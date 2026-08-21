@@ -507,71 +507,92 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const handleDeleteOrganization = async (orgId: string, orgName: string) => {
     setIsDeleting(orgId);
     try {
-      // Fase 1: Buscar todas as coleções e subcoleções vinculadas para expurgo total
-      setDeletingProgress('Localizando todos os dados, convites e usuários vinculados...');
-      const collectionsToDelete = [
-        'agreements',
-        'teams',
-        'reconciliations',
-        'settings',
-        'audit_logs',
-        'users',
-        'invites',
-        'monthly_stats',
-        'notifications',
-        'custom_origins',
-        'transfers',
-        'attendances',
-        'knowledge_base'
-      ];
+      setDeletingProgress('Solicitando exclusão total e expurgo no Firebase Authentication...');
 
-      const snapshots = await Promise.all(
-        collectionsToDelete.map(colName => {
-          const ref = collection(db, colName);
-          const q = query(ref, where('organizationId', '==', orgId));
-          return getDocs(q)
-            .then(snap => ({ colName, snap }))
-            .catch(() => ({ colName, snap: { empty: true, docs: [], size: 0 } as any }));
-        })
-      );
+      // 1. Tentar via API Serverless Segura (Admin SDK) que exclui Firestore + Firebase Auth
+      let serverlessSuccess = false;
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        if (idToken) {
+          const res = await fetch('/api/delete-organization', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ orgId })
+          });
 
-      // Busca subcoleções específicas dentro de organizations/{orgId}
-      const subcollections = ['survey_configs', 'survey_responses', 'knowledge_base', 'import_history'];
-      const subSnapshots = await Promise.all(
-        subcollections.map(subCol => {
-          const ref = collection(db, 'organizations', orgId, subCol);
-          return getDocs(ref)
-            .then(snap => ({ colName: `organizations/${orgId}/${subCol}`, snap }))
-            .catch(() => ({ colName: subCol, snap: { empty: true, docs: [], size: 0 } as any }));
-        })
-      );
-
-      const allSnapshots = [...snapshots, ...subSnapshots];
-
-      // Fase 2: Deletar todos os documentos em batches
-      const totalDocs = allSnapshots.reduce((sum, s) => sum + s.snap.size, 0);
-      let deletedDocs = 0;
-
-      for (const { snap } of allSnapshots) {
-        if (snap.empty) continue;
-        
-        const docs = snap.docs;
-        const chunkSize = 400;
-        for (let i = 0; i < docs.length; i += chunkSize) {
-          const chunk = docs.slice(i, i + chunkSize);
-          const batch = writeBatch(db);
-          chunk.forEach((d: any) => batch.delete(d.ref));
-          await batch.commit();
-          deletedDocs += chunk.length;
-          setDeletingProgress(`Excluindo dados (${deletedDocs}/${totalDocs})...`);
+          if (res.ok) {
+            const data = await res.json();
+            serverlessSuccess = data.success;
+          }
         }
+      } catch (apiErr) {
+        console.warn('[handleDeleteOrganization] API Serverless indisponível, executando limpeza direta:', apiErr);
       }
 
-      // Fase 3: Excluir o documento raiz da organização
-      setDeletingProgress('Finalizando exclusão da empresa...');
-      await deleteDoc(doc(db, 'organizations', orgId)).catch(() => {});
+      // 2. Se a API Serverless não foi executada (ex: ambiente dev offline), executa varredura direta no Firestore
+      if (!serverlessSuccess) {
+        setDeletingProgress('Localizando todos os dados, convites e usuários vinculados...');
+        const collectionsToDelete = [
+          'agreements',
+          'teams',
+          'reconciliations',
+          'settings',
+          'audit_logs',
+          'users',
+          'invites',
+          'monthly_stats',
+          'notifications',
+          'custom_origins',
+          'transfers',
+          'attendances',
+          'knowledge_base'
+        ];
 
-      // Limpeza de caches locais e sessões residuais
+        const snapshots = await Promise.all(
+          collectionsToDelete.map(colName => {
+            const ref = collection(db, colName);
+            const q = query(ref, where('organizationId', '==', orgId));
+            return getDocs(q)
+              .then(snap => ({ colName, snap }))
+              .catch(() => ({ colName, snap: { empty: true, docs: [], size: 0 } as any }));
+          })
+        );
+
+        const subcollections = ['survey_configs', 'survey_responses', 'knowledge_base', 'import_history'];
+        const subSnapshots = await Promise.all(
+          subcollections.map(subCol => {
+            const ref = collection(db, 'organizations', orgId, subCol);
+            return getDocs(ref)
+              .then(snap => ({ colName: `organizations/${orgId}/${subCol}`, snap }))
+              .catch(() => ({ colName: subCol, snap: { empty: true, docs: [], size: 0 } as any }));
+          })
+        );
+
+        const allSnapshots = [...snapshots, ...subSnapshots];
+        const totalDocs = allSnapshots.reduce((sum, s) => sum + s.snap.size, 0);
+        let deletedDocs = 0;
+
+        for (const { snap } of allSnapshots) {
+          if (snap.empty) continue;
+          const docs = snap.docs;
+          const chunkSize = 400;
+          for (let i = 0; i < docs.length; i += chunkSize) {
+            const chunk = docs.slice(i, i + chunkSize);
+            const batch = writeBatch(db);
+            chunk.forEach((d: any) => batch.delete(d.ref));
+            await batch.commit();
+            deletedDocs += chunk.length;
+            setDeletingProgress(`Excluindo dados (${deletedDocs}/${totalDocs})...`);
+          }
+        }
+
+        await deleteDoc(doc(db, 'organizations', orgId)).catch(() => {});
+      }
+
+      // Limpeza de caches locais
       try {
         const cached = localStorage.getItem('tracker_cached_profile');
         if (cached) {
@@ -582,10 +603,10 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         }
       } catch {}
 
-      showToast(`Empresa "${orgName}" e todos os seus convites, equipes e dados foram excluídos permanentemente.`, 'success');
+      showToast(`Empresa "${orgName}" e todos os seus usuários/convites foram excluídos permanentemente.`, 'success');
     } catch (error) {
       console.error(error);
-      showToast('Erro ao realizar a exclusão total da empresa.', 'error');
+      showToast('Erro ao realizar a exclusão da empresa.', 'error');
     } finally {
       setIsDeleting(null);
       setDeletingProgress('');
