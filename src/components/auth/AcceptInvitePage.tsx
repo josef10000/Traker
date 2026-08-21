@@ -60,7 +60,6 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
-  // Dados do Convite
   const [token, setToken] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [inputEmail, setInputEmail] = useState<string>('');
@@ -70,7 +69,6 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
   const [teamId, setTeamId] = useState<string | undefined>();
   const [isSandbox, setIsSandbox] = useState<boolean>(false);
 
-  // Campos do Formulário
   const [displayName, setDisplayName] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -104,13 +102,11 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     const activeToken = urlToken.trim();
     setToken(activeToken);
 
-    // Desloga qualquer sessão anterior ativa no navegador para garantir isolamento limpo do novo convite
     if (auth.currentUser) {
       signOut(auth).catch(() => {});
       localStorage.removeItem('tracker_cached_profile');
     }
 
-    // Modo Demo estrito (apenas para teste de interface isolado sem dados)
     if (activeToken === 'demo') {
       setIsSandbox(true);
       const activeEmail = urlEmail ? decodeURIComponent(urlEmail).trim() : 'colaborador@empresa.com';
@@ -123,10 +119,10 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       return;
     }
 
-    // Consulta e validação estrita no Firestore (Convites Corporativos Reais)
     const runValidation = async () => {
       try {
-        const inviteDoc = await validateInvite(activeToken);
+        const urlOrgIdForValidate = params.get('orgId') || params.get('org_id') || params.get('organizationId');
+        const inviteDoc = await validateInvite(activeToken, urlOrgIdForValidate?.trim() || undefined);
 
         if (inviteDoc) {
           if (inviteDoc.email) {
@@ -194,7 +190,6 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     try {
       let activeUser: any = null;
 
-      // 1. Criação estrita no Firebase Authentication (sem login fallback para evitar reaproveitamento de identidade antiga)
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, activeEmail, password);
         activeUser = userCredential.user;
@@ -208,34 +203,52 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       const cleanDisplayName = displayName.trim();
       const now = new Date().toISOString();
 
-      // 2. Atualiza nome no Firebase Auth
       await updateProfile(activeUser, {
         displayName: cleanDisplayName
       }).catch(() => {});
 
-      // 3. Gravação garantida do Perfil no Firestore com Termos já aceitos e organizationId real
-      const userProfile: Record<string, any> = {
-        uid: activeUser.uid,
-        email: activeEmail,
-        displayName: cleanDisplayName,
-        role: role,
-        organizationId: orgId || 'sandbox-test',
-        acceptedTermsAt: now,
-        createdAt: now
-      };
-      if (teamId) userProfile.teamId = teamId;
-
-      await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
-      try {
-        localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
-      } catch {}
-
-      // 4. Marcação do convite como aceito
       if (token && !isSandbox) {
-        await acceptInvite(activeUser.uid, token, cleanDisplayName).catch(() => {});
+        await acceptInvite(activeUser.uid, token, cleanDisplayName, orgId || undefined);
       } else if (token && isSandbox) {
         sandboxService.acceptInvite(activeUser.uid, token);
+        const userProfile: Record<string, any> = {
+          uid: activeUser.uid,
+          email: activeEmail,
+          displayName: cleanDisplayName,
+          role: role,
+          organizationId: orgId || 'sandbox-test',
+          acceptedTermsAt: now,
+          createdAt: now
+        };
+        if (teamId) userProfile.teamId = teamId;
+        await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
+      } else {
+        const userProfile: Record<string, any> = {
+          uid: activeUser.uid,
+          email: activeEmail,
+          displayName: cleanDisplayName,
+          role: role,
+          organizationId: orgId || 'sandbox-test',
+          acceptedTermsAt: now,
+          createdAt: now
+        };
+        if (teamId) userProfile.teamId = teamId;
+        await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
       }
+
+      try {
+        const cached = {
+          uid: activeUser.uid,
+          email: activeEmail,
+          displayName: cleanDisplayName,
+          role,
+          organizationId: orgId || 'sandbox-test',
+          acceptedTermsAt: now,
+          createdAt: now,
+          ...(teamId ? { teamId } : {})
+        };
+        localStorage.setItem('tracker_cached_profile', JSON.stringify(cached));
+      } catch {}
 
       showToast('Conta corporativa ativada com sucesso! Entrando na plataforma...', 'success');
       onAuthSuccess();
@@ -243,6 +256,12 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       console.error('Erro na ativação da conta corporativa:', err);
       if (err.code === 'auth/weak-password') {
         setError('A senha informada é muito fraca. Utilize ao menos 8 caracteres misturando letras e números.');
+      } else if (typeof err.message === 'string' && err.message.startsWith('INVITE_EMAIL_MISMATCH:')) {
+        setError(err.message.replace('INVITE_EMAIL_MISMATCH: ', ''));
+      } else if (typeof err.message === 'string' && err.message.startsWith('INVITE_INVALID:')) {
+        setError(err.message.replace('INVITE_INVALID: ', ''));
+      } else if (err.code === 'auth/email-already-in-use') {
+        setError('Este e-mail já possui um cadastro ativo no sistema. Para aceitar um novo convite empresarial, a conta anterior deve ser excluída pelo administrador.');
       } else {
         setError(err.message || 'Erro ao ativar sua conta. Verifique os dados e tente novamente.');
       }
@@ -255,11 +274,9 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-slate-950 text-slate-100 relative overflow-hidden selection:bg-purple-500 selection:text-white">
-      {/* Luzes de Fundo */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-[140px] pointer-events-none" />
 
-      {/* COLUNA ESQUERDA — HERO & BOAS-VINDAS */}
       <div className="lg:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative z-10 space-y-12 border-b lg:border-b-0 lg:border-r border-white/5 bg-slate-950/60 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Traker Logo" className="h-10 w-auto object-contain" />
@@ -311,7 +328,6 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         </div>
       </div>
 
-      {/* COLUNA DIREITA — FORMULÁRIO */}
       <div className="lg:w-1/2 p-6 sm:p-12 flex items-center justify-center relative z-10">
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
@@ -352,7 +368,6 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
                 </p>
               </div>
 
-              {/* CARD DE DETALHES DO CONVITE */}
               <div className="p-4 rounded-2xl bg-slate-950/90 border border-purple-500/30 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -390,7 +405,6 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
                 </div>
               )}
 
-              {/* FORMULÁRIO DE ATIVAÇÃO */}
               <form onSubmit={handleCreateAccount} autoComplete="off" className="space-y-4 text-xs">
                 {!email && (
                   <div className="space-y-1.5">

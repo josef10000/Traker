@@ -1,12 +1,12 @@
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  query, 
-  where, 
-  getDocs, 
-  updateDoc, 
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  query,
+  where,
+  getDocs,
+  updateDoc,
   arrayUnion,
   arrayRemove,
   deleteDoc,
@@ -26,7 +26,6 @@ export const generateSecureToken = (length: number): string => {
   } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     crypto.getRandomValues(array);
   } else {
-    // Fallback pseudo-aleatório seguro se crypto não estiver disponível
     for (let i = 0; i < length; i++) {
       array[i] = Math.floor(secureRandom() * 256);
     }
@@ -48,8 +47,8 @@ export const createOrganization = async (uid: string, userEmail: string, orgName
     name: orgName,
     status: 'active',
     plan: 'enterprise',
-    maxUsers: -1, // -1 = Usuários Ilimitados (Modelo Enterprise)
-    maxTeams: -1, // -1 = Equipes Ilimitadas
+    maxUsers: -1,
+    maxTeams: -1,
     createdAt: now
   };
 
@@ -69,7 +68,6 @@ export const createOrganization = async (uid: string, userEmail: string, orgName
 };
 
 export const createTeam = async (uid: string, userEmail: string, teamName: string, organizationId: string): Promise<string> => {
-  // Obter organização e validar limites e status
   const orgRef = doc(db, 'organizations', organizationId);
   const orgSnap = await getDoc(orgRef);
   if (!orgSnap.exists()) {
@@ -80,7 +78,6 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
     throw new Error('Esta empresa está suspensa. Não é possível criar novas equipes.');
   }
 
-  // Contar equipes ativas na organização para validar o limite (Custo = 1 leitura)
   const teamsRef = collection(db, 'teams');
   const teamsCountQuery = query(teamsRef, where('organizationId', '==', organizationId));
   const teamsCountSnap = await getCountFromServer(teamsCountQuery);
@@ -90,7 +87,7 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
 
   const teamId = generateSecureToken(9);
   const inviteToken = generateSecureToken(12);
-  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // Expira em 48h
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
   
   const userRef = doc(db, 'users', uid);
   const userSnap = await getDoc(userRef);
@@ -124,7 +121,6 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
     if (userData.role === 'manager') {
       // O Gerente não vira supervisor do time
     } else {
-      // Criador é supervisor
       await updateDoc(doc(db, 'teams', teamId), {
         supervisorId: uid
       });
@@ -136,7 +132,6 @@ export const createTeam = async (uid: string, userEmail: string, teamName: strin
       });
     }
   } else {
-    // Se não existir perfil (ex: onboarding), cria como supervisor
     await updateDoc(doc(db, 'teams', teamId), {
       supervisorId: uid
     });
@@ -169,12 +164,10 @@ export const joinTeam = async (uid: string, userEmail: string, inviteToken: stri
   const teamDoc = querySnapshot.docs[0];
   const teamData = teamDoc.data() as Team;
 
-  // Validar expiração do token (48 horas)
   if (teamData.inviteTokenExpiresAt && new Date().getTime() > new Date(teamData.inviteTokenExpiresAt).getTime()) {
     throw new Error('O token de convite expirou. Solicite um novo link ao supervisor.');
   }
 
-  // Obter organização e validar limites e status
   const orgRef = doc(db, 'organizations', teamData.organizationId);
   const orgSnap = await getDoc(orgRef);
   if (!orgSnap.exists()) {
@@ -185,7 +178,6 @@ export const joinTeam = async (uid: string, userEmail: string, inviteToken: stri
     throw new Error('Esta empresa está suspensa. Novos membros não podem ingressar.');
   }
 
-  // Contar membros ativos na organização para validar o limite do plano (Custo = 1 leitura)
   const usersRef = collection(db, 'users');
   const userCountQuery = query(usersRef, where('organizationId', '==', teamData.organizationId));
   const userCountSnap = await getCountFromServer(userCountQuery);
@@ -205,7 +197,6 @@ export const joinTeam = async (uid: string, userEmail: string, inviteToken: stri
 
   await setDoc(doc(db, 'users', uid), userProfile);
   
-  // Invalidação por uso único (Gera um novo token e expiração para a equipe)
   const newInviteToken = generateSecureToken(12);
   const newExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
   await updateDoc(doc(db, 'teams', teamData.id), {
@@ -495,16 +486,16 @@ export const createInvitesInBulk = async (
 
   const usersRef = collection(db, 'users');
   const userCountQuery = query(usersRef, where('organizationId', '==', organizationId));
-  const userCountSnap = await getDocs(userCountQuery);
+  const userCountSnap = await getCountFromServer(userCountQuery);
+  const activeUsersCount = userCountSnap.data().count;
 
   const pendingInvites = await getPendingInvites(organizationId);
-  const totalSlotsUsed = userCountSnap.size + pendingInvites.length;
+  const totalSlotsUsed = activeUsersCount + pendingInvites.length;
 
-  // Checagem de limite apenas para planos com trava explícita (> 0). Para -1 ou null = Ilimitado.
   if (orgData.maxUsers && orgData.maxUsers > 0) {
     if (totalSlotsUsed + invitesData.length > orgData.maxUsers) {
       throw new Error(
-        `Limite do plano excedido. Sua empresa possui ${userCountSnap.size} membros ativos e ${pendingInvites.length} convites pendentes. Limite máximo: ${orgData.maxUsers} usuários.`
+        `Limite do plano excedido. Sua empresa possui ${activeUsersCount} membros ativos e ${pendingInvites.length} convites pendentes. Limite máximo: ${orgData.maxUsers} usuários.`
       );
     }
   }
@@ -527,14 +518,20 @@ export const createInvitesInBulk = async (
       data.role === 'monitor' ? '🛡️ Monitor / QA' :
       data.role === 'backoffice' ? '📋 Backoffice' : '🎧 Operador';
 
-    // Disparo automático via Resend para convites da liderança
+    let emailSent = false;
     if (typeof window !== 'undefined') {
-      sendInviteEmail({
-        recipientEmail: data.email.trim().toLowerCase(),
-        orgName: orgData.name,
-        roleName: roleLabel,
-        inviteUrl
-      }).catch(err => console.error('[createInvitesInBulk] Erro ao disparar e-mail:', err));
+      try {
+        await sendInviteEmail({
+          recipientEmail: data.email.trim().toLowerCase(),
+          orgName: orgData.name,
+          roleName: roleLabel,
+          inviteUrl
+        });
+        emailSent = true;
+      } catch (err) {
+        console.error('[createInvitesInBulk] Erro ao disparar e-mail:', err);
+        emailSent = false;
+      }
     }
 
     const invite: Invite = {
@@ -549,7 +546,7 @@ export const createInvitesInBulk = async (
       invitedBy,
       createdAt: now,
       expiresAt,
-      emailSent: true,
+      emailSent,
       monthlyServiceValue: data.monthlyServiceValue || undefined
     };
 
@@ -564,68 +561,80 @@ export const revokeInvite = async (inviteId: string): Promise<void> => {
   await deleteDoc(doc(db, 'invites', inviteId));
 };
 
-export const validateInvite = async (token: string): Promise<Invite | null> => {
+export const validateInvite = async (token: string, orgIdHint?: string): Promise<Invite | null> => {
   if (!token) return null;
   const cleanToken = token.trim();
+  const cleanOrgId = orgIdHint?.trim() || undefined;
 
   try {
     let inviteData: Invite | null = null;
     let inviteRefDoc: any = null;
 
-    // Tentativa 1: busca direta por ID do documento (padrão unificado invites/{token})
+    // 1) Convite em invites/{token} — só getDoc (permitido sem auth nas rules)
     const directDocRef = doc(db, 'invites', cleanToken);
     const directSnap = await getDoc(directDocRef);
     if (directSnap.exists()) {
       inviteData = { id: directSnap.id, ...directSnap.data() } as Invite;
       inviteRefDoc = directDocRef;
-    } else {
-      // Tentativa 2: fallback por query de campo token para retrocompatibilidade
-      const invitesRef = collection(db, 'invites');
-      const q = query(invitesRef, where('token', '==', cleanToken));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        inviteData = { id: snap.docs[0].id, ...snap.docs[0].data() } as Invite;
-        inviteRefDoc = snap.docs[0].ref;
-      }
     }
 
-    // Tentativa 3: token de gerente ou supervisor direto da organização (MGR-... ou SUP-...)
-    if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-'))) {
-      const orgsRef = collection(db, 'organizations');
-      const qField = cleanToken.startsWith('MGR-') ? 'managerInviteToken' : 'supervisorInviteToken';
-      const q = query(orgsRef, where(qField, '==', cleanToken));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const orgDoc = snap.docs[0];
-        const orgData = orgDoc.data();
-        inviteData = {
-          id: cleanToken,
-          token: cleanToken,
-          organizationId: orgDoc.id,
-          orgName: orgData.name,
-          role: cleanToken.startsWith('MGR-') ? 'manager' : 'supervisor',
-          status: orgData.status === 'inactive' ? 'revoked' : 'pending',
-          createdAt: orgData.createdAt || new Date().toISOString()
-        } as Invite;
+    // 2) Token de liderança (MGR-/SUP-/COORD-/MON-): exige orgId na URL e getDoc na org
+    //    NÃO usa query/list — list em organizations exige auth e quebra o fluxo deslogado
+    if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-') || cleanToken.startsWith('COORD-') || cleanToken.startsWith('MON-'))) {
+      if (!cleanOrgId) {
+        console.warn('[validateInvite] Token de liderança sem orgId na URL. Inclua &orgId= na URL do convite.');
+        return null;
+      }
+      const orgSnap = await getDoc(doc(db, 'organizations', cleanOrgId));
+      if (orgSnap.exists()) {
+        const orgData = orgSnap.data() as Organization;
+        let field: keyof Organization | null = null;
+        let role: UserRole = 'member';
+        if (cleanToken.startsWith('MGR-')) {
+          field = 'managerInviteToken';
+          role = 'manager';
+        } else if (cleanToken.startsWith('SUP-')) {
+          field = 'supervisorInviteToken';
+          role = 'supervisor';
+        } else if (cleanToken.startsWith('COORD-')) {
+          field = 'coordinatorInviteToken';
+          role = 'coordinator';
+        } else {
+          field = 'monitorInviteToken';
+          role = 'monitor';
+        }
+        const stored = field ? (orgData as any)[field] : null;
+        if (stored === cleanToken) {
+          inviteData = {
+            id: cleanToken,
+            token: cleanToken,
+            organizationId: orgSnap.id,
+            orgName: orgData.name,
+            role,
+            status: orgData.status === 'inactive' ? 'revoked' : 'pending',
+            createdAt: orgData.createdAt || new Date().toISOString()
+          } as Invite;
+        }
       }
     }
 
     if (!inviteData) return null;
 
-    // Se já foi aceito ou revogado
     if (inviteData.status !== 'pending') {
       return null;
     }
 
-    // Validação de expiração
     if (inviteData.expiresAt && new Date().getTime() > new Date(inviteData.expiresAt).getTime()) {
       if (inviteRefDoc) {
-        await updateDoc(inviteRefDoc, { status: 'expired' }).catch(() => {});
+        try {
+          if (auth.currentUser) {
+            await updateDoc(inviteRefDoc, { status: 'expired' });
+          }
+        } catch {}
       }
       return null;
     }
 
-    // Busca sempre o nome atualizado e oficial da organização no Firestore
     if (inviteData.organizationId) {
       try {
         const orgSnap = await getDoc(doc(db, 'organizations', inviteData.organizationId));
@@ -633,7 +642,7 @@ export const validateInvite = async (token: string): Promise<Invite | null> => {
           const orgData = orgSnap.data();
           inviteData.orgName = orgData.name;
           if (orgData.status === 'inactive') {
-            return null; // Empresa suspensa
+            return null;
           }
         }
       } catch {}
@@ -646,49 +655,62 @@ export const validateInvite = async (token: string): Promise<Invite | null> => {
   }
 };
 
-export const acceptInvite = async (uid: string, token: string, customDisplayName?: string): Promise<void> => {
+export const acceptInvite = async (
+  uid: string,
+  token: string,
+  customDisplayName?: string,
+  orgIdHint?: string
+): Promise<void> => {
   if (!token) throw new Error('Token de convite obrigatório.');
   const cleanToken = token.trim();
+  const cleanOrgId = orgIdHint?.trim() || undefined;
 
   let inviteData: Invite | null = null;
   let inviteDocRef: any = null;
 
-  // Busca o convite por ID direto ou por token
   const directDocRef = doc(db, 'invites', cleanToken);
   const directSnap = await getDoc(directDocRef);
   if (directSnap.exists()) {
     inviteData = directSnap.data() as Invite;
     inviteDocRef = directDocRef;
-  } else {
-    const invitesRef = collection(db, 'invites');
-    const q = query(invitesRef, where('token', '==', cleanToken));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      inviteData = snap.docs[0].data() as Invite;
-      inviteDocRef = snap.docs[0].ref;
-    }
   }
 
-  // Se for token MGR / SUP direto da organização
   let orgDocRefToClearToken: any = null;
-  if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-'))) {
-    const orgsRef = collection(db, 'organizations');
-    const qField = cleanToken.startsWith('MGR-') ? 'managerInviteToken' : 'supervisorInviteToken';
-    const q = query(orgsRef, where(qField, '==', cleanToken));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const orgDoc = snap.docs[0];
-      const orgData = orgDoc.data();
-      inviteData = {
-        id: cleanToken,
-        token: cleanToken,
-        organizationId: orgDoc.id,
-        orgName: orgData.name,
-        role: cleanToken.startsWith('MGR-') ? 'manager' : 'supervisor',
-        status: 'pending',
-        createdAt: orgData.createdAt || new Date().toISOString()
-      } as Invite;
-      orgDocRefToClearToken = { ref: orgDoc.ref, field: qField };
+  if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-') || cleanToken.startsWith('COORD-') || cleanToken.startsWith('MON-'))) {
+    if (!cleanOrgId) {
+      throw new Error('INVITE_INVALID: Token de liderança requer orgId na URL.');
+    }
+    const orgRef = doc(db, 'organizations', cleanOrgId);
+    const orgSnap = await getDoc(orgRef);
+    if (orgSnap.exists()) {
+      const orgData = orgSnap.data() as Organization;
+      let qField: string;
+      let role: UserRole;
+      if (cleanToken.startsWith('MGR-')) {
+        qField = 'managerInviteToken';
+        role = 'manager';
+      } else if (cleanToken.startsWith('SUP-')) {
+        qField = 'supervisorInviteToken';
+        role = 'supervisor';
+      } else if (cleanToken.startsWith('COORD-')) {
+        qField = 'coordinatorInviteToken';
+        role = 'coordinator';
+      } else {
+        qField = 'monitorInviteToken';
+        role = 'monitor';
+      }
+      if ((orgData as any)[qField] === cleanToken) {
+        inviteData = {
+          id: cleanToken,
+          token: cleanToken,
+          organizationId: orgSnap.id,
+          orgName: orgData.name,
+          role,
+          status: 'pending',
+          createdAt: orgData.createdAt || new Date().toISOString()
+        } as Invite;
+        orgDocRefToClearToken = { ref: orgRef, field: qField };
+      }
     }
   }
 
@@ -696,7 +718,14 @@ export const acceptInvite = async (uid: string, token: string, customDisplayName
     throw new Error('INVITE_INVALID: Convite não encontrado ou sem organização associada.');
   }
 
-  // Validação de identidade: garante integridade do e-mail do convite se informado
+  if (inviteData.status && inviteData.status !== 'pending') {
+    throw new Error('INVITE_INVALID: Este convite já foi utilizado ou está expirado.');
+  }
+
+  if (inviteData.expiresAt && new Date().getTime() > new Date(inviteData.expiresAt).getTime()) {
+    throw new Error('INVITE_INVALID: Este convite expirou. Solicite um novo link à liderança.');
+  }
+
   const currentAuthEmail = auth.currentUser?.email?.toLowerCase().trim();
   const inviteEmail = inviteData.email?.toLowerCase().trim();
   if (currentAuthEmail && inviteEmail && currentAuthEmail !== inviteEmail) {
@@ -753,7 +782,6 @@ export const assignUserToTeam = async (uid: string, teamId: string | null): Prom
     managedTeams: userData.role === 'supervisor' && teamId ? arrayUnion(teamId) : (userData.managedTeams || undefined)
   });
 
-  // Se o usuário for supervisor e for vinculado a um time, define supervisorId no time
   if (userData.role === 'supervisor' && teamId) {
     const teamRef = doc(db, 'teams', teamId);
     await updateDoc(teamRef, {
@@ -771,4 +799,3 @@ export const getUnassignedUsers = async (organizationId: string): Promise<UserPr
     .map(doc => doc.data() as UserProfile)
     .filter(user => !user.teamId && user.role !== 'super_admin' && user.role !== 'manager');
 };
-
