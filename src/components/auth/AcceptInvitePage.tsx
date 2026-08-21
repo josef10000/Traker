@@ -16,7 +16,8 @@ import {
 import { 
   createUserWithEmailAndPassword, 
   updateProfile,
-  signOut
+  signOut,
+  deleteUser
 } from 'firebase/auth';
 import { setDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
@@ -187,12 +188,14 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     }
 
     setLoading(true);
-    try {
-      let activeUser: any = null;
+    let activeUser: any = null;
+    let authCreated = false;
 
+    try {
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, activeEmail, password);
         activeUser = userCredential.user;
+        authCreated = true;
       } catch (authErr: any) {
         if (authErr.code === 'auth/email-already-in-use') {
           throw new Error('Este e-mail já possui um cadastro ativo no sistema. Para aceitar um novo convite empresarial, a conta anterior deve ser excluída pelo administrador.');
@@ -207,8 +210,42 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         displayName: cleanDisplayName
       }).catch(() => {});
 
+      // Força refresh do ID token antes de gravar perfil / chamar API
+      const idToken = await activeUser.getIdToken(true);
+
       if (token && !isSandbox) {
-        await acceptInvite(activeUser.uid, token, cleanDisplayName, orgId || undefined);
+        // Preferência: API Admin (bypassa rules do cliente / App Check / race de auth)
+        let apiOk = false;
+        try {
+          const res = await fetch('/api/accept-invite', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({
+              token,
+              orgId: orgId || undefined,
+              displayName: cleanDisplayName,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data?.success) {
+            apiOk = true;
+            if (data.profile?.role) setRole(data.profile.role);
+            if (data.profile?.organizationId) setOrgId(data.profile.organizationId);
+            if (data.profile?.orgName) setOrgName(data.profile.orgName);
+          } else {
+            console.warn('[AcceptInvitePage] API accept-invite falhou, tentando cliente:', data?.error || res.status);
+            // Fallback cliente (pode falhar com permission-denied se rules/App Check estiverem errados)
+            await acceptInvite(activeUser.uid, token, cleanDisplayName, orgId || undefined);
+          }
+        } catch (apiErr) {
+          console.warn('[AcceptInvitePage] API accept-invite erro de rede, fallback cliente:', apiErr);
+          await acceptInvite(activeUser.uid, token, cleanDisplayName, orgId || undefined);
+        }
+        void apiOk;
       } else if (token && isSandbox) {
         sandboxService.acceptInvite(activeUser.uid, token);
         const userProfile: Record<string, any> = {
@@ -254,6 +291,20 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       onAuthSuccess();
     } catch (err: any) {
       console.error('Erro na ativação da conta corporativa:', err);
+
+      // Evita usuário órfão no Auth: se criamos a conta mas o perfil/convite falhou, remove do Auth
+      if (authCreated && activeUser) {
+        try {
+          await deleteUser(activeUser);
+          console.warn('[AcceptInvitePage] Conta Auth removida após falha no aceite do convite (evita e-mail preso).');
+        } catch (delErr) {
+          console.error('[AcceptInvitePage] Não foi possível remover conta Auth órfã:', delErr);
+        }
+        try {
+          await signOut(auth);
+        } catch {}
+      }
+
       if (err.code === 'auth/weak-password') {
         setError('A senha informada é muito fraca. Utilize ao menos 8 caracteres misturando letras e números.');
       } else if (typeof err.message === 'string' && err.message.startsWith('INVITE_EMAIL_MISMATCH:')) {
@@ -262,6 +313,8 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         setError(err.message.replace('INVITE_INVALID: ', ''));
       } else if (err.code === 'auth/email-already-in-use') {
         setError('Este e-mail já possui um cadastro ativo no sistema. Para aceitar um novo convite empresarial, a conta anterior deve ser excluída pelo administrador.');
+      } else if (err?.code === 'permission-denied' || (typeof err?.message === 'string' && err.message.includes('Missing or insufficient permissions'))) {
+        setError('Falha de permissão ao gravar seu perfil. O administrador precisa publicar as regras no banco nomeado (ai-studio-...) ou aguardar o deploy da API /api/accept-invite. Tente novamente em instantes.');
       } else {
         setError(err.message || 'Erro ao ativar sua conta. Verifique os dados e tente novamente.');
       }

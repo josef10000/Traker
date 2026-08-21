@@ -1,18 +1,19 @@
 rules_version = '2';
+// ⚠️  OBRIGATÓRIO: publicar neste banco NOMEADO (não no default):
+//     ai-studio-764c464a-6ef4-407d-8079-cfe6869a3634
+//     Firebase Console → Firestore → seletor de banco (topo) → Rules → Publish
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Convites ──────────────────────────────────────────────
-    // Leitura individual (get): pública para validação do link de convite antes do cadastro
-    // Listagem, criação, atualização e exclusão: autenticados
+    // get público: validar link de convite antes do cadastro
     match /invites/{inviteId} {
       allow get: if true;
       allow list, create, update, delete: if request.auth != null;
     }
 
     // ── Organizações ─────────────────────────────────────────
-    // Leitura individual (get): pública para exibir o nome da empresa na tela de boas-vindas do convite
-    // Listagem e modificações: apenas usuários autenticados
+    // get público: nome da empresa na tela de convite
     match /organizations/{orgId} {
       allow get: if true;
       allow list, write: if request.auth != null;
@@ -29,11 +30,12 @@ service cloud.firestore {
     }
 
     // ── Usuários ─────────────────────────────────────────────
+    // Usuário autenticado pode ler/escrever (inclui criar o próprio perfil no aceite)
     match /users/{userId} {
       allow read, write: if request.auth != null;
     }
 
-    // ── Regra padrão para demais coleções (teams, agreements, etc.)
+    // ── Demais coleções (teams, agreements, etc.)
     match /{document=**} {
       allow read, write: if request.auth != null;
     }

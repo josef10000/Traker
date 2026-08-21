@@ -561,21 +561,65 @@ export const revokeInvite = async (inviteId: string): Promise<void> => {
   await deleteDoc(doc(db, 'invites', inviteId));
 };
 
+/**
+ * Fallback server-side via Admin SDK.
+ * Necessário quando as regras do banco NOMEADO ainda não permitem get público
+ * ou quando App Check bloqueia o cliente deslogado.
+ */
+const validateInviteViaApi = async (token: string, orgIdHint?: string): Promise<Invite | null> => {
+  try {
+    const params = new URLSearchParams({ token });
+    if (orgIdHint) params.set('orgId', orgIdHint);
+    const res = await fetch(`/api/validate-invite?${params.toString()}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) {
+      console.warn('[validateInvite] API fallback HTTP', res.status);
+      return null;
+    }
+    const data = await res.json();
+    if (!data?.valid || !data?.invite) return null;
+    return data.invite as Invite;
+  } catch (err) {
+    console.warn('[validateInvite] API fallback falhou:', err);
+    return null;
+  }
+};
+
 export const validateInvite = async (token: string, orgIdHint?: string): Promise<Invite | null> => {
   if (!token) return null;
   const cleanToken = token.trim();
   const cleanOrgId = orgIdHint?.trim() || undefined;
 
+  const isPermissionError = (error: unknown): boolean => {
+    const e = error as { code?: string; message?: string };
+    const msg = (e?.message || '').toLowerCase();
+    return (
+      e?.code === 'permission-denied' ||
+      msg.includes('missing or insufficient permissions') ||
+      msg.includes('permission-denied')
+    );
+  };
+
   try {
     let inviteData: Invite | null = null;
     let inviteRefDoc: any = null;
 
-    // 1) Convite em invites/{token} — só getDoc (permitido sem auth nas rules)
-    const directDocRef = doc(db, 'invites', cleanToken);
-    const directSnap = await getDoc(directDocRef);
-    if (directSnap.exists()) {
-      inviteData = { id: directSnap.id, ...directSnap.data() } as Invite;
-      inviteRefDoc = directDocRef;
+    // 1) Convite em invites/{token} — só getDoc (permitido sem auth nas rules do banco correto)
+    try {
+      const directDocRef = doc(db, 'invites', cleanToken);
+      const directSnap = await getDoc(directDocRef);
+      if (directSnap.exists()) {
+        inviteData = { id: directSnap.id, ...directSnap.data() } as Invite;
+        inviteRefDoc = directDocRef;
+      }
+    } catch (clientErr) {
+      if (isPermissionError(clientErr)) {
+        console.warn('[validateInvite] getDoc invites com permission-denied — usando API Admin.');
+        return validateInviteViaApi(cleanToken, cleanOrgId);
+      }
+      throw clientErr;
     }
 
     // 2) Token de liderança (MGR-/SUP-/COORD-/MON-): exige orgId na URL e getDoc na org
@@ -585,36 +629,44 @@ export const validateInvite = async (token: string, orgIdHint?: string): Promise
         console.warn('[validateInvite] Token de liderança sem orgId na URL. Inclua &orgId= na URL do convite.');
         return null;
       }
-      const orgSnap = await getDoc(doc(db, 'organizations', cleanOrgId));
-      if (orgSnap.exists()) {
-        const orgData = orgSnap.data() as Organization;
-        let field: keyof Organization | null = null;
-        let role: UserRole = 'member';
-        if (cleanToken.startsWith('MGR-')) {
-          field = 'managerInviteToken';
-          role = 'manager';
-        } else if (cleanToken.startsWith('SUP-')) {
-          field = 'supervisorInviteToken';
-          role = 'supervisor';
-        } else if (cleanToken.startsWith('COORD-')) {
-          field = 'coordinatorInviteToken';
-          role = 'coordinator';
-        } else {
-          field = 'monitorInviteToken';
-          role = 'monitor';
+      try {
+        const orgSnap = await getDoc(doc(db, 'organizations', cleanOrgId));
+        if (orgSnap.exists()) {
+          const orgData = orgSnap.data() as Organization;
+          let field: keyof Organization | null = null;
+          let role: UserRole = 'member';
+          if (cleanToken.startsWith('MGR-')) {
+            field = 'managerInviteToken';
+            role = 'manager';
+          } else if (cleanToken.startsWith('SUP-')) {
+            field = 'supervisorInviteToken';
+            role = 'supervisor';
+          } else if (cleanToken.startsWith('COORD-')) {
+            field = 'coordinatorInviteToken';
+            role = 'coordinator';
+          } else {
+            field = 'monitorInviteToken';
+            role = 'monitor';
+          }
+          const stored = field ? (orgData as any)[field] : null;
+          if (stored === cleanToken) {
+            inviteData = {
+              id: cleanToken,
+              token: cleanToken,
+              organizationId: orgSnap.id,
+              orgName: orgData.name,
+              role,
+              status: orgData.status === 'inactive' ? 'revoked' : 'pending',
+              createdAt: orgData.createdAt || new Date().toISOString()
+            } as Invite;
+          }
         }
-        const stored = field ? (orgData as any)[field] : null;
-        if (stored === cleanToken) {
-          inviteData = {
-            id: cleanToken,
-            token: cleanToken,
-            organizationId: orgSnap.id,
-            orgName: orgData.name,
-            role,
-            status: orgData.status === 'inactive' ? 'revoked' : 'pending',
-            createdAt: orgData.createdAt || new Date().toISOString()
-          } as Invite;
+      } catch (clientErr) {
+        if (isPermissionError(clientErr)) {
+          console.warn('[validateInvite] getDoc organizations com permission-denied — usando API Admin.');
+          return validateInviteViaApi(cleanToken, cleanOrgId);
         }
+        throw clientErr;
       }
     }
 
@@ -651,6 +703,9 @@ export const validateInvite = async (token: string, orgIdHint?: string): Promise
     return inviteData;
   } catch (error) {
     console.warn('[validateInvite] Erro ao validar convite no Firestore:', error);
+    if (isPermissionError(error)) {
+      return validateInviteViaApi(cleanToken, cleanOrgId);
+    }
     return null;
   }
 };
