@@ -1032,16 +1032,17 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                                       setConfirmDialog({
                                         isOpen: true,
                                         title: 'Excluir Empresa Permanentemente',
-                                        message: `Tem certeza que deseja EXCLUIR a empresa "${org.name}" e TODOS os seus dados vinculados (acordos, equipes, usuários, etc.)? Esta ação é irreversível!`,
+                                        message: `Tem certeza que deseja EXCLUIR a empresa "${org.name}" e TODOS os seus dados vinculados (acordos, equipes, usuários e contas do Firebase Authentication)? Esta ação é definitiva e irreversível!`,
                                         type: 'danger',
                                         onConfirm: () => handleDeleteOrganization(org.id, org.name)
                                       });
                                     }}
                                     disabled={isDeleting === org.id}
-                                    className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+                                    className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                                     title="Excluir Empresa e Todos os Dados Vinculados"
                                   >
                                     {isDeleting === org.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                    <span>Excluir</span>
                                   </button>
                                 </>
                               )}
@@ -1410,6 +1411,35 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                   </div>
                 </div>
               </div>
+
+              {selectedOrg.id !== 'sandbox-test' && (
+                <div className="border-t border-rose-500/20 pt-4 p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-2">
+                  <h4 className="text-[11px] font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Trash2 size={14} /> Zona de Perigo: Exclusão Total
+                  </h4>
+                  <p className="text-slate-400 text-[11px]">
+                    Exclui permanentemente a empresa, todos os acordos, equipes, convites e todas as contas de usuários vinculadas no Firebase Authentication.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const orgToDel = selectedOrg;
+                      setSelectedOrg(null);
+                      setConfirmDialog({
+                        isOpen: true,
+                        title: 'Excluir Empresa Permanentemente',
+                        message: `Tem certeza que deseja EXCLUIR permanentemente a empresa "${orgToDel.name}", todos os convites, acordos e todas as contas do Firebase Authentication vinculadas a ela? Esta ação é definitiva e irreversível!`,
+                        type: 'danger',
+                        onConfirm: () => handleDeleteOrganization(orgToDel.id, orgToDel.name)
+                      });
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                    Excluir Empresa e Todos os Dados
+                  </button>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4 border-t border-white/10">
                 <button 
