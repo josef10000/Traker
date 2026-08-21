@@ -110,23 +110,15 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       localStorage.removeItem('tracker_cached_profile');
     }
 
-    // Modo Sandbox / Demo (Empresa de Teste)
-    const isSandboxMode = 
-      activeToken === 'demo' || 
-      activeToken.startsWith('inv-demo-') || 
-      activeToken.includes('sandbox') || 
-      activeToken.startsWith('sb-') || 
-      urlOrgId === 'sandbox-test' || 
-      (urlOrg && urlOrg.toLowerCase().includes('sandbox'));
-
-    if (isSandboxMode) {
+    // Modo Demo estrito (apenas para teste de interface isolado sem dados)
+    if (activeToken === 'demo') {
       setIsSandbox(true);
       const activeEmail = urlEmail ? decodeURIComponent(urlEmail).trim() : 'colaborador@empresa.com';
       setEmail(activeEmail);
       setInputEmail(activeEmail);
-      setOrgName(urlOrg ? decodeURIComponent(urlOrg).trim() : 'Empresa de Teste (Sandbox)');
-      setRole(urlRole || 'manager');
-      setOrgId(urlOrgId ? urlOrgId.trim() : 'sandbox-test');
+      setOrgName('Empresa Demonstração');
+      setRole('manager');
+      setOrgId('demo-org');
       setIsValidating(false);
       return;
     }

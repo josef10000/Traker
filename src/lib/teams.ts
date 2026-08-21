@@ -589,6 +589,27 @@ export const validateInvite = async (token: string): Promise<Invite | null> => {
       }
     }
 
+    // Tentativa 3: token de gerente ou supervisor direto da organização (MGR-... ou SUP-...)
+    if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-'))) {
+      const orgsRef = collection(db, 'organizations');
+      const qField = cleanToken.startsWith('MGR-') ? 'managerInviteToken' : 'supervisorInviteToken';
+      const q = query(orgsRef, where(qField, '==', cleanToken));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const orgDoc = snap.docs[0];
+        const orgData = orgDoc.data();
+        inviteData = {
+          id: cleanToken,
+          token: cleanToken,
+          organizationId: orgDoc.id,
+          orgName: orgData.name,
+          role: cleanToken.startsWith('MGR-') ? 'manager' : 'supervisor',
+          status: orgData.status === 'inactive' ? 'revoked' : 'pending',
+          createdAt: orgData.createdAt || new Date().toISOString()
+        } as Invite;
+      }
+    }
+
     if (!inviteData) return null;
 
     // Se já foi aceito ou revogado
@@ -604,12 +625,16 @@ export const validateInvite = async (token: string): Promise<Invite | null> => {
       return null;
     }
 
-    // Se orgName não estiver salvo no convite, busca da organização
-    if (!inviteData.orgName && inviteData.organizationId) {
+    // Busca sempre o nome atualizado e oficial da organização no Firestore
+    if (inviteData.organizationId) {
       try {
         const orgSnap = await getDoc(doc(db, 'organizations', inviteData.organizationId));
         if (orgSnap.exists()) {
-          inviteData.orgName = orgSnap.data().name;
+          const orgData = orgSnap.data();
+          inviteData.orgName = orgData.name;
+          if (orgData.status === 'inactive') {
+            return null; // Empresa suspensa
+          }
         }
       } catch {}
     }
@@ -644,23 +669,47 @@ export const acceptInvite = async (uid: string, token: string, customDisplayName
     }
   }
 
+  // Se for token MGR / SUP direto da organização
+  let orgDocRefToClearToken: any = null;
+  if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-'))) {
+    const orgsRef = collection(db, 'organizations');
+    const qField = cleanToken.startsWith('MGR-') ? 'managerInviteToken' : 'supervisorInviteToken';
+    const q = query(orgsRef, where(qField, '==', cleanToken));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const orgDoc = snap.docs[0];
+      const orgData = orgDoc.data();
+      inviteData = {
+        id: cleanToken,
+        token: cleanToken,
+        organizationId: orgDoc.id,
+        orgName: orgData.name,
+        role: cleanToken.startsWith('MGR-') ? 'manager' : 'supervisor',
+        status: 'pending',
+        createdAt: orgData.createdAt || new Date().toISOString()
+      } as Invite;
+      orgDocRefToClearToken = { ref: orgDoc.ref, field: qField };
+    }
+  }
+
   if (!inviteData || !inviteData.organizationId) {
     throw new Error('INVITE_INVALID: Convite não encontrado ou sem organização associada.');
   }
 
-  // Validação de identidade: garante integridade do e-mail do convite
+  // Validação de identidade: garante integridade do e-mail do convite se informado
   const currentAuthEmail = auth.currentUser?.email?.toLowerCase().trim();
   const inviteEmail = inviteData.email?.toLowerCase().trim();
   if (currentAuthEmail && inviteEmail && currentAuthEmail !== inviteEmail) {
     throw new Error(`INVITE_EMAIL_MISMATCH: O convite foi emitido para ${inviteEmail}, mas você está autenticado como ${currentAuthEmail}.`);
   }
 
+  const activeEmail = currentAuthEmail || inviteEmail || '';
   const now = new Date().toISOString();
-  const nameToSave = customDisplayName?.trim() || inviteData.email.split('@')[0] || 'Usuário';
+  const nameToSave = customDisplayName?.trim() || activeEmail.split('@')[0] || 'Usuário';
 
   const userProfile: Record<string, any> = {
     uid,
-    email: inviteData.email,
+    email: activeEmail,
     displayName: nameToSave,
     role: inviteData.role || 'member',
     organizationId: inviteData.organizationId,
@@ -682,6 +731,10 @@ export const acceptInvite = async (uid: string, token: string, customDisplayName
 
   if (inviteDocRef) {
     await updateDoc(inviteDocRef, { status: 'accepted' }).catch(() => {});
+  }
+
+  if (orgDocRefToClearToken) {
+    await updateDoc(orgDocRefToClearToken.ref, { [orgDocRefToClearToken.field]: null }).catch(() => {});
   }
 };
 
