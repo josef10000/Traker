@@ -507,89 +507,26 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const handleDeleteOrganization = async (orgId: string, orgName: string) => {
     setIsDeleting(orgId);
     try {
-      setDeletingProgress('Solicitando exclusão total e expurgo no Firebase Authentication...');
+      setDeletingProgress('Solicitando exclusão total e expurgo no Firebase Authentication via servidor...');
 
-      // 1. Tentar via API Serverless Segura (Admin SDK) que exclui Firestore + Firebase Auth
-      let serverlessSuccess = false;
-      try {
-        const idToken = await auth.currentUser?.getIdToken();
-        if (idToken) {
-          const res = await fetch('/api/delete-organization', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${idToken}`
-            },
-            body: JSON.stringify({ orgId })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            serverlessSuccess = data.success;
-          }
-        }
-      } catch (apiErr) {
-        console.warn('[handleDeleteOrganization] API Serverless indisponível, executando limpeza direta:', apiErr);
+      const idToken = await auth.currentUser?.getIdToken(true);
+      if (!idToken) {
+        throw new Error('Sessão expirada. Faça login novamente para autorizar a exclusão.');
       }
 
-      // 2. Se a API Serverless não foi executada (ex: ambiente dev offline), executa varredura direta no Firestore
-      if (!serverlessSuccess) {
-        setDeletingProgress('Localizando todos os dados, convites e usuários vinculados...');
-        const collectionsToDelete = [
-          'agreements',
-          'teams',
-          'reconciliations',
-          'settings',
-          'audit_logs',
-          'users',
-          'invites',
-          'monthly_stats',
-          'notifications',
-          'custom_origins',
-          'transfers',
-          'attendances',
-          'knowledge_base'
-        ];
+      const res = await fetch('/api/delete-organization', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ orgId })
+      });
 
-        const snapshots = await Promise.all(
-          collectionsToDelete.map(colName => {
-            const ref = collection(db, colName);
-            const q = query(ref, where('organizationId', '==', orgId));
-            return getDocs(q)
-              .then(snap => ({ colName, snap }))
-              .catch(() => ({ colName, snap: { empty: true, docs: [], size: 0 } as any }));
-          })
-        );
+      const data = await res.json().catch(() => ({ error: 'Resposta inválida do servidor.' }));
 
-        const subcollections = ['survey_configs', 'survey_responses', 'knowledge_base', 'import_history'];
-        const subSnapshots = await Promise.all(
-          subcollections.map(subCol => {
-            const ref = collection(db, 'organizations', orgId, subCol);
-            return getDocs(ref)
-              .then(snap => ({ colName: `organizations/${orgId}/${subCol}`, snap }))
-              .catch(() => ({ colName: subCol, snap: { empty: true, docs: [], size: 0 } as any }));
-          })
-        );
-
-        const allSnapshots = [...snapshots, ...subSnapshots];
-        const totalDocs = allSnapshots.reduce((sum, s) => sum + s.snap.size, 0);
-        let deletedDocs = 0;
-
-        for (const { snap } of allSnapshots) {
-          if (snap.empty) continue;
-          const docs = snap.docs;
-          const chunkSize = 400;
-          for (let i = 0; i < docs.length; i += chunkSize) {
-            const chunk = docs.slice(i, i + chunkSize);
-            const batch = writeBatch(db);
-            chunk.forEach((d: any) => batch.delete(d.ref));
-            await batch.commit();
-            deletedDocs += chunk.length;
-            setDeletingProgress(`Excluindo dados (${deletedDocs}/${totalDocs})...`);
-          }
-        }
-
-        await deleteDoc(doc(db, 'organizations', orgId)).catch(() => {});
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Erro ${res.status}: Não foi possível concluir o expurgo no servidor.`);
       }
 
       // Limpeza de caches locais
@@ -603,10 +540,10 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         }
       } catch {}
 
-      showToast(`Empresa "${orgName}" e todos os seus usuários/convites foram excluídos permanentemente.`, 'success');
-    } catch (error) {
-      console.error(error);
-      showToast('Erro ao realizar a exclusão da empresa.', 'error');
+      showToast(`Empresa "${orgName}" e todas as contas de usuários foram excluídas permanentemente.`, 'success');
+    } catch (error: any) {
+      console.error('[handleDeleteOrganization] Erro ao excluir empresa:', error);
+      showToast(error.message || 'Erro ao realizar a exclusão da empresa.', 'error');
     } finally {
       setIsDeleting(null);
       setDeletingProgress('');

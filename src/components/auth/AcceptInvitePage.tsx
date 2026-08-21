@@ -16,7 +16,6 @@ import {
 import { 
   createUserWithEmailAndPassword, 
   updateProfile,
-  signInWithEmailAndPassword,
   signOut
 } from 'firebase/auth';
 import { setDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -121,7 +120,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       return;
     }
 
-    // Consulta e validação com fallback resiliente para nunca travar o onboarding
+    // Consulta e validação estrita no Firestore
     const runValidation = async () => {
       try {
         let inviteDoc: any = null;
@@ -142,12 +141,11 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
           if (inviteDoc.teamId) setTeamId(inviteDoc.teamId);
           showToast(`Convite corporativo validado com sucesso!`, 'success');
         } else {
-          if (urlOrgId) setOrgId(urlOrgId.trim());
-          if (urlOrg && !orgName) setOrgName(decodeURIComponent(urlOrg).trim());
-          if (urlRole) setRole(urlRole);
+          setInviteError('Convite corporativo inválido, expirado ou revogado. Solicite um novo link à sua liderança.');
         }
       } catch (err: any) {
-        console.warn('Alerta de rede durante validação (modo resiliente ativo):', err);
+        console.error('[AcceptInvitePage] Erro ao validar convite:', err);
+        setInviteError('Falha de conexão ao validar o convite corporativo. Verifique sua internet e tente novamente.');
       } finally {
         setIsValidating(false);
       }
@@ -198,18 +196,15 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
     try {
       let activeUser: any = null;
 
-      // 1. Criação ou Login no Firebase Authentication
+      // 1. Criação estrita no Firebase Authentication (sem login fallback para evitar reaproveitamento de identidade antiga)
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, activeEmail, password);
         activeUser = userCredential.user;
       } catch (authErr: any) {
         if (authErr.code === 'auth/email-already-in-use') {
-          // Se já possui usuário cadastrado, realiza o login com a senha informada
-          const signInCred = await signInWithEmailAndPassword(auth, activeEmail, password);
-          activeUser = signInCred.user;
-        } else {
-          throw authErr;
+          throw new Error('Este e-mail já possui um cadastro ativo no sistema. Para aceitar um novo convite empresarial, a conta anterior deve ser excluída pelo administrador.');
         }
+        throw authErr;
       }
 
       const cleanDisplayName = displayName.trim();
@@ -250,12 +245,10 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       onAuthSuccess();
     } catch (err: any) {
       console.error('Erro na ativação da conta corporativa:', err);
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Este e-mail já está registrado com outra senha. Insira sua senha cadastrada ou recupere seu acesso.');
-      } else if (err.code === 'auth/weak-password') {
+      if (err.code === 'auth/weak-password') {
         setError('A senha informada é muito fraca. Utilize ao menos 8 caracteres misturando letras e números.');
       } else {
-        setError(err.message || 'Ocorreu um erro ao ativar sua conta corporativa. Tente novamente.');
+        setError(err.message || 'Erro ao ativar sua conta. Verifique os dados e tente novamente.');
       }
     } finally {
       setLoading(false);

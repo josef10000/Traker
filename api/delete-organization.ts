@@ -3,30 +3,63 @@ import * as admin from 'firebase-admin';
 import * as path from 'path';
 import * as fs from 'fs';
 
-// Inicialização segura do Firebase Admin SDK
-if (admin.apps.length === 0) {
-  try {
-    if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PROJECT_ID) {
-      admin.initializeApp({
+// Inicialização segura do Firebase Admin SDK com suporte a múltiplos formatos de credenciais
+function getFirebaseAdminApp() {
+  if (admin.apps.length > 0) {
+    return admin.app();
+  }
+
+  // Estratégia 1: FIREBASE_SERVICE_ACCOUNT JSON completo
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      return admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    } catch (e) {
+      console.warn('[delete-organization] Falha ao parsear FIREBASE_SERVICE_ACCOUNT JSON:', e);
+    }
+  }
+
+  // Estratégia 2: Variáveis individuais (FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, FIREBASE_PROJECT_ID)
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL_ADDRESS;
+  const rawKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (rawKey && clientEmail && projectId) {
+    try {
+      const privateKey = rawKey.replace(/\\n/g, '\n').replace(/^"(.*)"$/, '$1');
+      return admin.initializeApp({
         credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          projectId,
+          clientEmail,
+          privateKey,
         }),
       });
-    } else {
-      const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
-      if (fs.existsSync(serviceAccountPath)) {
-        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-        });
-      } else {
-        console.warn('[delete-organization] Arquivo service-account.json não encontrado.');
-      }
+    } catch (e) {
+      console.warn('[delete-organization] Falha ao inicializar com variáveis individuais:', e);
     }
-  } catch (error: any) {
-    console.error('[delete-organization] Erro ao inicializar o Firebase Admin:', error);
+  }
+
+  // Estratégia 3: Arquivo local service-account.json (desenvolvimento)
+  try {
+    const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
+    if (fs.existsSync(serviceAccountPath)) {
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+      return admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    }
+  } catch (e) {
+    console.warn('[delete-organization] Falha ao ler service-account.json local:', e);
+  }
+
+  // Estratégia 4: Default Application Credentials (GCP/Firebase hosting)
+  try {
+    return admin.initializeApp();
+  } catch (e) {
+    console.error('[delete-organization] Erro crítico ao inicializar o Firebase Admin:', e);
+    throw new Error('Credenciais do Firebase Admin SDK não configuradas no servidor.');
   }
 }
 
@@ -54,6 +87,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    getFirebaseAdminApp();
+
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Token de autorização ausente ou malformado.' });
@@ -152,17 +187,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 6. Excluir permanentemente todas as contas correspondentes do Firebase Authentication
     let deletedAuthUsersCount = 0;
+    const authErrors: string[] = [];
+
     if (uidsToDelete.length > 0) {
       for (const uid of uidsToDelete) {
         try {
           await admin.auth().deleteUser(uid);
           deletedAuthUsersCount++;
         } catch (authErr: any) {
-          if (authErr.code !== 'auth/user-not-found') {
-            console.warn(`[delete-organization] Aviso ao deletar UID ${uid} do Firebase Auth:`, authErr.message);
+          if (authErr.code === 'auth/user-not-found') {
+            deletedAuthUsersCount++;
+          } else {
+            console.error(`[delete-organization] Erro ao deletar UID ${uid} do Firebase Auth:`, authErr);
+            authErrors.push(`UID ${uid}: ${authErr.message || authErr.code}`);
           }
         }
       }
+    }
+
+    if (authErrors.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: `Exclusão parcial no Firebase Authentication. Alguns usuários não puderam ser removidos: ${authErrors.join(', ')}`
+      });
     }
 
     // 7. Deletar o documento raiz da organização
