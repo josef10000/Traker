@@ -157,9 +157,14 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
     setIsLoading(true);
     try {
+      // Força refresh do token JWT para garantir autenticação válida no Firestore
+      await auth.currentUser!.getIdToken(true);
+
       const now = new Date().toISOString();
       const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
       const createdList: PendingInvite[] = [];
+      let emailSuccessCount = 0;
+      let emailFailCount = 0;
 
       for (const row of validRows) {
         const token = `inv-${generateSecureToken(8).toLowerCase()}`;
@@ -175,7 +180,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
           createdAt: now,
           expiresAt: expiresAt,
           status: 'pending',
-          emailSent: true
+          emailSent: false
         };
 
         if (row.monthlyServiceValue && Number(row.monthlyServiceValue) > 0) {
@@ -190,29 +195,51 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
         await setDoc(doc(db, 'invites', token), inviteDoc);
 
         // 2. Disparo de e-mail via Vercel Serverless / Resend
-        const emailRes = await sendInviteEmail({
-          recipientEmail: row.email.trim().toLowerCase(),
-          orgName: orgName,
-          roleName: roleLabel,
-          inviteUrl: inviteUrl
-        });
+        try {
+          const emailRes = await sendInviteEmail({
+            recipientEmail: row.email.trim().toLowerCase(),
+            orgName: orgName,
+            roleName: roleLabel,
+            inviteUrl: inviteUrl
+          });
 
-        if (emailRes.success) {
-          inviteDoc.emailSent = true;
-          await updateDoc(doc(db, 'invites', token), { emailSent: true }).catch(() => {});
-        } else if (emailRes.error) {
-          inviteDoc.emailError = emailRes.error;
-          await updateDoc(doc(db, 'invites', token), { emailError: emailRes.error }).catch(() => {});
+          if (emailRes.success) {
+            inviteDoc.emailSent = true;
+            emailSuccessCount++;
+            await updateDoc(doc(db, 'invites', token), { emailSent: true }).catch(() => {});
+          } else {
+            emailFailCount++;
+            const errorMsg = emailRes.error || 'Falha no envio';
+            inviteDoc.emailError = errorMsg;
+            await updateDoc(doc(db, 'invites', token), { emailSent: false, emailError: errorMsg }).catch(() => {});
+          }
+        } catch (emailErr: any) {
+          emailFailCount++;
+          const errorMsg = emailErr?.message || 'Erro de rede ao enviar e-mail';
+          inviteDoc.emailError = errorMsg;
+          await updateDoc(doc(db, 'invites', token), { emailSent: false, emailError: errorMsg }).catch(() => {});
         }
 
         createdList.push({ id: token, ...inviteDoc });
       }
 
-      showToast(`${createdList.length} convite(s) gerado(s) e enviados por e-mail com sucesso!`, 'success');
+      // Mensagem de sucesso honesta refletindo o resultado real
+      if (emailFailCount === 0) {
+        showToast(`${createdList.length} convite(s) gerado(s) e enviados por e-mail com sucesso!`, 'success');
+      } else if (emailSuccessCount > 0) {
+        showToast(`${createdList.length} convite(s) gerado(s). ${emailSuccessCount} e-mail(s) enviado(s), ${emailFailCount} falharam. Os links estão disponíveis para copiar.`, 'info');
+      } else {
+        showToast(`${createdList.length} convite(s) gerado(s), mas nenhum e-mail foi enviado. Os links estão disponíveis para copiar e enviar manualmente.`, 'info');
+      }
+
       setSetupRows([{ email: '', role: 'supervisor', teamId: '', monthlyServiceValue: 0 }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao gerar convites de setup:', error);
-      showToast('Erro ao gerar links de convite.', 'error');
+      if (error?.code === 'permission-denied' || error?.message?.includes('permissions')) {
+        showToast('Permissão negada ao gravar convite. Faça logout e login novamente.', 'error');
+      } else {
+        showToast(error?.message || 'Erro ao gerar links de convite.', 'error');
+      }
     } finally {
       setIsLoading(false);
     }

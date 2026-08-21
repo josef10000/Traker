@@ -1,30 +1,40 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Regra especial para convites:
-    // Qualquer pessoa com o token pode LER o convite individual (get) para validar na tela de ativação.
-    // Listagem e criação exigem autenticação.
+
+    // ── Convites ──────────────────────────────────────────────
+    // Leitura individual (get): pública para validação do link de convite
+    // Listagem (list): autenticados (admin/gerente vendo convites da empresa)
+    // Criação (create): autenticados (admin/gerente gerando convites)
+    // Atualização (update): autenticados (marcar como aceito)
+    // Exclusão (delete): autenticados (admin removendo convite)
     match /invites/{inviteId} {
       allow get: if true;
-      allow list: if request.auth != null;
-      allow write: if request.auth != null || (resource != null && request.resource.data.status == 'accepted');
+      allow list, create, update, delete: if request.auth != null;
     }
 
-    // Regras para usuários:
-    // Usuário autenticado pode ler/escrever seu próprio documento ou se for admin
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-    }
-
-    // Regras para logs de auditoria:
+    // ── Logs de Auditoria ────────────────────────────────────
+    // Criação pública para não bloquear registro de auditoria durante onboarding
     match /audit_logs/{logId} {
       allow create: if true;
       allow read, update, delete: if request.auth != null;
     }
 
-    // Regra padrão para demais coleções (organizations, teams, agreements, etc.)
+    // ── Usuários ─────────────────────────────────────────────
+    match /users/{userId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Organizações e subcoleções ───────────────────────────
+    match /organizations/{orgId} {
+      allow read, write: if request.auth != null;
+
+      match /{subcollection=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // ── Regra padrão para demais coleções ────────────────────
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
