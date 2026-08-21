@@ -3,11 +3,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Convites ──────────────────────────────────────────────
-    // Leitura individual (get): pública para validação do link de convite antes do cadastro
-    // Listagem, criação, atualização e exclusão: autenticados
+    // Convites corporativos são validados antes do cadastro/login.
+    // O cliente consulta exclusivamente invites/{token} com getDoc().
+    // Não liberamos listagem pública, para não expor os convites da empresa.
     match /invites/{inviteId} {
       allow get: if true;
-      allow list, create, update, delete: if request.auth != null;
+      allow list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
     }
 
     // ── Organizações ─────────────────────────────────────────
