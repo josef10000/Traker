@@ -1,15 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import * as admin from 'firebase-admin';
-import * as path from 'path';
-import * as fs from 'fs';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import serviceAccountFallback from '../service-account.json';
+
+const PRODUCTION_DATABASE_ID = 'ai-studio-764c464a-6ef4-407d-8079-cfe6869a3634';
 
 // Inicialização segura do Firebase Admin SDK com suporte a múltiplos formatos de credenciais
 function getFirebaseAdminApp() {
-  if (admin.apps.length > 0) {
-    return admin.app();
+  if (admin.apps && admin.apps.length > 0 && admin.apps[0]) {
+    return admin.apps[0];
   }
 
-  // Estratégia 1: FIREBASE_SERVICE_ACCOUNT JSON completo
+  // Estratégia 1: FIREBASE_SERVICE_ACCOUNT JSON completo via env
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -41,17 +44,15 @@ function getFirebaseAdminApp() {
     }
   }
 
-  // Estratégia 3: Arquivo local service-account.json (desenvolvimento)
+  // Estratégia 3: Fallback embutido com serviceAccountFallback
   try {
-    const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
-    if (fs.existsSync(serviceAccountPath)) {
-      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    if (serviceAccountFallback && (serviceAccountFallback as any).private_key) {
       return admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+        credential: admin.credential.cert(serviceAccountFallback as any),
       });
     }
   } catch (e) {
-    console.warn('[delete-organization] Falha ao ler service-account.json local:', e);
+    console.warn('[delete-organization] Falha ao inicializar com fallback embutido:', e);
   }
 
   // Estratégia 4: Default Application Credentials (GCP/Firebase hosting)
@@ -87,7 +88,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    getFirebaseAdminApp();
+    const app = getFirebaseAdminApp();
+    const authAdmin = getAuth(app);
+    const db = getFirestore(app, PRODUCTION_DATABASE_ID);
 
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -100,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 1. Validar identidade e permissões do solicitante
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const decodedToken = await authAdmin.verifyIdToken(idToken);
     const callerUid = decodedToken.uid;
     const callerEmail = decodedToken.email || '';
 
@@ -108,8 +111,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!orgId || typeof orgId !== 'string') {
       return res.status(400).json({ error: 'Identificador da organização (orgId) obrigatório.' });
     }
-
-    const db = admin.firestore();
 
     // 2. Verificar se o solicitante é Super Admin ou Gerente da organização
     let isAuthorized = isMasterAdminEmail(callerEmail);
@@ -192,7 +193,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (uidsToDelete.length > 0) {
       for (const uid of uidsToDelete) {
         try {
-          await admin.auth().deleteUser(uid);
+          await authAdmin.deleteUser(uid);
           deletedAuthUsersCount++;
         } catch (authErr: any) {
           if (authErr.code === 'auth/user-not-found') {
@@ -208,7 +209,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (authErrors.length > 0) {
       return res.status(409).json({
         success: false,
-        error: `Exclusão parcial no Firebase Authentication. Alguns usuários não puderam ser removidos: ${authErrors.join(', ')}`
+        error: `Exclusão parcial no Firebase Authentication: ${authErrors.join(', ')}`
       });
     }
 

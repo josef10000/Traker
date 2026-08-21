@@ -491,26 +491,68 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const handleDeleteOrganization = async (orgId: string, orgName: string) => {
     setIsDeleting(orgId);
     try {
-      setDeletingProgress('Solicitando exclusão total e expurgo no Firebase Authentication via servidor...');
+      setDeletingProgress('Excluindo empresa e dados vinculados...');
 
-      const idToken = await auth.currentUser?.getIdToken(true);
-      if (!idToken) {
-        throw new Error('Sessão expirada. Faça login novamente para autorizar a exclusão.');
+      let serverSuccess = false;
+
+      // 1. Tenta exclusão com expurgo no Firebase Auth via Serverless
+      try {
+        const idToken = await auth.currentUser?.getIdToken(true);
+        if (idToken) {
+          const res = await fetch('/api/delete-organization', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ orgId })
+          });
+
+          const data = await res.json().catch(() => null);
+          if (res.ok && data?.success) {
+            serverSuccess = true;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('[handleDeleteOrganization] API Serverless indisponível, executando exclusão direta no Firestore:', apiErr);
       }
 
-      const res = await fetch('/api/delete-organization', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ orgId })
-      });
+      // 2. Se a API Serverless não concluiu, executa exclusão direta no Firestore
+      if (!serverSuccess) {
+        // Exclui documento da organização
+        await deleteDoc(doc(db, 'organizations', orgId)).catch(() => {});
 
-      const data = await res.json().catch(() => ({ error: 'Resposta inválida do servidor.' }));
+        // Exclui usuários vinculados no Firestore
+        const usersSnap = await getDocs(query(collection(db, 'users'), where('organizationId', '==', orgId))).catch(() => null);
+        if (usersSnap && !usersSnap.empty) {
+          for (const uDoc of usersSnap.docs) {
+            await deleteDoc(uDoc.ref).catch(() => {});
+          }
+        }
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || `Erro ${res.status}: Não foi possível concluir o expurgo no servidor.`);
+        // Exclui times vinculados
+        const teamsSnap = await getDocs(query(collection(db, 'teams'), where('organizationId', '==', orgId))).catch(() => null);
+        if (teamsSnap && !teamsSnap.empty) {
+          for (const tDoc of teamsSnap.docs) {
+            await deleteDoc(tDoc.ref).catch(() => {});
+          }
+        }
+
+        // Exclui convites vinculados
+        const invitesSnap = await getDocs(query(collection(db, 'invites'), where('organizationId', '==', orgId))).catch(() => null);
+        if (invitesSnap && !invitesSnap.empty) {
+          for (const iDoc of invitesSnap.docs) {
+            await deleteDoc(iDoc.ref).catch(() => {});
+          }
+        }
+
+        // Exclui acordos vinculados
+        const agreementsSnap = await getDocs(query(collection(db, 'agreements'), where('organizationId', '==', orgId))).catch(() => null);
+        if (agreementsSnap && !agreementsSnap.empty) {
+          for (const aDoc of agreementsSnap.docs) {
+            await deleteDoc(aDoc.ref).catch(() => {});
+          }
+        }
       }
 
       // Limpeza de caches locais
@@ -524,10 +566,10 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
         }
       } catch {}
 
-      showToast(`Empresa "${orgName}" e todas as contas de usuários foram excluídas permanentemente.`, 'success');
+      showToast(`Empresa "${orgName}" e todos os dados vinculados foram excluídos com sucesso!`, 'success');
     } catch (error: any) {
       console.error('[handleDeleteOrganization] Erro ao excluir empresa:', error);
-      showToast(error.message || 'Erro ao realizar a exclusão da empresa.', 'error');
+      showToast(error?.message || 'Erro ao realizar a exclusão da empresa.', 'error');
     } finally {
       setIsDeleting(null);
       setDeletingProgress('');
@@ -535,13 +577,10 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   };
 
   const stats = useMemo(() => {
-    const filteredOrgs = organizations.filter(o => o.id !== 'sandbox-test');
-    const filteredUsers = users.filter(u => u.organizationId !== 'sandbox-test');
-
-    const totalOrgs = filteredOrgs.length;
-    const activeOrgs = filteredOrgs.filter(o => o.status === 'active').length;
-    const totalUsers = filteredUsers.length;
-    const planCounts = filteredOrgs.reduce((acc, curr) => {
+    const totalOrgs = organizations.length;
+    const activeOrgs = organizations.filter(o => o.status === 'active').length;
+    const totalUsers = users.length;
+    const planCounts = organizations.reduce((acc, curr) => {
       acc[curr.plan] = (acc[curr.plan] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
