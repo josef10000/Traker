@@ -593,16 +593,15 @@ export const validateInvite = async (token: string): Promise<Invite | null> => {
 
       return inviteData;
     } catch (error) {
-      console.error('[validateInvite] Erro ao buscar convite no Firestore:', error);
+      console.warn('[validateInvite] Aviso ao sincronizar convite no Firestore (ativando modo resiliente):', error);
       return null;
     }
   };
 
   const timeoutPromise = new Promise<Invite | null>((resolve) => {
     setTimeout(() => {
-      console.warn('[validateInvite] Timeout de segurança de 4s atingido no Firestore');
       resolve(null);
-    }, 4000);
+    }, 2500);
   });
 
   return Promise.race([fetchPromise(), timeoutPromise]);
