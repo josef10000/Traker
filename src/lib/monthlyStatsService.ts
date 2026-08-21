@@ -172,8 +172,11 @@ export async function getFreshMonthlyStats(
         return data;
       }
     }
-  } catch (err) {
-    console.warn('Falha na consulta ao Firestore monthly_stats, usando fallback:', err);
+  } catch (err: any) {
+    const isOffline = err?.code === 'unavailable' || err?.message?.includes('offline');
+    if (!isOffline) {
+      console.warn('Falha na consulta ao Firestore monthly_stats, usando fallback:', err);
+    }
   }
 
   // 4. Se não existe no Firestore, calcula a partir dos dados locais e salva a visão materializada

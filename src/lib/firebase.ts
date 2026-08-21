@@ -21,7 +21,11 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfigJson.measurementId,
 };
 
-const databaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfigJson.firestoreDatabaseId;
+// databaseId: Se for o identificador temporário do AI Studio ou vazio, não passa parâmetro de banco nomeado (conecta no banco default '(default)')
+const rawDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfigJson.firestoreDatabaseId;
+const databaseId = rawDatabaseId && !rawDatabaseId.includes('ai-studio-') && rawDatabaseId !== '(default)'
+  ? rawDatabaseId
+  : undefined;
 
 const app = initializeApp(firebaseConfig);
 
@@ -60,10 +64,14 @@ if (enableAppCheck && appCheckSiteKey && appCheckSiteKey.length > 0) {
  * persistentMultipleTabManager garante que múltiplas abas do mesmo operador
  * compartilhem o mesmo cache sem conflitos.
  */
-export const db = initializeFirestore(app, {
+const cacheSettings = {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
-}, databaseId);
+};
 
-export const auth = getAuth();
+export const db = databaseId 
+  ? initializeFirestore(app, cacheSettings, databaseId)
+  : initializeFirestore(app, cacheSettings);
+
+export const auth = getAuth(app);

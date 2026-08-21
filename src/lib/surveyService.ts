@@ -77,9 +77,25 @@ export async function getActiveSurveyConfig(organizationId: string): Promise<Emp
       return snap.data() as EmployeeSurveyConfig;
     }
     return null;
-  } catch (error) {
-    console.error('Erro ao buscar configuração de pesquisa:', error);
-    return null;
+  } catch (error: any) {
+    const isOffline = error?.code === 'unavailable' || error?.message?.includes('offline');
+    if (!isOffline) {
+      console.warn('Aviso ao buscar configuração de pesquisa no Firestore:', error?.message || error);
+    }
+    return getSandboxItem<EmployeeSurveyConfig>('employee_survey_config') || {
+      id: DEFAULT_CONFIG_ID,
+      organizationId,
+      question: 'Em uma escala de 0 a 10, o quanto você recomendaria o ambiente de trabalho para um colega?',
+      scaleType: '0_10',
+      allowComments: true,
+      commentPlaceholder: 'Deixe aqui sua sugestão ou comentário anônimo...',
+      frequency: 'weekly',
+      targetTeamIds: [],
+      isActive: true,
+      createdBy: 'admin',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
   }
 }
 

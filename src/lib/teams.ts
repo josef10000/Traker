@@ -217,23 +217,46 @@ export const joinTeam = async (uid: string, userEmail: string, inviteToken: stri
 };
 
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
-  const docRef = doc(db, 'users', uid);
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    return docSnap.data() as UserProfile;
+  try {
+    const docRef = doc(db, 'users', uid);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return docSnap.data() as UserProfile;
+    }
+    return null;
+  } catch (error: any) {
+    try {
+      const cached = localStorage.getItem('tracker_cached_profile');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.uid === uid) return parsed;
+      }
+    } catch {}
+    const isOffline = error?.code === 'unavailable' || error?.message?.includes('offline');
+    if (!isOffline) {
+      console.warn('Aviso ao consultar perfil no Firestore:', error?.message || error);
+    }
+    return null;
   }
-  return null;
 };
 
 export const getTeamData = async (teamId: string): Promise<Team | null> => {
-  const docRef = doc(db, 'teams', teamId);
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    return docSnap.data() as Team;
+  try {
+    const docRef = doc(db, 'teams', teamId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return docSnap.data() as Team;
+    }
+    return null;
+  } catch (error: any) {
+    const isOffline = error?.code === 'unavailable' || error?.message?.includes('offline');
+    if (!isOffline) {
+      console.warn('Aviso ao consultar equipe no Firestore:', error?.message || error);
+    }
+    return null;
   }
-  return null;
 };
 
 export const deleteTeam = async (uid: string, teamId: string): Promise<void> => {

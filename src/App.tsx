@@ -205,8 +205,11 @@ export function AppContent() {
           } else {
             setIsOrgActive(true);
           }
-        } catch (error) {
-          console.error("Erro ao buscar perfil:", error);
+        } catch (error: any) {
+          const isOffline = error?.code === 'unavailable' || error?.message?.includes('offline');
+          if (!isOffline) {
+            console.warn("Aviso ao buscar perfil no Firestore:", error?.message || error);
+          }
           const isMaster = isMasterAdminEmail(u.email);
           const fallbackProfile: UserProfile = {
             uid: u.uid,
@@ -309,8 +312,11 @@ export function AppContent() {
         } else {
           setIsOrgActive(true);
         }
-      } catch (error) {
-        console.error("Erro ao atualizar perfil:", error);
+      } catch (error: any) {
+        const isOffline = error?.code === 'unavailable' || error?.message?.includes('offline');
+        if (!isOffline) {
+          console.warn("Aviso ao atualizar perfil no Firestore:", error?.message || error);
+        }
       }
       navigate('/');
     }

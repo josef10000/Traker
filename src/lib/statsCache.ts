@@ -132,8 +132,11 @@ export async function areStatsCachesFresh(
     firestoreMetrics.recordRead('stats_freshness', teamIds.length, false, duration);
 
     return isAllFresh;
-  } catch (error) {
-    console.error('[statsCache] Erro ao verificar frescor:', error);
+  } catch (error: any) {
+    const isOffline = error?.code === 'unavailable' || error?.message?.includes('offline');
+    if (!isOffline) {
+      console.warn('[statsCache] Aviso ao verificar frescor no Firestore:', error?.message || error);
+    }
     return false; // Em caso de erro, assume stale (seguro)
   }
 }
