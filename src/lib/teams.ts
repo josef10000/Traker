@@ -637,18 +637,18 @@ export const acceptInvite = async (uid: string, token: string, customDisplayName
   const now = new Date().toISOString();
   const nameToSave = customDisplayName?.trim() || inviteData?.email.split('@')[0] || 'Usuário';
 
-  const userProfile: UserProfile = {
+  const userProfile: Record<string, any> = {
     uid,
     email: inviteData?.email || '',
     displayName: nameToSave,
     role: inviteData?.role || 'member',
-    teamId: inviteData?.teamId || undefined,
     organizationId: inviteData?.organizationId || 'org-master',
-    createdAt: now,
-    managedTeams: inviteData?.role === 'supervisor' && inviteData?.teamId ? [inviteData.teamId] : undefined,
-    managerId: inviteData?.invitedBy || null,
-    monthlyServiceValue: inviteData?.monthlyServiceValue || undefined
+    createdAt: now
   };
+  if (inviteData?.teamId) userProfile.teamId = inviteData.teamId;
+  if (inviteData?.role === 'supervisor' && inviteData?.teamId) userProfile.managedTeams = [inviteData.teamId];
+  if (inviteData?.invitedBy) userProfile.managerId = inviteData.invitedBy;
+  if (inviteData?.monthlyServiceValue) userProfile.monthlyServiceValue = inviteData.monthlyServiceValue;
 
   await setDoc(doc(db, 'users', uid), userProfile, { merge: true });
 

@@ -198,16 +198,16 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         displayName: cleanDisplayName
       }).catch(() => {});
 
-      // 3. Gravação garantida do Perfil no Firestore
-      const userProfile: UserProfile = {
+      // 3. Gravação garantida do Perfil no Firestore (sem campos undefined que o Firestore rejeita)
+      const userProfile: Record<string, any> = {
         uid: activeUser.uid,
         email: activeEmail,
         displayName: cleanDisplayName,
         role: role,
         organizationId: orgId || 'org-master',
-        teamId: teamId || undefined,
         createdAt: new Date().toISOString()
       };
+      if (teamId) userProfile.teamId = teamId;
 
       await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
 
