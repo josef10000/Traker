@@ -22,7 +22,7 @@ import {
   Warning
 } from '@phosphor-icons/react';
 import { UserRole } from '../../types';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { generateSecureToken } from '../../lib/teams';
 import { sendInviteEmail } from '../../services/emailService';
@@ -144,6 +144,11 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
   // Criar e Gerar Links de Convite
   const handleCreateInvites = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth.currentUser) {
+      showToast('Sessão não autenticada no Firebase. Por favor, faça login novamente para gerar convites.', 'error');
+      return;
+    }
+
     const validRows = setupRows.filter(r => r.email.trim() && r.email.includes('@'));
     if (validRows.length === 0) {
       showToast('Preencha ao menos um e-mail válido para gerar o convite.', 'error');

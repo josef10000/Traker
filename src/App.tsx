@@ -38,6 +38,7 @@ export function AppContent() {
 
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [profile, setProfile] = useState<UserProfile | null>(() => {
+    if (!auth.currentUser) return null;
     try {
       const cached = localStorage.getItem('tracker_cached_profile');
       return cached ? JSON.parse(cached) : null;
@@ -46,7 +47,7 @@ export function AppContent() {
     }
   });
   const [isOrgActive, setIsOrgActive] = useState(true);
-  const [loading, setLoading] = useState<boolean>(() => auth.currentUser !== null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
