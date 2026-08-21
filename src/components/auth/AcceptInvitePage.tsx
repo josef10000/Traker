@@ -213,29 +213,51 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         displayName: cleanDisplayName
       }).catch(() => {});
 
-      // 3. Gravação garantida do Perfil no Firestore com Termos já aceitos e organizationId real
-      const userProfile: Record<string, any> = {
-        uid: activeUser.uid,
-        email: activeEmail,
-        displayName: cleanDisplayName,
-        role: role,
-        organizationId: orgId || 'sandbox-test',
-        acceptedTermsAt: now,
-        createdAt: now
-      };
-      if (teamId) userProfile.teamId = teamId;
-
-      await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
-      try {
-        localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
-      } catch {}
-
-      // 4. Marcação do convite como aceito
+      // 3. Aceite do convite + gravação única do perfil no Firestore (evita write duplicado)
       if (token && !isSandbox) {
-        await acceptInvite(activeUser.uid, token, cleanDisplayName).catch(() => {});
+        await acceptInvite(activeUser.uid, token, cleanDisplayName);
       } else if (token && isSandbox) {
         sandboxService.acceptInvite(activeUser.uid, token);
+        // Perfil mínimo para sandbox (acceptInvite real não roda)
+        const userProfile: Record<string, any> = {
+          uid: activeUser.uid,
+          email: activeEmail,
+          displayName: cleanDisplayName,
+          role: role,
+          organizationId: orgId || 'sandbox-test',
+          acceptedTermsAt: now,
+          createdAt: now
+        };
+        if (teamId) userProfile.teamId = teamId;
+        await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
+      } else {
+        // Fallback sem token: grava perfil básico
+        const userProfile: Record<string, any> = {
+          uid: activeUser.uid,
+          email: activeEmail,
+          displayName: cleanDisplayName,
+          role: role,
+          organizationId: orgId || 'sandbox-test',
+          acceptedTermsAt: now,
+          createdAt: now
+        };
+        if (teamId) userProfile.teamId = teamId;
+        await setDoc(doc(db, 'users', activeUser.uid), userProfile, { merge: true });
       }
+
+      try {
+        const cached = {
+          uid: activeUser.uid,
+          email: activeEmail,
+          displayName: cleanDisplayName,
+          role,
+          organizationId: orgId || 'sandbox-test',
+          acceptedTermsAt: now,
+          createdAt: now,
+          ...(teamId ? { teamId } : {})
+        };
+        localStorage.setItem('tracker_cached_profile', JSON.stringify(cached));
+      } catch {}
 
       showToast('Conta corporativa ativada com sucesso! Entrando na plataforma...', 'success');
       onAuthSuccess();
@@ -243,6 +265,12 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       console.error('Erro na ativação da conta corporativa:', err);
       if (err.code === 'auth/weak-password') {
         setError('A senha informada é muito fraca. Utilize ao menos 8 caracteres misturando letras e números.');
+      } else if (typeof err.message === 'string' && err.message.startsWith('INVITE_EMAIL_MISMATCH:')) {
+        setError(err.message.replace('INVITE_EMAIL_MISMATCH: ', ''));
+      } else if (typeof err.message === 'string' && err.message.startsWith('INVITE_INVALID:')) {
+        setError(err.message.replace('INVITE_INVALID: ', ''));
+      } else if (err.code === 'auth/email-already-in-use') {
+        setError('Este e-mail já possui um cadastro ativo no sistema. Para aceitar um novo convite empresarial, a conta anterior deve ser excluída pelo administrador.');
       } else {
         setError(err.message || 'Erro ao ativar sua conta. Verifique os dados e tente novamente.');
       }
