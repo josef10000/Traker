@@ -247,7 +247,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
   // Compartilhar link individual via WhatsApp
   const handleShareWhatsApp = (inv: PendingInvite) => {
-    const inviteUrl = buildInviteUrl(inv.token);
+    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
     const roleLabel = getRoleLabel(inv.role);
     const message = `🚀 Olá! Segue seu link de acesso corporativo à plataforma Tracker (*${orgName}*):\n\n👤 *Cargo*: ${roleLabel}\n📧 *E-mail*: ${inv.email}\n🔗 *Ativar Minha Conta*: ${inviteUrl}\n\nBasta clicar no link acima e definir sua senha de acesso!`;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
@@ -256,7 +256,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
 
   // Copiar link individual
   const handleCopySingleLink = (inv: PendingInvite) => {
-    const inviteUrl = buildInviteUrl(inv.token);
+    const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
     navigator.clipboard.writeText(inviteUrl);
     setCopiedToken(inv.token);
     showToast('Link de convite copiado para a área de transferência!', 'success');
@@ -270,7 +270,7 @@ export const CompanyUserSetupModal: React.FC<CompanyUserSetupModalProps> = ({
     let text = `🚀 *Links de Acesso e Setup — ${orgName}*\n\n`;
     pendingInvites.forEach(inv => {
       const roleLabel = getRoleLabel(inv.role);
-      const inviteUrl = buildInviteUrl(inv.token);
+      const inviteUrl = buildInviteUrl(inv.token, inv.email, inv.role);
       text += `👤 *${inv.email}* (${roleLabel}):\n🔗 ${inviteUrl}\n\n`;
     });
 
