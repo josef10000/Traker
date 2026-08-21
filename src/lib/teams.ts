@@ -495,16 +495,17 @@ export const createInvitesInBulk = async (
 
   const usersRef = collection(db, 'users');
   const userCountQuery = query(usersRef, where('organizationId', '==', organizationId));
-  const userCountSnap = await getDocs(userCountQuery);
+  const userCountSnap = await getCountFromServer(userCountQuery);
+  const activeUsersCount = userCountSnap.data().count;
 
   const pendingInvites = await getPendingInvites(organizationId);
-  const totalSlotsUsed = userCountSnap.size + pendingInvites.length;
+  const totalSlotsUsed = activeUsersCount + pendingInvites.length;
 
   // Checagem de limite apenas para planos com trava explícita (> 0). Para -1 ou null = Ilimitado.
   if (orgData.maxUsers && orgData.maxUsers > 0) {
     if (totalSlotsUsed + invitesData.length > orgData.maxUsers) {
       throw new Error(
-        `Limite do plano excedido. Sua empresa possui ${userCountSnap.size} membros ativos e ${pendingInvites.length} convites pendentes. Limite máximo: ${orgData.maxUsers} usuários.`
+        `Limite do plano excedido. Sua empresa possui ${activeUsersCount} membros ativos e ${pendingInvites.length} convites pendentes. Limite máximo: ${orgData.maxUsers} usuários.`
       );
     }
   }
@@ -528,13 +529,20 @@ export const createInvitesInBulk = async (
       data.role === 'backoffice' ? '📋 Backoffice' : '🎧 Operador';
 
     // Disparo automático via Resend para convites da liderança
+    let emailSent = false;
     if (typeof window !== 'undefined') {
-      sendInviteEmail({
-        recipientEmail: data.email.trim().toLowerCase(),
-        orgName: orgData.name,
-        roleName: roleLabel,
-        inviteUrl
-      }).catch(err => console.error('[createInvitesInBulk] Erro ao disparar e-mail:', err));
+      try {
+        await sendInviteEmail({
+          recipientEmail: data.email.trim().toLowerCase(),
+          orgName: orgData.name,
+          roleName: roleLabel,
+          inviteUrl
+        });
+        emailSent = true;
+      } catch (err) {
+        console.error('[createInvitesInBulk] Erro ao disparar e-mail:', err);
+        emailSent = false;
+      }
     }
 
     const invite: Invite = {
@@ -549,7 +557,7 @@ export const createInvitesInBulk = async (
       invitedBy,
       createdAt: now,
       expiresAt,
-      emailSent: true,
+      emailSent,
       monthlyServiceValue: data.monthlyServiceValue || undefined
     };
 
@@ -589,10 +597,24 @@ export const validateInvite = async (token: string): Promise<Invite | null> => {
       }
     }
 
-    // Tentativa 3: token de gerente ou supervisor direto da organização (MGR-... ou SUP-...)
-    if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-'))) {
+    // Tentativa 3: token de liderança direto da organização (MGR-/SUP-/COORD-/MON-)
+    if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-') || cleanToken.startsWith('COORD-') || cleanToken.startsWith('MON-'))) {
       const orgsRef = collection(db, 'organizations');
-      const qField = cleanToken.startsWith('MGR-') ? 'managerInviteToken' : 'supervisorInviteToken';
+      let qField: string;
+      let role: UserRole;
+      if (cleanToken.startsWith('MGR-')) {
+        qField = 'managerInviteToken';
+        role = 'manager';
+      } else if (cleanToken.startsWith('SUP-')) {
+        qField = 'supervisorInviteToken';
+        role = 'supervisor';
+      } else if (cleanToken.startsWith('COORD-')) {
+        qField = 'coordinatorInviteToken';
+        role = 'coordinator';
+      } else {
+        qField = 'monitorInviteToken';
+        role = 'monitor';
+      }
       const q = query(orgsRef, where(qField, '==', cleanToken));
       const snap = await getDocs(q);
       if (!snap.empty) {
@@ -603,7 +625,7 @@ export const validateInvite = async (token: string): Promise<Invite | null> => {
           token: cleanToken,
           organizationId: orgDoc.id,
           orgName: orgData.name,
-          role: cleanToken.startsWith('MGR-') ? 'manager' : 'supervisor',
+          role,
           status: orgData.status === 'inactive' ? 'revoked' : 'pending',
           createdAt: orgData.createdAt || new Date().toISOString()
         } as Invite;
@@ -669,11 +691,25 @@ export const acceptInvite = async (uid: string, token: string, customDisplayName
     }
   }
 
-  // Se for token MGR / SUP direto da organização
+  // Se for token de liderança (MGR / SUP / COORD / MON) direto da organização
   let orgDocRefToClearToken: any = null;
-  if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-'))) {
+  if (!inviteData && (cleanToken.startsWith('MGR-') || cleanToken.startsWith('SUP-') || cleanToken.startsWith('COORD-') || cleanToken.startsWith('MON-'))) {
     const orgsRef = collection(db, 'organizations');
-    const qField = cleanToken.startsWith('MGR-') ? 'managerInviteToken' : 'supervisorInviteToken';
+    let qField: string;
+    let role: UserRole;
+    if (cleanToken.startsWith('MGR-')) {
+      qField = 'managerInviteToken';
+      role = 'manager';
+    } else if (cleanToken.startsWith('SUP-')) {
+      qField = 'supervisorInviteToken';
+      role = 'supervisor';
+    } else if (cleanToken.startsWith('COORD-')) {
+      qField = 'coordinatorInviteToken';
+      role = 'coordinator';
+    } else {
+      qField = 'monitorInviteToken';
+      role = 'monitor';
+    }
     const q = query(orgsRef, where(qField, '==', cleanToken));
     const snap = await getDocs(q);
     if (!snap.empty) {
@@ -684,7 +720,7 @@ export const acceptInvite = async (uid: string, token: string, customDisplayName
         token: cleanToken,
         organizationId: orgDoc.id,
         orgName: orgData.name,
-        role: cleanToken.startsWith('MGR-') ? 'manager' : 'supervisor',
+        role,
         status: 'pending',
         createdAt: orgData.createdAt || new Date().toISOString()
       } as Invite;
