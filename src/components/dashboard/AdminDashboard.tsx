@@ -5,7 +5,6 @@ import {
   Stack as Layers, 
   SignOut as LogOut, 
   UserCheck, 
-  Globe, 
   Clock, 
   Gear as Settings, 
   Trash as Trash2, 
@@ -110,9 +109,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
   const [editMaxUsers, setEditMaxUsers] = useState(5);
   const [editMaxTeams, setEditMaxTeams] = useState(1);
   const [editExpiresAt, setEditExpiresAt] = useState('');
-  const [editCrmOrgId, setEditCrmOrgId] = useState('');
-  const [editCrmClientId, setEditCrmClientId] = useState('');
-  const [editCrmPublicToken, setEditCrmPublicToken] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // Modal de criação de organização
@@ -370,9 +366,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
     setEditMaxUsers(org.maxUsers || 5);
     setEditMaxTeams(org.maxTeams || 1);
     setEditExpiresAt(org.planExpiresAt || '');
-    setEditCrmOrgId(org.crmOrgId || '');
-    setEditCrmClientId(org.crmClientId || '');
-    setEditCrmPublicToken(org.crmPublicToken || '');
   };
 
   const handleSaveLimits = async () => {
@@ -389,15 +382,6 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
 
       if (editExpiresAt) {
         updateData.planExpiresAt = editExpiresAt;
-      }
-      if (editCrmOrgId.trim()) {
-        updateData.crmOrgId = editCrmOrgId.trim();
-      }
-      if (editCrmClientId.trim()) {
-        updateData.crmClientId = editCrmClientId.trim();
-      }
-      if (editCrmPublicToken.trim()) {
-        updateData.crmPublicToken = editCrmPublicToken.trim();
       }
 
       await updateDoc(orgRef, updateData);
@@ -1013,39 +997,35 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                                 <Settings size={14} />
                               </button>
 
-                              {!isSandbox && (
-                                <>
-                                  <button
-                                    onClick={() => handleToggleStatus(org)}
-                                    className={`p-2 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
-                                      org.status === 'active'
-                                        ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20'
-                                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
-                                    }`}
-                                    title={org.status === 'active' ? 'Suspender Empresa' : 'Ativar Empresa'}
-                                  >
-                                    <Power size={14} />
-                                  </button>
+                              <button
+                                onClick={() => handleToggleStatus(org)}
+                                className={`p-2 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                                  org.status === 'active'
+                                    ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20'
+                                    : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                                }`}
+                                title={org.status === 'active' ? 'Suspender Empresa' : 'Ativar Empresa'}
+                              >
+                                <Power size={14} />
+                              </button>
 
-                                  <button
-                                    onClick={() => {
-                                      setConfirmDialog({
-                                        isOpen: true,
-                                        title: 'Excluir Empresa Permanentemente',
-                                        message: `Tem certeza que deseja EXCLUIR a empresa "${org.name}" e TODOS os seus dados vinculados (acordos, equipes, usuários e contas do Firebase Authentication)? Esta ação é definitiva e irreversível!`,
-                                        type: 'danger',
-                                        onConfirm: () => handleDeleteOrganization(org.id, org.name)
-                                      });
-                                    }}
-                                    disabled={isDeleting === org.id}
-                                    className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                                    title="Excluir Empresa e Todos os Dados Vinculados"
-                                  >
-                                    {isDeleting === org.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                                    <span>Excluir</span>
-                                  </button>
-                                </>
-                              )}
+                              <button
+                                onClick={() => {
+                                  setConfirmDialog({
+                                    isOpen: true,
+                                    title: 'Excluir Empresa Permanentemente',
+                                    message: `Tem certeza que deseja EXCLUIR a empresa "${org.name}" e TODOS os seus dados vinculados (acordos, equipes, usuários e contas do Firebase Authentication)? Esta ação é definitiva e irreversível!`,
+                                    type: 'danger',
+                                    onConfirm: () => handleDeleteOrganization(org.id, org.name)
+                                  });
+                                }}
+                                disabled={isDeleting === org.id}
+                                className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                                title="Excluir Empresa e Todos os Dados Vinculados"
+                              >
+                                {isDeleting === org.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                <span>Excluir</span>
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1365,81 +1345,32 @@ export const AdminDashboard = ({ profile, onLogoutSuccess, showToast, onStartSim
                 />
               </div>
 
-              <div className="border-t border-white/10 pt-4 space-y-3">
-                <h4 className="text-[11px] font-black text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Globe size={14} /> Integrador Salesforce / Oktor CRM
+              <div className="border-t border-rose-500/20 pt-4 p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-2">
+                <h4 className="text-[11px] font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Trash2 size={14} /> Zona de Perigo: Exclusão Total
                 </h4>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Org ID</label>
-                  <input 
-                    type="text" 
-                    name="editOrgCrmOrgId"
-                    autoComplete="off"
-                    value={editCrmOrgId}
-                    onChange={(e) => setEditCrmOrgId(e.target.value)}
-                    placeholder="Ex: 00D8a0000021xyz"
-                    className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 transition-all font-semibold font-mono"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Client ID</label>
-                    <input 
-                      type="text" 
-                      name="editOrgCrmClientId"
-                      autoComplete="off"
-                      value={editCrmClientId}
-                      onChange={(e) => setEditCrmClientId(e.target.value)}
-                      placeholder="Identificador do cliente"
-                      className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 transition-all font-semibold"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">CRM Public Token</label>
-                    <input 
-                      type="password" 
-                      name="editOrgCrmPublicToken"
-                      autoComplete="off"
-                      value={editCrmPublicToken}
-                      onChange={(e) => setEditCrmPublicToken(e.target.value)}
-                      placeholder="Token de acesso público"
-                      className="w-full bg-slate-950 border border-white/10 rounded-2xl py-3 px-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 transition-all font-semibold"
-                    />
-                  </div>
-                </div>
+                <p className="text-slate-400 text-[11px]">
+                  Exclui permanentemente a empresa, todos os acordos, equipes, convites e todas as contas de usuários vinculadas no Firebase Authentication.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const orgToDel = selectedOrg;
+                    setSelectedOrg(null);
+                    setConfirmDialog({
+                      isOpen: true,
+                      title: 'Excluir Empresa Permanentemente',
+                      message: `Tem certeza que deseja EXCLUIR permanentemente a empresa "${orgToDel.name}", todos os convites, acordos e todas as contas do Firebase Authentication vinculadas a ela? Esta ação é definitiva e irreversível!`,
+                      type: 'danger',
+                      onConfirm: () => handleDeleteOrganization(orgToDel.id, orgToDel.name)
+                    });
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Trash2 size={14} />
+                  Excluir Empresa e Todos os Dados
+                </button>
               </div>
-
-              {selectedOrg.id !== 'sandbox-test' && (
-                <div className="border-t border-rose-500/20 pt-4 p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-2">
-                  <h4 className="text-[11px] font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Trash2 size={14} /> Zona de Perigo: Exclusão Total
-                  </h4>
-                  <p className="text-slate-400 text-[11px]">
-                    Exclui permanentemente a empresa, todos os acordos, equipes, convites e todas as contas de usuários vinculadas no Firebase Authentication.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const orgToDel = selectedOrg;
-                      setSelectedOrg(null);
-                      setConfirmDialog({
-                        isOpen: true,
-                        title: 'Excluir Empresa Permanentemente',
-                        message: `Tem certeza que deseja EXCLUIR permanentemente a empresa "${orgToDel.name}", todos os convites, acordos e todas as contas do Firebase Authentication vinculadas a ela? Esta ação é definitiva e irreversível!`,
-                        type: 'danger',
-                        onConfirm: () => handleDeleteOrganization(orgToDel.id, orgToDel.name)
-                      });
-                    }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-                  >
-                    <Trash2 size={14} />
-                    Excluir Empresa e Todos os Dados
-                  </button>
-                </div>
-              )}
 
               <div className="flex gap-3 pt-4 border-t border-white/10">
                 <button 

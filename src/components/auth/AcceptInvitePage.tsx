@@ -68,6 +68,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
   const [orgId, setOrgId] = useState<string>('');
   const [role, setRole] = useState<UserRole>('member');
   const [teamId, setTeamId] = useState<string | undefined>();
+  const [isSandbox, setIsSandbox] = useState<boolean>(false);
 
   // Campos do Formulário
   const [displayName, setDisplayName] = useState<string>('');
@@ -109,26 +110,31 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       localStorage.removeItem('tracker_cached_profile');
     }
 
-    // Modo Sandbox / Demo
-    if (activeToken === 'demo' || activeToken.startsWith('inv-demo-')) {
-      setEmail('colaborador@empresa.com');
-      setInputEmail('colaborador@empresa.com');
-      setOrgName('Empresa Demonstração');
-      setRole('manager');
-      setOrgId('demo-org');
+    // Modo Sandbox / Demo (Empresa de Teste)
+    const isSandboxMode = 
+      activeToken === 'demo' || 
+      activeToken.startsWith('inv-demo-') || 
+      activeToken.includes('sandbox') || 
+      activeToken.startsWith('sb-') || 
+      urlOrgId === 'sandbox-test' || 
+      (urlOrg && urlOrg.toLowerCase().includes('sandbox'));
+
+    if (isSandboxMode) {
+      setIsSandbox(true);
+      const activeEmail = urlEmail ? decodeURIComponent(urlEmail).trim() : 'colaborador@empresa.com';
+      setEmail(activeEmail);
+      setInputEmail(activeEmail);
+      setOrgName(urlOrg ? decodeURIComponent(urlOrg).trim() : 'Empresa de Teste (Sandbox)');
+      setRole(urlRole || 'manager');
+      setOrgId(urlOrgId ? urlOrgId.trim() : 'sandbox-test');
       setIsValidating(false);
       return;
     }
 
-    // Consulta e validação estrita no Firestore
+    // Consulta e validação estrita no Firestore (Convites Corporativos Reais)
     const runValidation = async () => {
       try {
-        let inviteDoc: any = null;
-        if (activeToken.startsWith('sb-tok')) {
-          inviteDoc = sandboxService.validateInvite(activeToken);
-        } else {
-          inviteDoc = await validateInvite(activeToken);
-        }
+        const inviteDoc = await validateInvite(activeToken);
 
         if (inviteDoc) {
           if (inviteDoc.email) {
@@ -187,7 +193,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
       return;
     }
 
-    if (!orgId && token !== 'demo' && !token.startsWith('inv-demo-')) {
+    if (!orgId && !isSandbox) {
       setError('INVITE_INVALID: Não foi possível identificar a empresa vinculada a este convite.');
       return;
     }
@@ -221,7 +227,7 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         email: activeEmail,
         displayName: cleanDisplayName,
         role: role,
-        organizationId: orgId,
+        organizationId: orgId || 'sandbox-test',
         acceptedTermsAt: now,
         createdAt: now
       };
@@ -232,13 +238,11 @@ export const AcceptInvitePage: React.FC<AcceptInvitePageProps> = ({
         localStorage.setItem('tracker_cached_profile', JSON.stringify(userProfile));
       } catch {}
 
-      // 4. Marcação estrita do convite como aceito no Firestore
-      if (token && token !== 'demo' && !token.startsWith('inv-demo-')) {
-        if (token.startsWith('sb-tok')) {
-          sandboxService.acceptInvite(activeUser.uid, token);
-        } else {
-          await acceptInvite(activeUser.uid, token, cleanDisplayName).catch(() => {});
-        }
+      // 4. Marcação do convite como aceito
+      if (token && !isSandbox) {
+        await acceptInvite(activeUser.uid, token, cleanDisplayName).catch(() => {});
+      } else if (token && isSandbox) {
+        sandboxService.acceptInvite(activeUser.uid, token);
       }
 
       showToast('Conta corporativa ativada com sucesso! Entrando na plataforma...', 'success');
