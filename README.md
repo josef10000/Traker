@@ -223,3 +223,5 @@ O repositório utiliza **GitHub Actions** para executar verificações automatiz
 Para entender o funcionamento detalhado de fluxos críticos em produção (Disparo de E-mails via Resend, Ciclo de Convites e Ativação de Usuários, Limites Enterprise, Roteamento SPA e Telemetria FinOps do Firestore), consulte o documento dedicado:
 
 👉 **[Guia de Funções Críticas & Troubleshooting](docs/FUNCOES_CRITICAS.md)**
+
+---
